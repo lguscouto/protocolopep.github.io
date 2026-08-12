@@ -1,135 +1,813 @@
-Selecione tudo abaixo e cole na área de texto do GitHub:
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0B1017">
+<title>Protocolo de Peptídeos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B1017; --surface:#131B26; --surface2:#1A2532; --surface3:#212E3D;
+    --border:#26313F; --border2:#324152;
+    --text:#EAF0F6; --muted:#8A97A6; --muted2:#5D6B7A;
+    --primary:#2CC5C0; --primary-dim:#164E4C;
+    --motsc:#2FD8AC; --aod:#F59158; --tesa:#8593F7; --ghk:#D89A5C;
+    --warn-bg:#2A2113; --warn-tx:#E9B872; --warn-bd:#5A4620;
+    --danger:#F0616D;
+    --font:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    --display:'Space Grotesk',var(--font);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:var(--font);
+    background:var(--bg); color:var(--text);
+    font-size:15px; line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  .app{max-width:640px;margin:0 auto;min-height:100vh;padding-bottom:96px;}
 
-<!DOCTYPE html> <html lang="pt-BR"> <head> <meta charset="UTF-8"> <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"> <meta name="theme-color" content="#12303A"> <title>Protocolo de Peptídeos</title> <style> :root{ --ink:#12303A; --bg:#EEF2F3; --card:#FFFFFF; --mute:#5B7078; --line:#DCE4E6; } *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;} html,body{margin:0;padding:0;} body{ font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; background:var(--bg); color:var(--ink); padding-bottom:40px; } .wrap{max-width:620px;margin:0 auto;}
+  /* ---------- top bar ---------- */
+  .topbar{
+    position:sticky;top:0;z-index:20;
+    background:linear-gradient(180deg,rgba(11,16,23,.96),rgba(11,16,23,.82));
+    backdrop-filter:blur(12px);
+    border-bottom:1px solid var(--border);
+    padding:18px 20px 14px;
+    padding-top:calc(18px + env(safe-area-inset-top));
+  }
+  .brand{display:flex;align-items:center;gap:10px;}
+  .brand .logo{width:30px;height:30px;flex:none;}
+  .brand .t{font-family:var(--display);font-weight:700;font-size:17px;letter-spacing:.2px;}
+  .brand .t span{color:var(--primary);}
+  .datestrip{margin-top:3px;color:var(--muted);font-size:12.5px;text-transform:capitalize;letter-spacing:.2px;}
 
-header{
-background:var(--ink); color:#fff; padding:34px 24px 22px;
-padding-top:calc(34px + env(safe-area-inset-top));
-border-radius:0 0 26px 26px;
-}
-header .kicker{color:
-#7FB8AB;font-size:13px;letter-spacing:4px;font-weight:700;text-transform:uppercase;}
-header h1{margin:6px 0 4px;font-size:30px;font-weight:800;}
-header .date{color:
-#9FB6BC;font-size:15px;text-transform:capitalize;}
-.accentbar{height:6px;background:linear-gradient(90deg,
-#1F8A70 0%,
-#D2703A 40%,
-#4C5FB0 70%,
-#B06B3A 100%);}
+  /* ---------- views ---------- */
+  .view{display:none;padding:18px 16px 4px;animation:fade .25s ease;}
+  .view.on{display:block;}
+  @keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
 
-.section{padding:20px 18px 4px;}
-.section h2{font-size:14px;letter-spacing:2px;text-transform:uppercase;color:var(--mute);margin:0 0 12px 4px;font-weight:700;}
+  .eyebrow{font-family:var(--display);font-size:12px;letter-spacing:2.5px;text-transform:uppercase;color:var(--muted2);margin:0 0 12px 2px;font-weight:600;}
 
-.progress{
-display:flex;align-items:center;gap:12px;margin:0 4px 16px;
-color:var(--mute);font-size:14px;
-}
-.progress .bar{flex:1;height:8px;background:var(--line);border-radius:5px;overflow:hidden;}
-.progress .fill{height:100%;width:0;background:
-#1F8A70;border-radius:5px;transition:width .3s ease;}
+  /* progress ring row */
+  .todayhead{display:flex;align-items:center;gap:16px;background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:16px 18px;margin-bottom:16px;}
+  .ring{width:56px;height:56px;flex:none;}
+  .todayhead .th-txt .n{font-family:var(--display);font-size:20px;font-weight:700;}
+  .todayhead .th-txt .l{color:var(--muted);font-size:12.5px;}
 
-.card{
-background:var(--card);border-radius:20px;padding:16px 16px 16px 20px;
-margin:0 4px 14px;position:relative;overflow:hidden;
-box-shadow:0 2px 10px rgba(18,48,58,.05);
-}
-.card .abar{position:absolute;left:0;top:0;bottom:0;width:8px;border-radius:8px;}
-.row{display:flex;align-items:center;gap:14px;}
-.info{flex:1;min-width:0;}
-.name{font-size:22px;font-weight:800;}
-.name .moon{font-size:16px;opacity:.85;}
-.sub{color:var(--mute);font-size:13px;margin-top:2px;}
-.doseline{margin-top:8px;font-size:14px;color:var(--ink);}
-.doseline b{font-size:16px;}
-.pill{display:inline-block;font-size:12px;font-weight:700;padding:3px 10px;border-radius:20px;margin-top:8px;}
+  /* peptide card */
+  .card{
+    background:var(--surface);border:1px solid var(--border);
+    border-radius:18px;padding:15px 16px;margin-bottom:12px;
+    position:relative;overflow:hidden;
+    display:flex;align-items:center;gap:14px;
+    transition:border-color .2s, background .2s;
+  }
+  .card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--acc);}
+  .card.done{background:var(--surface2);}
+  .card .info{flex:1;min-width:0;}
+  .card .nm{font-family:var(--display);font-weight:600;font-size:17px;display:flex;align-items:center;gap:7px;}
+  .card .dot{width:8px;height:8px;border-radius:50%;background:var(--acc);flex:none;}
+  .card .sub{color:var(--muted);font-size:12px;margin-top:1px;}
+  .card .meta{margin-top:9px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .card .ui{font-family:var(--display);font-weight:700;font-size:15px;color:var(--text);}
+  .card .freq{font-size:12px;color:var(--muted);}
+  .chip-acc{font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;background:color-mix(in srgb,var(--acc) 16%,transparent);color:var(--acc);}
+  .take{
+    border:1.5px solid var(--acc);background:transparent;color:var(--acc);
+    font-family:var(--font);font-weight:700;font-size:13.5px;
+    padding:10px 15px;border-radius:12px;cursor:pointer;white-space:nowrap;
+    display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1.2;
+    transition:transform .06s;min-width:78px;
+  }
+  .take:active{transform:scale(.95);}
+  .take.done{background:var(--acc);color:#0B1017;border-color:var(--acc);}
+  .take .at{font-size:10px;font-weight:600;opacity:.85;}
 
-.btn{
-border:none;cursor:pointer;font-family:inherit;font-weight:800;font-size:15px;
-padding:13px 18px;border-radius:14px;white-space:nowrap;transition:transform .06s ease, background .2s;
-color:#fff;
-}
-.btn:active{transform:scale(.96);}
-.btn.done{background:
-#EAF3F0 !important;color:
-#1F8A70;border:1.5px solid 
-#1F8A70;}
-.btn.done .tick{font-weight:900;}
-.taken-at{display:block;font-size:11px;font-weight:600;color:var(--mute);margin-top:3px;text-align:center;}
+  /* ---------- week ---------- */
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:16px 12px;}
+  table{width:100%;border-collapse:collapse;}
+  th,td{text-align:center;padding:9px 1px;}
+  thead th{color:var(--muted2);font-weight:600;font-size:11px;}
+  thead th.today .dn{color:var(--primary);}
+  thead th .dn{display:block;font-family:var(--display);font-size:13px;font-weight:600;color:var(--text);margin-top:2px;}
+  thead th.today .dw,thead th.today .dn{color:var(--primary);}
+  td.pep{text-align:left;font-family:var(--display);font-weight:600;font-size:12.5px;padding-left:8px;white-space:nowrap;}
+  .cell{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:7px;font-size:12px;font-weight:800;color:#0B1017;}
+  .cell.empty{background:var(--surface3);}
+  .cell.na{color:var(--muted2);background:transparent;font-weight:400;}
+  td.col-today{background:var(--surface2);}
+  td.col-today:first-child{border-radius:8px 0 0 8px;}
+  td.col-today:last-child{border-radius:0 8px 8px 0;}
+  .reset{display:block;margin:16px auto 0;background:none;border:none;color:var(--muted2);font-size:12px;cursor:pointer;font-family:var(--font);text-decoration:underline;}
+  .legend{display:flex;gap:14px;justify-content:center;margin-top:14px;color:var(--muted);font-size:11px;flex-wrap:wrap;}
+  .legend span{display:inline-flex;align-items:center;gap:5px;}
+  .legend i{width:12px;height:12px;border-radius:4px;display:inline-block;}
 
-.weekgrid{margin:0 4px;background:var(--card);border-radius:20px;padding:16px 12px;box-shadow:0 2px 10px rgba(18,48,58,.05);}
-table{width:100%;border-collapse:collapse;}
-th,td{text-align:center;padding:8px 2px;font-size:13px;}
-th.pep{text-align:left;width:96px;font-size:12px;color:var(--mute);padding-left:6px;}
-thead th{color:var(--mute);font-weight:700;font-size:12px;}
-thead th.today{color:var(--ink);}
-thead th .dnum{display:block;font-size:11px;font-weight:400;margin-top:1px;}
-td.pep{text-align:left;font-weight:700;font-size:13px;padding-left:6px;}
-.cell{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;font-size:13px;font-weight:800;color:#fff;}
-.cell.empty{border:2px solid var(--line);color:transparent;width:22px;height:22px;}
-.cell.na{color:var(--line);font-weight:400;}
-td.col-today{background:
-#F3F7F7;}
+  /* ---------- calculator ---------- */
+  .calc-name{margin-bottom:16px;}
+  .step{margin-bottom:20px;}
+  .step-h{display:flex;align-items:center;gap:9px;margin-bottom:10px;}
+  .step-n{width:22px;height:22px;flex:none;border-radius:7px;background:var(--surface3);color:var(--primary);font-family:var(--display);font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center;}
+  .step-h .lab{font-weight:600;font-size:14px;}
+  .step-h .lab small{display:block;color:var(--muted2);font-weight:400;font-size:11.5px;}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;}
+  .chip{
+    border:1px solid var(--border2);background:var(--surface);color:var(--muted);
+    font-family:var(--display);font-weight:600;font-size:13.5px;
+    padding:9px 13px;border-radius:11px;cursor:pointer;transition:all .15s;
+    font-variant-numeric:tabular-nums;
+  }
+  .chip:hover{border-color:var(--primary);color:var(--text);}
+  .chip.sel{background:var(--primary);border-color:var(--primary);color:#0B1017;}
+  .chip.other.sel{background:var(--surface3);color:var(--primary);border-color:var(--primary);}
+  .custom-wrap{margin-top:9px;display:none;}
+  .custom-wrap.on{display:flex;gap:8px;}
+  input.num, input.txt{
+    flex:1;width:100%;font-family:var(--font);font-size:16px;
+    padding:11px 13px;border:1px solid var(--border2);border-radius:11px;
+    background:var(--surface);color:var(--text);
+    font-variant-numeric:tabular-nums;
+  }
+  input.num::-webkit-outer-spin-button,input.num::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+  input.num{-moz-appearance:textfield;}
+  input:focus{outline:none;border-color:var(--primary);}
+  input::placeholder{color:var(--muted2);}
+  .unittoggle{display:flex;border:1px solid var(--border2);border-radius:11px;overflow:hidden;flex:none;}
+  .unittoggle button{border:none;background:var(--surface);color:var(--muted);font-family:var(--display);font-weight:600;font-size:13px;padding:0 15px;cursor:pointer;}
+  .unittoggle button.on{background:var(--surface3);color:var(--primary);}
 
-.calc{background:var(--card);border-radius:20px;padding:18px;margin:0 4px;box-shadow:0 2px 10px rgba(18,48,58,.05);}
-.calc .hint{font-size:12px;color:var(--mute);margin:0 0 14px;line-height:1.5;}
-.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;}
-.tab{border:1.5px solid var(--line);background:#fff;color:var(--mute);font-family:inherit;font-weight:700;font-size:13px;padding:7px 12px;border-radius:12px;cursor:pointer;}
-.tab.active{color:#fff;border-color:transparent;}
-.field{margin-bottom:14px;}
-.field label{display:block;font-size:13px;font-weight:700;color:var(--ink);margin-bottom:5px;}
-.field .desc{font-size:11px;color:var(--mute);font-weight:400;}
-.inrow{display:flex;gap:8px;}
-.calc input[type=number]{flex:1;width:100%;font-family:inherit;font-size:16px;padding:11px 12px;border:1.5px solid var(--line);border-radius:12px;background:
-#F8FAFA;color:var(--ink);-moz-appearance:textfield;}
-.calc input:focus{outline:none;border-color:var(--ink);}
-.unitsel{display:flex;border:1.5px solid var(--line);border-radius:12px;overflow:hidden;}
-.unitsel button{border:none;background:#fff;font-family:inherit;font-weight:700;font-size:13px;padding:0 14px;cursor:pointer;color:var(--mute);}
-.unitsel button.on{background:var(--ink);color:#fff;}
-.result{border-radius:16px;padding:16px;margin-top:6px;color:#fff;}
-.result .big{font-size:34px;font-weight:800;line-height:1.1;}
-.result .big small{font-size:16px;font-weight:700;opacity:.85;}
-.result .meta{margin-top:10px;font-size:13px;line-height:1.7;opacity:.95;}
-.result .meta b{font-weight:800;}
-.warnrow{font-size:12px;margin-top:8px;padding:9px 12px;border-radius:10px;background:
-#FFF4E8;color:
-#8a5a1f;display:none;}
-.foot{color:var(--mute);font-size:12px;text-align:center;padding:22px 24px 0;line-height:1.5;}
-.reset{display:block;margin:16px auto 0;background:none;border:none;color:var(--mute);font-size:12px;text-decoration:underline;cursor:pointer;font-family:inherit;}
+  /* result */
+  .result{
+    background:linear-gradient(155deg,var(--surface2),var(--surface));
+    border:1px solid var(--border2);border-radius:20px;padding:20px;margin-top:6px;
+  }
+  .res-empty{color:var(--muted);text-align:center;padding:14px 0;font-size:13.5px;}
+  .res-main{display:flex;align-items:baseline;gap:10px;}
+  .res-main .big{font-family:var(--display);font-size:52px;font-weight:700;line-height:1;color:var(--primary);font-variant-numeric:tabular-nums;}
+  .res-main .unit{font-family:var(--display);font-size:19px;font-weight:600;color:var(--muted);}
+  .res-sub{color:var(--muted);font-size:13px;margin-top:4px;}
+  .res-sub b{color:var(--text);font-family:var(--display);}
+
+  /* syringe */
+  .syringe{margin:20px 0 4px;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px;}
+  .stat{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:12px 14px;}
+  .stat .v{font-family:var(--display);font-weight:700;font-size:18px;font-variant-numeric:tabular-nums;}
+  .stat .k{color:var(--muted);font-size:11.5px;margin-top:1px;}
+  .warnrow{display:none;margin-top:14px;font-size:12.5px;padding:11px 13px;border-radius:11px;background:var(--warn-bg);color:var(--warn-tx);border:1px solid var(--warn-bd);line-height:1.5;}
+  .warnrow.danger{background:#2A1518;color:#F3969E;border-color:#5A2830;}
+
+  /* dose preview table */
+  .dosetable{margin-top:18px;border:1px solid var(--border);border-radius:14px;overflow:hidden;}
+  .dt-title{font-family:var(--display);font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted2);padding:11px 14px 9px;font-weight:600;border-bottom:1px solid var(--border);}
+  .dt-scroll{max-height:264px;overflow-y:auto;}
+  .dt{width:100%;border-collapse:collapse;}
+  .dt th{position:sticky;top:0;background:var(--surface2);color:var(--muted2);font-size:10.5px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;padding:8px 14px;text-align:left;}
+  .dt th:nth-child(2),.dt th:nth-child(3){text-align:right;}
+  .dt td{padding:10px 14px;font-size:13.5px;border-top:1px solid var(--border);font-variant-numeric:tabular-nums;font-family:var(--display);}
+  .dt td:nth-child(2),.dt td:nth-child(3){text-align:right;color:var(--muted);}
+  .dt tr.sel td{background:var(--primary-dim);color:var(--primary);font-weight:700;}
+  .dt tr.sel td:first-child::before{content:"▸ ";}
+  .dt tr.over td{color:var(--muted2);}
+  .dt tr.over td:first-child::after{content:" ⚠";color:var(--danger);font-size:11px;}
+  .act-row{display:flex;gap:8px;margin-top:16px;}
+  .act{flex:1;border:1px solid var(--border2);background:var(--surface);color:var(--muted);font-family:var(--font);font-weight:600;font-size:13px;padding:11px;border-radius:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .15s;}
+  .act:hover{border-color:var(--primary);color:var(--text);}
+  .act.copied{border-color:var(--primary);color:var(--primary);}
+
+  .disclaimer{color:var(--muted2);font-size:11.5px;text-align:center;padding:26px 20px 6px;line-height:1.6;}
+
+  /* ---------- bottom nav ---------- */
+  .nav{
+    position:fixed;left:0;right:0;bottom:0;z-index:30;
+    background:rgba(15,22,31,.9);backdrop-filter:blur(14px);
+    border-top:1px solid var(--border);
+    display:flex;padding:8px 8px calc(8px + env(safe-area-inset-bottom));
+    max-width:640px;margin:0 auto;
+  }
+  .nav button{
+    flex:1;background:none;border:none;cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;gap:3px;
+    color:var(--muted2);font-family:var(--font);font-size:11px;font-weight:600;
+    padding:7px 0;border-radius:12px;transition:color .15s;
+  }
+  .nav button svg{width:22px;height:22px;}
+  .nav button.on{color:var(--primary);}
+
+  /* eyebrow row + manage */
+  .eyebrow-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+  .eyebrow-row .eyebrow{margin:0;}
+  .manage-btn{background:none;border:1px solid var(--border2);color:var(--muted);font-family:var(--font);font-weight:600;font-size:12px;padding:6px 12px;border-radius:9px;cursor:pointer;}
+  .manage-btn.on{background:var(--primary-dim);border-color:var(--primary);color:var(--primary);}
+
+  .card .rm{display:none;position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:8px;border:1px solid var(--border2);background:var(--surface3);color:var(--danger);font-size:14px;cursor:pointer;align-items:center;justify-content:center;line-height:1;z-index:2;}
+  .managing .card{padding-right:40px;}
+  .managing .card .rm{display:flex;}
+  .managing .card .take{opacity:.35;pointer-events:none;}
+
+  .add-pep{width:100%;margin-top:4px;background:transparent;border:1.5px dashed var(--border2);color:var(--muted);font-family:var(--font);font-weight:600;font-size:14px;padding:15px;border-radius:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .15s;}
+  .add-pep:hover{border-color:var(--primary);color:var(--primary);}
+  .add-pep span{font-size:18px;line-height:1;}
+  .empty-note{color:var(--muted);text-align:center;font-size:13.5px;padding:18px 0 10px;}
+
+  /* modal */
+  .modal{position:fixed;inset:0;z-index:60;display:none;align-items:flex-end;justify-content:center;background:rgba(4,8,12,.6);backdrop-filter:blur(4px);}
+  .modal.on{display:flex;animation:fade .2s ease;}
+  .sheet{width:100%;max-width:640px;max-height:92vh;background:var(--surface);border:1px solid var(--border);border-radius:22px 22px 0 0;display:flex;flex-direction:column;animation:slideup .28s cubic-bezier(.22,1,.36,1);}
+  @keyframes slideup{from{transform:translateY(30px);}to{transform:none;}}
+  .sheet-head{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 12px;border-bottom:1px solid var(--border);}
+  .sheet-title{font-family:var(--display);font-weight:700;font-size:17px;}
+  .sheet-x{background:var(--surface3);border:none;color:var(--muted);width:30px;height:30px;border-radius:9px;font-size:14px;cursor:pointer;}
+  .sheet-body{padding:16px 20px;overflow-y:auto;}
+  .sheet-foot{display:flex;gap:10px;padding:14px 20px;padding-bottom:calc(14px + env(safe-area-inset-bottom));border-top:1px solid var(--border);}
+  .mini-lab{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted2);font-weight:600;margin:0 0 10px;font-family:var(--display);}
+  .lib-chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:20px;max-height:132px;overflow-y:auto;padding-bottom:2px;}
+  .lib-chip{border:1px solid var(--border2);background:var(--surface2);color:var(--muted);font-family:var(--font);font-weight:600;font-size:12.5px;padding:7px 11px;border-radius:20px;cursor:pointer;transition:all .15s;}
+  .lib-chip:hover{border-color:var(--primary);color:var(--text);}
+  .form .fld{margin-bottom:14px;}
+  .form .fld2{display:grid;grid-template-columns:1fr 1.3fr;gap:10px;}
+  .form label{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:6px;}
+  .segbtns{display:flex;border:1px solid var(--border2);border-radius:11px;overflow:hidden;}
+  .segbtns button{flex:1;border:none;background:var(--surface);color:var(--muted);font-family:var(--font);font-weight:600;font-size:13px;padding:10px;cursor:pointer;}
+  .segbtns button.on{background:var(--surface3);color:var(--primary);}
+  .daypick{display:flex;gap:6px;margin-top:10px;}
+  .daypick button{flex:1;border:1px solid var(--border2);background:var(--surface);color:var(--muted);font-family:var(--display);font-weight:700;font-size:13px;padding:9px 0;border-radius:9px;cursor:pointer;}
+  .daypick button.on{background:var(--primary);border-color:var(--primary);color:#0B1017;}
+  .check{display:flex;align-items:center;gap:9px;font-size:14px;color:var(--text);margin-bottom:16px;cursor:pointer;font-weight:500;}
+  .check input{width:18px;height:18px;accent-color:var(--primary);}
+  .swatches{display:flex;flex-wrap:wrap;gap:9px;}
+  .swatches button{width:30px;height:30px;border-radius:9px;border:2px solid transparent;cursor:pointer;}
+  .swatches button.on{border-color:var(--text);transform:scale(1.08);}
+  .btn-ghost{flex:1;background:var(--surface2);border:1px solid var(--border2);color:var(--muted);font-family:var(--font);font-weight:600;font-size:14px;padding:13px;border-radius:13px;cursor:pointer;}
+  .btn-primary{flex:2;background:var(--primary);border:none;color:#0B1017;font-family:var(--font);font-weight:700;font-size:14px;padding:13px;border-radius:13px;cursor:pointer;}
 </style>
-
-</head> <body> <div class="wrap"> <header> <div class="kicker">Protocolo de Peptídeos</div> <h1>Dose do dia</h1> <div class="date" id="today-label"></div> </header> <div class="accentbar"></div> <div class="section"> <h2>Hoje</h2> <div class="progress"> <div class="bar"><div class="fill" id="prog-fill"></div></div> <span id="prog-text">0 de 0</span> </div> <div id="today-cards"></div> </div> <div class="section"> <h2>Histórico da semana</h2> <div class="weekgrid"><table id="week-table"></table></div> <button class="reset" id="reset-btn">Limpar todo o histórico</button> </div> <div class="section"> <h2>Calculadora de reconstituição</h2> <div class="calc"> <p class="hint">Baseado em seringa de insulina <b>U-100</b> (100 UI = 1 ml). Informe quanto peptídeo tem no frasco e quanta água bacteriostática você adicionou — a calculadora diz quantas UI puxar para a dose desejada.</p> <div class="tabs" id="calc-tabs"></div>
-  <div class="field">
-    <label>Peptídeo no frasco <span class="desc">(veja no rótulo)</span></label>
-    <div class="inrow">
-      <input type="number" id="in-vial" inputmode="decimal" placeholder="ex.: 10" step="any" min="0">
-      <div class="unitsel" id="vial-unit">
-        <button data-u="mg" class="on">mg</button>
-        <button data-u="mcg">mcg</button>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 32 32" fill="none">
+        <rect width="32" height="32" rx="9" fill="#131B26" stroke="#26313F"/>
+        <circle cx="11" cy="16" r="4.2" fill="none" stroke="#2CC5C0" stroke-width="2"/>
+        <circle cx="21" cy="16" r="4.2" fill="none" stroke="#2FD8AC" stroke-width="2"/>
+        <path d="M13.5 16h5" stroke="#8593F7" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <div>
+        <div class="t">Protocolo<span>.</span></div>
       </div>
     </div>
+    <div class="datestrip" id="datestrip"></div>
   </div>
 
-  <div class="field">
-    <label>Água bacteriostática adicionada <span class="desc">(ml)</span></label>
-    <input type="number" id="in-water" inputmode="decimal" placeholder="ex.: 2" step="any" min="0">
-  </div>
-
-  <div class="field">
-    <label>Dose desejada por aplicação</label>
-    <div class="inrow">
-      <input type="number" id="in-dose" inputmode="decimal" step="any" min="0">
-      <div class="unitsel" id="dose-unit">
-        <button data-u="mg" class="on">mg</button>
-        <button data-u="mcg">mcg</button>
+  <!-- HOJE -->
+  <section class="view on" id="v-hoje">
+    <div class="eyebrow-row">
+      <p class="eyebrow">Doses de hoje</p>
+      <button class="manage-btn" id="manage-toggle">Gerenciar</button>
+    </div>
+    <div class="todayhead">
+      <svg class="ring" viewBox="0 0 36 36" id="ring"></svg>
+      <div class="th-txt">
+        <div class="n" id="ring-n">0 / 0</div>
+        <div class="l">peptídeos tomados</div>
       </div>
     </div>
-  </div>
+    <div id="today-cards"></div>
+    <button class="add-pep" id="add-pep-btn"><span>＋</span> Adicionar peptídeo</button>
+  </section>
 
-  <div class="result" id="calc-result">
-    <div class="big" id="res-ui">— <small>UI</small></div>
-    <div class="meta" id="res-meta"></div>
+  <!-- SEMANA -->
+  <section class="view" id="v-semana">
+    <p class="eyebrow">Histórico da semana</p>
+    <div class="panel">
+      <table id="week-table"></table>
+      <div class="legend">
+        <span><i style="background:var(--primary)"></i> Tomado</span>
+        <span><i style="background:var(--surface3)"></i> Pendente</span>
+        <span><i style="background:transparent;border:1px solid var(--muted2)"></i> Não agendado</span>
+      </div>
+    </div>
+    <button class="reset" id="reset-btn">Limpar todo o histórico</button>
+  </section>
+
+  <!-- CALCULADORA -->
+  <section class="view" id="v-calc">
+    <p class="eyebrow">Calculadora de reconstituição</p>
+
+    <div class="calc-name">
+      <input class="txt" id="c-name" placeholder="Nome do peptídeo (opcional) — ex.: Retatrutida">
+    </div>
+
+    <div class="step">
+      <div class="step-h"><div class="step-n">1</div><div class="lab">Conteúdo do frasco<small>Massa do peptídeo liofilizado</small></div></div>
+      <div class="chips" id="mass-chips"></div>
+      <div class="custom-wrap" id="mass-custom">
+        <input class="num" id="mass-in" inputmode="decimal" placeholder="Valor" step="any" min="0">
+        <div class="unittoggle" id="mass-unit">
+          <button data-u="mg" class="on">mg</button><button data-u="mcg">mcg</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-h"><div class="step-n">2</div><div class="lab">Volume de diluente<small>Água bacteriostática / estéril (mL)</small></div></div>
+      <div class="chips" id="dil-chips"></div>
+      <div class="custom-wrap" id="dil-custom">
+        <input class="num" id="dil-in" inputmode="decimal" placeholder="mL" step="any" min="0">
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-h"><div class="step-n">3</div><div class="lab">Seringa de insulina U-100<small>1 unidade = 0,01 mL</small></div></div>
+      <div class="chips" id="syr-chips"></div>
+    </div>
+
+    <div class="step">
+      <div class="step-h"><div class="step-n">4</div><div class="lab">Dose desejada<small>Quantidade por aplicação</small></div></div>
+      <div class="chips" id="dose-chips"></div>
+      <div class="custom-wrap" id="dose-custom">
+        <input class="num" id="dose-in" inputmode="decimal" placeholder="Valor" step="any" min="0">
+        <div class="unittoggle" id="dose-unit">
+          <button data-u="mg" class="on">mg</button><button data-u="mcg">mcg</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="result">
+      <div class="res-empty" id="res-empty">Preencha os campos acima para ver o resultado.</div>
+      <div id="res-body" style="display:none">
+        <div class="res-main"><span class="big" id="r-units">0</span><span class="unit">UI na seringa</span></div>
+        <div class="res-sub" id="r-vol"></div>
+        <svg class="syringe" id="syringe" viewBox="0 0 320 70"></svg>
+        <div class="grid2">
+          <div class="stat"><div class="v" id="r-conc">—</div><div class="k">Concentração</div></div>
+          <div class="stat"><div class="v" id="r-perui">—</div><div class="k">Cada 1 UI</div></div>
+          <div class="stat"><div class="v" id="r-doses">—</div><div class="k">Doses no frasco</div></div>
+          <div class="stat"><div class="v" id="r-total">—</div><div class="k">Rendimento total</div></div>
+        </div>
+        <div class="warnrow" id="c-warn"></div>
+        <div class="dosetable" id="dosetable">
+          <div class="dt-title">Volume por dose · nesta diluição</div>
+          <div class="dt-scroll"><table class="dt"><thead><tr><th>Dose</th><th>Volume</th><th>UI</th></tr></thead><tbody id="dt-body"></tbody></table></div>
+        </div>
+        <div class="act-row">
+          <button class="act" id="act-copy">Copiar</button>
+          <button class="act" id="act-reset">Resetar</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="disclaimer">
+    Referência pessoal e informativa. Os cálculos são estimativas matemáticas e os registros ficam salvos apenas neste dispositivo.<br>
+    Confirme doses, diluição e segurança com um profissional de saúde.
   </div>
-  <div class="warnrow" id="calc-warn"></div>
 </div>
-</div> <div class="foot"> Referência pessoal de dosagem. Os registros ficam salvos apenas neste dispositivo/navegador.<br> Confirme doses e segurança com um profissional de saúde. </div> </div> <script> const PEPTIDES = [ {id:"motsc", name:"MOTS-c", sub:"peptídeo mitocondrial", ui:14, dose:"5,4 mg", per:"semana", freq:"Seg · Qua · Sex", days:[1,3,5], accent:"#1F8A70", moon:false}, {id:"aod", name:"AOD-9604", sub:"fragmento de GH · composição", ui:15, dose:"500 mcg", per:"dia", freq:"Todos os dias", days:null, accent:"#D2703A", moon:false}, {id:"tesa", name:"Tesamorelina", sub:"análogo de GHRH", ui:30, dose:"2 mg", per:"dia", freq:"Antes de dormir", days:null, accent:"#4C5FB0", moon:true}, {id:"ghk", name:"GHK-Cu", sub:"peptídeo de cobre · reparo", ui:12, dose:"4 mg", per:"dia", freq:"Todos os dias", days:null, accent:"#B06B3A", moon:false}, ]; const DAY_LBL = ["D","S","T","Q","Q","S","S"]; const STORE_KEY = "peptideos-registro-v1"; let memStore = {}; function loadAll(){ try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch(e){ return memStore; } } function saveAll(data){ try { localStorage.setItem(STORE_KEY, JSON.stringify(data)); } catch(e){ memStore = data; } } function dateKey(d){ return d.toISOString().slice(0,10); } function isScheduled(p, dow){ return p.days === null || p.days.includes(dow); } const now = new Date(); const todayKey = dateKey(now); const todayDow = now.getDay(); document.getElementById("today-label").textContent = now.toLocaleDateString("pt-BR",{weekday:"long", day:"numeric", month:"long"}); function renderToday(){ const data = loadAll(); const rec = data[todayKey] || {}; const cont = document.getElementById("today-cards"); cont.innerHTML = ""; const due = PEPTIDES.filter(p => isScheduled(p, todayDow)); let takenCount = 0; due.forEach(p => { const taken = !!rec[p.id]; if(taken) takenCount++; const card = document.createElement("div"); card.className = "card"; const moon = p.moon ? ' <span class="moon">🌙</span>' : ""; card.innerHTML = ` <div class="abar" style="background:${p.accent}"></div> <div class="row"> <div class="info"> <div class="name">${p.name}${moon}</div> <div class="sub">${p.sub}</div> <div class="doseline"><b>${p.ui} UI</b> · ${p.freq}</div> <span class="pill" style="background:${p.accent}1F;color:${p.accent}">${p.dose} / ${p.per}</span> </div> <div style="text-align:center"> <button class="btn ${taken?'done':''}" style="${taken?'':'background:'+p.accent}" data-id="${p.id}"> ${taken ? '<span class="tick">✓</span> Tomado' : 'Tomei'} </button> ${taken && rec["_t_"+p.id] ? `<span class="taken-at">às ${rec["_t_"+p.id]}</span>` : ""} </div> </div>`; cont.appendChild(card); }); const total = due.length; const pct = total ? Math.round(takenCount/total*100) : 0; document.getElementById("prog-fill").style.width = pct + "%"; document.getElementById("prog-text").textContent = `${takenCount} de ${total} tomados`; cont.querySelectorAll(".btn").forEach(b => { b.addEventListener("click", () => toggle(b.dataset.id)); }); } function toggle(id){ const data = loadAll(); const rec = data[todayKey] || {}; if(rec[id]){ delete rec[id]; delete rec["_t_"+id]; } else { rec[id] = true; rec["_t_"+id] = new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}); } data[todayKey] = rec; saveAll(data); renderToday(); renderWeek(); } function startOfWeek(d){ const x = new Date(d); x.setHours(0,0,0,0); x.setDate(x.getDate() - x.getDay()); return x; } function renderWeek(){ const data = loadAll(); const start = startOfWeek(now); const days = []; for(let i=0;i<7;i++){ const d=new Date(start); d.setDate(start.getDate()+i); days.push(d); } let html = "<thead><tr><th class='pep'></th>"; days.forEach(d => { const isToday = dateKey(d)===todayKey; html += `<th class="${isToday?'today':''}">${DAY_LBL[d.getDay()]}<span class="dnum">${d.getDate()}</span></th>`; }); html += "</tr></thead><tbody>"; PEPTIDES.forEach(p => { html += `<tr><td class="pep" style="color:${p.accent}">${p.name}</td>`; days.forEach(d => { const k = dateKey(d); const dow = d.getDay(); const isToday = k===todayKey; const tdcls = isToday ? "col-today" : ""; if(!isScheduled(p,dow)){ html += `<td class="${tdcls}"><span class="cell na">–</span></td>`; } else { const rec = data[k]||{}; if(rec[p.id]){ html += `<td class="${tdcls}"><span class="cell" style="background:${p.accent}">✓</span></td>`; } else { html += `<td class="${tdcls}"><span class="cell empty"></span></td>`; } } }); html += "</tr>"; }); html += "</tbody>"; document.getElementById("week-table").innerHTML = html; } document.getElementById("reset-btn").addEventListener("click", () => { if(confirm("Apagar todo o histórico registrado?")){ saveAll({}); memStore = {}; renderToday(); renderWeek(); } }); const RECON_KEY = "peptideos-recon-v1"; const CALC_DEFAULTS = { motsc:{dose:1.8, dunit:"mg"}, aod: {dose:500, dunit:"mcg"}, tesa: {dose:2, dunit:"mg"}, ghk: {dose:4, dunit:"mg"}, }; let calcPep = PEPTIDES[0].id; function loadRecon(){ try{ return JSON.parse(localStorage.getItem(RECON_KEY)) || {}; }catch(e){ return {}; } } function saveRecon(d){ try{ localStorage.setItem(RECON_KEY, JSON.stringify(d)); }catch(e){} } function toMg(val, unit){ return unit==="mcg" ? val/1000 : val; } function buildTabs(){ const t = document.getElementById("calc-tabs"); t.innerHTML = ""; PEPTIDES.forEach(p => { const b = document.createElement("button"); b.className = "tab" + (p.id===calcPep ? " active":""); b.textContent = p.name; if(p.id===calcPep){ b.style.background = p.accent; } b.onclick = () => { calcPep = p.id; loadPepIntoForm(); buildTabs(); calc(); }; t.appendChild(b); }); } function setUnitSel(selId, unit){ document.querySelectorAll("#"+selId+" button").forEach(b=>{ b.classList.toggle("on", b.dataset.u===unit); }); } function getUnitSel(selId){ return document.querySelector("#"+selId+" button.on").dataset.u; } function loadPepIntoForm(){ const store = loadRecon(); const saved = store[calcPep] || {}; const def = CALC_DEFAULTS[calcPep] || {dose:"",dunit:"mg"}; document.getElementById("in-vial").value = saved.vial ?? ""; setUnitSel("vial-unit", saved.vunit || "mg"); document.getElementById("in-water").value = saved.water ?? ""; document.getElementById("in-dose").value = saved.dose ?? def.dose; setUnitSel("dose-unit", saved.dunit || def.dunit); } function calc(){ const p = PEPTIDES.find(x=>x.id===calcPep); const vial = parseFloat(document.getElementById("in-vial").value); const vunit = getUnitSel("vial-unit"); const water = parseFloat(document.getElementById("in-water").value); const dose = parseFloat(document.getElementById("in-dose").value); const dunit = getUnitSel("dose-unit"); const store = loadRecon(); store[calcPep] = {vial:document.getElementById("in-vial").value, vunit, water:document.getElementById("in-water").value, dose:document.getElementById("in-dose").value, dunit}; saveRecon(store); const box = document.getElementById("calc-result"); const meta = document.getElementById("res-meta"); const resUi = document.getElementById("res-ui"); const warn = document.getElementById("calc-warn"); box.style.background = p.accent; warn.style.display = "none"; if(!(vial>0) || !(water>0) || !(dose>0)){ resUi.innerHTML = '— <small>UI</small>'; meta.innerHTML = "Preencha frasco, água e dose."; return; } const vialMg = toMg(vial, vunit); const doseMg = toMg(dose, dunit); const concMgMl = vialMg / water; const mgPerUi = concMgMl / 100; const units = doseMg / mgPerUi; const eachUiMcg = mgPerUi * 1000; const dosesTotal = vialMg / doseMg; const uiStr = Number.isInteger(units) ? units : units.toFixed(1); resUi.innerHTML = `${uiStr} <small>UI</small>`; meta.innerHTML = `Concentração: <b>${concMgMl.toFixed(2).replace('.',',')} mg/ml</b><br>`+ `Cada 1 UI ≈ <b>${eachUiMcg.toFixed(0)} mcg</b><br>`+ `O frasco rende ≈ <b>${Math.floor(dosesTotal)} doses</b>`; const protoUi = p.ui; if(protoUi && Math.abs(units - protoUi) > Math.max(1, protoUi*0.1)){ warn.style.display = "block"; warn.innerHTML = `Seu protocolo indica <b>${protoUi} UI</b> para o ${p.name}. Este cálculo deu <b>${uiStr} UI</b> — confira a dose ou a diluição.`; } } ["in-vial","in-water","in-dose"].forEach(id=>{ document.getElementById(id).addEventListener("input", calc); }); document.querySelectorAll("#vial-unit button").forEach(b=>b.onclick=()=>{setUnitSel("vial-unit",b.dataset.u);calc();}); document.querySelectorAll("#dose-unit button").forEach(b=>b.onclick=()=>{setUnitSel("dose-unit",b.dataset.u);calc();}); buildTabs(); loadPepIntoForm(); calc(); renderToday(); renderWeek(); </script> </body> </html>
+
+<!-- modal adicionar peptídeo -->
+<div class="modal" id="add-modal">
+  <div class="sheet">
+    <div class="sheet-head">
+      <div class="sheet-title" id="modal-title">Adicionar peptídeo</div>
+      <button class="sheet-x" id="modal-close">✕</button>
+    </div>
+    <div class="sheet-body">
+      <p class="mini-lab">Biblioteca — toque para preencher</p>
+      <div class="lib-chips" id="lib-chips"></div>
+      <div class="form">
+        <div class="fld"><label>Nome</label><input class="txt" id="f-name" placeholder="Ex.: BPC-157"></div>
+        <div class="fld"><label>Classe / descrição</label><input class="txt" id="f-sub" placeholder="Ex.: reparo tecidual"></div>
+        <div class="fld2">
+          <div class="fld"><label>Dose (UI)</label><input class="num" id="f-ui" inputmode="decimal" placeholder="Ex.: 20"></div>
+          <div class="fld"><label>Rótulo da dose</label><input class="txt" id="f-dose" placeholder="Ex.: 250 mcg"></div>
+        </div>
+        <div class="fld"><label>Período</label>
+          <div class="segbtns" id="f-per"><button data-p="dia" class="on">Por dia</button><button data-p="semana">Por semana</button></div>
+        </div>
+        <div class="fld"><label>Frequência</label>
+          <div class="segbtns" id="f-freqmode"><button data-m="daily" class="on">Todos os dias</button><button data-m="spec">Dias específicos</button></div>
+          <div class="daypick" id="f-days" style="display:none"></div>
+        </div>
+        <label class="check"><input type="checkbox" id="f-moon"> Antes de dormir 🌙</label>
+        <div class="fld"><label>Cor</label><div class="swatches" id="f-colors"></div></div>
+      </div>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn-ghost" id="modal-cancel">Cancelar</button>
+      <button class="btn-primary" id="modal-save">Adicionar ao protocolo</button>
+    </div>
+  </div>
+</div>
+
+<!-- bottom nav -->
+<nav class="nav">
+  <button data-v="hoje" class="on">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+    Hoje
+  </button>
+  <button data-v="semana">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg>
+    Semana
+  </button>
+  <button data-v="calc">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 10h2M12 10h2M16 10h.01M8 14h2M12 14h2M16 14h.01M8 18h6"/></svg>
+    Calcular
+  </button>
+</nav>
+
+<script>
+/* =========================================================
+   PROTOCOLO
+   ========================================================= */
+const PROTO_KEY="peptideos-protocolo-v1";
+const DEFAULT_PROTOCOL = [
+  {id:"motsc", name:"MOTS-c",       sub:"peptídeo mitocondrial",        ui:14, dose:"5,4 mg", per:"semana", freq:"Seg · Qua · Sex", days:[1,3,5], accent:"#2FD8AC", moon:false},
+  {id:"aod",   name:"AOD-9604",     sub:"fragmento de GH",              ui:15, dose:"500 mcg", per:"dia",   freq:"Todos os dias",    days:null,    accent:"#F59158", moon:false},
+  {id:"tesa",  name:"Tesamorelina", sub:"análogo de GHRH",              ui:30, dose:"2 mg",    per:"dia",   freq:"Antes de dormir",  days:null,    accent:"#8593F7", moon:true},
+  {id:"ghk",   name:"GHK-Cu",       sub:"peptídeo de cobre · reparo",   ui:12, dose:"4 mg",    per:"dia",   freq:"Todos os dias",    days:null,    accent:"#D89A5C", moon:false},
+];
+function loadProtocol(){ try{ const s=JSON.parse(localStorage.getItem(PROTO_KEY)); return (s&&Array.isArray(s))?s:DEFAULT_PROTOCOL.map(x=>({...x})); }catch(e){ return DEFAULT_PROTOCOL.map(x=>({...x})); } }
+function saveProtocol(){ try{ localStorage.setItem(PROTO_KEY, JSON.stringify(PEPTIDES)); }catch(e){} }
+let PEPTIDES = loadProtocol();
+
+// Biblioteca de peptídeos para adição rápida
+const LIBRARY = [
+  {name:"BPC-157",sub:"reparo tecidual"},{name:"TB-500",sub:"recuperação"},
+  {name:"BPC + TB-500",sub:"blend reparo"},{name:"Ipamorelina",sub:"secretagogo de GH"},
+  {name:"CJC-1295",sub:"análogo de GHRH"},{name:"Sermorelina",sub:"análogo de GHRH"},
+  {name:"Tesamorelina",sub:"análogo de GHRH"},{name:"MOTS-c",sub:"peptídeo mitocondrial"},
+  {name:"AOD-9604",sub:"fragmento de GH"},{name:"GHK-Cu",sub:"peptídeo de cobre"},
+  {name:"Semaglutida",sub:"GLP-1"},{name:"Tirzepatida",sub:"GLP-1 / GIP"},
+  {name:"Retatrutida",sub:"GLP-1 / GIP / glucagon"},{name:"NAD+",sub:"energia celular"},
+  {name:"Epitalon",sub:"telômeros · sono"},{name:"Selank",sub:"ansiolítico · nootrópico"},
+  {name:"Semax",sub:"nootrópico"},{name:"PT-141",sub:"libido"},
+  {name:"Melanotan II",sub:"pigmentação"},{name:"DSIP",sub:"sono"},
+  {name:"Timosina α-1",sub:"imune"},{name:"IGF-1 LR3",sub:"anabólico"},
+  {name:"GHRP-2",sub:"secretagogo de GH"},{name:"GHRP-6",sub:"secretagogo de GH"},
+  {name:"Hexarelina",sub:"secretagogo de GH"},{name:"Kisspeptina",sub:"eixo reprodutivo"},
+  {name:"5-Amino-1MQ",sub:"metabolismo"},{name:"SS-31",sub:"mitocondrial"},
+];
+const PALETTE=["#2FD8AC","#F59158","#8593F7","#D89A5C","#2CC5C0","#E5709B","#67C15E","#E2C452","#A78BFA","#5EC8E5"];
+function nextColor(){ const used=PEPTIDES.map(p=>p.accent); return PALETTE.find(c=>!used.includes(c))||PALETTE[PEPTIDES.length%PALETTE.length]; }
+const DAY_FULL=["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
+const DAY_W = ["D","S","T","Q","Q","S","S"];
+const STORE_KEY = "peptideos-registro-v1";
+
+let memStore = {};
+const loadAll = () => { try{ return JSON.parse(localStorage.getItem(STORE_KEY))||{}; }catch(e){ return memStore; } };
+const saveAll = d => { try{ localStorage.setItem(STORE_KEY, JSON.stringify(d)); }catch(e){ memStore=d; } };
+const dateKey = d => { const x=new Date(d); x.setMinutes(x.getMinutes()-x.getTimezoneOffset()); return x.toISOString().slice(0,10); };
+const isSched = (p,dow) => p.days===null || p.days.includes(dow);
+
+const now = new Date();
+const todayKey = dateKey(now);
+const todayDow = now.getDay();
+document.getElementById("datestrip").textContent = now.toLocaleDateString("pt-BR",{weekday:"long",day:"numeric",month:"long"});
+
+function drawRing(taken,total){
+  const pct = total? taken/total : 0;
+  const r=15.9, c=2*Math.PI*r;
+  document.getElementById("ring").innerHTML = `
+    <circle cx="18" cy="18" r="${r}" fill="none" stroke="var(--surface3)" stroke-width="3.4"/>
+    <circle cx="18" cy="18" r="${r}" fill="none" stroke="var(--primary)" stroke-width="3.4"
+      stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${c*(1-pct)}"
+      transform="rotate(-90 18 18)" style="transition:stroke-dashoffset .4s ease"/>
+    <text x="18" y="19" text-anchor="middle" dominant-baseline="middle"
+      font-family="var(--display)" font-size="9" font-weight="700" fill="var(--text)">${total?Math.round(pct*100):0}%</text>`;
+}
+
+function renderToday(){
+  const data = loadAll();
+  const rec = data[todayKey]||{};
+  const cont = document.getElementById("today-cards");
+  cont.innerHTML="";
+  const due = PEPTIDES.filter(p=>isSched(p,todayDow));
+  let taken=0;
+  if(PEPTIDES.length===0){
+    cont.innerHTML='<div class="empty-note">Nenhum peptídeo no protocolo ainda.<br>Toque em "Adicionar peptídeo" para começar.</div>';
+  }
+  due.forEach(p=>{
+    const done = !!rec[p.id];
+    if(done) taken++;
+    const moon = p.moon?' 🌙':'';
+    const el=document.createElement("div");
+    el.className="card"+(done?" done":"");
+    el.style.setProperty('--acc',p.accent);
+    el.innerHTML=`
+      <button class="rm" data-id="${p.id}">✕</button>
+      <div class="info">
+        <div class="nm"><span class="dot"></span>${p.name}${moon}</div>
+        <div class="sub">${p.sub}</div>
+        <div class="meta">
+          <span class="ui">${p.ui} UI</span>
+          <span class="freq">· ${p.freq}</span>
+          <span class="chip-acc">${p.dose}/${p.per}</span>
+        </div>
+      </div>
+      <button class="take ${done?'done':''}" data-id="${p.id}">
+        <span>${done?'✓ Tomado':'Tomei'}</span>
+        ${done&&rec['_t_'+p.id]?`<span class="at">${rec['_t_'+p.id]}</span>`:''}
+      </button>`;
+    cont.appendChild(el);
+  });
+  document.getElementById("ring-n").textContent = `${taken} / ${due.length}`;
+  drawRing(taken,due.length);
+  cont.querySelectorAll(".take").forEach(b=>b.onclick=()=>toggle(b.dataset.id));
+  cont.querySelectorAll(".rm").forEach(b=>b.onclick=()=>removePep(b.dataset.id));
+}
+
+function removePep(id){
+  const p=PEPTIDES.find(x=>x.id===id); if(!p) return;
+  if(confirm(`Remover ${p.name} do protocolo?`)){
+    PEPTIDES = PEPTIDES.filter(x=>x.id!==id);
+    saveProtocol(); renderToday(); renderWeek();
+  }
+}
+
+function toggle(id){
+  const data=loadAll(); const rec=data[todayKey]||{};
+  if(rec[id]){ delete rec[id]; delete rec['_t_'+id]; }
+  else { rec[id]=true; rec['_t_'+id]=new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}); }
+  data[todayKey]=rec; saveAll(data);
+  renderToday(); renderWeek();
+}
+
+function startOfWeek(d){ const x=new Date(d); x.setHours(0,0,0,0); x.setDate(x.getDate()-x.getDay()); return x; }
+function renderWeek(){
+  const data=loadAll(); const start=startOfWeek(now); const days=[];
+  for(let i=0;i<7;i++){ const d=new Date(start); d.setDate(start.getDate()+i); days.push(d); }
+  let h="<thead><tr><th></th>";
+  days.forEach(d=>{ const t=dateKey(d)===todayKey; h+=`<th class="${t?'today':''}"><span class="dw">${DAY_W[d.getDay()]}</span><span class="dn">${d.getDate()}</span></th>`; });
+  h+="</tr></thead><tbody>";
+  PEPTIDES.forEach(p=>{
+    h+=`<tr><td class="pep" style="color:${p.accent}">${p.name}</td>`;
+    days.forEach(d=>{
+      const k=dateKey(d), dow=d.getDay(), t=k===todayKey, cls=t?"col-today":"";
+      if(!isSched(p,dow)){ h+=`<td class="${cls}"><span class="cell na">·</span></td>`; }
+      else{ const rec=data[k]||{}; h+= rec[p.id]
+        ? `<td class="${cls}"><span class="cell" style="background:${p.accent}">✓</span></td>`
+        : `<td class="${cls}"><span class="cell empty"></span></td>`; }
+    });
+    h+="</tr>";
+  });
+  h+="</tbody>";
+  document.getElementById("week-table").innerHTML=h;
+}
+document.getElementById("reset-btn").onclick=()=>{ if(confirm("Apagar todo o histórico registrado?")){ saveAll({}); memStore={}; renderToday(); renderWeek(); } };
+
+/* =========================================================
+   NAVEGAÇÃO
+   ========================================================= */
+document.querySelectorAll(".nav button").forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll(".nav button").forEach(x=>x.classList.remove("on"));
+    document.querySelectorAll(".view").forEach(x=>x.classList.remove("on"));
+    b.classList.add("on");
+    document.getElementById("v-"+b.dataset.v).classList.add("on");
+    window.scrollTo({top:0,behavior:"smooth"});
+  };
+});
+
+/* =========================================================
+   GERENCIAR / ADICIONAR PEPTÍDEO
+   ========================================================= */
+const modal=document.getElementById("add-modal");
+const F={ name:"#f-name", sub:"#f-sub", ui:"#f-ui", dose:"#f-dose" };
+let fPer="dia", fMode="daily", fDays=[], fColor=PALETTE[0], fMoon=false;
+
+document.getElementById("manage-toggle").onclick=()=>{
+  const v=document.getElementById("v-hoje");
+  v.classList.toggle("managing");
+  document.getElementById("manage-toggle").classList.toggle("on");
+};
+
+function buildLibrary(){
+  const c=document.getElementById("lib-chips");
+  c.innerHTML="";
+  LIBRARY.forEach(item=>{
+    const b=document.createElement("button");
+    b.className="lib-chip"; b.textContent=item.name;
+    b.onclick=()=>{ document.querySelector(F.name).value=item.name; document.querySelector(F.sub).value=item.sub; };
+    c.appendChild(b);
+  });
+}
+function buildDayPick(){
+  const c=document.getElementById("f-days"); c.innerHTML="";
+  ["D","S","T","Q","Q","S","S"].forEach((lbl,i)=>{
+    const b=document.createElement("button"); b.textContent=lbl; b.dataset.i=i;
+    b.onclick=()=>{ b.classList.toggle("on"); const idx=+b.dataset.i; if(fDays.includes(idx)) fDays=fDays.filter(x=>x!==idx); else fDays.push(idx); };
+    c.appendChild(b);
+  });
+}
+function buildSwatches(){
+  const c=document.getElementById("f-colors"); c.innerHTML="";
+  PALETTE.forEach(col=>{
+    const b=document.createElement("button"); b.style.background=col;
+    if(col===fColor) b.classList.add("on");
+    b.onclick=()=>{ fColor=col; c.querySelectorAll("button").forEach(x=>x.classList.remove("on")); b.classList.add("on"); };
+    c.appendChild(b);
+  });
+}
+document.querySelectorAll("#f-per button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#f-per button").forEach(x=>x.classList.remove("on"));b.classList.add("on");fPer=b.dataset.p;});
+document.querySelectorAll("#f-freqmode button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#f-freqmode button").forEach(x=>x.classList.remove("on"));b.classList.add("on");fMode=b.dataset.m;document.getElementById("f-days").style.display=fMode==="spec"?"flex":"none";});
+document.getElementById("f-moon").onchange=e=>fMoon=e.target.checked;
+
+function openModal(){
+  fPer="dia"; fMode="daily"; fDays=[]; fColor=nextColor(); fMoon=false;
+  Object.values(F).forEach(sel=>document.querySelector(sel).value="");
+  document.getElementById("f-moon").checked=false;
+  document.querySelectorAll("#f-per button").forEach(b=>b.classList.toggle("on",b.dataset.p==="dia"));
+  document.querySelectorAll("#f-freqmode button").forEach(b=>b.classList.toggle("on",b.dataset.m==="daily"));
+  document.getElementById("f-days").style.display="none";
+  buildDayPick(); buildSwatches();
+  modal.classList.add("on");
+}
+function closeModal(){ modal.classList.remove("on"); }
+document.getElementById("add-pep-btn").onclick=openModal;
+document.getElementById("modal-close").onclick=closeModal;
+document.getElementById("modal-cancel").onclick=closeModal;
+modal.onclick=e=>{ if(e.target===modal) closeModal(); };
+
+document.getElementById("modal-save").onclick=()=>{
+  const name=document.querySelector(F.name).value.trim();
+  const sub=document.querySelector(F.sub).value.trim();
+  const ui=parseFloat(document.querySelector(F.ui).value);
+  const dose=document.querySelector(F.dose).value.trim();
+  if(!name){ alert("Dê um nome ao peptídeo."); return; }
+  if(!(ui>0)){ alert("Informe a dose em UI."); return; }
+  let days=null, freq="Todos os dias";
+  if(fMode==="spec"){
+    if(fDays.length===0){ alert("Selecione ao menos um dia."); return; }
+    days=[...fDays].sort((a,b)=>a-b);
+    freq=days.map(i=>DAY_FULL[i]).join(" · ");
+  } else if(fMoon){ freq="Antes de dormir"; }
+  const id=name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'')+"-"+Date.now().toString(36);
+  PEPTIDES.push({id,name,sub:sub||"peptídeo",ui,dose:dose||"—",per:fPer,freq,days,accent:fColor,moon:fMoon});
+  saveProtocol(); renderToday(); renderWeek(); closeModal();
+  document.querySelector("button[data-v='hoje']").click();
+};
+buildLibrary();
+
+/* =========================================================
+   CALCULADORA UNIVERSAL
+   ========================================================= */
+const CALC_KEY="peptideos-calc-v2";
+const state = { mass:null, massUnit:"mg", dil:null, syr:100, dose:null, doseUnit:"mg", name:"" };
+
+const MASS_OPTS=[2,5,10,15,20,30,50,60,70,80,90,100,120];
+const DIL_OPTS=[0.5,1,1.5,2,2.5,3,5];
+const SYR_OPTS=[{v:30,l:"0,3 mL",u:"30 UI"},{v:50,l:"0,5 mL",u:"50 UI"},{v:100,l:"1 mL",u:"100 UI"}];
+const DOSE_OPTS=[0.25,0.5,0.75,1,1.25,1.5,1.7,2,2.25,2.4,2.5,3,3.5,4,4.5,5,6,7.5,10,12.5,15,17.5,20,25,30];
+
+const fmt = n => { if(!isFinite(n)) return "—"; const s=(Math.round(n*100)/100).toString(); return s.replace('.',','); };
+
+function buildChips(){
+  const mc=document.getElementById("mass-chips");
+  MASS_OPTS.forEach(v=>mc.appendChild(chip(v+" mg",()=>{state.mass=v;state.massUnit="mg";hideCustom("mass");mark(mc,v+" mg");calc();})));
+  mc.appendChild(otherChip("mass"));
+
+  const dc=document.getElementById("dil-chips");
+  DIL_OPTS.forEach(v=>dc.appendChild(chip(fmt(v)+" mL",()=>{state.dil=v;hideCustom("dil");mark(dc,fmt(v)+" mL");calc();})));
+  dc.appendChild(otherChip("dil"));
+
+  const sc=document.getElementById("syr-chips");
+  SYR_OPTS.forEach(o=>{ const c=chip(o.l+" · "+o.u,()=>{state.syr=o.v;mark(sc,o.l+" · "+o.u);calc();}); if(o.v===100)c.classList.add("sel"); sc.appendChild(c); });
+
+  const dsc=document.getElementById("dose-chips");
+  DOSE_OPTS.forEach(v=>dsc.appendChild(chip(fmt(v)+" mg",()=>{state.dose=v;state.doseUnit="mg";hideCustom("dose");mark(dsc,fmt(v)+" mg");calc();})));
+  dsc.appendChild(otherChip("dose"));
+}
+function chip(txt,fn){ const b=document.createElement("button"); b.className="chip"; b.textContent=txt; b.onclick=fn; return b; }
+function otherChip(kind){ const b=document.createElement("button"); b.className="chip other"; b.textContent="Outro"; b.onclick=()=>{ document.querySelectorAll("#"+kind+"-chips .chip").forEach(x=>x.classList.remove("sel")); b.classList.add("sel"); document.getElementById(kind+"-custom").classList.add("on"); document.getElementById(kind+"-in")?.focus(); readCustom(kind); }; return b; }
+function mark(container,txt){ container.querySelectorAll(".chip").forEach(x=>x.classList.toggle("sel", x.textContent===txt)); }
+function hideCustom(kind){ document.getElementById(kind+"-custom").classList.remove("on"); }
+
+function readCustom(kind){
+  if(kind==="mass"){ state.mass=parseFloat(document.getElementById("mass-in").value)||null; }
+  if(kind==="dil"){ state.dil=parseFloat(document.getElementById("dil-in").value)||null; }
+  if(kind==="dose"){ state.dose=parseFloat(document.getElementById("dose-in").value)||null; }
+  calc();
+}
+["mass","dil","dose"].forEach(k=>{ const i=document.getElementById(k+"-in"); if(i) i.addEventListener("input",()=>readCustom(k)); });
+document.querySelectorAll("#mass-unit button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#mass-unit button").forEach(x=>x.classList.remove("on"));b.classList.add("on");state.massUnit=b.dataset.u;calc();});
+document.querySelectorAll("#dose-unit button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#dose-unit button").forEach(x=>x.classList.remove("on"));b.classList.add("on");state.doseUnit=b.dataset.u;calc();});
+document.getElementById("c-name").addEventListener("input",e=>{state.name=e.target.value;save();});
+
+const toMg=(v,u)=>u==="mcg"?v/1000:v;
+
+function drawSyringe(units,cap){
+  const bx=42, bw=210, by=20, bh=26;           // barrel
+  const frac=Math.max(0,Math.min(1,units/cap));
+  const fillW=bw*frac;
+  let ticks="";
+  const stepU = cap<=30?5:10;
+  for(let u=0; u<=cap; u+=stepU){
+    const x=bx+bw*(u/cap);
+    ticks+=`<line x1="${x}" y1="${by}" x2="${x}" y2="${by+6}" stroke="#3A4859" stroke-width="1"/>`;
+    ticks+=`<text x="${x}" y="${by-4}" text-anchor="middle" font-family="var(--display)" font-size="7" fill="#5D6B7A">${u}</text>`;
+  }
+  const over=units>cap;
+  document.getElementById("syringe").innerHTML=`
+    <rect x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="3" fill="#0E151E" stroke="#324152" stroke-width="1.5"/>
+    <rect x="${bx}" y="${by}" width="${fillW}" height="${bh}" rx="3" fill="${over?'var(--danger)':'var(--primary)'}" opacity="0.9"/>
+    ${ticks}
+    <rect x="${bx-14}" y="${by-3}" width="14" height="${bh+6}" rx="2" fill="#1A2532" stroke="#324152"/>
+    <line x1="${bx+bw}" y1="${by+bh/2}" x2="${bx+bw+34}" y2="${by+bh/2}" stroke="#324152" stroke-width="2"/>
+    <rect x="${bx+bw+34}" y="${by+bh/2-1.2}" width="26" height="2.4" fill="#4A5A6D"/>
+    <text x="${bx+bw/2}" y="${by+bh+16}" text-anchor="middle" font-family="var(--display)" font-size="8.5" fill="#8A97A6">seringa ${cap} UI</text>`;
+}
+
+function buildDoseTable(mgPerUi,selMg){
+  const body=document.getElementById("dt-body");
+  const fmtVol = ml => (Math.round(ml*1000)/1000).toString().replace('.',',');
+  let rows="";
+  DOSE_OPTS.forEach(dMg=>{
+    const u=dMg/mgPerUi;
+    const vol=u*0.01;
+    const sel = Math.abs(dMg-selMg)<0.0005;
+    const over = u>state.syr;
+    const cls = (sel?"sel ":"")+(over?"over":"");
+    rows+=`<tr class="${cls.trim()}"><td>${fmt(dMg)} mg</td><td>${fmtVol(vol)} mL</td><td>${fmt(u)}</td></tr>`;
+  });
+  body.innerHTML=rows;
+  const s=body.querySelector("tr.sel");
+  if(s) s.scrollIntoView({block:"center"});
+}
+
+function calc(){
+  const ready = state.mass>0 && state.dil>0 && state.dose>0;
+  document.getElementById("res-empty").style.display = ready?"none":"block";
+  document.getElementById("res-body").style.display = ready?"block":"none";
+  save();
+  if(!ready) return;
+
+  const massMg=toMg(state.mass,state.massUnit);
+  const doseMg=toMg(state.dose,state.doseUnit);
+  const conc=massMg/state.dil;          // mg/mL
+  const mgPerUi=conc/100;               // U-100
+  const units=doseMg/mgPerUi;
+  const volMl=units*0.01;
+  const perUiMcg=mgPerUi*1000;
+  const doses=massMg/doseMg;
+
+  document.getElementById("r-units").textContent=fmt(units);
+  document.getElementById("r-vol").innerHTML=`equivale a <b>${fmt(volMl)} mL</b> puxados`;
+  document.getElementById("r-conc").textContent=fmt(conc)+" mg/mL";
+  document.getElementById("r-perui").textContent=(perUiMcg>=1000?fmt(perUiMcg/1000)+" mg":Math.round(perUiMcg)+" mcg");
+  document.getElementById("r-doses").textContent=Math.floor(doses)+" doses";
+  document.getElementById("r-total").textContent=fmt(massMg)+" mg";
+
+  drawSyringe(units,state.syr);
+  buildDoseTable(mgPerUi,doseMg);
+
+  const warn=document.getElementById("c-warn");
+  if(units>state.syr){
+    warn.className="warnrow danger"; warn.style.display="block";
+    warn.innerHTML=`⚠️ A dose exige <b>${fmt(units)} UI</b>, mais que a capacidade da seringa (${state.syr} UI). Use uma seringa maior, aumente o diluente, ou divida a aplicação.`;
+  } else if(units<2){
+    warn.className="warnrow"; warn.style.display="block";
+    warn.innerHTML=`Volume muito pequeno (${fmt(units)} UI) — difícil de medir com precisão. Considere usar menos diluente para concentrar menos... ou mais diluente para facilitar a leitura.`;
+  } else { warn.style.display="none"; }
+}
+
+/* copiar / resetar */
+document.getElementById("act-copy").onclick=()=>{
+  const nm=state.name?state.name+" — ":"";
+  const txt=`${nm}${fmt(state.mass)} ${state.massUnit} em ${fmt(state.dil)} mL · dose ${fmt(state.dose)} ${state.doseUnit} → puxar ${document.getElementById("r-units").textContent} UI (${document.getElementById("r-vol").textContent.replace(/<[^>]+>/g,'')}) · seringa ${state.syr} UI`;
+  navigator.clipboard?.writeText(txt).then(()=>{ const b=document.getElementById("act-copy"); b.textContent="Copiado ✓"; b.classList.add("copied"); setTimeout(()=>{b.textContent="Copiar";b.classList.remove("copied");},1600); });
+};
+document.getElementById("act-reset").onclick=()=>{
+  state.mass=null;state.dil=null;state.dose=null;state.name="";state.massUnit="mg";state.doseUnit="mg";state.syr=100;
+  document.getElementById("c-name").value="";
+  document.querySelectorAll("#v-calc .chip").forEach(c=>c.classList.remove("sel"));
+  document.querySelectorAll("#v-calc .custom-wrap").forEach(c=>c.classList.remove("on"));
+  document.querySelectorAll("#v-calc input.num").forEach(i=>i.value="");
+  document.querySelectorAll("#syr-chips .chip").forEach(c=>{ if(c.textContent.includes("100 UI")) c.classList.add("sel"); });
+  ["mass-unit","dose-unit"].forEach(id=>document.querySelectorAll("#"+id+" button").forEach(b=>b.classList.toggle("on",b.dataset.u==="mg")));
+  calc();
+};
+
+function save(){ try{ localStorage.setItem(CALC_KEY,JSON.stringify(state)); }catch(e){} }
+function restore(){
+  try{ const s=JSON.parse(localStorage.getItem(CALC_KEY)); if(s){ Object.assign(state,s);
+    if(state.name){ document.getElementById("c-name").value=state.name; }
+    if(state.mass){ const t=state.mass+" mg"; mark(document.getElementById("mass-chips"),t); if(!MASS_OPTS.includes(state.mass)||state.massUnit!=="mg"){ document.querySelector("#mass-chips .other").classList.add("sel"); document.getElementById("mass-custom").classList.add("on"); document.getElementById("mass-in").value=state.mass; document.querySelectorAll("#mass-unit button").forEach(b=>b.classList.toggle("on",b.dataset.u===state.massUnit)); } }
+    if(state.dil){ mark(document.getElementById("dil-chips"),fmt(state.dil)+" mL"); if(!DIL_OPTS.includes(state.dil)){ document.querySelector("#dil-chips .other").classList.add("sel"); document.getElementById("dil-custom").classList.add("on"); document.getElementById("dil-in").value=state.dil; } }
+    document.querySelectorAll("#syr-chips .chip").forEach(c=>c.classList.remove("sel"));
+    const so=SYR_OPTS.find(o=>o.v===state.syr)||SYR_OPTS[2]; mark(document.getElementById("syr-chips"),so.l+" · "+so.u);
+    if(state.dose){ mark(document.getElementById("dose-chips"),fmt(state.dose)+" mg"); if(!DOSE_OPTS.includes(state.dose)||state.doseUnit!=="mg"){ document.querySelector("#dose-chips .other").classList.add("sel"); document.getElementById("dose-custom").classList.add("on"); document.getElementById("dose-in").value=state.dose; document.querySelectorAll("#dose-unit button").forEach(b=>b.classList.toggle("on",b.dataset.u===state.doseUnit)); } }
+  } }catch(e){}
+}
+
+buildChips();
+restore();
+calc();
+renderToday();
+renderWeek();
+</script>
+</body>
+</html>
