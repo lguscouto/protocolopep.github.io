@@ -1,0 +1,135 @@
+Selecione tudo abaixo e cole na área de texto do GitHub:
+
+<!DOCTYPE html> <html lang="pt-BR"> <head> <meta charset="UTF-8"> <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"> <meta name="theme-color" content="#12303A"> <title>Protocolo de Peptídeos</title> <style> :root{ --ink:#12303A; --bg:#EEF2F3; --card:#FFFFFF; --mute:#5B7078; --line:#DCE4E6; } *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;} html,body{margin:0;padding:0;} body{ font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; background:var(--bg); color:var(--ink); padding-bottom:40px; } .wrap{max-width:620px;margin:0 auto;}
+
+header{
+background:var(--ink); color:#fff; padding:34px 24px 22px;
+padding-top:calc(34px + env(safe-area-inset-top));
+border-radius:0 0 26px 26px;
+}
+header .kicker{color:
+#7FB8AB;font-size:13px;letter-spacing:4px;font-weight:700;text-transform:uppercase;}
+header h1{margin:6px 0 4px;font-size:30px;font-weight:800;}
+header .date{color:
+#9FB6BC;font-size:15px;text-transform:capitalize;}
+.accentbar{height:6px;background:linear-gradient(90deg,
+#1F8A70 0%,
+#D2703A 40%,
+#4C5FB0 70%,
+#B06B3A 100%);}
+
+.section{padding:20px 18px 4px;}
+.section h2{font-size:14px;letter-spacing:2px;text-transform:uppercase;color:var(--mute);margin:0 0 12px 4px;font-weight:700;}
+
+.progress{
+display:flex;align-items:center;gap:12px;margin:0 4px 16px;
+color:var(--mute);font-size:14px;
+}
+.progress .bar{flex:1;height:8px;background:var(--line);border-radius:5px;overflow:hidden;}
+.progress .fill{height:100%;width:0;background:
+#1F8A70;border-radius:5px;transition:width .3s ease;}
+
+.card{
+background:var(--card);border-radius:20px;padding:16px 16px 16px 20px;
+margin:0 4px 14px;position:relative;overflow:hidden;
+box-shadow:0 2px 10px rgba(18,48,58,.05);
+}
+.card .abar{position:absolute;left:0;top:0;bottom:0;width:8px;border-radius:8px;}
+.row{display:flex;align-items:center;gap:14px;}
+.info{flex:1;min-width:0;}
+.name{font-size:22px;font-weight:800;}
+.name .moon{font-size:16px;opacity:.85;}
+.sub{color:var(--mute);font-size:13px;margin-top:2px;}
+.doseline{margin-top:8px;font-size:14px;color:var(--ink);}
+.doseline b{font-size:16px;}
+.pill{display:inline-block;font-size:12px;font-weight:700;padding:3px 10px;border-radius:20px;margin-top:8px;}
+
+.btn{
+border:none;cursor:pointer;font-family:inherit;font-weight:800;font-size:15px;
+padding:13px 18px;border-radius:14px;white-space:nowrap;transition:transform .06s ease, background .2s;
+color:#fff;
+}
+.btn:active{transform:scale(.96);}
+.btn.done{background:
+#EAF3F0 !important;color:
+#1F8A70;border:1.5px solid 
+#1F8A70;}
+.btn.done .tick{font-weight:900;}
+.taken-at{display:block;font-size:11px;font-weight:600;color:var(--mute);margin-top:3px;text-align:center;}
+
+.weekgrid{margin:0 4px;background:var(--card);border-radius:20px;padding:16px 12px;box-shadow:0 2px 10px rgba(18,48,58,.05);}
+table{width:100%;border-collapse:collapse;}
+th,td{text-align:center;padding:8px 2px;font-size:13px;}
+th.pep{text-align:left;width:96px;font-size:12px;color:var(--mute);padding-left:6px;}
+thead th{color:var(--mute);font-weight:700;font-size:12px;}
+thead th.today{color:var(--ink);}
+thead th .dnum{display:block;font-size:11px;font-weight:400;margin-top:1px;}
+td.pep{text-align:left;font-weight:700;font-size:13px;padding-left:6px;}
+.cell{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;font-size:13px;font-weight:800;color:#fff;}
+.cell.empty{border:2px solid var(--line);color:transparent;width:22px;height:22px;}
+.cell.na{color:var(--line);font-weight:400;}
+td.col-today{background:
+#F3F7F7;}
+
+.calc{background:var(--card);border-radius:20px;padding:18px;margin:0 4px;box-shadow:0 2px 10px rgba(18,48,58,.05);}
+.calc .hint{font-size:12px;color:var(--mute);margin:0 0 14px;line-height:1.5;}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;}
+.tab{border:1.5px solid var(--line);background:#fff;color:var(--mute);font-family:inherit;font-weight:700;font-size:13px;padding:7px 12px;border-radius:12px;cursor:pointer;}
+.tab.active{color:#fff;border-color:transparent;}
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:13px;font-weight:700;color:var(--ink);margin-bottom:5px;}
+.field .desc{font-size:11px;color:var(--mute);font-weight:400;}
+.inrow{display:flex;gap:8px;}
+.calc input[type=number]{flex:1;width:100%;font-family:inherit;font-size:16px;padding:11px 12px;border:1.5px solid var(--line);border-radius:12px;background:
+#F8FAFA;color:var(--ink);-moz-appearance:textfield;}
+.calc input:focus{outline:none;border-color:var(--ink);}
+.unitsel{display:flex;border:1.5px solid var(--line);border-radius:12px;overflow:hidden;}
+.unitsel button{border:none;background:#fff;font-family:inherit;font-weight:700;font-size:13px;padding:0 14px;cursor:pointer;color:var(--mute);}
+.unitsel button.on{background:var(--ink);color:#fff;}
+.result{border-radius:16px;padding:16px;margin-top:6px;color:#fff;}
+.result .big{font-size:34px;font-weight:800;line-height:1.1;}
+.result .big small{font-size:16px;font-weight:700;opacity:.85;}
+.result .meta{margin-top:10px;font-size:13px;line-height:1.7;opacity:.95;}
+.result .meta b{font-weight:800;}
+.warnrow{font-size:12px;margin-top:8px;padding:9px 12px;border-radius:10px;background:
+#FFF4E8;color:
+#8a5a1f;display:none;}
+.foot{color:var(--mute);font-size:12px;text-align:center;padding:22px 24px 0;line-height:1.5;}
+.reset{display:block;margin:16px auto 0;background:none;border:none;color:var(--mute);font-size:12px;text-decoration:underline;cursor:pointer;font-family:inherit;}
+</style>
+
+</head> <body> <div class="wrap"> <header> <div class="kicker">Protocolo de Peptídeos</div> <h1>Dose do dia</h1> <div class="date" id="today-label"></div> </header> <div class="accentbar"></div> <div class="section"> <h2>Hoje</h2> <div class="progress"> <div class="bar"><div class="fill" id="prog-fill"></div></div> <span id="prog-text">0 de 0</span> </div> <div id="today-cards"></div> </div> <div class="section"> <h2>Histórico da semana</h2> <div class="weekgrid"><table id="week-table"></table></div> <button class="reset" id="reset-btn">Limpar todo o histórico</button> </div> <div class="section"> <h2>Calculadora de reconstituição</h2> <div class="calc"> <p class="hint">Baseado em seringa de insulina <b>U-100</b> (100 UI = 1 ml). Informe quanto peptídeo tem no frasco e quanta água bacteriostática você adicionou — a calculadora diz quantas UI puxar para a dose desejada.</p> <div class="tabs" id="calc-tabs"></div>
+  <div class="field">
+    <label>Peptídeo no frasco <span class="desc">(veja no rótulo)</span></label>
+    <div class="inrow">
+      <input type="number" id="in-vial" inputmode="decimal" placeholder="ex.: 10" step="any" min="0">
+      <div class="unitsel" id="vial-unit">
+        <button data-u="mg" class="on">mg</button>
+        <button data-u="mcg">mcg</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>Água bacteriostática adicionada <span class="desc">(ml)</span></label>
+    <input type="number" id="in-water" inputmode="decimal" placeholder="ex.: 2" step="any" min="0">
+  </div>
+
+  <div class="field">
+    <label>Dose desejada por aplicação</label>
+    <div class="inrow">
+      <input type="number" id="in-dose" inputmode="decimal" step="any" min="0">
+      <div class="unitsel" id="dose-unit">
+        <button data-u="mg" class="on">mg</button>
+        <button data-u="mcg">mcg</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="result" id="calc-result">
+    <div class="big" id="res-ui">— <small>UI</small></div>
+    <div class="meta" id="res-meta"></div>
+  </div>
+  <div class="warnrow" id="calc-warn"></div>
+</div>
+</div> <div class="foot"> Referência pessoal de dosagem. Os registros ficam salvos apenas neste dispositivo/navegador.<br> Confirme doses e segurança com um profissional de saúde. </div> </div> <script> const PEPTIDES = [ {id:"motsc", name:"MOTS-c", sub:"peptídeo mitocondrial", ui:14, dose:"5,4 mg", per:"semana", freq:"Seg · Qua · Sex", days:[1,3,5], accent:"#1F8A70", moon:false}, {id:"aod", name:"AOD-9604", sub:"fragmento de GH · composição", ui:15, dose:"500 mcg", per:"dia", freq:"Todos os dias", days:null, accent:"#D2703A", moon:false}, {id:"tesa", name:"Tesamorelina", sub:"análogo de GHRH", ui:30, dose:"2 mg", per:"dia", freq:"Antes de dormir", days:null, accent:"#4C5FB0", moon:true}, {id:"ghk", name:"GHK-Cu", sub:"peptídeo de cobre · reparo", ui:12, dose:"4 mg", per:"dia", freq:"Todos os dias", days:null, accent:"#B06B3A", moon:false}, ]; const DAY_LBL = ["D","S","T","Q","Q","S","S"]; const STORE_KEY = "peptideos-registro-v1"; let memStore = {}; function loadAll(){ try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch(e){ return memStore; } } function saveAll(data){ try { localStorage.setItem(STORE_KEY, JSON.stringify(data)); } catch(e){ memStore = data; } } function dateKey(d){ return d.toISOString().slice(0,10); } function isScheduled(p, dow){ return p.days === null || p.days.includes(dow); } const now = new Date(); const todayKey = dateKey(now); const todayDow = now.getDay(); document.getElementById("today-label").textContent = now.toLocaleDateString("pt-BR",{weekday:"long", day:"numeric", month:"long"}); function renderToday(){ const data = loadAll(); const rec = data[todayKey] || {}; const cont = document.getElementById("today-cards"); cont.innerHTML = ""; const due = PEPTIDES.filter(p => isScheduled(p, todayDow)); let takenCount = 0; due.forEach(p => { const taken = !!rec[p.id]; if(taken) takenCount++; const card = document.createElement("div"); card.className = "card"; const moon = p.moon ? ' <span class="moon">🌙</span>' : ""; card.innerHTML = ` <div class="abar" style="background:${p.accent}"></div> <div class="row"> <div class="info"> <div class="name">${p.name}${moon}</div> <div class="sub">${p.sub}</div> <div class="doseline"><b>${p.ui} UI</b> · ${p.freq}</div> <span class="pill" style="background:${p.accent}1F;color:${p.accent}">${p.dose} / ${p.per}</span> </div> <div style="text-align:center"> <button class="btn ${taken?'done':''}" style="${taken?'':'background:'+p.accent}" data-id="${p.id}"> ${taken ? '<span class="tick">✓</span> Tomado' : 'Tomei'} </button> ${taken && rec["_t_"+p.id] ? `<span class="taken-at">às ${rec["_t_"+p.id]}</span>` : ""} </div> </div>`; cont.appendChild(card); }); const total = due.length; const pct = total ? Math.round(takenCount/total*100) : 0; document.getElementById("prog-fill").style.width = pct + "%"; document.getElementById("prog-text").textContent = `${takenCount} de ${total} tomados`; cont.querySelectorAll(".btn").forEach(b => { b.addEventListener("click", () => toggle(b.dataset.id)); }); } function toggle(id){ const data = loadAll(); const rec = data[todayKey] || {}; if(rec[id]){ delete rec[id]; delete rec["_t_"+id]; } else { rec[id] = true; rec["_t_"+id] = new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}); } data[todayKey] = rec; saveAll(data); renderToday(); renderWeek(); } function startOfWeek(d){ const x = new Date(d); x.setHours(0,0,0,0); x.setDate(x.getDate() - x.getDay()); return x; } function renderWeek(){ const data = loadAll(); const start = startOfWeek(now); const days = []; for(let i=0;i<7;i++){ const d=new Date(start); d.setDate(start.getDate()+i); days.push(d); } let html = "<thead><tr><th class='pep'></th>"; days.forEach(d => { const isToday = dateKey(d)===todayKey; html += `<th class="${isToday?'today':''}">${DAY_LBL[d.getDay()]}<span class="dnum">${d.getDate()}</span></th>`; }); html += "</tr></thead><tbody>"; PEPTIDES.forEach(p => { html += `<tr><td class="pep" style="color:${p.accent}">${p.name}</td>`; days.forEach(d => { const k = dateKey(d); const dow = d.getDay(); const isToday = k===todayKey; const tdcls = isToday ? "col-today" : ""; if(!isScheduled(p,dow)){ html += `<td class="${tdcls}"><span class="cell na">–</span></td>`; } else { const rec = data[k]||{}; if(rec[p.id]){ html += `<td class="${tdcls}"><span class="cell" style="background:${p.accent}">✓</span></td>`; } else { html += `<td class="${tdcls}"><span class="cell empty"></span></td>`; } } }); html += "</tr>"; }); html += "</tbody>"; document.getElementById("week-table").innerHTML = html; } document.getElementById("reset-btn").addEventListener("click", () => { if(confirm("Apagar todo o histórico registrado?")){ saveAll({}); memStore = {}; renderToday(); renderWeek(); } }); const RECON_KEY = "peptideos-recon-v1"; const CALC_DEFAULTS = { motsc:{dose:1.8, dunit:"mg"}, aod: {dose:500, dunit:"mcg"}, tesa: {dose:2, dunit:"mg"}, ghk: {dose:4, dunit:"mg"}, }; let calcPep = PEPTIDES[0].id; function loadRecon(){ try{ return JSON.parse(localStorage.getItem(RECON_KEY)) || {}; }catch(e){ return {}; } } function saveRecon(d){ try{ localStorage.setItem(RECON_KEY, JSON.stringify(d)); }catch(e){} } function toMg(val, unit){ return unit==="mcg" ? val/1000 : val; } function buildTabs(){ const t = document.getElementById("calc-tabs"); t.innerHTML = ""; PEPTIDES.forEach(p => { const b = document.createElement("button"); b.className = "tab" + (p.id===calcPep ? " active":""); b.textContent = p.name; if(p.id===calcPep){ b.style.background = p.accent; } b.onclick = () => { calcPep = p.id; loadPepIntoForm(); buildTabs(); calc(); }; t.appendChild(b); }); } function setUnitSel(selId, unit){ document.querySelectorAll("#"+selId+" button").forEach(b=>{ b.classList.toggle("on", b.dataset.u===unit); }); } function getUnitSel(selId){ return document.querySelector("#"+selId+" button.on").dataset.u; } function loadPepIntoForm(){ const store = loadRecon(); const saved = store[calcPep] || {}; const def = CALC_DEFAULTS[calcPep] || {dose:"",dunit:"mg"}; document.getElementById("in-vial").value = saved.vial ?? ""; setUnitSel("vial-unit", saved.vunit || "mg"); document.getElementById("in-water").value = saved.water ?? ""; document.getElementById("in-dose").value = saved.dose ?? def.dose; setUnitSel("dose-unit", saved.dunit || def.dunit); } function calc(){ const p = PEPTIDES.find(x=>x.id===calcPep); const vial = parseFloat(document.getElementById("in-vial").value); const vunit = getUnitSel("vial-unit"); const water = parseFloat(document.getElementById("in-water").value); const dose = parseFloat(document.getElementById("in-dose").value); const dunit = getUnitSel("dose-unit"); const store = loadRecon(); store[calcPep] = {vial:document.getElementById("in-vial").value, vunit, water:document.getElementById("in-water").value, dose:document.getElementById("in-dose").value, dunit}; saveRecon(store); const box = document.getElementById("calc-result"); const meta = document.getElementById("res-meta"); const resUi = document.getElementById("res-ui"); const warn = document.getElementById("calc-warn"); box.style.background = p.accent; warn.style.display = "none"; if(!(vial>0) || !(water>0) || !(dose>0)){ resUi.innerHTML = '— <small>UI</small>'; meta.innerHTML = "Preencha frasco, água e dose."; return; } const vialMg = toMg(vial, vunit); const doseMg = toMg(dose, dunit); const concMgMl = vialMg / water; const mgPerUi = concMgMl / 100; const units = doseMg / mgPerUi; const eachUiMcg = mgPerUi * 1000; const dosesTotal = vialMg / doseMg; const uiStr = Number.isInteger(units) ? units : units.toFixed(1); resUi.innerHTML = `${uiStr} <small>UI</small>`; meta.innerHTML = `Concentração: <b>${concMgMl.toFixed(2).replace('.',',')} mg/ml</b><br>`+ `Cada 1 UI ≈ <b>${eachUiMcg.toFixed(0)} mcg</b><br>`+ `O frasco rende ≈ <b>${Math.floor(dosesTotal)} doses</b>`; const protoUi = p.ui; if(protoUi && Math.abs(units - protoUi) > Math.max(1, protoUi*0.1)){ warn.style.display = "block"; warn.innerHTML = `Seu protocolo indica <b>${protoUi} UI</b> para o ${p.name}. Este cálculo deu <b>${uiStr} UI</b> — confira a dose ou a diluição.`; } } ["in-vial","in-water","in-dose"].forEach(id=>{ document.getElementById(id).addEventListener("input", calc); }); document.querySelectorAll("#vial-unit button").forEach(b=>b.onclick=()=>{setUnitSel("vial-unit",b.dataset.u);calc();}); document.querySelectorAll("#dose-unit button").forEach(b=>b.onclick=()=>{setUnitSel("dose-unit",b.dataset.u);calc();}); buildTabs(); loadPepIntoForm(); calc(); renderToday(); renderWeek(); </script> </body> </html>
