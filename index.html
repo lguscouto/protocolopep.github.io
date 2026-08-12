@@ -181,6 +181,31 @@
 
   .disclaimer{color:var(--muted2);font-size:11.5px;text-align:center;padding:26px 20px 6px;line-height:1.6;}
 
+  /* IA view */
+  .ia-hero{background:linear-gradient(160deg,var(--surface2),var(--surface));border:1px solid var(--border2);border-radius:22px;padding:26px 22px;text-align:center;}
+  .ia-icon{width:60px;height:60px;margin:0 auto 14px;border-radius:16px;background:var(--primary-dim);color:var(--primary);display:flex;align-items:center;justify-content:center;}
+  .ia-icon svg{width:32px;height:32px;}
+  .ia-title{font-family:var(--display);font-weight:700;font-size:21px;margin-bottom:8px;}
+  .ia-desc{color:var(--muted);font-size:13.5px;line-height:1.6;max-width:400px;margin:0 auto 20px;}
+  .ia-btn{display:flex;align-items:center;gap:14px;justify-content:center;text-align:left;width:100%;
+    background:linear-gradient(120deg,#2CC5C0,#2FD8AC);color:#07211F;text-decoration:none;
+    font-family:var(--font);padding:17px 22px;border-radius:16px;
+    box-shadow:0 10px 30px -8px rgba(44,197,192,.55);transition:transform .08s, box-shadow .2s;
+    animation:pulseGlow 2.6s ease-in-out infinite;}
+  .ia-btn:active{transform:scale(.97);}
+  @keyframes pulseGlow{0%,100%{box-shadow:0 10px 30px -8px rgba(44,197,192,.45);}50%{box-shadow:0 12px 40px -6px rgba(47,216,172,.75);}}
+  .ia-btn-ic{width:30px;height:30px;flex:none;}
+  .ia-btn-tx{display:flex;flex-direction:column;line-height:1.25;}
+  .ia-btn-tx b{font-family:var(--display);font-weight:700;font-size:16.5px;}
+  .ia-btn-tx small{font-weight:600;font-size:12.5px;opacity:.8;}
+  .ia-note{color:var(--muted2);font-size:11.5px;margin-top:12px;}
+  .ia-topics{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:18px 20px;margin-top:16px;}
+  .ia-topics-h{font-family:var(--display);font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted2);font-weight:600;margin-bottom:12px;}
+  .ia-topics ul{margin:0;padding:0;list-style:none;}
+  .ia-topics li{padding:9px 0 9px 26px;font-size:14px;color:var(--text);position:relative;border-top:1px solid var(--border);}
+  .ia-topics li:first-child{border-top:none;}
+  .ia-topics li::before{content:"";position:absolute;left:4px;top:15px;width:7px;height:7px;border-radius:50%;background:var(--primary);}
+
   /* ---------- bottom nav ---------- */
   .nav{
     position:fixed;left:0;right:0;bottom:0;z-index:30;
@@ -362,6 +387,35 @@
     </div>
   </section>
 
+  <!-- IA / DÚVIDAS -->
+  <section class="view" id="v-ia">
+    <p class="eyebrow">Assistente de dúvidas</p>
+    <div class="ia-hero">
+      <div class="ia-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a4 4 0 0 0-4 4c-1.3.7-2 2-2 3.5 0 1 .4 2 1 2.6-.3.6-.5 1.2-.5 1.9a3.5 3.5 0 0 0 5 3.2A3.5 3.5 0 0 0 17 18c1.9 0 3.5-1.6 3.5-3.5 0-.7-.2-1.3-.5-1.9.6-.6 1-1.6 1-2.6 0-1.5-.7-2.8-2-3.5a4 4 0 0 0-4-4 3.9 3.9 0 0 0-1 .1A3.9 3.9 0 0 0 12 3Z"/><path d="M12 3v18"/></svg>
+      </div>
+      <div class="ia-title">Mac te ajuda · Peps</div>
+      <div class="ia-desc">Uma IA que responde suas dúvidas sobre peptídeos com base em fontes confiáveis selecionadas — não sai pesquisando qualquer coisa na internet. Pergunte em linguagem natural, como se conversasse com alguém.</div>
+      <a class="ia-btn" id="ia-open" href="https://notebooklm.google.com/notebook/a80401b9-fcbc-4e1b-bf78-0017c81e0f8f?utm_source=nlmm_share" target="_blank" rel="noopener">
+        <svg class="ia-btn-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span class="ia-btn-tx"><b>Tirar dúvidas sobre peptídeos</b><small>Pergunte à IA e receba a resposta na hora ↗</small></span>
+      </a>
+      <div class="ia-note">Abre o assistente (NotebookLM do Google) em uma nova aba.</div>
+    </div>
+    <div class="ia-topics">
+      <div class="ia-topics-h">O que dá pra perguntar</div>
+      <ul>
+        <li>Protocolos de utilização</li>
+        <li>Mecanismo de ação dos peptídeos</li>
+        <li>Indicações e finalidades</li>
+        <li>Dosagens e formas de uso</li>
+        <li>Combinações (stacks)</li>
+        <li>Armazenamento e reconstituição</li>
+        <li>Dúvidas frequentes e muito mais</li>
+      </ul>
+    </div>
+  </section>
+
   <div class="disclaimer">
     Referência pessoal e informativa. Os cálculos são estimativas matemáticas e os registros ficam salvos apenas neste dispositivo.<br>
     Confirme doses, diluição e segurança com um profissional de saúde.
@@ -416,6 +470,10 @@
   <button data-v="calc">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 10h2M12 10h2M16 10h.01M8 14h2M12 14h2M16 14h.01M8 18h6"/></svg>
     Calcular
+  </button>
+  <button data-v="ia">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a4 4 0 0 0-4 4c-1.3.7-2 2-2 3.5 0 1 .4 2 1 2.6-.3.6-.5 1.2-.5 1.9a3.5 3.5 0 0 0 5 3.2A3.5 3.5 0 0 0 17 18c1.9 0 3.5-1.6 3.5-3.5 0-.7-.2-1.3-.5-1.9.6-.6 1-1.6 1-2.6 0-1.5-.7-2.8-2-3.5a4 4 0 0 0-4-4Z"/></svg>
+    IA
   </button>
 </nav>
 
