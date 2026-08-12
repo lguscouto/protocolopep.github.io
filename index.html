@@ -269,8 +269,10 @@
   .manage-btn.on{background:var(--primary-dim);border-color:var(--primary);color:var(--primary);}
 
   .card .rm{display:none;position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:8px;border:1px solid var(--border2);background:var(--surface3);color:var(--danger);font-size:14px;cursor:pointer;align-items:center;justify-content:center;line-height:1;z-index:2;}
-  .managing .card{padding-right:40px;}
-  .managing .card .rm{display:flex;}
+  .card .ed{display:none;position:absolute;top:8px;right:42px;width:26px;height:26px;border-radius:8px;border:1px solid var(--border2);background:var(--surface3);color:var(--muted);font-size:13px;cursor:pointer;align-items:center;justify-content:center;line-height:1;z-index:2;}
+  .card .ed:hover{color:var(--primary);border-color:var(--primary);}
+  .managing .card{padding-right:76px;}
+  .managing .card .rm,.managing .card .ed{display:flex;}
   .managing .card .take{opacity:.35;pointer-events:none;}
 
   .add-pep{width:100%;margin-top:4px;background:transparent;border:1.5px dashed var(--border2);color:var(--muted);font-family:var(--font);font-weight:600;font-size:14px;padding:15px;border-radius:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .15s;}
@@ -508,8 +510,10 @@
       <button class="sheet-x" id="modal-close">✕</button>
     </div>
     <div class="sheet-body">
-      <p class="mini-lab">Biblioteca — toque para preencher</p>
-      <div class="lib-chips" id="lib-chips"></div>
+      <div id="lib-wrap">
+        <p class="mini-lab">Biblioteca — toque para preencher</p>
+        <div class="lib-chips" id="lib-chips"></div>
+      </div>
       <div class="form">
         <div class="fld"><label>Nome</label><input class="txt" id="f-name" placeholder="Ex.: BPC-157"></div>
         <div class="fld"><label>Classe / descrição</label><input class="txt" id="f-sub" placeholder="Ex.: reparo tecidual"></div>
@@ -658,6 +662,7 @@ function renderToday(){
     el.className="card"+(done?" done":"");
     el.style.setProperty('--acc',p.accent);
     el.innerHTML=`
+      <button class="ed" data-id="${p.id}">✎</button>
       <button class="rm" data-id="${p.id}">✕</button>
       <div class="info">
         <div class="nm"><span class="dot"></span>${p.name}${moon}</div>
@@ -678,6 +683,7 @@ function renderToday(){
   drawRing(taken,due.length);
   cont.querySelectorAll(".take").forEach(b=>b.onclick=()=>toggle(b.dataset.id));
   cont.querySelectorAll(".rm").forEach(b=>b.onclick=()=>removePep(b.dataset.id));
+  cont.querySelectorAll(".ed").forEach(b=>b.onclick=()=>{ const p=PEPTIDES.find(x=>x.id===b.dataset.id); if(p) openModal(p); });
 }
 
 function removePep(id){
@@ -788,6 +794,7 @@ document.querySelectorAll(".nav button").forEach(b=>{
 const modal=document.getElementById("add-modal");
 const F={ name:"#f-name", sub:"#f-sub", ui:"#f-ui", dose:"#f-dose" };
 let fPer="dia", fMode="daily", fDays=[], fColor=PALETTE[0], fMoon=false;
+let editingId=null;
 
 document.getElementById("manage-toggle").onclick=()=>{
   const v=document.getElementById("v-hoje");
@@ -826,18 +833,32 @@ document.querySelectorAll("#f-per button").forEach(b=>b.onclick=()=>{document.qu
 document.querySelectorAll("#f-freqmode button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#f-freqmode button").forEach(x=>x.classList.remove("on"));b.classList.add("on");fMode=b.dataset.m;document.getElementById("f-days").style.display=fMode==="spec"?"flex":"none";});
 document.getElementById("f-moon").onchange=e=>fMoon=e.target.checked;
 
-function openModal(){
-  fPer="dia"; fMode="daily"; fDays=[]; fColor=nextColor(); fMoon=false;
-  Object.values(F).forEach(sel=>document.querySelector(sel).value="");
-  document.getElementById("f-moon").checked=false;
-  document.querySelectorAll("#f-per button").forEach(b=>b.classList.toggle("on",b.dataset.p==="dia"));
-  document.querySelectorAll("#f-freqmode button").forEach(b=>b.classList.toggle("on",b.dataset.m==="daily"));
-  document.getElementById("f-days").style.display="none";
+function openModal(pep){
+  editingId = (pep && pep.id) ? pep.id : null;
+  document.getElementById("modal-title").textContent = editingId ? "Editar peptídeo" : "Adicionar peptídeo";
+  document.getElementById("modal-save").textContent = editingId ? "Salvar alterações" : "Adicionar ao protocolo";
+  document.getElementById("lib-wrap").style.display = editingId ? "none" : "block";
+  if(editingId){
+    document.querySelector(F.name).value = pep.name||"";
+    document.querySelector(F.sub).value = pep.sub||"";
+    document.querySelector(F.ui).value = (pep.ui!=null?pep.ui:"");
+    document.querySelector(F.dose).value = (pep.dose && pep.dose!=="—")?pep.dose:"";
+    fPer = pep.per||"dia"; fMoon = !!pep.moon; fColor = pep.accent||nextColor();
+    if(Array.isArray(pep.days)){ fMode="spec"; fDays=[...pep.days]; } else { fMode="daily"; fDays=[]; }
+  } else {
+    Object.values(F).forEach(sel=>document.querySelector(sel).value="");
+    fPer="dia"; fMode="daily"; fDays=[]; fColor=nextColor(); fMoon=false;
+  }
+  document.getElementById("f-moon").checked=fMoon;
+  document.querySelectorAll("#f-per button").forEach(b=>b.classList.toggle("on",b.dataset.p===fPer));
+  document.querySelectorAll("#f-freqmode button").forEach(b=>b.classList.toggle("on",b.dataset.m===fMode));
+  document.getElementById("f-days").style.display = fMode==="spec"?"flex":"none";
   buildDayPick(); buildSwatches();
+  document.querySelectorAll("#f-days button").forEach(b=>b.classList.toggle("on", fDays.includes(+b.dataset.i)));
   modal.classList.add("on");
 }
 function closeModal(){ modal.classList.remove("on"); }
-document.getElementById("add-pep-btn").onclick=openModal;
+document.getElementById("add-pep-btn").onclick=()=>openModal();
 document.getElementById("modal-close").onclick=closeModal;
 document.getElementById("modal-cancel").onclick=closeModal;
 modal.onclick=e=>{ if(e.target===modal) closeModal(); };
@@ -855,8 +876,14 @@ document.getElementById("modal-save").onclick=()=>{
     days=[...fDays].sort((a,b)=>a-b);
     freq=days.map(i=>DAY_FULL[i]).join(" · ");
   } else if(fMoon){ freq="Antes de dormir"; }
-  const id=name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'')+"-"+Date.now().toString(36);
-  PEPTIDES.push({id,name,sub:sub||"peptídeo",ui,dose:dose||"—",per:fPer,freq,days,accent:fColor,moon:fMoon});
+  const fields={ name, sub:sub||"peptídeo", ui, dose:dose||"—", per:fPer, freq, days, accent:fColor, moon:fMoon };
+  if(editingId){
+    const idx=PEPTIDES.findIndex(p=>p.id===editingId);
+    if(idx>=0) PEPTIDES[idx]={...PEPTIDES[idx], ...fields};
+  } else {
+    const id=name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'')+"-"+Date.now().toString(36);
+    PEPTIDES.push({id, ...fields});
+  }
   saveProtocol(); renderToday(); renderWeek(); renderHistory(); closeModal();
   document.querySelector("button[data-v='hoje']").click();
 };
