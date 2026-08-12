@@ -265,16 +265,15 @@
   /* eyebrow row + manage */
   .eyebrow-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
   .eyebrow-row .eyebrow{margin:0;}
-  .manage-btn{background:none;border:1px solid var(--border2);color:var(--muted);font-family:var(--font);font-weight:600;font-size:12px;padding:6px 12px;border-radius:9px;cursor:pointer;}
+  .manage-btn{background:none;border:1px solid var(--border2);color:var(--muted);font-family:var(--font);font-weight:600;font-size:11px;padding:5px 10px;border-radius:8px;cursor:pointer;}
   .manage-btn.on{background:var(--primary-dim);border-color:var(--primary);color:var(--primary);}
 
-  .card .rm{display:none;position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:8px;border:1px solid var(--border2);background:var(--surface3);color:var(--danger);font-size:14px;cursor:pointer;align-items:center;justify-content:center;line-height:1;z-index:2;}
-  .card .gear{flex:none;width:40px;height:40px;border-radius:12px;border:1px solid var(--border2);background:var(--surface2);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;}
-  .card .gear svg{width:19px;height:19px;}
+  .card .ctrls{position:absolute;top:8px;right:10px;display:flex;gap:6px;z-index:3;}
+  .card .gear,.card .del{width:30px;height:30px;border-radius:9px;border:1px solid var(--border2);background:var(--surface2);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;padding:0;}
+  .card .gear svg,.card .del svg{width:16px;height:16px;}
   .card .gear:hover{color:var(--primary);border-color:var(--primary);}
-  .managing .card{padding-right:40px;}
-  .managing .card .rm{display:flex;}
-  .managing .card .take{opacity:.35;pointer-events:none;}
+  .card .del:hover{color:var(--danger);border-color:var(--danger);}
+  .card{padding-top:34px;}
 
   .add-pep{width:100%;margin-top:4px;background:transparent;border:1.5px dashed var(--border2);color:var(--muted);font-family:var(--font);font-weight:600;font-size:14px;padding:15px;border-radius:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .15s;}
   .add-pep:hover{border-color:var(--primary);color:var(--primary);}
@@ -340,7 +339,6 @@
   <section class="view on" id="v-hoje">
     <div class="eyebrow-row">
       <p class="eyebrow">Seu protocolo</p>
-      <button class="manage-btn" id="manage-toggle">Gerenciar</button>
     </div>
     <div class="todayhead">
       <svg class="ring" viewBox="0 0 36 36" id="ring"></svg>
@@ -663,7 +661,6 @@ function renderToday(){
     el.className="card"+(done?" done":"");
     el.style.setProperty('--acc',p.accent);
     el.innerHTML=`
-      <button class="rm" data-id="${p.id}">✕</button>
       <div class="info">
         <div class="nm"><span class="dot"></span>${p.name}${moon}</div>
         <div class="sub">${p.sub}</div>
@@ -673,9 +670,14 @@ function renderToday(){
           <span class="chip-acc">${p.dose}/${p.per}</span>
         </div>
       </div>
-      <button class="gear" data-id="${p.id}" aria-label="Editar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-      </button>
+      <div class="ctrls">
+        <button class="gear" data-id="${p.id}" aria-label="Editar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+        <button class="del" data-id="${p.id}" aria-label="Remover">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/></svg>
+        </button>
+      </div>
       <button class="take ${done?'done':''}" data-id="${p.id}">
         <span>${done?'✓ Tomado':'Tomei'}</span>
         ${done&&t?`<span class="at">${t}</span>`:''}
@@ -685,8 +687,8 @@ function renderToday(){
   document.getElementById("ring-n").textContent = `${taken} / ${due.length}`;
   drawRing(taken,due.length);
   cont.querySelectorAll(".take").forEach(b=>b.onclick=()=>toggle(b.dataset.id));
-  cont.querySelectorAll(".rm").forEach(b=>b.onclick=()=>removePep(b.dataset.id));
-  cont.querySelectorAll(".ed,.gear").forEach(b=>b.onclick=()=>{ const p=PEPTIDES.find(x=>x.id===b.dataset.id); if(p) openModal(p); });
+  cont.querySelectorAll(".del").forEach(b=>b.onclick=()=>removePep(b.dataset.id));
+  cont.querySelectorAll(".gear").forEach(b=>b.onclick=()=>{ const p=PEPTIDES.find(x=>x.id===b.dataset.id); if(p) openModal(p); });
 }
 
 function removePep(id){
@@ -799,11 +801,6 @@ const F={ name:"#f-name", sub:"#f-sub", ui:"#f-ui", dose:"#f-dose" };
 let fPer="dia", fMode="daily", fDays=[], fColor=PALETTE[0], fMoon=false;
 let editingId=null;
 
-document.getElementById("manage-toggle").onclick=()=>{
-  const v=document.getElementById("v-hoje");
-  v.classList.toggle("managing");
-  document.getElementById("manage-toggle").classList.toggle("on");
-};
 
 function buildLibrary(){
   const c=document.getElementById("lib-chips");
