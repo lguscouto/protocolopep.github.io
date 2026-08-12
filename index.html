@@ -247,6 +247,20 @@
   }
   .nav button svg{width:22px;height:22px;}
   .nav button.on{color:var(--primary);}
+  .nav button{padding-left:2px;padding-right:2px;font-size:10.5px;}
+  .nav button svg{width:21px;height:21px;}
+
+  /* histórico de doses */
+  .hist-count{font-size:12px;color:var(--muted);font-weight:600;}
+  .hist-day{margin-bottom:18px;}
+  .hist-date{font-family:var(--display);font-size:13px;font-weight:600;color:var(--text);text-transform:capitalize;margin:0 2px 10px;display:flex;align-items:center;gap:8px;}
+  .hist-date .hist-n{background:var(--surface3);color:var(--muted);font-size:11px;font-weight:600;padding:1px 8px;border-radius:20px;}
+  .hist-item{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:8px;}
+  .hist-dot{width:10px;height:10px;border-radius:50%;flex:none;}
+  .hist-info{flex:1;min-width:0;}
+  .hist-name{font-family:var(--display);font-weight:600;font-size:14.5px;}
+  .hist-dose{color:var(--muted);font-size:12px;margin-top:1px;}
+  .hist-time{font-family:var(--display);font-weight:600;font-size:13px;color:var(--primary);font-variant-numeric:tabular-nums;}
 
   /* eyebrow row + manage */
   .eyebrow-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
@@ -322,14 +336,14 @@
   <!-- HOJE -->
   <section class="view on" id="v-hoje">
     <div class="eyebrow-row">
-      <p class="eyebrow">Doses de hoje</p>
+      <p class="eyebrow">Seu protocolo</p>
       <button class="manage-btn" id="manage-toggle">Gerenciar</button>
     </div>
     <div class="todayhead">
       <svg class="ring" viewBox="0 0 36 36" id="ring"></svg>
       <div class="th-txt">
         <div class="n" id="ring-n">0 / 0</div>
-        <div class="l">peptídeos tomados</div>
+        <div class="l">tomados hoje</div>
       </div>
     </div>
     <div id="today-cards"></div>
@@ -338,7 +352,7 @@
 
   <!-- SEMANA -->
   <section class="view" id="v-semana">
-    <p class="eyebrow">Histórico da semana</p>
+    <p class="eyebrow">Visão da semana</p>
     <div class="panel">
       <table id="week-table"></table>
       <div class="legend">
@@ -348,6 +362,15 @@
       </div>
     </div>
     <button class="reset" id="reset-btn">Limpar todo o histórico</button>
+  </section>
+
+  <!-- HISTÓRICO -->
+  <section class="view" id="v-hist">
+    <div class="eyebrow-row">
+      <p class="eyebrow">Histórico de doses</p>
+      <span class="hist-count" id="hist-count"></span>
+    </div>
+    <div id="hist-list"></div>
   </section>
 
   <!-- CALCULADORA -->
@@ -515,12 +538,16 @@
 <!-- bottom nav -->
 <nav class="nav">
   <button data-v="hoje" class="on">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-    Hoje
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6a1 1 0 0 1 1 1v0a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v0a1 1 0 0 1 1-1z"/><path d="M8 5H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><path d="M8.5 12h7M8.5 16h5"/></svg>
+    Protocolo
   </button>
   <button data-v="semana">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg>
     Semana
+  </button>
+  <button data-v="hist">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+    Histórico
   </button>
   <button data-v="calc">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 10h2M12 10h2M16 10h.01M8 14h2M12 14h2M16 14h.01M8 18h6"/></svg>
@@ -559,7 +586,7 @@ const DEFAULT_PROTOCOL = [
   {id:"tesa",  name:"Tesamorelina", sub:"análogo de GHRH",              ui:30, dose:"2 mg",    per:"dia",   freq:"Antes de dormir",  days:null,    accent:"#8593F7", moon:true},
   {id:"ghk",   name:"GHK-Cu",       sub:"peptídeo de cobre · reparo",   ui:12, dose:"4 mg",    per:"dia",   freq:"Todos os dias",    days:null,    accent:"#D89A5C", moon:false},
 ];
-let PEPTIDES = DEFAULT_PROTOCOL.map(x=>({...x}));
+let PEPTIDES = [];
 let LOGS = {};
 let currentUser = null;
 function cloudSave(){
@@ -614,11 +641,10 @@ function drawRing(taken,total){
 }
 
 function renderToday(){
-  const data = loadAll();
-  const rec = data[todayKey]||{};
+  const rec = LOGS[todayKey]||{};
   const cont = document.getElementById("today-cards");
   cont.innerHTML="";
-  const due = PEPTIDES.filter(p=>isSched(p,todayDow));
+  const due = PEPTIDES;            // mostra o protocolo inteiro, independente do dia
   let taken=0;
   if(PEPTIDES.length===0){
     cont.innerHTML='<div class="empty-note">Nenhum peptídeo no protocolo ainda.<br>Toque em "Adicionar peptídeo" para começar.</div>';
@@ -626,6 +652,7 @@ function renderToday(){
   due.forEach(p=>{
     const done = !!rec[p.id];
     if(done) taken++;
+    const t = (rec[p.id] && rec[p.id].t) ? rec[p.id].t : '';
     const moon = p.moon?' 🌙':'';
     const el=document.createElement("div");
     el.className="card"+(done?" done":"");
@@ -643,7 +670,7 @@ function renderToday(){
       </div>
       <button class="take ${done?'done':''}" data-id="${p.id}">
         <span>${done?'✓ Tomado':'Tomei'}</span>
-        ${done&&rec['_t_'+p.id]?`<span class="at">${rec['_t_'+p.id]}</span>`:''}
+        ${done&&t?`<span class="at">${t}</span>`:''}
       </button>`;
     cont.appendChild(el);
   });
@@ -657,16 +684,19 @@ function removePep(id){
   const p=PEPTIDES.find(x=>x.id===id); if(!p) return;
   if(confirm(`Remover ${p.name} do protocolo?`)){
     PEPTIDES = PEPTIDES.filter(x=>x.id!==id);
-    saveProtocol(); renderToday(); renderWeek();
+    saveProtocol(); renderToday(); renderWeek(); renderHistory();
   }
 }
 
 function toggle(id){
-  const data=loadAll(); const rec=data[todayKey]||{};
-  if(rec[id]){ delete rec[id]; delete rec['_t_'+id]; }
-  else { rec[id]=true; rec['_t_'+id]=new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}); }
-  data[todayKey]=rec; saveAll(data);
-  renderToday(); renderWeek();
+  const rec = LOGS[todayKey] || {};
+  if(rec[id]){ delete rec[id]; }
+  else {
+    const p = PEPTIDES.find(x=>x.id===id) || {};
+    rec[id] = { t:new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}), name:p.name||id, dose:p.dose||"", per:p.per||"" };
+  }
+  LOGS[todayKey]=rec; saveAll(LOGS);
+  renderToday(); renderWeek(); renderHistory();
 }
 
 function startOfWeek(d){ const x=new Date(d); x.setHours(0,0,0,0); x.setDate(x.getDate()-x.getDay()); return x; }
@@ -680,17 +710,64 @@ function renderWeek(){
     h+=`<tr><td class="pep" style="color:${p.accent}">${p.name}</td>`;
     days.forEach(d=>{
       const k=dateKey(d), dow=d.getDay(), t=k===todayKey, cls=t?"col-today":"";
-      if(!isSched(p,dow)){ h+=`<td class="${cls}"><span class="cell na">·</span></td>`; }
-      else{ const rec=data[k]||{}; h+= rec[p.id]
-        ? `<td class="${cls}"><span class="cell" style="background:${p.accent}">✓</span></td>`
-        : `<td class="${cls}"><span class="cell empty"></span></td>`; }
+      const rec=LOGS[k]||{};
+      if(rec[p.id]){ h+=`<td class="${cls}"><span class="cell" style="background:${p.accent}">✓</span></td>`; }
+      else if(isSched(p,dow)){ h+=`<td class="${cls}"><span class="cell empty"></span></td>`; }
+      else { h+=`<td class="${cls}"><span class="cell na">·</span></td>`; }
     });
     h+="</tr>";
   });
   h+="</tbody>";
   document.getElementById("week-table").innerHTML=h;
 }
-document.getElementById("reset-btn").onclick=()=>{ if(confirm("Apagar todo o histórico registrado?")){ saveAll({}); renderToday(); renderWeek(); } };
+
+/* histórico de doses aplicadas */
+function fmtDateLabel(dk){
+  if(dk===todayKey) return "Hoje";
+  const y=new Date(); y.setDate(y.getDate()-1);
+  if(dk===dateKey(y)) return "Ontem";
+  const [Y,M,D]=dk.split('-').map(Number);
+  return new Date(Y,M-1,D).toLocaleDateString("pt-BR",{weekday:'long',day:'numeric',month:'long'});
+}
+function renderHistory(){
+  const cont=document.getElementById("hist-list");
+  if(!cont) return;
+  const hasDose = rec => rec && Object.keys(rec).some(id=>!id.startsWith('_t_') && rec[id]);
+  const dates=Object.keys(LOGS).filter(k=>hasDose(LOGS[k])).sort().reverse();
+  let total=0; dates.forEach(dk=>{ total += Object.keys(LOGS[dk]).filter(id=>!id.startsWith('_t_') && LOGS[dk][id]).length; });
+  document.getElementById("hist-count").textContent = total ? `${total} dose${total>1?'s':''} registrada${total>1?'s':''}` : '';
+  if(dates.length===0){
+    cont.innerHTML='<div class="empty-note">Nenhuma dose registrada ainda.<br>Marque uma dose na aba Hoje para começar o histórico.</div>';
+    return;
+  }
+  let h="";
+  dates.forEach(dk=>{
+    const rec=LOGS[dk];
+    const ids=Object.keys(rec).filter(id=>!id.startsWith('_t_') && rec[id]);
+    if(!ids.length) return;
+    const entries=ids.map(id=>{
+      const v=rec[id];
+      const t=(v&&v.t)?v.t:(rec['_t_'+id]||'');
+      const cur=PEPTIDES.find(p=>p.id===id)||{};
+      const nm=(v&&v.name)?v.name:(cur.name||id);
+      const dose=(v&&v.dose!=null&&v.dose!=="")?v.dose:(cur.dose||'');
+      const per=(v&&v.per)?v.per:(cur.per||'');
+      const acc=cur.accent||'#5D6B7A';
+      return {t,nm,dose,per,acc};
+    }).sort((a,b)=> a.t<b.t?-1:1);
+    h+=`<div class="hist-day"><div class="hist-date">${fmtDateLabel(dk)}<span class="hist-n">${entries.length}</span></div>`;
+    entries.forEach(e=>{
+      h+=`<div class="hist-item">
+        <span class="hist-dot" style="background:${e.acc}"></span>
+        <div class="hist-info"><div class="hist-name">${e.nm}</div>${e.dose?`<div class="hist-dose">${e.dose}${e.per?'/'+e.per:''}</div>`:''}</div>
+        <div class="hist-time">${e.t||''}</div>
+      </div>`;
+    });
+    h+=`</div>`;
+  });
+  cont.innerHTML=h;
+}
+document.getElementById("reset-btn").onclick=()=>{ if(confirm("Apagar todo o histórico registrado?")){ saveAll({}); renderToday(); renderWeek(); renderHistory(); } };
 
 /* =========================================================
    NAVEGAÇÃO
@@ -780,7 +857,7 @@ document.getElementById("modal-save").onclick=()=>{
   } else if(fMoon){ freq="Antes de dormir"; }
   const id=name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'')+"-"+Date.now().toString(36);
   PEPTIDES.push({id,name,sub:sub||"peptídeo",ui,dose:dose||"—",per:fPer,freq,days,accent:fColor,moon:fMoon});
-  saveProtocol(); renderToday(); renderWeek(); closeModal();
+  saveProtocol(); renderToday(); renderWeek(); renderHistory(); closeModal();
   document.querySelector("button[data-v='hoje']").click();
 };
 buildLibrary();
@@ -957,14 +1034,14 @@ function showApp(user){
   unsub = onSnapshot(ref, snap=>{
     if(snap.exists()){
       const d = snap.data();
-      PEPTIDES = Array.isArray(d.protocol) ? d.protocol : DEFAULT_PROTOCOL.map(x=>({...x}));
+      PEPTIDES = Array.isArray(d.protocol) ? d.protocol : [];
       LOGS = d.logs || {};
     } else {
-      PEPTIDES = DEFAULT_PROTOCOL.map(x=>({...x}));
+      PEPTIDES = [];
       LOGS = {};
       setDoc(ref, {protocol:PEPTIDES, logs:LOGS}).catch(e=>console.warn(e));
     }
-    renderToday(); renderWeek();
+    renderToday(); renderWeek(); renderHistory();
   }, err=>console.warn('snap',err));
 }
 function showAuth(){
