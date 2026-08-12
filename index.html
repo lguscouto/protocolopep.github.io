@@ -269,10 +269,11 @@
   .manage-btn.on{background:var(--primary-dim);border-color:var(--primary);color:var(--primary);}
 
   .card .rm{display:none;position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:8px;border:1px solid var(--border2);background:var(--surface3);color:var(--danger);font-size:14px;cursor:pointer;align-items:center;justify-content:center;line-height:1;z-index:2;}
-  .card .ed{display:none;position:absolute;top:8px;right:42px;width:26px;height:26px;border-radius:8px;border:1px solid var(--border2);background:var(--surface3);color:var(--muted);font-size:13px;cursor:pointer;align-items:center;justify-content:center;line-height:1;z-index:2;}
-  .card .ed:hover{color:var(--primary);border-color:var(--primary);}
-  .managing .card{padding-right:76px;}
-  .managing .card .rm,.managing .card .ed{display:flex;}
+  .card .gear{flex:none;width:40px;height:40px;border-radius:12px;border:1px solid var(--border2);background:var(--surface2);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+  .card .gear svg{width:19px;height:19px;}
+  .card .gear:hover{color:var(--primary);border-color:var(--primary);}
+  .managing .card{padding-right:40px;}
+  .managing .card .rm{display:flex;}
   .managing .card .take{opacity:.35;pointer-events:none;}
 
   .add-pep{width:100%;margin-top:4px;background:transparent;border:1.5px dashed var(--border2);color:var(--muted);font-family:var(--font);font-weight:600;font-size:14px;padding:15px;border-radius:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .15s;}
@@ -662,7 +663,6 @@ function renderToday(){
     el.className="card"+(done?" done":"");
     el.style.setProperty('--acc',p.accent);
     el.innerHTML=`
-      <button class="ed" data-id="${p.id}">✎</button>
       <button class="rm" data-id="${p.id}">✕</button>
       <div class="info">
         <div class="nm"><span class="dot"></span>${p.name}${moon}</div>
@@ -673,6 +673,9 @@ function renderToday(){
           <span class="chip-acc">${p.dose}/${p.per}</span>
         </div>
       </div>
+      <button class="gear" data-id="${p.id}" aria-label="Editar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
       <button class="take ${done?'done':''}" data-id="${p.id}">
         <span>${done?'✓ Tomado':'Tomei'}</span>
         ${done&&t?`<span class="at">${t}</span>`:''}
@@ -683,7 +686,7 @@ function renderToday(){
   drawRing(taken,due.length);
   cont.querySelectorAll(".take").forEach(b=>b.onclick=()=>toggle(b.dataset.id));
   cont.querySelectorAll(".rm").forEach(b=>b.onclick=()=>removePep(b.dataset.id));
-  cont.querySelectorAll(".ed").forEach(b=>b.onclick=()=>{ const p=PEPTIDES.find(x=>x.id===b.dataset.id); if(p) openModal(p); });
+  cont.querySelectorAll(".ed,.gear").forEach(b=>b.onclick=()=>{ const p=PEPTIDES.find(x=>x.id===b.dataset.id); if(p) openModal(p); });
 }
 
 function removePep(id){
