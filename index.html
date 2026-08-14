@@ -20,6 +20,16 @@
     --font:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
     --display:'Space Grotesk',var(--font);
   }
+  body.light{
+    --bg:#EEF2F4; --surface:#FFFFFF; --surface2:#F3F7F8; --surface3:#E5ECEF;
+    --border:#E0E7EA; --border2:#CBD7DD;
+    --text:#12303A; --muted:#5E727B; --muted2:#93A4AC;
+    --primary:#0FA39D; --primary-dim:#D4F0EE;
+  }
+  body.light .topbar{background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(255,255,255,.82));}
+  body.light .nav{background:rgba(255,255,255,.9);}
+  body.light .take.done, body.light .auth-submit, body.light .btn-primary, body.light .ia-btn{color:#053b39;}
+  body.light .cell{color:#fff;}
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{margin:0;padding:0;}
   body{
@@ -190,6 +200,8 @@
   .acct-email{font-size:11px;color:var(--muted);max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .logout{background:var(--surface3);border:1px solid var(--border2);color:var(--muted);font-family:var(--font);font-weight:600;font-size:11.5px;padding:6px 12px;border-radius:9px;cursor:pointer;}
   .admin-b{background:var(--primary-dim);border:1px solid var(--primary);color:var(--primary);font-family:var(--font);font-weight:700;font-size:11.5px;padding:6px 12px;border-radius:9px;cursor:pointer;}
+  .theme-b{background:var(--surface3);border:1px solid var(--border2);color:var(--muted);width:32px;height:32px;border-radius:9px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex:none;}
+  .theme-b svg{width:16px;height:16px;}
   .ad-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
   .ad-stat{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px 12px;text-align:center;}
   .ad-v{font-family:var(--display);font-weight:700;font-size:28px;color:var(--primary);font-variant-numeric:tabular-nums;}
@@ -201,6 +213,10 @@
   .ad-bar span{display:block;height:100%;background:var(--primary);border-radius:5px;}
   .ad-ct{flex:none;font-family:var(--display);font-weight:700;font-size:13px;color:var(--muted);min-width:24px;text-align:right;}
   .ad-note{color:var(--muted2);font-size:11.5px;line-height:1.55;margin-top:16px;padding:0 4px;}
+  .mb-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 4px;border-top:1px solid var(--border);}
+  .mb-row:first-child{border-top:none;}
+  .mb-email{font-size:13px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .mb-date{flex:none;font-size:11.5px;color:var(--muted2);font-variant-numeric:tabular-nums;}
   .logout:hover{border-color:var(--primary);color:var(--primary);}
 
   .auth-screen{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;background:var(--bg);padding:24px;overflow-y:auto;}
@@ -283,6 +299,7 @@
   .eyebrow-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
   .eyebrow-row .eyebrow{margin:0;}
   .manage-btn{background:none;border:1px solid var(--border2);color:var(--muted);font-family:var(--font);font-weight:600;font-size:11px;padding:5px 10px;border-radius:8px;cursor:pointer;}
+  .streak{background:linear-gradient(120deg,#F0894E22,#F5915822);border:1px solid #F5915855;color:#F5A15E;font-family:var(--display);font-weight:700;font-size:12px;padding:5px 11px;border-radius:20px;align-items:center;}
   .manage-btn.on{background:var(--primary-dim);border-color:var(--primary);color:var(--primary);}
 
   .card .ctrls{position:absolute;top:8px;right:10px;display:flex;gap:6px;z-index:3;}
@@ -347,6 +364,9 @@
       <div class="datestrip" id="datestrip"></div>
     </div>
     <div class="acct" id="acct-row" style="display:none">
+      <button class="theme-b" id="theme-btn" aria-label="Tema">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      </button>
       <span class="acct-email" id="acct-email"></span>
       <button class="admin-b" id="admin-btn" style="display:none">Admin</button>
       <button class="logout" id="logout-btn">Sair</button>
@@ -357,6 +377,7 @@
   <section class="view on" id="v-hoje">
     <div class="eyebrow-row">
       <p class="eyebrow">Seu protocolo</p>
+      <span class="streak" id="streak-chip" style="display:none"></span>
     </div>
     <div class="todayhead">
       <svg class="ring" viewBox="0 0 36 36" id="ring"></svg>
@@ -497,9 +518,11 @@
       <div class="ad-stat"><div class="ad-v" id="ad-doses">0</div><div class="ad-k">Doses registradas</div></div>
       <div class="ad-stat"><div class="ad-v" id="ad-peps">0</div><div class="ad-k">Peptídeos adicionados</div></div>
     </div>
+    <p class="eyebrow" style="margin-top:22px">Contas registradas</p>
+    <div class="panel"><div id="ad-members"></div></div>
     <p class="eyebrow" style="margin-top:22px">Peptídeos mais usados</p>
     <div class="panel"><div id="ad-rank"></div></div>
-    <div class="ad-note">Números agregados e anônimos — não identificam usuários nem exibem protocolos individuais. São contadores de uso acumulados a partir desta versão.</div>
+    <div class="ad-note">Os protocolos individuais permanecem privados (só cada pessoa vê o seu). Você, como administrador, vê os e-mails cadastrados e os números de uso. A lista de contas mostra quem entrou a partir desta versão.</div>
   </section>
 
   <div class="disclaimer">
@@ -598,7 +621,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
-import { getFirestore, doc, setDoc, onSnapshot, increment } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+import { getFirestore, doc, setDoc, onSnapshot, increment, collection } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAgZbBSdko3RQuAH5j48abJ7k5HPsyyGu8",
@@ -679,6 +702,13 @@ function drawRing(taken,total){
       font-family="var(--display)" font-size="9" font-weight="700" fill="var(--text)">${total?Math.round(pct*100):0}%</text>`;
 }
 
+function computeStreak(){
+  const has = dk => { const r=LOGS[dk]; return r && Object.keys(r).some(id=>!id.startsWith('_t_') && r[id]); };
+  let n=0; const d=new Date();
+  if(!has(dateKey(d))) d.setDate(d.getDate()-1);
+  while(has(dateKey(d))){ n++; d.setDate(d.getDate()-1); }
+  return n;
+}
 function renderToday(){
   const rec = LOGS[todayKey]||{};
   const cont = document.getElementById("today-cards");
@@ -723,6 +753,9 @@ function renderToday(){
   });
   document.getElementById("ring-n").textContent = `${taken} / ${due.length}`;
   drawRing(taken,due.length);
+  const st=computeStreak();
+  const chip=document.getElementById("streak-chip");
+  if(chip){ if(st>0){ chip.style.display="inline-flex"; chip.textContent=`🔥 ${st} dia${st>1?'s':''}`; } else { chip.style.display="none"; } }
   cont.querySelectorAll(".take").forEach(b=>b.onclick=()=>toggle(b.dataset.id));
   cont.querySelectorAll(".del").forEach(b=>b.onclick=()=>removePep(b.dataset.id));
   cont.querySelectorAll(".gear").forEach(b=>b.onclick=()=>{ const p=PEPTIDES.find(x=>x.id===b.dataset.id); if(p) openModal(p); });
@@ -1095,12 +1128,25 @@ calc();
    ========================================================= */
 let unsub = null;
 let statsUnsub = null;
+let membersUnsub = null;
+let adminMembers = [];
 const authScreen = document.getElementById("auth-screen");
 const authErr = document.getElementById("auth-err");
 
+function renderMembers(){
+  const list=document.getElementById("ad-members");
+  if(!list) return;
+  document.getElementById("ad-users").textContent = adminMembers.length;
+  if(adminMembers.length===0){ list.innerHTML='<div class="empty-note">Ninguém entrou ainda nesta versão.</div>'; return; }
+  const sorted=[...adminMembers].sort((a,b)=>(b.ts||0)-(a.ts||0));
+  list.innerHTML=sorted.map(m=>{
+    const d=m.ts?new Date(m.ts).toLocaleDateString("pt-BR",{day:'2-digit',month:'2-digit'}):'';
+    return `<div class="mb-row"><span class="mb-email">${esc(m.email||'—')}</span><span class="mb-date">${d}</span></div>`;
+  }).join('');
+}
+
 function renderAdmin(d){
   d=d||{};
-  document.getElementById("ad-users").textContent = (d.users||0) + 3;  // +3 contas anteriores ao sistema de contagem
   document.getElementById("ad-doses").textContent = d.doses||0;
   document.getElementById("ad-peps").textContent = d.peptides||0;
   const pc=d.pepCounts||{};
@@ -1124,8 +1170,13 @@ function showApp(user){
   document.getElementById("acct-row").style.display = "flex";
   const isAdmin = (user.email||"").toLowerCase() === ADMIN_EMAIL;
   document.getElementById("admin-btn").style.display = isAdmin ? "inline-flex" : "none";
+  try{ setDoc(doc(db,'members',user.uid), {email:user.email||"", ts:Date.now()}, {merge:true}); }catch(e){}
   if(statsUnsub){ statsUnsub(); statsUnsub=null; }
-  if(isAdmin){ statsUnsub = onSnapshot(statsRef(), s=>renderAdmin(s.exists()?s.data():{}), e=>console.warn('stats',e)); }
+  if(membersUnsub){ membersUnsub(); membersUnsub=null; }
+  if(isAdmin){
+    statsUnsub = onSnapshot(statsRef(), s=>renderAdmin(s.exists()?s.data():{}), e=>console.warn('stats',e));
+    membersUnsub = onSnapshot(collection(db,'members'), snap=>{ adminMembers = snap.docs.map(d=>d.data()); renderMembers(); }, e=>console.warn('members',e));
+  }
   if(unsub) unsub();
   const ref = doc(db,'users',user.uid);
   unsub = onSnapshot(ref, snap=>{
@@ -1147,6 +1198,8 @@ function showAuth(){
   currentUser = null;
   if(unsub){ unsub(); unsub=null; }
   if(statsUnsub){ statsUnsub(); statsUnsub=null; }
+  if(membersUnsub){ membersUnsub(); membersUnsub=null; }
+  adminMembers=[];
   authScreen.classList.add("on");
   document.getElementById("acct-row").style.display = "none";
   document.getElementById("admin-btn").style.display = "none";
@@ -1197,6 +1250,13 @@ document.getElementById("auth-forgot").onclick=async ()=>{
 };
 document.getElementById("auth-pass").addEventListener("keydown",e=>{ if(e.key==='Enter') document.getElementById("auth-submit").click(); });
 document.getElementById("logout-btn").onclick=()=>{ signOut(auth); };
+
+/* tema claro/escuro */
+try{ if(localStorage.getItem("tema")==="claro") document.body.classList.add("light"); }catch(e){}
+document.getElementById("theme-btn").onclick=()=>{
+  document.body.classList.toggle("light");
+  try{ localStorage.setItem("tema", document.body.classList.contains("light")?"claro":"escuro"); }catch(e){}
+};
 </script>
 </body>
 </html>
