@@ -126,16 +126,21 @@
   .chip.other.sel{background:var(--surface3);color:var(--primary);border-color:var(--primary);}
   .custom-wrap{margin-top:9px;display:none;}
   .custom-wrap.on{display:flex;gap:8px;}
-  input.num, input.txt{
+  input.num, input.txt, textarea.area{
     flex:1;width:100%;font-family:var(--font);font-size:16px;
     padding:11px 13px;border:1px solid var(--border2);border-radius:11px;
     background:var(--surface);color:var(--text);
     font-variant-numeric:tabular-nums;
   }
+  textarea.area{resize:vertical;min-height:46px;line-height:1.4;}
+  textarea.area:focus{outline:none;border-color:var(--primary);}
   input.num::-webkit-outer-spin-button,input.num::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
   input.num{-moz-appearance:textfield;}
   input:focus{outline:none;border-color:var(--primary);}
-  input::placeholder{color:var(--muted2);}
+  input::placeholder,textarea::placeholder{color:var(--muted2);}
+  .note-line{margin-top:9px;display:flex;flex-wrap:wrap;gap:7px;align-items:center;}
+  .note-start{font-size:11.5px;font-weight:600;color:var(--muted);background:var(--surface3);padding:3px 9px;border-radius:8px;}
+  .note-txt{font-size:12px;color:var(--muted);font-style:italic;}
   .unittoggle{display:flex;border:1px solid var(--border2);border-radius:11px;overflow:hidden;flex:none;}
   .unittoggle button{border:none;background:var(--surface);color:var(--muted);font-family:var(--display);font-weight:600;font-size:13px;padding:0 15px;cursor:pointer;}
   .unittoggle button.on{background:var(--surface3);color:var(--primary);}
@@ -184,6 +189,18 @@
   .acct{display:flex;align-items:center;gap:8px;flex:none;}
   .acct-email{font-size:11px;color:var(--muted);max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .logout{background:var(--surface3);border:1px solid var(--border2);color:var(--muted);font-family:var(--font);font-weight:600;font-size:11.5px;padding:6px 12px;border-radius:9px;cursor:pointer;}
+  .admin-b{background:var(--primary-dim);border:1px solid var(--primary);color:var(--primary);font-family:var(--font);font-weight:700;font-size:11.5px;padding:6px 12px;border-radius:9px;cursor:pointer;}
+  .ad-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+  .ad-stat{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px 12px;text-align:center;}
+  .ad-v{font-family:var(--display);font-weight:700;font-size:28px;color:var(--primary);font-variant-numeric:tabular-nums;}
+  .ad-k{color:var(--muted);font-size:11.5px;margin-top:3px;line-height:1.3;}
+  .ad-row{display:flex;align-items:center;gap:10px;padding:9px 4px;border-top:1px solid var(--border);}
+  .ad-row:first-child{border-top:none;}
+  .ad-nm{flex:none;width:34%;font-family:var(--display);font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .ad-bar{flex:1;height:8px;background:var(--surface3);border-radius:5px;overflow:hidden;}
+  .ad-bar span{display:block;height:100%;background:var(--primary);border-radius:5px;}
+  .ad-ct{flex:none;font-family:var(--display);font-weight:700;font-size:13px;color:var(--muted);min-width:24px;text-align:right;}
+  .ad-note{color:var(--muted2);font-size:11.5px;line-height:1.55;margin-top:16px;padding:0 4px;}
   .logout:hover{border-color:var(--primary);color:var(--primary);}
 
   .auth-screen{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;background:var(--bg);padding:24px;overflow-y:auto;}
@@ -331,6 +348,7 @@
     </div>
     <div class="acct" id="acct-row" style="display:none">
       <span class="acct-email" id="acct-email"></span>
+      <button class="admin-b" id="admin-btn" style="display:none">Admin</button>
       <button class="logout" id="logout-btn">Sair</button>
     </div>
   </div>
@@ -471,6 +489,19 @@
     </div>
   </section>
 
+  <!-- ADMIN -->
+  <section class="view" id="v-admin">
+    <p class="eyebrow">Painel do administrador</p>
+    <div class="ad-grid">
+      <div class="ad-stat"><div class="ad-v" id="ad-users">0</div><div class="ad-k">Contas</div></div>
+      <div class="ad-stat"><div class="ad-v" id="ad-doses">0</div><div class="ad-k">Doses registradas</div></div>
+      <div class="ad-stat"><div class="ad-v" id="ad-peps">0</div><div class="ad-k">Peptídeos adicionados</div></div>
+    </div>
+    <p class="eyebrow" style="margin-top:22px">Peptídeos mais usados</p>
+    <div class="panel"><div id="ad-rank"></div></div>
+    <div class="ad-note">Números agregados e anônimos — não identificam usuários nem exibem protocolos individuais. São contadores de uso acumulados a partir desta versão.</div>
+  </section>
+
   <div class="disclaimer">
     Referência pessoal e informativa. Os cálculos são estimativas matemáticas e os registros ficam salvos apenas neste dispositivo.<br>
     Confirme doses, diluição e segurança com um profissional de saúde.
@@ -528,6 +559,8 @@
           <div class="daypick" id="f-days" style="display:none"></div>
         </div>
         <label class="check"><input type="checkbox" id="f-moon"> Antes de dormir 🌙</label>
+        <div class="fld"><label>Data de início <span class="desc">(opcional)</span></label><input class="txt" id="f-start" type="date"></div>
+        <div class="fld"><label>Observação <span class="desc">(opcional)</span></label><textarea class="txt area" id="f-note" rows="2" placeholder="Ex.: começar com meia dose na 1ª semana"></textarea></div>
         <div class="fld"><label>Cor</label><div class="swatches" id="f-colors"></div></div>
       </div>
     </div>
@@ -565,7 +598,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
-import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+import { getFirestore, doc, setDoc, onSnapshot, increment } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAgZbBSdko3RQuAH5j48abJ7k5HPsyyGu8",
@@ -578,6 +611,9 @@ const firebaseConfig = {
 const fbApp = initializeApp(firebaseConfig);
 const auth = getAuth(fbApp);
 const db = getFirestore(fbApp);
+const ADMIN_EMAIL = "jlzezo2014@gmail.com";
+const statsRef = () => doc(db,'meta','stats');
+function bumpStats(obj){ try{ setDoc(statsRef(), obj, {merge:true}); }catch(e){ console.warn('stats',e); } }
 
 /* =========================================================
    PROTOCOLO
@@ -669,6 +705,7 @@ function renderToday(){
           <span class="freq">· ${p.freq}</span>
           <span class="chip-acc">${p.dose}/${p.per}</span>
         </div>
+        ${(p.start||p.note)?`<div class="note-line">${p.start?`<span class="note-start">início ${fmtBR(p.start)}</span>`:''}${p.note?`<span class="note-txt">${esc(p.note)}</span>`:''}</div>`:''}
       </div>
       <div class="ctrls">
         <button class="gear" data-id="${p.id}" aria-label="Editar">
@@ -705,6 +742,7 @@ function toggle(id){
   else {
     const p = PEPTIDES.find(x=>x.id===id) || {};
     rec[id] = { t:new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}), name:p.name||id, dose:p.dose||"", per:p.per||"" };
+    bumpStats({doses:increment(1)});
   }
   LOGS[todayKey]=rec; saveAll(LOGS);
   renderToday(); renderWeek(); renderHistory();
@@ -733,6 +771,8 @@ function renderWeek(){
 }
 
 /* histórico de doses aplicadas */
+function fmtBR(s){ if(!s) return ''; const p=String(s).split('-'); return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:s; }
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function fmtDateLabel(dk){
   if(dk===todayKey) return "Hoje";
   const y=new Date(); y.setDate(y.getDate()-1);
@@ -844,9 +884,13 @@ function openModal(pep){
     document.querySelector(F.ui).value = (pep.ui!=null?pep.ui:"");
     document.querySelector(F.dose).value = (pep.dose && pep.dose!=="—")?pep.dose:"";
     fPer = pep.per||"dia"; fMoon = !!pep.moon; fColor = pep.accent||nextColor();
+    document.getElementById("f-start").value = pep.start||"";
+    document.getElementById("f-note").value = pep.note||"";
     if(Array.isArray(pep.days)){ fMode="spec"; fDays=[...pep.days]; } else { fMode="daily"; fDays=[]; }
   } else {
     Object.values(F).forEach(sel=>document.querySelector(sel).value="");
+    document.getElementById("f-start").value="";
+    document.getElementById("f-note").value="";
     fPer="dia"; fMode="daily"; fDays=[]; fColor=nextColor(); fMoon=false;
   }
   document.getElementById("f-moon").checked=fMoon;
@@ -876,13 +920,15 @@ document.getElementById("modal-save").onclick=()=>{
     days=[...fDays].sort((a,b)=>a-b);
     freq=days.map(i=>DAY_FULL[i]).join(" · ");
   } else if(fMoon){ freq="Antes de dormir"; }
-  const fields={ name, sub:sub||"peptídeo", ui, dose:dose||"—", per:fPer, freq, days, accent:fColor, moon:fMoon };
+  const fields={ name, sub:sub||"peptídeo", ui, dose:dose||"—", per:fPer, freq, days, accent:fColor, moon:fMoon, start:document.getElementById("f-start").value||"", note:document.getElementById("f-note").value.trim() };
   if(editingId){
     const idx=PEPTIDES.findIndex(p=>p.id===editingId);
     if(idx>=0) PEPTIDES[idx]={...PEPTIDES[idx], ...fields};
   } else {
     const id=name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'')+"-"+Date.now().toString(36);
     PEPTIDES.push({id, ...fields});
+    const key=name.toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/(^_+|_+$)/g,'')||'x';
+    bumpStats({peptides:increment(1), pepCounts:{[key]:{name:name, count:increment(1)}}});
   }
   saveProtocol(); renderToday(); renderWeek(); renderHistory(); closeModal();
   document.querySelector("button[data-v='hoje']").click();
@@ -1048,14 +1094,38 @@ calc();
    AUTENTICAÇÃO + SINCRONIZAÇÃO NA NUVEM
    ========================================================= */
 let unsub = null;
+let statsUnsub = null;
 const authScreen = document.getElementById("auth-screen");
 const authErr = document.getElementById("auth-err");
+
+function renderAdmin(d){
+  d=d||{};
+  document.getElementById("ad-users").textContent = d.users||0;
+  document.getElementById("ad-doses").textContent = d.doses||0;
+  document.getElementById("ad-peps").textContent = d.peptides||0;
+  const pc=d.pepCounts||{};
+  const arr=Object.values(pc).filter(x=>x&&x.name).sort((a,b)=>(b.count||0)-(a.count||0)).slice(0,15);
+  const list=document.getElementById("ad-rank");
+  if(arr.length===0){ list.innerHTML='<div class="empty-note">Sem dados ainda.</div>'; return; }
+  const max=arr[0].count||1;
+  list.innerHTML=arr.map(x=>`<div class="ad-row"><span class="ad-nm">${esc(x.name)}</span><span class="ad-bar"><span style="width:${Math.round((x.count/max)*100)}%"></span></span><span class="ad-ct">${x.count||0}</span></div>`).join('');
+}
+document.getElementById("admin-btn").onclick=()=>{
+  document.querySelectorAll(".view").forEach(x=>x.classList.remove("on"));
+  document.querySelectorAll(".nav button").forEach(x=>x.classList.remove("on"));
+  document.getElementById("v-admin").classList.add("on");
+  window.scrollTo({top:0,behavior:"smooth"});
+};
 
 function showApp(user){
   currentUser = user;
   authScreen.classList.remove("on");
   document.getElementById("acct-email").textContent = user.email;
   document.getElementById("acct-row").style.display = "flex";
+  const isAdmin = (user.email||"").toLowerCase() === ADMIN_EMAIL;
+  document.getElementById("admin-btn").style.display = isAdmin ? "inline-flex" : "none";
+  if(statsUnsub){ statsUnsub(); statsUnsub=null; }
+  if(isAdmin){ statsUnsub = onSnapshot(statsRef(), s=>renderAdmin(s.exists()?s.data():{}), e=>console.warn('stats',e)); }
   if(unsub) unsub();
   const ref = doc(db,'users',user.uid);
   unsub = onSnapshot(ref, snap=>{
@@ -1063,10 +1133,12 @@ function showApp(user){
       const d = snap.data();
       PEPTIDES = Array.isArray(d.protocol) ? d.protocol : [];
       LOGS = d.logs || {};
+      if(!d.counted){ bumpStats({users:increment(1)}); setDoc(ref,{counted:true},{merge:true}).catch(()=>{}); }
     } else {
       PEPTIDES = [];
       LOGS = {};
-      setDoc(ref, {protocol:PEPTIDES, logs:LOGS}).catch(e=>console.warn(e));
+      setDoc(ref, {protocol:PEPTIDES, logs:LOGS, counted:true}).catch(e=>console.warn(e));
+      bumpStats({users:increment(1)});
     }
     renderToday(); renderWeek(); renderHistory();
   }, err=>console.warn('snap',err));
@@ -1074,8 +1146,10 @@ function showApp(user){
 function showAuth(){
   currentUser = null;
   if(unsub){ unsub(); unsub=null; }
+  if(statsUnsub){ statsUnsub(); statsUnsub=null; }
   authScreen.classList.add("on");
   document.getElementById("acct-row").style.display = "none";
+  document.getElementById("admin-btn").style.display = "none";
 }
 onAuthStateChanged(auth, u=>{ if(u) showApp(u); else showAuth(); });
 
