@@ -1100,7 +1100,7 @@ const authErr = document.getElementById("auth-err");
 
 function renderAdmin(d){
   d=d||{};
-  document.getElementById("ad-users").textContent = d.users||0;
+  document.getElementById("ad-users").textContent = (d.users||0) + 3;  // +3 contas anteriores ao sistema de contagem
   document.getElementById("ad-doses").textContent = d.doses||0;
   document.getElementById("ad-peps").textContent = d.peptides||0;
   const pc=d.pepCounts||{};
