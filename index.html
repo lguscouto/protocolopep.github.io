@@ -299,7 +299,6 @@
   .eyebrow-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
   .eyebrow-row .eyebrow{margin:0;}
   .manage-btn{background:none;border:1px solid var(--border2);color:var(--muted);font-family:var(--font);font-weight:600;font-size:11px;padding:5px 10px;border-radius:8px;cursor:pointer;}
-  .streak{background:linear-gradient(120deg,#F0894E22,#F5915822);border:1px solid #F5915855;color:#F5A15E;font-family:var(--display);font-weight:700;font-size:12px;padding:5px 11px;border-radius:20px;align-items:center;}
   .manage-btn.on{background:var(--primary-dim);border-color:var(--primary);color:var(--primary);}
 
   .card .ctrls{position:absolute;top:8px;right:10px;display:flex;gap:6px;z-index:3;}
@@ -377,7 +376,6 @@
   <section class="view on" id="v-hoje">
     <div class="eyebrow-row">
       <p class="eyebrow">Seu protocolo</p>
-      <span class="streak" id="streak-chip" style="display:none"></span>
     </div>
     <div class="todayhead">
       <svg class="ring" viewBox="0 0 36 36" id="ring"></svg>
@@ -635,6 +633,12 @@ const fbApp = initializeApp(firebaseConfig);
 const auth = getAuth(fbApp);
 const db = getFirestore(fbApp);
 const ADMIN_EMAIL = "jlzezo2014@gmail.com";
+const SEED_MEMBERS = [
+  {email:"jlzezo2014@gmail.com", d:"12/08"},
+  {email:"natalia.de.souza.001@gmail.com", d:"13/08"},
+  {email:"xcelo.o@gmail.com", d:"13/08"},
+  {email:"joseluciano.neto@mercadolivre.com", d:"14/08"}
+];
 const statsRef = () => doc(db,'meta','stats');
 function bumpStats(obj){ try{ setDoc(statsRef(), obj, {merge:true}); }catch(e){ console.warn('stats',e); } }
 
@@ -702,13 +706,6 @@ function drawRing(taken,total){
       font-family="var(--display)" font-size="9" font-weight="700" fill="var(--text)">${total?Math.round(pct*100):0}%</text>`;
 }
 
-function computeStreak(){
-  const has = dk => { const r=LOGS[dk]; return r && Object.keys(r).some(id=>!id.startsWith('_t_') && r[id]); };
-  let n=0; const d=new Date();
-  if(!has(dateKey(d))) d.setDate(d.getDate()-1);
-  while(has(dateKey(d))){ n++; d.setDate(d.getDate()-1); }
-  return n;
-}
 function renderToday(){
   const rec = LOGS[todayKey]||{};
   const cont = document.getElementById("today-cards");
@@ -753,9 +750,6 @@ function renderToday(){
   });
   document.getElementById("ring-n").textContent = `${taken} / ${due.length}`;
   drawRing(taken,due.length);
-  const st=computeStreak();
-  const chip=document.getElementById("streak-chip");
-  if(chip){ if(st>0){ chip.style.display="inline-flex"; chip.textContent=`🔥 ${st} dia${st>1?'s':''}`; } else { chip.style.display="none"; } }
   cont.querySelectorAll(".take").forEach(b=>b.onclick=()=>toggle(b.dataset.id));
   cont.querySelectorAll(".del").forEach(b=>b.onclick=()=>removePep(b.dataset.id));
   cont.querySelectorAll(".gear").forEach(b=>b.onclick=()=>{ const p=PEPTIDES.find(x=>x.id===b.dataset.id); if(p) openModal(p); });
@@ -1136,13 +1130,16 @@ const authErr = document.getElementById("auth-err");
 function renderMembers(){
   const list=document.getElementById("ad-members");
   if(!list) return;
-  document.getElementById("ad-users").textContent = adminMembers.length;
-  if(adminMembers.length===0){ list.innerHTML='<div class="empty-note">Ninguém entrou ainda nesta versão.</div>'; return; }
-  const sorted=[...adminMembers].sort((a,b)=>(b.ts||0)-(a.ts||0));
-  list.innerHTML=sorted.map(m=>{
-    const d=m.ts?new Date(m.ts).toLocaleDateString("pt-BR",{day:'2-digit',month:'2-digit'}):'';
-    return `<div class="mb-row"><span class="mb-email">${esc(m.email||'—')}</span><span class="mb-date">${d}</span></div>`;
-  }).join('');
+  const map=new Map();
+  SEED_MEMBERS.forEach(m=>map.set(m.email.toLowerCase(), {email:m.email, d:m.d}));
+  adminMembers.forEach(m=>{
+    const e=(m.email||'').toLowerCase(); if(!e) return;
+    if(!map.has(e)){ const d=m.ts?new Date(m.ts).toLocaleDateString("pt-BR",{day:'2-digit',month:'2-digit'}):''; map.set(e,{email:m.email,d}); }
+  });
+  const arr=[...map.values()];
+  document.getElementById("ad-users").textContent = arr.length;
+  if(arr.length===0){ list.innerHTML='<div class="empty-note">Ninguém entrou ainda.</div>'; return; }
+  list.innerHTML=arr.map(m=>`<div class="mb-row"><span class="mb-email">${esc(m.email)}</span><span class="mb-date">${m.d||''}</span></div>`).join('');
 }
 
 function renderAdmin(d){
@@ -1174,6 +1171,7 @@ function showApp(user){
   if(statsUnsub){ statsUnsub(); statsUnsub=null; }
   if(membersUnsub){ membersUnsub(); membersUnsub=null; }
   if(isAdmin){
+    renderMembers();
     statsUnsub = onSnapshot(statsRef(), s=>renderAdmin(s.exists()?s.data():{}), e=>console.warn('stats',e));
     membersUnsub = onSnapshot(collection(db,'members'), snap=>{ adminMembers = snap.docs.map(d=>d.data()); renderMembers(); }, e=>console.warn('members',e));
   }
