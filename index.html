@@ -224,7 +224,8 @@
   .sa-btn span{font-size:15px;}
   .notice-banner{display:flex;align-items:center;gap:10px;margin:12px 16px 0;padding:11px 14px;background:var(--primary-dim);border:1px solid var(--primary);border-radius:14px;}
   .notice-ic{flex:none;}
-  .notice-text{flex:1;font-size:13px;color:var(--text);line-height:1.4;}
+  .notice-text{flex:1;font-size:13px;color:var(--text);line-height:1.4;transition:opacity .2s;}
+  .notice-text a{color:var(--primary);font-weight:700;text-decoration:underline;}
   .notice-x{flex:none;background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;}
   .share-view{position:fixed;inset:0;z-index:120;display:none;background:var(--bg);overflow-y:auto;padding:24px 16px 40px;}
   .share-view.on{display:block;}
@@ -376,6 +377,14 @@
   .form .fld{margin-bottom:14px;}
   .form .fld2{display:grid;grid-template-columns:1fr 1.3fr;gap:10px;}
   .form label{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:6px;}
+  .dg-head{font-size:12.5px;color:var(--text);margin:12px 0 10px;}
+  .dg-sub{color:var(--muted2);font-size:11px;margin-top:3px;line-height:1.45;}
+  .dg-table{display:grid;grid-template-columns:1fr 1fr;gap:6px;max-height:230px;overflow-y:auto;padding-right:2px;}
+  .dg-row{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:9px 12px;cursor:pointer;font-family:var(--font);}
+  .dg-row:hover{border-color:var(--primary);}
+  .dg-row.sel{border-color:var(--primary);background:var(--primary-dim);}
+  .dg-mg{font-weight:600;font-size:13px;color:var(--text);}
+  .dg-ui{font-weight:700;font-size:13px;color:var(--primary);}
   .segbtns{display:flex;border:1px solid var(--border2);border-radius:11px;overflow:hidden;}
   .segbtns button{flex:1;border:none;background:var(--surface);color:var(--muted);font-family:var(--font);font-weight:600;font-size:13px;padding:10px;cursor:pointer;}
   .segbtns button.on{background:var(--surface3);color:var(--primary);}
@@ -442,7 +451,7 @@
     <div id="today-cards"></div>
     <button class="add-pep" id="add-pep-btn"><span>＋</span> Adicionar peptídeo</button>
     <div class="tools-row">
-      <button class="tool-b" id="protos-btn">👥 Criar protocolo</button>
+      <button class="tool-b" id="protos-btn">👥 Criar p/ alguém</button>
       <button class="tool-b" id="share-btn">🔗 Compartilhar</button>
       <button class="tool-b" id="export-btn">⬇ Exportar</button>
       <button class="tool-b" id="import-btn">⬆ Importar</button>
@@ -579,9 +588,14 @@
       <div class="ad-stat"><div class="ad-v" id="ad-doses">0</div><div class="ad-k">Doses registradas</div></div>
       <div class="ad-stat"><div class="ad-v" id="ad-peps">0</div><div class="ad-k">Peptídeos adicionados</div></div>
     </div>
-    <p class="eyebrow" style="margin-top:22px">Recado para todos</p>
+    <p class="eyebrow" style="margin-top:22px">Recado para todos <span style="font-weight:400;text-transform:none;letter-spacing:0">(um por linha = rotativo)</span></p>
     <div class="panel">
-      <textarea class="txt area" id="notice-input" rows="2" placeholder="Ex.: Novo protocolo de longevidade disponível!"></textarea>
+      <textarea class="txt area" id="notice-input" rows="3" placeholder="Ex.: Novo protocolo de longevidade disponível!&#10;Reunião do grupo sábado às 10h&#10;Confiram a aba Calcular"></textarea>
+      <div class="inrow" style="margin-top:10px;align-items:center">
+        <label style="margin:0;color:var(--muted);font-size:13px;font-weight:600;flex:none">Trocar a cada</label>
+        <input class="txt" id="notice-secs" type="number" min="2" max="60" step="1" value="5" style="flex:none;width:90px;text-align:center">
+        <span style="color:var(--muted);font-size:13px">segundos</span>
+      </div>
       <div class="inrow" style="margin-top:10px">
         <button class="btn-primary" id="notice-publish" style="flex:2">Publicar recado</button>
         <button class="btn-ghost" id="notice-remove" style="flex:1">Remover</button>
@@ -629,9 +643,9 @@
   <div class="share-inner">
     <div class="builder-top">
       <button class="icon-b" id="builder-back" aria-label="Voltar">←</button>
-      <div class="builder-title" id="builder-title">Editar protocolo</div>
+      <div class="builder-title" id="builder-title">Protocolo para outra pessoa</div>
     </div>
-    <div class="fld"><label>Nome do protocolo / paciente</label><input class="txt" id="builder-name" placeholder="Ex.: João — cicatrização"></div>
+    <div class="fld"><label>Para quem é este protocolo? (nome da pessoa/paciente)</label><input class="txt" id="builder-name" placeholder="Ex.: João — cicatrização"></div>
     <div id="builder-list"></div>
     <button class="add-pep" id="builder-add"><span>＋</span> Adicionar peptídeo</button>
     <button class="share-cta" id="builder-send" style="border:none;cursor:pointer;width:100%;margin-top:14px">📲 Enviar este protocolo</button>
@@ -642,12 +656,12 @@
 <!-- modal: meus protocolos -->
 <div class="modal" id="protos-modal">
   <div class="sheet">
-    <div class="sheet-head"><div class="sheet-title">Meus protocolos</div><button class="sheet-x" id="protos-close">✕</button></div>
+    <div class="sheet-head"><div class="sheet-title">Protocolos para outras pessoas</div><button class="sheet-x" id="protos-close">✕</button></div>
     <div class="sheet-body">
-      <p class="nf-note" style="margin-top:0">Crie protocolos separados (ex.: um por paciente ou por finalidade), edite quando quiser e envie o link para quem precisar. Não interfere no seu protocolo pessoal.</p>
+      <p class="nf-note" style="margin-top:0">⚠️ Estes NÃO são o seu protocolo pessoal. Aqui você cria protocolos <b>para enviar a outra pessoa</b> (ex.: um paciente) — cada um separado, e você envia o link para quem precisar. O seu protocolo pessoal continua na aba Protocolo.</p>
       <div id="protos-list"></div>
     </div>
-    <div class="sheet-foot"><button class="btn-primary" id="protos-new" style="flex:1">＋ Criar protocolo</button></div>
+    <div class="sheet-foot"><button class="btn-primary" id="protos-new" style="flex:1">＋ Criar protocolo para alguém</button></div>
   </div>
 </div>
 
@@ -714,8 +728,17 @@
     </div>
     <div class="sheet-body">
       <div id="lib-wrap">
-        <p class="mini-lab">Biblioteca — toque para preencher</p>
-        <div class="lib-chips" id="lib-chips"></div>
+        <div class="segbtns" id="lib-tabs" style="margin-bottom:12px"><button data-t="po" class="on">Em pó (diluir)</button><button data-t="diluido">Já diluído (frasco)</button></div>
+        <div id="lib-po">
+          <p class="mini-lab">Biblioteca — toque para preencher</p>
+          <input class="txt" id="lib-search" placeholder="🔍 Buscar peptídeo..." style="margin-bottom:10px">
+          <div class="lib-chips" id="lib-chips"></div>
+        </div>
+        <div id="lib-diluido" style="display:none">
+          <p class="mini-lab">Produtos já diluídos — toque para ver a guia de dosagem</p>
+          <div class="lib-chips" id="dil-chips" style="max-height:none"></div>
+          <div id="dil-guide"></div>
+        </div>
       </div>
       <div class="form">
         <div class="fld"><label>Nome</label><input class="txt" id="f-name" placeholder="Ex.: BPC-157"></div>
@@ -818,20 +841,97 @@ function saveProtocol(){ cloudSave(); }
 
 // Biblioteca de peptídeos para adição rápida
 const LIBRARY = [
-  {name:"BPC-157",sub:"reparo tecidual"},{name:"TB-500",sub:"recuperação"},
-  {name:"BPC + TB-500",sub:"blend reparo"},{name:"Ipamorelina",sub:"secretagogo de GH"},
-  {name:"CJC-1295",sub:"análogo de GHRH"},{name:"Sermorelina",sub:"análogo de GHRH"},
-  {name:"Tesamorelina",sub:"análogo de GHRH"},{name:"MOTS-c",sub:"peptídeo mitocondrial"},
-  {name:"AOD-9604",sub:"fragmento de GH"},{name:"GHK-Cu",sub:"peptídeo de cobre"},
-  {name:"Semaglutida",sub:"GLP-1"},{name:"Tirzepatida",sub:"GLP-1 / GIP"},
-  {name:"Retatrutida",sub:"GLP-1 / GIP / glucagon"},{name:"NAD+",sub:"energia celular"},
-  {name:"Epitalon",sub:"telômeros · sono"},{name:"Selank",sub:"ansiolítico · nootrópico"},
-  {name:"Semax",sub:"nootrópico"},{name:"PT-141",sub:"libido"},
-  {name:"Melanotan II",sub:"pigmentação"},{name:"DSIP",sub:"sono"},
-  {name:"Timosina α-1",sub:"imune"},{name:"IGF-1 LR3",sub:"anabólico"},
-  {name:"GHRP-2",sub:"secretagogo de GH"},{name:"GHRP-6",sub:"secretagogo de GH"},
-  {name:"Hexarelina",sub:"secretagogo de GH"},{name:"Kisspeptina",sub:"eixo reprodutivo"},
-  {name:"5-Amino-1MQ",sub:"metabolismo"},{name:"SS-31",sub:"mitocondrial"},
+  {name:"Tirzepatida",sub:"GLP-1 / GIP"},
+  {name:"Retatrutida",sub:"GLP-1 / GIP / glucagon"},
+  {name:"Semaglutida",sub:"GLP-1"},
+  {name:"Cagrilintida",sub:"análogo de amilina"},
+  {name:"Cagrilintida 5mg + Semaglutida 5mg",sub:"blend GLP-1 / amilina"},
+  {name:"Cagri-Sema 2,5+2,5",sub:"blend GLP-1 / amilina"},
+  {name:"Cagri-Sema 10+10",sub:"blend GLP-1 / amilina"},
+  {name:"Survodutida",sub:"GLP-1 / glucagon"},
+  {name:"Dulaglutida",sub:"GLP-1"},
+  {name:"Liraglutida",sub:"GLP-1"},
+  {name:"Semaglutida (cartucho s/ caneta)",sub:"GLP-1"},
+  {name:"Tirzepatida (cartucho s/ caneta)",sub:"GLP-1 / GIP"},
+  {name:"GHK-Cu",sub:"peptídeo de cobre"},
+  {name:"AHK-Cu",sub:"peptídeo de cobre (cabelo)"},
+  {name:"IGF-1 LR3",sub:"anabólico"},
+  {name:"MGF",sub:"fator de crescimento mecânico"},
+  {name:"PEG-MGF",sub:"MGF peguilado"},
+  {name:"Tesamorelina",sub:"análogo de GHRH"},
+  {name:"Sermorelina",sub:"análogo de GHRH"},
+  {name:"CJC-1295 DAC",sub:"análogo de GHRH"},
+  {name:"CJC-1295 sem DAC",sub:"análogo de GHRH"},
+  {name:"Ipamorelina",sub:"secretagogo de GH"},
+  {name:"GHRP-2",sub:"secretagogo de GH"},
+  {name:"GHRP-6",sub:"secretagogo de GH"},
+  {name:"Hexarelina",sub:"secretagogo de GH"},
+  {name:"MOTS-c",sub:"peptídeo mitocondrial"},
+  {name:"Humanin",sub:"peptídeo mitocondrial"},
+  {name:"SS-31",sub:"mitocondrial"},
+  {name:"AOD-9604",sub:"fragmento de GH"},
+  {name:"HGH Fragmento 176-191",sub:"perda de gordura"},
+  {name:"HGH 191AA (Somatropina)",sub:"hormônio de crescimento"},
+  {name:"AICAR",sub:"metabolismo / resistência"},
+  {name:"SLU-PP-332",sub:"metabolismo / resistência"},
+  {name:"5-Amino-1MQ",sub:"metabolismo"},
+  {name:"Adipotide",sub:"perda de gordura"},
+  {name:"CBL-514",sub:"lipólise"},
+  {name:"NAD+ (5ml)",sub:"energia celular"},
+  {name:"NAD+ (10ml)",sub:"energia celular"},
+  {name:"HCG",sub:"gonadotrofina"},
+  {name:"HMG",sub:"gonadotrofina (FSH/LH)"},
+  {name:"Gonadorelina",sub:"eixo reprodutivo (GnRH)"},
+  {name:"Kisspeptina-10",sub:"eixo reprodutivo"},
+  {name:"BPC-157",sub:"reparo tecidual"},
+  {name:"TB-500 (Timosina β4)",sub:"recuperação"},
+  {name:"Blend BPC-157 5mg + TB-500 5mg",sub:"blend reparo"},
+  {name:"Blend BPC-157 10mg + TB-500 10mg",sub:"blend reparo"},
+  {name:"Blend BPC-157 15mg + TB-500 15mg",sub:"blend reparo"},
+  {name:"Blend CJC-1295 sem DAC 5mg + Ipamorelina 5mg",sub:"blend GH"},
+  {name:"Blend BPC-157 + TB-500 + GHK-Cu",sub:"blend reparo"},
+  {name:"Blend BPC-157 + TB-500 + GHK-Cu + KPV",sub:"blend reparo / anti-inflamatório"},
+  {name:"KPV",sub:"anti-inflamatório"},
+  {name:"LL-37",sub:"antimicrobiano / imune"},
+  {name:"Ara-290",sub:"reparo / neuropatia"},
+  {name:"VIP",sub:"peptídeo intestinal vasoativo"},
+  {name:"Timosina α-1",sub:"imune"},
+  {name:"Thymalin",sub:"imune"},
+  {name:"Epitalon",sub:"telômeros · sono"},
+  {name:"Selank",sub:"ansiolítico · nootrópico"},
+  {name:"Semax",sub:"nootrópico"},
+  {name:"Adamax",sub:"nootrópico"},
+  {name:"P21",sub:"neurogênese"},
+  {name:"PE-22-28",sub:"neuroplasticidade"},
+  {name:"Cerebrolisina 60",sub:"neurotrófico"},
+  {name:"Pinealon",sub:"bioregulador cerebral"},
+  {name:"DSIP",sub:"sono"},
+  {name:"Melatonina",sub:"sono"},
+  {name:"PT-141",sub:"libido"},
+  {name:"Melanotan II",sub:"pigmentação"},
+  {name:"Melanotan I (MT-1)",sub:"pigmentação"},
+  {name:"Oxitocina",sub:"vínculo / hormônio"},
+  {name:"SNAP-8",sub:"cosmético (rugas)"},
+  {name:"Matrixyl 3000",sub:"cosmético (colágeno)"},
+  {name:"Oligopeptídeo-24",sub:"cosmético"},
+  {name:"Blend Cabelo/Pele/Unhas",sub:"blend estético"},
+  {name:"Folistatina 344",sub:"inibidor de miostatina"},
+  {name:"ACE-031",sub:"inibidor de miostatina"},
+  {name:"GDF-8 (miostatina)",sub:"muscular"},
+  {name:"FOXO4-DRI",sub:"senolítico"},
+  {name:"Dermorphin",sub:"analgésico"},
+  {name:"B7-33",sub:"análogo de relaxina"},
+  {name:"ACTH 1-39",sub:"adrenocorticotrófico"},
+  {name:"Cartalax",sub:"bioregulador"},
+  {name:"Cortagen",sub:"bioregulador"},
+  {name:"Crystagen",sub:"bioregulador imune"},
+  {name:"Bronchogen",sub:"bioregulador respiratório"},
+  {name:"Cardiogen",sub:"bioregulador cardíaco"},
+  {name:"PNC-27",sub:"pesquisa"},
+  {name:"Frag 17-23",sub:"fragmento"},
+  {name:"Glutationa",sub:"antioxidante"},
+  {name:"Blend Retatrutida 20mg + Tirzepatida 40mg",sub:"blend GLP-1"},
+  {name:"Água bacteriostática",sub:"diluente"},
 ];
 const PALETTE=["#2FD8AC","#F59158","#8593F7","#D89A5C","#2CC5C0","#E5709B","#67C15E","#E2C452","#A78BFA","#5EC8E5"];
 function nextColor(){ const used=PEPTIDES.map(p=>p.accent); return PALETTE.find(c=>!used.includes(c))||PALETTE[PEPTIDES.length%PALETTE.length]; }
@@ -1037,16 +1137,71 @@ let fPer="dia", fMode="daily", fDays=[], fColor=PALETTE[0], fMoon=false;
 let editingId=null;
 
 
-function buildLibrary(){
+function buildLibrary(filter){
   const c=document.getElementById("lib-chips");
   c.innerHTML="";
-  LIBRARY.forEach(item=>{
+  const q=(filter||"").toLowerCase().trim();
+  const items = q ? LIBRARY.filter(it=>(it.name+" "+it.sub).toLowerCase().includes(q)) : LIBRARY;
+  if(!items.length){ c.innerHTML='<span style="color:var(--muted2);font-size:12px">Nenhum encontrado — digite o nome manualmente no campo abaixo.</span>'; return; }
+  items.forEach(item=>{
     const b=document.createElement("button");
     b.className="lib-chip"; b.textContent=item.name;
     b.onclick=()=>{ document.querySelector(F.name).value=item.name; document.querySelector(F.sub).value=item.sub; };
     c.appendChild(b);
   });
 }
+document.getElementById("lib-search").addEventListener("input",e=>buildLibrary(e.target.value));
+
+/* ---- Produtos já diluídos + guia de dosagem ---- */
+const DIL_DOSES=[2.5,3.5,3.75,5,6,6.5,7.5,8.5,9.5,10,11.5,12.5,13.5,15];
+const DIL_GROUPS={
+  A:{label:"15 mg / 0,5 ml", conc:"30 mg/ml", ui:[8,12,13,17,20,22,25,28,33,33,38,42,45,50]},
+  B:{label:"15 mg / 0,6 ml", conc:"25 mg/ml", ui:[10,14,15,20,24,26,30,34,38,40,46,50,54,60]},
+  C:{label:"15 mg / 1 ml",   conc:"15 mg/ml", ui:[17,23,25,33,40,43,50,57,63,67,77,83,90,100]}
+};
+const DILUTED=[
+  {name:"TG 15", sub:"Tirzepatida (já diluída)", group:"A"},
+  {name:"Lipoless 15", sub:"Tirzepatida (já diluída)", group:"A"},
+  {name:"Tirzec 15", sub:"Tirzepatida (já diluída)", group:"A"},
+  {name:"Lipoland 15", sub:"Tirzepatida (já diluída)", group:"A"},
+  {name:"Tirzedral 15", sub:"Tirzepatida (já diluída)", group:"A"},
+  {name:"Lipoless MD 15", sub:"Tirzepatida (já diluída)", group:"B"},
+  {name:"Tirzedral MD 15", sub:"Tirzepatida (já diluída)", group:"B"},
+  {name:"Gluconex 15", sub:"Tirzepatida (já diluída)", group:"C"}
+];
+function buildDiluted(){
+  const c=document.getElementById("dil-chips"); c.innerHTML="";
+  DILUTED.forEach(p=>{
+    const b=document.createElement("button"); b.className="lib-chip"; b.textContent=p.name;
+    b.onclick=()=>{ c.querySelectorAll(".lib-chip").forEach(x=>x.classList.remove("on")); b.classList.add("on"); renderGuide(p); };
+    c.appendChild(b);
+  });
+}
+function renderGuide(prod){
+  const g=DIL_GROUPS[prod.group]; if(!g) return;
+  let h=`<div class="dg-head">Guia de dosagem sugerida — <b>${esc(prod.name)}</b><div class="dg-sub">${g.label} (${g.conc}) · seringa U-100 · toque na dose para preencher</div></div><div class="dg-table">`;
+  DIL_DOSES.forEach((d,i)=>{
+    const mg=String(d).replace(".",",");
+    h+=`<button class="dg-row" data-name="${esc(prod.name)}" data-sub="${esc(prod.sub)}" data-mg="${mg}" data-ui="${g.ui[i]}"><span class="dg-mg">${mg} mg</span><span class="dg-ui">${g.ui[i]} UI</span></button>`;
+  });
+  h+=`</div>`;
+  const box=document.getElementById("dil-guide"); box.innerHTML=h;
+  box.querySelectorAll(".dg-row").forEach(b=>b.onclick=()=>{
+    document.querySelector(F.name).value=b.dataset.name;
+    document.querySelector(F.sub).value=b.dataset.sub;
+    document.querySelector(F.ui).value=b.dataset.ui;
+    document.querySelector(F.dose).value=b.dataset.mg+" mg";
+    fPer="semana";
+    document.querySelectorAll("#f-per button").forEach(x=>x.classList.toggle("on",x.dataset.p==="semana"));
+    box.querySelectorAll(".dg-row").forEach(r=>r.classList.remove("sel")); b.classList.add("sel");
+  });
+}
+document.querySelectorAll("#lib-tabs button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("#lib-tabs button").forEach(x=>x.classList.toggle("on",x===b));
+  const dil=b.dataset.t==="diluido";
+  document.getElementById("lib-po").style.display=dil?"none":"block";
+  document.getElementById("lib-diluido").style.display=dil?"block":"none";
+});
 function buildDayPick(){
   const c=document.getElementById("f-days"); c.innerHTML="";
   ["D","S","T","Q","Q","S","S"].forEach((lbl,i)=>{
@@ -1073,6 +1228,12 @@ function openModal(pep){
   document.getElementById("modal-title").textContent = editingId ? "Editar peptídeo" : "Adicionar peptídeo";
   document.getElementById("modal-save").textContent = editingId ? "Salvar alterações" : "Adicionar ao protocolo";
   document.getElementById("lib-wrap").style.display = editingId ? "none" : "block";
+  const _ls=document.getElementById("lib-search"); if(_ls){ _ls.value=""; buildLibrary(); }
+  document.querySelectorAll("#lib-tabs button").forEach(x=>x.classList.toggle("on",x.dataset.t==="po"));
+  document.getElementById("lib-po").style.display="block";
+  document.getElementById("lib-diluido").style.display="none";
+  document.getElementById("dil-guide").innerHTML="";
+  document.querySelectorAll("#dil-chips .lib-chip").forEach(x=>x.classList.remove("on"));
   if(editingId){
     document.querySelector(F.name).value = pep.name||"";
     document.querySelector(F.sub).value = pep.sub||"";
@@ -1135,6 +1296,7 @@ document.getElementById("modal-save").onclick=()=>{
   else { renderToday(); renderWeek(); renderHistory(); document.querySelector("button[data-v='hoje']").click(); }
 };
 buildLibrary();
+buildDiluted();
 
 /* =========================================================
    CALCULADORA UNIVERSAL
@@ -1605,9 +1767,9 @@ document.getElementById("protos-btn").onclick=()=>{ renderProtos(); document.get
 document.getElementById("protos-close").onclick=()=>document.getElementById("protos-modal").classList.remove("on");
 document.getElementById("protos-modal").onclick=e=>{ if(e.target.id==="protos-modal") document.getElementById("protos-modal").classList.remove("on"); };
 document.getElementById("protos-new").onclick=()=>{
-  const name=prompt("Nome do protocolo (ex.: nome do paciente):","");
+  const name=prompt("Para quem é este protocolo? (nome da pessoa ou paciente)","");
   if(name===null) return;
-  const pt={id:"pt-"+Date.now().toString(36), name:name.trim()||"Novo protocolo", protocol:[]};
+  const pt={id:"pt-"+Date.now().toString(36), name:name.trim()||"Protocolo sem nome", protocol:[]};
   PATIENTS.push(pt); cloudSave();
   document.getElementById("protos-modal").classList.remove("on");
   openBuilder(pt.id);
@@ -1718,15 +1880,48 @@ document.getElementById("import-file").addEventListener("change",e=>{
    RECADO DO ADMIN
    ========================================================= */
 let noticeUnsub=null, noticeData=null;
+let noticeRotTimer=null, noticeMsgs=[], noticeIdx=0;
+function linkifyNotice(msg){
+  const tokens=[];
+  let s=esc(msg);
+  s=s.replace(/\b(https?:\/\/[^\s<]+|www\.[^\s<]+)/g, m=>{
+    const href=(m.startsWith('http')?m:'https://'+m).replace(/&amp;/g,'&');
+    tokens.push(`<a href="${href}" target="_blank" rel="noopener">${m}</a>`);
+    return `\u0000${tokens.length-1}\u0000`;
+  });
+  s=s.replace(/(\+?\d[\d\s().-]{8,}\d)/g, m=>{
+    const d=m.replace(/\D/g,''); if(d.length<10||d.length>13) return m;
+    let num=d; if(d.length<=11 && !d.startsWith('55')) num='55'+d;
+    tokens.push(`<a href="https://wa.me/${num}" target="_blank" rel="noopener">${m}</a>`);
+    return `\u0000${tokens.length-1}\u0000`;
+  });
+  s=s.replace(/\u0000(\d+)\u0000/g,(a,i)=>tokens[+i]);
+  return s;
+}
 function renderNotice(){
   const banner=document.getElementById("notice-banner");
   const dismissed=(()=>{ try{ return localStorage.getItem("notice-dismissed"); }catch(e){ return null; } })();
-  if(noticeData && noticeData.active && noticeData.text && String(noticeData.ts)!==dismissed){
-    document.getElementById("notice-text").textContent=noticeData.text;
+  if(noticeRotTimer){ clearInterval(noticeRotTimer); noticeRotTimer=null; }
+  const active = noticeData && noticeData.active && noticeData.text && String(noticeData.ts)!==dismissed;
+  if(active){
+    noticeMsgs = noticeData.text.split("\n").map(s=>s.trim()).filter(Boolean);
+    noticeIdx = 0;
+    const el=document.getElementById("notice-text");
+    el.innerHTML = linkifyNotice(noticeMsgs[0]||"");
     banner.style.display="flex";
+    if(noticeMsgs.length>1){
+      const secs = Math.min(60, Math.max(2, Number(noticeData.secs)||5));
+      noticeRotTimer=setInterval(()=>{
+        noticeIdx=(noticeIdx+1)%noticeMsgs.length;
+        el.style.opacity="0";
+        setTimeout(()=>{ el.innerHTML=linkifyNotice(noticeMsgs[noticeIdx]); el.style.opacity="1"; },200);
+      }, secs*1000);
+    }
   } else { banner.style.display="none"; }
   const inp=document.getElementById("notice-input");
   if(inp && noticeData && noticeData.text) inp.value=noticeData.active?noticeData.text:"";
+  const secsInp=document.getElementById("notice-secs");
+  if(secsInp && noticeData && noticeData.secs) secsInp.value=noticeData.secs;
 }
 document.getElementById("notice-x").onclick=()=>{
   try{ if(noticeData&&noticeData.ts) localStorage.setItem("notice-dismissed",String(noticeData.ts)); }catch(e){}
@@ -1735,7 +1930,8 @@ document.getElementById("notice-x").onclick=()=>{
 document.getElementById("notice-publish").onclick=()=>{
   const t=document.getElementById("notice-input").value.trim();
   if(!t){ alert("Escreva o recado."); return; }
-  setDoc(doc(db,'meta','notice'), {text:t, ts:Date.now(), active:true}).then(()=>alert("Recado publicado!")).catch(e=>{ alert("Não consegui publicar."); console.warn(e); });
+  const secs=Math.min(60, Math.max(2, parseInt(document.getElementById("notice-secs").value)||5));
+  setDoc(doc(db,'meta','notice'), {text:t, secs, ts:Date.now(), active:true}).then(()=>alert("Recado publicado!")).catch(e=>{ alert("Não consegui publicar."); console.warn(e); });
 };
 document.getElementById("notice-remove").onclick=()=>{
   setDoc(doc(db,'meta','notice'), {active:false}, {merge:true}).then(()=>alert("Recado removido.")).catch(e=>console.warn(e));
