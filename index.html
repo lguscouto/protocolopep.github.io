@@ -211,6 +211,10 @@
   .tools-row{display:flex;gap:8px;margin-top:12px;}
   .tool-b{flex:1;background:var(--surface);border:1px solid var(--border2);color:var(--muted);font-family:var(--font);font-weight:600;font-size:12.5px;padding:11px 6px;border-radius:12px;cursor:pointer;transition:all .15s;}
   .tool-b:hover{border-color:var(--primary);color:var(--primary);}
+  .share-actions{display:flex;gap:8px;margin-top:10px;}
+  .sa-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:var(--surface);border:1px solid var(--border2);color:var(--text);font-family:var(--font);font-weight:600;font-size:13px;padding:11px 6px;border-radius:12px;cursor:pointer;text-decoration:none;}
+  .sa-btn:hover{border-color:var(--primary);}
+  .sa-btn span{font-size:15px;}
   .notice-banner{display:flex;align-items:center;gap:10px;margin:12px 16px 0;padding:11px 14px;background:var(--primary-dim);border:1px solid var(--primary);border-radius:14px;}
   .notice-ic{flex:none;}
   .notice-text{flex:1;font-size:13px;color:var(--text);line-height:1.4;}
@@ -316,6 +320,8 @@
   .hist-name{font-family:var(--display);font-weight:600;font-size:14.5px;}
   .hist-dose{color:var(--muted);font-size:12px;margin-top:1px;}
   .hist-time{font-family:var(--display);font-weight:600;font-size:13px;color:var(--primary);font-variant-numeric:tabular-nums;}
+  .hist-rm{flex:none;background:none;border:none;color:var(--muted2);font-size:13px;cursor:pointer;padding:4px 2px 4px 8px;}
+  .hist-rm:hover{color:var(--danger);}
 
   /* eyebrow row + manage */
   .eyebrow-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
@@ -618,7 +624,12 @@
     <div class="sheet-body">
       <p class="nf-note" style="margin-top:0">Qualquer pessoa com este link vê uma cópia somente-leitura do seu protocolo (sem seus registros de doses). Você pode gerar um novo quando quiser.</p>
       <div class="fld"><input class="txt" id="link-url" readonly></div>
-      <button class="btn-primary" id="link-copy" style="width:100%">Copiar link</button>
+      <button class="btn-primary" id="link-share" style="width:100%">📲 Enviar / Compartilhar</button>
+      <div class="share-actions">
+        <a class="sa-btn" id="link-wa" target="_blank" rel="noopener"><span>💬</span> WhatsApp</a>
+        <a class="sa-btn" id="link-mail"><span>✉️</span> E-mail</a>
+        <button class="sa-btn" id="link-copy"><span>🔗</span> Copiar</button>
+      </div>
     </div>
     <div class="sheet-foot"><button class="btn-ghost" id="link-done" style="flex:1">Fechar</button></div>
   </div>
@@ -860,13 +871,24 @@ function removePep(id){
 
 function toggle(id){
   const rec = LOGS[todayKey] || {};
-  if(rec[id]){ delete rec[id]; }
+  if(rec[id]){
+    if(!confirm("Desmarcar esta dose de hoje?")) return;
+    delete rec[id];
+  }
   else {
     const p = PEPTIDES.find(x=>x.id===id) || {};
     rec[id] = { t:new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}), name:p.name||id, dose:p.dose||"", per:p.per||"" };
     bumpStats({doses:increment(1)});
   }
   LOGS[todayKey]=rec; saveAll(LOGS);
+  renderToday(); renderWeek(); renderHistory();
+}
+function removeLog(dk, id){
+  const rec = LOGS[dk]; if(!rec || !rec[id]) return;
+  if(!confirm("Remover esta dose do histórico?")) return;
+  delete rec[id];
+  if(Object.keys(rec).filter(k=>!k.startsWith('_t_')).length===0) delete LOGS[dk];
+  saveAll(LOGS);
   renderToday(); renderWeek(); renderHistory();
 }
 
@@ -926,19 +948,21 @@ function renderHistory(){
       const dose=(v&&v.dose!=null&&v.dose!=="")?v.dose:(cur.dose||'');
       const per=(v&&v.per)?v.per:(cur.per||'');
       const acc=cur.accent||'#5D6B7A';
-      return {t,nm,dose,per,acc};
+      return {id,t,nm,dose,per,acc};
     }).sort((a,b)=> a.t<b.t?-1:1);
     h+=`<div class="hist-day"><div class="hist-date">${fmtDateLabel(dk)}<span class="hist-n">${entries.length}</span></div>`;
     entries.forEach(e=>{
       h+=`<div class="hist-item">
         <span class="hist-dot" style="background:${e.acc}"></span>
-        <div class="hist-info"><div class="hist-name">${e.nm}</div>${e.dose?`<div class="hist-dose">${e.dose}${e.per?'/'+e.per:''}</div>`:''}</div>
+        <div class="hist-info"><div class="hist-name">${esc(e.nm)}</div>${e.dose?`<div class="hist-dose">${esc(e.dose)}${e.per?'/'+esc(e.per):''}</div>`:''}</div>
         <div class="hist-time">${e.t||''}</div>
+        <button class="hist-rm" data-dk="${dk}" data-id="${e.id}" aria-label="Remover">✕</button>
       </div>`;
     });
     h+=`</div>`;
   });
   cont.innerHTML=h;
+  cont.querySelectorAll(".hist-rm").forEach(b=>b.onclick=()=>removeLog(b.dataset.dk, b.dataset.id));
 }
 document.getElementById("reset-btn").onclick=()=>{ if(confirm("Apagar todo o histórico registrado?")){ saveAll({}); renderToday(); renderWeek(); renderHistory(); } };
 
@@ -1468,13 +1492,28 @@ document.getElementById("share-btn").onclick=async()=>{
   try{
     await setDoc(doc(db,'shared',id), {by, protocol:PEPTIDES, ts:Date.now()});
     const url=location.origin+location.pathname+"?share="+id;
+    const msg="Segue meu protocolo de peptídeos: "+url;
     document.getElementById("link-url").value=url;
+    document.getElementById("link-wa").href="https://wa.me/?text="+encodeURIComponent(msg);
+    document.getElementById("link-mail").href="mailto:?subject="+encodeURIComponent("Protocolo de peptídeos")+"&body="+encodeURIComponent(msg);
+    document.getElementById("link-share").dataset.url=url;
+    document.getElementById("link-share").dataset.msg=msg;
     document.getElementById("link-modal").classList.add("on");
   }catch(e){ alert("Não consegui gerar o link agora. Verifique a conexão."); console.warn(e); }
 };
+document.getElementById("link-share").onclick=async()=>{
+  const b=document.getElementById("link-share");
+  const url=b.dataset.url, msg=b.dataset.msg;
+  if(navigator.share){
+    try{ await navigator.share({title:"Protocolo de peptídeos", text:"Segue meu protocolo de peptídeos:", url}); }catch(e){}
+  } else {
+    // navegador sem compartilhamento nativo (ex.: desktop) — copia o link
+    try{ await navigator.clipboard.writeText(url); alert("Link copiado! Cole onde quiser enviar."); }catch(e){}
+  }
+};
 document.getElementById("link-copy").onclick=()=>{
   const inp=document.getElementById("link-url"); inp.select();
-  navigator.clipboard?.writeText(inp.value).then(()=>{ const b=document.getElementById("link-copy"); b.textContent="Copiado ✓"; setTimeout(()=>b.textContent="Copiar link",1500); });
+  navigator.clipboard?.writeText(inp.value).then(()=>{ const b=document.getElementById("link-copy"); const o=b.innerHTML; b.innerHTML="<span>✓</span> Copiado"; setTimeout(()=>b.innerHTML=o,1500); });
 };
 document.getElementById("link-close").onclick=()=>document.getElementById("link-modal").classList.remove("on");
 document.getElementById("link-done").onclick=()=>document.getElementById("link-modal").classList.remove("on");
