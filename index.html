@@ -41,7 +41,12 @@
   html,body{margin:0;padding:0;}
   body{
     font-family:var(--font);
-    background:var(--bg); color:var(--text);
+    background:
+      radial-gradient(ellipse 620px 460px at 100% 0%, color-mix(in srgb, var(--primary) 8%, transparent), transparent 60%),
+      radial-gradient(ellipse 520px 420px at 0% 100%, color-mix(in srgb, var(--tesa) 6%, transparent), transparent 60%),
+      var(--bg);
+    background-attachment:fixed;
+    color:var(--text);
     font-size:15px; line-height:1.5;
     -webkit-font-smoothing:antialiased;
   }
@@ -98,11 +103,21 @@
     font-family:var(--font);font-weight:700;font-size:13.5px;
     padding:10px 15px;border-radius:12px;cursor:pointer;white-space:nowrap;
     display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1.2;
-    transition:transform .06s;min-width:78px;
+    transition:transform .12s ease, background .18s ease, color .18s ease, box-shadow .18s ease;
+    min-width:78px;position:relative;overflow:hidden;
   }
-  .take:active{transform:scale(.95);}
-  .take.done{background:var(--acc);color:#0B1017;border-color:var(--acc);}
+  .take:hover{background:color-mix(in srgb, var(--acc) 12%, transparent);transform:translateY(-1px) scale(1.03);}
+  .take:active{transform:scale(.94);}
+  .take.done{background:var(--acc);color:#0B1017;border-color:var(--acc);box-shadow:0 4px 14px color-mix(in srgb, var(--acc) 30%, transparent);}
+  .take.pop{animation:takePop .38s ease;}
+  @keyframes takePop{0%{transform:scale(1);}45%{transform:scale(1.14);}100%{transform:scale(1);}}
   .take .at{font-size:10px;font-weight:600;opacity:.85;}
+  .take .rip{position:absolute;border-radius:50%;background:currentColor;opacity:.35;transform:scale(0);animation:takeRip .5s ease-out;pointer-events:none;}
+  @keyframes takeRip{to{transform:scale(4);opacity:0;}}
+  @media (prefers-reduced-motion: reduce){
+    .take,.take.pop{transition:none;animation:none;}
+    .take .rip{display:none;}
+  }
 
   /* ---------- week ---------- */
   .panel{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:16px 12px;}
@@ -204,7 +219,9 @@
 /* topbar account + auth screen */
   .topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;}
   .acct{display:flex;align-items:center;gap:8px;flex:none;}
-  .acct-email{font-size:11px;color:var(--muted);max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .acct-email{font-size:11px;color:var(--muted);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:none;border:none;font-family:var(--font);font-weight:600;cursor:pointer;padding:4px 6px;border-radius:8px;transition:background .15s,color .15s;display:inline-flex;align-items:center;gap:4px;}
+  .acct-email:hover{background:var(--surface3);color:var(--text);}
+  .acct-email svg{width:12px;height:12px;flex:none;opacity:.55;}
   .logout{background:var(--surface3);border:1px solid var(--border2);color:var(--muted);font-family:var(--font);font-weight:600;font-size:11.5px;padding:6px 12px;border-radius:9px;cursor:pointer;}
   .admin-b{background:var(--primary-dim);border:1px solid var(--primary);color:var(--primary);font-family:var(--font);font-weight:700;font-size:11.5px;padding:6px 12px;border-radius:9px;cursor:pointer;}
   .theme-b, .icon-b{background:var(--surface3);border:1px solid var(--border2);color:var(--muted);width:32px;height:32px;border-radius:9px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex:none;}
@@ -427,7 +444,7 @@
       <button class="icon-b" id="theme-btn" aria-label="Tema">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
       </button>
-      <span class="acct-email" id="acct-email"></span>
+      <button class="acct-email" id="acct-email" title="Toque para editar seu nome"><span id="acct-name-txt"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
       <button class="admin-b" id="admin-btn" style="display:none">Admin</button>
       <button class="logout" id="logout-btn">Sair</button>
     </div>
@@ -837,6 +854,8 @@ let PEPTIDES = [];
 let LOGS = {};
 let PATIENTS = [];
 let currentUser = null;
+let NICKNAME = "";
+let POP_ID = null;
 let builderProto = null;
 function cloudSave(){
   if(!currentUser) return;
@@ -1010,7 +1029,31 @@ function renderToday(){
   });
   document.getElementById("ring-n").textContent = `${taken} / ${due.length}`;
   drawRing(taken,due.length);
-  cont.querySelectorAll(".take").forEach(b=>b.onclick=()=>toggle(b.dataset.id));
+  cont.querySelectorAll(".take").forEach(b=>b.onclick=(ev)=>{
+    // efeito ripple no ponto do toque
+    try{
+      const r=document.createElement("span");
+      r.className="rip";
+      const rect=b.getBoundingClientRect();
+      const size=Math.max(rect.width,rect.height);
+      const x=(ev.clientX||rect.left+rect.width/2)-rect.left-size/2;
+      const y=(ev.clientY||rect.top+rect.height/2)-rect.top-size/2;
+      r.style.width=r.style.height=size+"px";
+      r.style.left=x+"px"; r.style.top=y+"px";
+      b.appendChild(r);
+      setTimeout(()=>r.remove(),500);
+    }catch(e){}
+    // marca para animar com "pop" o botão após re-renderizar (só ao marcar, não ao desmarcar)
+    const marcando = !(LOGS[todayKey] && LOGS[todayKey][b.dataset.id]);
+    POP_ID = marcando ? b.dataset.id : null;
+    toggle(b.dataset.id);
+  });
+  // aplica o "pop" no botão que acabou de ser marcado (após re-render)
+  if(POP_ID){
+    const pb = cont.querySelector(`.take[data-id="${POP_ID}"]`);
+    if(pb){ pb.classList.add("pop"); pb.addEventListener("animationend",()=>pb.classList.remove("pop"),{once:true}); }
+    POP_ID = null;
+  }
   cont.querySelectorAll(".del").forEach(b=>b.onclick=()=>removePep(b.dataset.id));
   cont.querySelectorAll(".gear").forEach(b=>b.onclick=()=>{ builderProto=null; const p=PEPTIDES.find(x=>x.id===b.dataset.id); if(p) openModal(p); });
 }
@@ -1501,11 +1544,26 @@ document.getElementById("admin-btn").onclick=()=>{
   window.scrollTo({top:0,behavior:"smooth"});
 };
 
+function displayNameFor(user){
+  // 1º: apelido da nuvem (sincronizado); 2º: cache local; 3º: parte antes do @
+  if(NICKNAME && NICKNAME.trim()) return NICKNAME.trim();
+  try{
+    const saved = localStorage.getItem("apelido-"+user.uid);
+    if(saved && saved.trim()) return saved.trim();
+  }catch(e){}
+  return (user.email||"").split("@")[0] || "Usuário";
+}
+function renderAcctName(){
+  if(!currentUser) return;
+  const el = document.getElementById("acct-name-txt");
+  if(el) el.textContent = displayNameFor(currentUser);
+}
 function showApp(user){
   if(SHARE_MODE) return;
   currentUser = user;
   authScreen.classList.remove("on");
-  document.getElementById("acct-email").textContent = user.email;
+  try{ NICKNAME = localStorage.getItem("apelido-"+user.uid) || ""; }catch(e){ NICKNAME = ""; }
+  renderAcctName();
   document.getElementById("acct-row").style.display = "flex";
   const isAdmin = (user.email||"").toLowerCase() === ADMIN_EMAIL;
   document.getElementById("admin-btn").style.display = isAdmin ? "inline-flex" : "none";
@@ -1527,6 +1585,11 @@ function showApp(user){
       PEPTIDES = Array.isArray(d.protocol) ? d.protocol : [];
       LOGS = d.logs || {};
       PATIENTS = Array.isArray(d.patients) ? d.patients : [];
+      if(typeof d.nickname === "string"){
+        NICKNAME = d.nickname;
+        try{ if(NICKNAME) localStorage.setItem("apelido-"+user.uid, NICKNAME); else localStorage.removeItem("apelido-"+user.uid); }catch(e){}
+        renderAcctName();
+      }
       if(!d.counted){ bumpStats({users:increment(1)}); setDoc(ref,{counted:true},{merge:true}).catch(()=>{}); }
     } else {
       PEPTIDES = [];
@@ -1545,6 +1608,7 @@ function showAuth(){
   if(membersUnsub){ membersUnsub(); membersUnsub=null; }
   if(noticeUnsub){ noticeUnsub(); noticeUnsub=null; }
   adminMembers=[];
+  NICKNAME="";
   authScreen.classList.add("on");
   document.getElementById("acct-row").style.display = "none";
   document.getElementById("admin-btn").style.display = "none";
@@ -1607,6 +1671,23 @@ document.getElementById("auth-forgot").onclick=async ()=>{
 };
 document.getElementById("auth-pass").addEventListener("keydown",e=>{ if(e.key==='Enter') document.getElementById("auth-submit").click(); });
 document.getElementById("logout-btn").onclick=()=>{ signOut(auth); };
+
+/* editar nome/apelido de exibição */
+document.getElementById("acct-email").onclick=()=>{
+  if(!currentUser) return;
+  const atual = displayNameFor(currentUser);
+  const novo = prompt("Como você quer ser chamado?", atual);
+  if(novo===null) return; // cancelou
+  const nome = novo.trim();
+  NICKNAME = nome;
+  try{
+    if(nome) localStorage.setItem("apelido-"+currentUser.uid, nome);
+    else localStorage.removeItem("apelido-"+currentUser.uid);
+  }catch(e){}
+  renderAcctName();
+  // sincroniza na nuvem (funciona em qualquer aparelho)
+  try{ setDoc(doc(db,'users',currentUser.uid), {nickname:nome}, {merge:true}).catch(e=>console.warn('nick',e)); }catch(e){}
+};
 
 /* tema claro/escuro */
 try{ if(localStorage.getItem("tema")==="claro") document.body.classList.add("light"); }catch(e){}
@@ -1711,7 +1792,7 @@ function pepLineHTML(p){
 }
 async function createShare(protocolArr){
   const id=Date.now().toString(36)+Math.random().toString(36).slice(2,7);
-  const by=(currentUser&&currentUser.email||"").split("@")[0]||"alguém";
+  const by=(currentUser?displayNameFor(currentUser):"")||"alguém";
   await setDoc(doc(db,'shared',id), {by, protocol:protocolArr, ts:Date.now()});
   return location.origin+location.pathname+"?share="+id;
 }
