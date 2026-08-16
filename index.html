@@ -228,6 +228,17 @@
   .share-sub{color:var(--muted);font-size:13.5px;margin-top:4px;}
   .share-cta{display:block;text-align:center;background:var(--primary);color:#0B1017;text-decoration:none;font-family:var(--font);font-weight:700;font-size:15px;padding:14px;border-radius:14px;margin-top:18px;}
   .share-disc{color:var(--muted2);font-size:11.5px;text-align:center;margin-top:16px;line-height:1.5;}
+  .builder-top{display:flex;align-items:center;gap:12px;margin:6px 0 18px;}
+  .builder-title{font-family:var(--display);font-weight:700;font-size:20px;}
+  #builder-back{font-size:18px;}
+  .pt-row{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px;}
+  .pt-info{flex:1;min-width:0;}
+  .pt-name{font-family:var(--display);font-weight:600;font-size:15px;}
+  .pt-count{color:var(--muted);font-size:12px;margin-top:1px;}
+  .pt-act{flex:none;display:flex;gap:6px;}
+  .pt-act button{width:34px;height:34px;border-radius:9px;border:1px solid var(--border2);background:var(--surface2);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;}
+  .pt-act .pt-send:hover{color:var(--primary);border-color:var(--primary);}
+  .pt-act .pt-del:hover{color:var(--danger);border-color:var(--danger);}
   .ad-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
   .ad-stat{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px 12px;text-align:center;}
   .ad-v{font-family:var(--display);font-weight:700;font-size:28px;color:var(--primary);font-variant-numeric:tabular-nums;}
@@ -424,6 +435,7 @@
     <div id="today-cards"></div>
     <button class="add-pep" id="add-pep-btn"><span>＋</span> Adicionar peptídeo</button>
     <div class="tools-row">
+      <button class="tool-b" id="protos-btn">👥 Criar protocolo</button>
       <button class="tool-b" id="share-btn">🔗 Compartilhar</button>
       <button class="tool-b" id="export-btn">⬇ Exportar</button>
       <button class="tool-b" id="import-btn">⬆ Importar</button>
@@ -604,6 +616,33 @@
   </div>
 </div>
 
+<!-- construtor de protocolo (paciente / modelo) -->
+<div class="share-view" id="builder-view">
+  <div class="share-inner">
+    <div class="builder-top">
+      <button class="icon-b" id="builder-back" aria-label="Voltar">←</button>
+      <div class="builder-title" id="builder-title">Editar protocolo</div>
+    </div>
+    <div class="fld"><label>Nome do protocolo / paciente</label><input class="txt" id="builder-name" placeholder="Ex.: João — cicatrização"></div>
+    <div id="builder-list"></div>
+    <button class="add-pep" id="builder-add"><span>＋</span> Adicionar peptídeo</button>
+    <button class="share-cta" id="builder-send" style="border:none;cursor:pointer;width:100%;margin-top:14px">📲 Enviar este protocolo</button>
+    <div class="share-disc">Este protocolo fica salvo só na sua conta. Ao enviar, é gerado um link só-leitura para o paciente.</div>
+  </div>
+</div>
+
+<!-- modal: meus protocolos -->
+<div class="modal" id="protos-modal">
+  <div class="sheet">
+    <div class="sheet-head"><div class="sheet-title">Meus protocolos</div><button class="sheet-x" id="protos-close">✕</button></div>
+    <div class="sheet-body">
+      <p class="nf-note" style="margin-top:0">Crie protocolos separados (ex.: um por paciente ou por finalidade), edite quando quiser e envie o link para quem precisar. Não interfere no seu protocolo pessoal.</p>
+      <div id="protos-list"></div>
+    </div>
+    <div class="sheet-foot"><button class="btn-primary" id="protos-new" style="flex:1">＋ Criar protocolo</button></div>
+  </div>
+</div>
+
 <!-- tela de protocolo compartilhado (só leitura) -->
 <div class="share-view" id="share-view">
   <div class="share-inner">
@@ -760,10 +799,12 @@ const DEFAULT_PROTOCOL = [
 ];
 let PEPTIDES = [];
 let LOGS = {};
+let PATIENTS = [];
 let currentUser = null;
+let builderProto = null;
 function cloudSave(){
   if(!currentUser) return;
-  setDoc(doc(db,'users',currentUser.uid), {protocol:PEPTIDES, logs:LOGS}, {merge:true}).catch(e=>console.warn('save',e));
+  setDoc(doc(db,'users',currentUser.uid), {protocol:PEPTIDES, logs:LOGS, patients:PATIENTS}, {merge:true}).catch(e=>console.warn('save',e));
 }
 function saveProtocol(){ cloudSave(); }
 
@@ -858,7 +899,7 @@ function renderToday(){
   drawRing(taken,due.length);
   cont.querySelectorAll(".take").forEach(b=>b.onclick=()=>toggle(b.dataset.id));
   cont.querySelectorAll(".del").forEach(b=>b.onclick=()=>removePep(b.dataset.id));
-  cont.querySelectorAll(".gear").forEach(b=>b.onclick=()=>{ const p=PEPTIDES.find(x=>x.id===b.dataset.id); if(p) openModal(p); });
+  cont.querySelectorAll(".gear").forEach(b=>b.onclick=()=>{ builderProto=null; const p=PEPTIDES.find(x=>x.id===b.dataset.id); if(p) openModal(p); });
 }
 
 function removePep(id){
@@ -1050,7 +1091,7 @@ function openModal(pep){
   modal.classList.add("on");
 }
 function closeModal(){ modal.classList.remove("on"); }
-document.getElementById("add-pep-btn").onclick=()=>openModal();
+document.getElementById("add-pep-btn").onclick=()=>{ builderProto=null; openModal(); };
 document.getElementById("modal-close").onclick=closeModal;
 document.getElementById("modal-cancel").onclick=closeModal;
 modal.onclick=e=>{ if(e.target===modal) closeModal(); };
@@ -1069,17 +1110,21 @@ document.getElementById("modal-save").onclick=()=>{
     freq=days.map(i=>DAY_FULL[i]).join(" · ");
   } else if(fMoon){ freq="Antes de dormir"; }
   const fields={ name, sub:sub||"peptídeo", ui, dose:dose||"—", per:fPer, freq, days, accent:fColor, moon:fMoon, start:document.getElementById("f-start").value||"", note:document.getElementById("f-note").value.trim(), time:document.getElementById("f-time").value||"" };
+  const arr = builderProto ? builderProto.protocol : PEPTIDES;
   if(editingId){
-    const idx=PEPTIDES.findIndex(p=>p.id===editingId);
-    if(idx>=0) PEPTIDES[idx]={...PEPTIDES[idx], ...fields};
+    const idx=arr.findIndex(p=>p.id===editingId);
+    if(idx>=0) arr[idx]={...arr[idx], ...fields};
   } else {
     const id=name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'')+"-"+Date.now().toString(36);
-    PEPTIDES.push({id, ...fields});
-    const key=name.toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/(^_+|_+$)/g,'')||'x';
-    bumpStats({peptides:increment(1), pepCounts:{[key]:{name:name, count:increment(1)}}});
+    arr.push({id, ...fields});
+    if(!builderProto){
+      const key=name.toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/(^_+|_+$)/g,'')||'x';
+      bumpStats({peptides:increment(1), pepCounts:{[key]:{name:name, count:increment(1)}}});
+    }
   }
-  saveProtocol(); renderToday(); renderWeek(); renderHistory(); closeModal();
-  document.querySelector("button[data-v='hoje']").click();
+  cloudSave(); closeModal();
+  if(builderProto){ renderBuilder(); }
+  else { renderToday(); renderWeek(); renderHistory(); document.querySelector("button[data-v='hoje']").click(); }
 };
 buildLibrary();
 
@@ -1306,6 +1351,7 @@ function showApp(user){
       const d = snap.data();
       PEPTIDES = Array.isArray(d.protocol) ? d.protocol : [];
       LOGS = d.logs || {};
+      PATIENTS = Array.isArray(d.patients) ? d.patients : [];
       if(!d.counted){ bumpStats({users:increment(1)}); setDoc(ref,{counted:true},{merge:true}).catch(()=>{}); }
     } else {
       PEPTIDES = [];
@@ -1484,22 +1530,25 @@ function pepLineHTML(p){
     <span class="card-abar" style="position:absolute;left:0;top:0;bottom:0;width:4px;background:${p.accent}"></span>
   </div>`;
 }
-document.getElementById("share-btn").onclick=async()=>{
-  if(!currentUser){ return; }
-  if(!PEPTIDES.length){ alert("Adicione ao menos um peptídeo antes de compartilhar."); return; }
+async function createShare(protocolArr){
   const id=Date.now().toString(36)+Math.random().toString(36).slice(2,7);
-  const by=(currentUser.email||"").split("@")[0]||"alguém";
-  try{
-    await setDoc(doc(db,'shared',id), {by, protocol:PEPTIDES, ts:Date.now()});
-    const url=location.origin+location.pathname+"?share="+id;
-    const msg="Segue meu protocolo de peptídeos: "+url;
-    document.getElementById("link-url").value=url;
-    document.getElementById("link-wa").href="https://wa.me/?text="+encodeURIComponent(msg);
-    document.getElementById("link-mail").href="mailto:?subject="+encodeURIComponent("Protocolo de peptídeos")+"&body="+encodeURIComponent(msg);
-    document.getElementById("link-share").dataset.url=url;
-    document.getElementById("link-share").dataset.msg=msg;
-    document.getElementById("link-modal").classList.add("on");
-  }catch(e){ alert("Não consegui gerar o link agora. Verifique a conexão."); console.warn(e); }
+  const by=(currentUser&&currentUser.email||"").split("@")[0]||"alguém";
+  await setDoc(doc(db,'shared',id), {by, protocol:protocolArr, ts:Date.now()});
+  return location.origin+location.pathname+"?share="+id;
+}
+function openShareModal(url){
+  const msg="Segue o protocolo de peptídeos: "+url;
+  document.getElementById("link-url").value=url;
+  document.getElementById("link-wa").href="https://wa.me/?text="+encodeURIComponent(msg);
+  document.getElementById("link-mail").href="mailto:?subject="+encodeURIComponent("Protocolo de peptídeos")+"&body="+encodeURIComponent(msg);
+  const sb=document.getElementById("link-share"); sb.dataset.url=url; sb.dataset.msg=msg;
+  document.getElementById("link-modal").classList.add("on");
+}
+document.getElementById("share-btn").onclick=async()=>{
+  if(!currentUser) return;
+  if(!PEPTIDES.length){ alert("Adicione ao menos um peptídeo antes de compartilhar."); return; }
+  try{ const url=await createShare(PEPTIDES); openShareModal(url); }
+  catch(e){ alert("Não consegui gerar o link agora. Verifique a conexão."); console.warn(e); }
 };
 document.getElementById("link-share").onclick=async()=>{
   const b=document.getElementById("link-share");
@@ -1524,6 +1573,84 @@ function renderShare(data){
   const list=document.getElementById("share-list");
   const arr=Array.isArray(data.protocol)?data.protocol:[];
   list.innerHTML = arr.length? arr.map(pepLineHTML).join('') : '<div class="empty-note">Este protocolo está vazio.</div>';
+}
+
+/* ---- Meus protocolos (pacientes / modelos) ---- */
+function renderProtos(){
+  const list=document.getElementById("protos-list");
+  if(!list) return;
+  if(!PATIENTS.length){ list.innerHTML='<div class="empty-note">Nenhum protocolo criado ainda.<br>Toque em "Criar protocolo" para começar.</div>'; return; }
+  list.innerHTML=PATIENTS.map(pt=>`
+    <div class="pt-row">
+      <div class="pt-info"><div class="pt-name">${esc(pt.name||'Sem nome')}</div><div class="pt-count">${(pt.protocol||[]).length} peptídeo(s)</div></div>
+      <div class="pt-act">
+        <button class="pt-edit" data-id="${pt.id}" aria-label="Editar">✎</button>
+        <button class="pt-send" data-id="${pt.id}" aria-label="Enviar">📲</button>
+        <button class="pt-del" data-id="${pt.id}" aria-label="Excluir">🗑</button>
+      </div>
+    </div>`).join('');
+  list.querySelectorAll(".pt-edit").forEach(b=>b.onclick=()=>openBuilder(b.dataset.id));
+  list.querySelectorAll(".pt-send").forEach(b=>b.onclick=()=>sendProto(b.dataset.id));
+  list.querySelectorAll(".pt-del").forEach(b=>b.onclick=()=>{ const pt=PATIENTS.find(x=>x.id===b.dataset.id); if(pt&&confirm(`Excluir o protocolo "${pt.name}"?`)){ PATIENTS=PATIENTS.filter(x=>x.id!==b.dataset.id); cloudSave(); renderProtos(); } });
+}
+document.getElementById("protos-btn").onclick=()=>{ renderProtos(); document.getElementById("protos-modal").classList.add("on"); };
+document.getElementById("protos-close").onclick=()=>document.getElementById("protos-modal").classList.remove("on");
+document.getElementById("protos-modal").onclick=e=>{ if(e.target.id==="protos-modal") document.getElementById("protos-modal").classList.remove("on"); };
+document.getElementById("protos-new").onclick=()=>{
+  const name=prompt("Nome do protocolo (ex.: nome do paciente):","");
+  if(name===null) return;
+  const pt={id:"pt-"+Date.now().toString(36), name:name.trim()||"Novo protocolo", protocol:[]};
+  PATIENTS.push(pt); cloudSave();
+  document.getElementById("protos-modal").classList.remove("on");
+  openBuilder(pt.id);
+};
+
+/* ---- Construtor de um protocolo ---- */
+function openBuilder(id){
+  builderProto = PATIENTS.find(x=>x.id===id);
+  if(!builderProto) return;
+  document.getElementById("protos-modal").classList.remove("on");
+  document.getElementById("builder-name").value = builderProto.name||"";
+  renderBuilder();
+  document.getElementById("builder-view").classList.add("on");
+}
+function builderCardHTML(p){
+  const moon=p.moon?' 🌙':'';
+  return `<div class="card" style="padding-top:15px">
+    <span class="card-abar" style="position:absolute;left:0;top:0;bottom:0;width:4px;background:${p.accent}"></span>
+    <div class="info">
+      <div class="nm"><span class="dot" style="background:${p.accent}"></span>${esc(p.name)}${moon}</div>
+      <div class="sub">${esc(p.sub||'')}</div>
+      <div class="meta"><span class="ui">${esc(String(p.ui))} UI</span><span class="freq">· ${esc(p.freq||'')}</span><span class="chip-acc" style="background:${p.accent}1F;color:${p.accent}">${esc(p.dose||'')}/${esc(p.per||'')}</span></div>
+    </div>
+    <div class="ctrls" style="position:static;flex-direction:row">
+      <button class="gear bl-edit" data-id="${p.id}" aria-label="Editar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+      <button class="del bl-del" data-id="${p.id}" aria-label="Remover"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/></svg></button>
+    </div>
+  </div>`;
+}
+function renderBuilder(){
+  if(!builderProto) return;
+  const list=document.getElementById("builder-list");
+  const arr=builderProto.protocol||[];
+  list.innerHTML = arr.length? arr.map(builderCardHTML).join('') : '<div class="empty-note">Nenhum peptídeo. Toque em "Adicionar peptídeo".</div>';
+  list.querySelectorAll(".bl-edit").forEach(b=>b.onclick=()=>{ const p=builderProto.protocol.find(x=>x.id===b.dataset.id); if(p) openModal(p); });
+  list.querySelectorAll(".bl-del").forEach(b=>b.onclick=()=>{ const p=builderProto.protocol.find(x=>x.id===b.dataset.id); if(p&&confirm(`Remover ${p.name}?`)){ builderProto.protocol=builderProto.protocol.filter(x=>x.id!==b.dataset.id); cloudSave(); renderBuilder(); } });
+}
+document.getElementById("builder-add").onclick=()=>{ if(builderProto) openModal(); };
+document.getElementById("builder-name").addEventListener("input",e=>{ if(builderProto){ builderProto.name=e.target.value; cloudSave(); } });
+document.getElementById("builder-back").onclick=()=>{ builderProto=null; document.getElementById("builder-view").classList.remove("on"); renderProtos(); document.getElementById("protos-modal").classList.add("on"); };
+document.getElementById("builder-send").onclick=async()=>{
+  if(!builderProto) return;
+  if(!(builderProto.protocol||[]).length){ alert("Adicione ao menos um peptídeo antes de enviar."); return; }
+  try{ const url=await createShare(builderProto.protocol); openShareModal(url); }
+  catch(e){ alert("Não consegui gerar o link agora."); console.warn(e); }
+};
+function sendProto(id){
+  const pt=PATIENTS.find(x=>x.id===id); if(!pt) return;
+  if(!(pt.protocol||[]).length){ alert("Este protocolo está vazio. Edite e adicione peptídeos primeiro."); return; }
+  document.getElementById("protos-modal").classList.remove("on");
+  createShare(pt.protocol).then(url=>openShareModal(url)).catch(e=>{ alert("Não consegui gerar o link agora."); console.warn(e); });
 }
 
 /* =========================================================
