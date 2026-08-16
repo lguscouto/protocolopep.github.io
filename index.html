@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#0B1017">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Protocolo">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
 <title>Protocolo de Peptídeos</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -439,6 +446,7 @@
       <button class="tool-b" id="share-btn">🔗 Compartilhar</button>
       <button class="tool-b" id="export-btn">⬇ Exportar</button>
       <button class="tool-b" id="import-btn">⬆ Importar</button>
+      <button class="tool-b" id="install-btn" style="display:none">📲 Instalar app</button>
       <input type="file" id="import-file" accept="application/json,.json" style="display:none">
     </div>
   </section>
@@ -1449,7 +1457,7 @@ function beep(){ try{ ensureAudio(); if(!audioCtx) return; const t=audioCtx.curr
 function notify(title, body){
   try{
     if(!("Notification" in window) || Notification.permission!=="granted") return;
-    const n=new Notification(title, {body, tag:title, icon:"https://zezojl.github.io/protocolo/icon.png"});
+    const n=new Notification(title, {body, tag:title, icon:"icon-192.png"});
     if(notifCfg.sound){ beep(); if(navigator.vibrate) navigator.vibrate([200,100,200]); }
     n.onclick=()=>{ try{ window.focus(); }catch(e){} n.close(); };
   }catch(e){ console.warn(e); }
@@ -1652,6 +1660,30 @@ function sendProto(id){
   document.getElementById("protos-modal").classList.remove("on");
   createShare(pt.protocol).then(url=>openShareModal(url)).catch(e=>{ alert("Não consegui gerar o link agora."); console.warn(e); });
 }
+
+/* =========================================================
+   PWA — instalação e service worker
+   ========================================================= */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{ navigator.serviceWorker.register('./sw.js').catch(()=>{}); });
+}
+let deferredPrompt=null;
+const isStandalone=()=> (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone===true;
+const isIOS=()=> /iphone|ipad|ipod/i.test(navigator.userAgent||'');
+function showInstall(){ if(!isStandalone()) document.getElementById('install-btn').style.display=''; }
+window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); deferredPrompt=e; showInstall(); });
+if(isIOS() && !isStandalone()) showInstall();
+document.getElementById('install-btn').onclick=async()=>{
+  if(deferredPrompt){
+    deferredPrompt.prompt();
+    try{ await deferredPrompt.userChoice; }catch(e){}
+    deferredPrompt=null; document.getElementById('install-btn').style.display='none';
+  } else if(isIOS()){
+    alert("Para instalar no iPhone:\n\n1) Abra este site no Safari\n2) Toque no botão Compartilhar (quadrado com a seta ↑)\n3) Escolha \"Adicionar à Tela de Início\"\n\nDepois abra pelo ícone na tela inicial — assim os lembretes/notificações funcionam.");
+  } else {
+    alert("No menu do seu navegador, escolha \"Instalar app\" ou \"Adicionar à tela inicial\".");
+  }
+};
 
 /* =========================================================
    BACKUP / EXPORTAR / IMPORTAR
