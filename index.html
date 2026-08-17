@@ -303,6 +303,46 @@
   .notice-text a{color:var(--primary);font-weight:700;text-decoration:underline;}
   .notice-text a.notice-cta{display:inline-block;text-decoration:none;background:var(--primary);color:#0B1017;padding:3px 12px;border-radius:20px;font-size:12px;white-space:nowrap;}
   .notice-x{flex:none;background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;}
+
+  /* ---------- modal de novidades ---------- */
+  .nv-overlay{
+    position:fixed;inset:0;z-index:200;
+    display:flex;align-items:center;justify-content:center;padding:24px;
+    background:rgba(5,8,13,.7);backdrop-filter:blur(4px);
+    animation:nvFade .25s ease;
+  }
+  @keyframes nvFade{from{opacity:0;}to{opacity:1;}}
+  .nv-modal{
+    position:relative;width:100%;max-width:400px;
+    background:var(--surface);border:1px solid var(--border2);
+    border-radius:20px;padding:26px 22px 22px;
+    box-shadow:0 24px 60px rgba(0,0,0,.5);
+    animation:nvPop .32s cubic-bezier(.34,1.4,.64,1);
+  }
+  @keyframes nvPop{from{opacity:0;transform:translateY(16px) scale(.96);}to{opacity:1;transform:none;}}
+  .nv-close{
+    position:absolute;top:14px;right:14px;
+    background:var(--surface3);border:1px solid var(--border2);
+    color:var(--muted);width:30px;height:30px;border-radius:9px;
+    font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+    transition:all .15s ease;
+  }
+  .nv-close:hover{color:var(--text);background:var(--surface2);}
+  .nv-badge{
+    display:inline-block;background:var(--primary-dim);border:1px solid var(--primary);
+    color:var(--primary);font-size:11px;font-weight:700;
+    padding:4px 12px;border-radius:20px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;
+  }
+  .nv-title{font-family:var(--display);font-size:20px;font-weight:700;margin:0 0 12px;color:var(--text);}
+  .nv-body{font-size:14px;line-height:1.6;color:var(--muted);white-space:pre-wrap;max-height:44vh;overflow-y:auto;margin-bottom:20px;}
+  .nv-body b{color:var(--text);}
+  .nv-ok{
+    width:100%;background:var(--primary);color:#0B1017;border:none;
+    font-family:var(--font);font-weight:700;font-size:15px;
+    padding:13px;border-radius:12px;cursor:pointer;transition:all .18s ease;
+  }
+  .nv-ok:hover{filter:brightness(1.05);}
+  .nv-ok:active{transform:scale(.97);}
   .share-view{position:fixed;inset:0;z-index:120;display:none;background:var(--bg);overflow-y:auto;padding:24px 16px 40px;}
   .share-view.on{display:block;}
   .share-inner{max-width:640px;margin:0 auto;}
@@ -680,6 +720,17 @@
 
 <div id="bg-molecules" class="bg-mol" aria-hidden="true"></div>
 <div class="app">
+  <!-- modal de novidades (aparece 1x quando há atualização publicada) -->
+  <div class="nv-overlay" id="nv-overlay" style="display:none">
+    <div class="nv-modal">
+      <button class="nv-close" id="nv-close" aria-label="Fechar">✕</button>
+      <div class="nv-badge">✨ Novidades</div>
+      <h3 class="nv-title" id="nv-title">Atualização</h3>
+      <div class="nv-body" id="nv-body"></div>
+      <button class="nv-ok" id="nv-ok">Entendi!</button>
+    </div>
+  </div>
+
   <div class="topbar">
     <div class="tb-left">
       <div class="brand">
@@ -879,6 +930,16 @@
       <div class="inrow" style="margin-top:10px">
         <button class="btn-primary" id="notice-publish" style="flex:2">Publicar recado</button>
         <button class="btn-ghost" id="notice-remove" style="flex:1">Remover</button>
+      </div>
+    </div>
+    <p class="eyebrow" style="margin-top:22px">Novidades / Atualizações <span style="font-weight:400;text-transform:none;letter-spacing:0">(pop-up que aparece 1x ao abrir)</span></p>
+    <div class="panel">
+      <input class="txt" id="nv-title-input" placeholder="Título (ex.: Novidades da versão 2.0)" style="margin-bottom:10px">
+      <textarea class="txt area" id="nv-body-input" rows="5" placeholder="Descreva o que mudou. Ex.:&#10;• Agora dá pra marcar doses de dias passados&#10;• Adicionada opção 'a cada X dias'&#10;• Múltiplas doses por dia com caixinhas"></textarea>
+      <div class="ad-note" style="margin:8px 0 0">💡 Cada vez que publicar, o pop-up aparece novamente para todos (mesmo quem já tinha fechado a versão anterior).</div>
+      <div class="inrow" style="margin-top:10px">
+        <button class="btn-primary" id="nv-publish" style="flex:2">Publicar novidade</button>
+        <button class="btn-ghost" id="nv-remove" style="flex:1">Remover</button>
       </div>
     </div>
     <p class="eyebrow" style="margin-top:22px">Contas registradas</p>
@@ -2011,6 +2072,8 @@ function showApp(user){
   if(unsub) unsub();
   if(noticeUnsub){ noticeUnsub(); noticeUnsub=null; }
   noticeUnsub = onSnapshot(doc(db,'meta','notice'), s=>{ noticeData = s.exists()?s.data():null; renderNotice(); }, e=>console.warn('notice',e));
+  if(novidadesUnsub){ novidadesUnsub(); novidadesUnsub=null; }
+  novidadesUnsub = onSnapshot(doc(db,'meta','novidades'), s=>{ novidadesData = s.exists()?s.data():null; renderNovidades(); }, e=>console.warn('novidades',e));
   const ref = doc(db,'users',user.uid);
   unsub = onSnapshot(ref, snap=>{
     if(snap.exists()){
@@ -2040,6 +2103,8 @@ function showAuth(){
   if(statsUnsub){ statsUnsub(); statsUnsub=null; }
   if(membersUnsub){ membersUnsub(); membersUnsub=null; }
   if(noticeUnsub){ noticeUnsub(); noticeUnsub=null; }
+  if(novidadesUnsub){ novidadesUnsub(); novidadesUnsub=null; }
+  { const ov=document.getElementById("nv-overlay"); if(ov) ov.style.display="none"; }
   adminMembers=[];
   NICKNAME="";
   authScreen.classList.add("on");
@@ -2429,6 +2494,7 @@ document.getElementById("import-file").addEventListener("change",e=>{
    RECADO DO ADMIN
    ========================================================= */
 let noticeUnsub=null, noticeData=null;
+let novidadesUnsub=null, novidadesData=null;
 let noticeRotTimer=null, noticeMsgs=[], noticeIdx=0;
 function linkifyNotice(msg){
   const tokens=[];
@@ -2486,6 +2552,51 @@ document.getElementById("notice-x").onclick=()=>{
   try{ if(noticeData&&noticeData.ts) localStorage.setItem("notice-dismissed",String(noticeData.ts)); }catch(e){}
   document.getElementById("notice-banner").style.display="none";
 };
+
+/* ---- novidades / atualizações (pop-up 1x) ---- */
+function renderNovidades(){
+  const overlay=document.getElementById("nv-overlay");
+  // preencher os campos do admin sempre que houver dados
+  const ti=document.getElementById("nv-title-input");
+  const bi=document.getElementById("nv-body-input");
+  if(novidadesData && novidadesData.active){
+    if(ti && document.activeElement!==ti) ti.value=novidadesData.title||"";
+    if(bi && document.activeElement!==bi) bi.value=novidadesData.body||"";
+  }
+  // mostrar o modal só se: ativo, tem conteúdo, e a pessoa ainda não fechou ESTA versão
+  let visto=null;
+  try{ visto=localStorage.getItem("novidades-vista"); }catch(e){}
+  const active = novidadesData && novidadesData.active && (novidadesData.body||novidadesData.title) && String(novidadesData.ts)!==visto;
+  if(active){
+    document.getElementById("nv-title").textContent = novidadesData.title || "Novidades";
+    document.getElementById("nv-body").textContent = novidadesData.body || "";
+    overlay.style.display="flex";
+  } else {
+    overlay.style.display="none";
+  }
+}
+function fecharNovidades(){
+  try{ if(novidadesData&&novidadesData.ts) localStorage.setItem("novidades-vista",String(novidadesData.ts)); }catch(e){}
+  document.getElementById("nv-overlay").style.display="none";
+}
+document.getElementById("nv-close").onclick=fecharNovidades;
+document.getElementById("nv-ok").onclick=fecharNovidades;
+// clicar fora do modal (no fundo escuro) também fecha
+document.getElementById("nv-overlay").onclick=(e)=>{ if(e.target.id==="nv-overlay") fecharNovidades(); };
+document.getElementById("nv-publish").onclick=()=>{
+  const title=document.getElementById("nv-title-input").value.trim();
+  const body=document.getElementById("nv-body-input").value.trim();
+  if(!body && !title){ alert("Escreva as novidades."); return; }
+  setDoc(doc(db,'meta','novidades'), {title, body, ts:Date.now(), active:true})
+    .then(()=>alert("Novidade publicada! Vai aparecer para todos ao abrir o app."))
+    .catch(e=>{ alert("Não consegui publicar."); console.warn(e); });
+};
+document.getElementById("nv-remove").onclick=()=>{
+  setDoc(doc(db,'meta','novidades'), {active:false}, {merge:true})
+    .then(()=>alert("Novidade removida."))
+    .catch(e=>console.warn(e));
+};
+
 document.getElementById("notice-publish").onclick=()=>{
   const t=document.getElementById("notice-input").value.trim();
   if(!t){ alert("Escreva o recado."); return; }
