@@ -340,8 +340,13 @@
   .notice-text{flex:1;font-size:13px;color:var(--text);line-height:1.4;overflow:hidden;white-space:nowrap;position:relative;min-height:1.4em;}
   .notice-text a{color:var(--primary);font-weight:700;text-decoration:underline;}
   .notice-text a.notice-cta{display:inline-block;text-decoration:none;background:var(--primary);color:#0B1017;padding:3px 12px;border-radius:20px;font-size:12px;}
-  /* cada letra é um span individual */
-  .notice-text .nl{display:inline;transition:opacity .08s ease;}
+  /* slide lateral — frase entra pela direita, sai pela esquerda */
+  .notice-msg{display:inline-block;width:100%;transition:transform .45s cubic-bezier(.4,0,.2,1), opacity .45s ease;}
+  .notice-msg.slide-out{transform:translateX(-110%);opacity:0;}
+  .notice-msg.slide-in{transform:translateX(110%);opacity:0;transition:none;}
+  .notice-msg.slide-active{transform:translateX(0);opacity:1;}
+  /* cada letra é um span individual (não usado no slide, mas mantido) */
+  .notice-text .nl{display:inline;}
   .notice-x{flex:none;background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;}
 
   /* ---------- modal de novidades ---------- */
@@ -980,7 +985,12 @@
     </div>
     <p class="eyebrow" style="margin-top:22px">Recado para todos <span style="font-weight:400;text-transform:none;letter-spacing:0">(um por linha = rotativo)</span></p>
     <div class="panel">
-      <textarea class="txt area" id="notice-input" rows="3" placeholder="Ex.: Novo protocolo de longevidade disponível!&#10;Reunião do grupo sábado às 10h&#10;Confiram a aba Calcular"></textarea>
+      <textarea class="txt area" id="notice-input" rows="4" placeholder="Uma frase por linha. Ex.:&#10;Reunião do grupo sábado às 10h&#10;Novo protocolo disponível!&#10;Confiram a aba Calcular" oninput="
+        var linhas = this.value.split(/\n|\r\n|\r/).map(s=>s.trim()).filter(Boolean);
+        var prev = document.getElementById('notice-preview');
+        if(prev) prev.textContent = linhas.length > 1 ? linhas.length + ' frases detectadas — vão aparecer uma por vez' : '';
+      "></textarea>
+      <p id="notice-preview" style="font-size:11.5px;color:var(--primary);margin:4px 0 8px;min-height:1em;"></p>
       <div class="ad-note" style="margin:8px 0 0">💡 Para um botão clicável sem expor o número/link, escreva assim: <b>[Fale comigo no WhatsApp](84999937819)</b> — aparece só o texto, clicável, abrindo o WhatsApp.</div>
       <div class="inrow" style="margin-top:10px;align-items:center">
         <label style="margin:0;color:var(--muted);font-size:13px;font-weight:600;flex:none">Trocar a cada</label>
@@ -2588,62 +2598,62 @@ function renderNotice(){
   const active = noticeData && noticeData.active && noticeData.text && String(noticeData.ts)!==dismissed;
   if(!active){ banner.style.display="none"; return; }
 
-  noticeMsgs = noticeData.text.split("\n").map(s=>s.trim()).filter(Boolean);
-  noticeIdx = 0;
+  // separar frases por linha (cada linha = uma frase)
+  noticeMsgs = noticeData.text.split(/\n|\r\n|\r/).map(s=>s.trim()).filter(Boolean);
+  if(noticeMsgs.length===0){ banner.style.display="none"; return; }
   banner.style.display="flex";
 
-  // velocidade: ms entre cada letra (aparecer e sumir)
-  var APARECER = 55;   // ms por letra aparecendo
-  var SUMIR    = 40;   // ms por letra sumindo (um pouco mais rápido)
-  var PAUSA    = 1800; // ms de pausa entre sumir e aparecer a próxima
+  // tempo que cada frase fica visível: proporcional ao tamanho da frase
+  // mínimo 2s, máximo 8s — ~60ms por caractere
+  function tempoFrase(msg){ return Math.min(8000, Math.max(2000, msg.length * 60)); }
 
-  function mostrarMsg(idx){
-    var msg = noticeMsgs[idx] || "";
-    var letras = msg.split("");
-    el.innerHTML = "";
+  function mostrarFrase(idx){
+    var html = linkifyNotice(noticeMsgs[idx]||"");
+    var cur = el.querySelector(".notice-msg");
+    var nov = document.createElement("span");
+    nov.className = "notice-msg slide-in";
+    nov.innerHTML = html;
+    el.appendChild(nov);
 
-    // criar um span por letra, todas invisíveis
-    letras.forEach(function(l){
-      var s = document.createElement("span");
-      s.className = "nl";
-      s.style.opacity = "0";
-      s.textContent = l;
-      el.appendChild(s);
-    });
-
-    var spans = el.querySelectorAll(".nl");
-    var i = 0;
-
-    // FASE 1: letras aparecem uma por uma da esquerda pra direita
-    function aparecer(){
-      if(i >= spans.length){
-        // todas apareceram — aguarda e começa a sumir
-        window.__noticeAnim = setTimeout(sumir, PAUSA);
-        return;
-      }
-      spans[i].style.opacity = "1";
-      i++;
-      window.__noticeAnim = setTimeout(aparecer, APARECER);
-    }
-
-    var j = 0;
-    // FASE 2: letras somem uma por uma da esquerda pra direita
-    function sumir(){
-      if(j >= spans.length){
-        // todas sumiram — passa pra próxima mensagem
-        var proximo = (idx + 1) % noticeMsgs.length;
-        window.__noticeAnim = setTimeout(function(){ mostrarMsg(proximo); }, 300);
-        return;
-      }
-      spans[j].style.opacity = "0";
-      j++;
-      window.__noticeAnim = setTimeout(sumir, SUMIR);
-    }
-
-    aparecer();
+    // força reflow e anima entrada (da direita)
+    requestAnimationFrame(function(){ requestAnimationFrame(function(){
+      nov.classList.remove("slide-in");
+      nov.classList.add("slide-active");
+      // aguarda leitura e anima saída (pela esquerda)
+      var tempo = tempoFrase(noticeMsgs[idx]||"");
+      window.__noticeAnim = setTimeout(function(){
+        // sai pela esquerda
+        if(cur){ cur.classList.remove("slide-active"); cur.classList.add("slide-out"); }
+        nov.classList.remove("slide-active");
+        nov.classList.add("slide-out");
+        // remove o antigo após animação e mostra a próxima
+        setTimeout(function(){
+          if(cur && cur.parentNode) cur.remove();
+          if(nov && nov.parentNode) nov.remove();
+          var proximo = (idx+1) % noticeMsgs.length;
+          mostrarFrase(proximo);
+        }, 480);
+      }, tempo);
+    }); });
   }
 
-  mostrarMsg(0);
+  // primeira frase entra direto (sem slide, já aparece pronta)
+  var primeiro = document.createElement("span");
+  primeiro.className = "notice-msg slide-active";
+  primeiro.innerHTML = linkifyNotice(noticeMsgs[0]);
+  el.innerHTML = "";
+  el.appendChild(primeiro);
+  var tempo0 = tempoFrase(noticeMsgs[0]);
+  if(noticeMsgs.length > 1){
+    window.__noticeAnim = setTimeout(function(){
+      primeiro.classList.remove("slide-active");
+      primeiro.classList.add("slide-out");
+      setTimeout(function(){
+        if(primeiro && primeiro.parentNode) primeiro.remove();
+        mostrarFrase(1);
+      }, 480);
+    }, tempo0);
+  }
   const inp=document.getElementById("notice-input");
   if(inp && noticeData && noticeData.text) inp.value=noticeData.active?noticeData.text:"";
   const secsInp=document.getElementById("notice-secs");
