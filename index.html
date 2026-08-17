@@ -66,17 +66,28 @@
   .bg-mol svg{width:100%;height:100%;display:block;}
   .bg-mol .mol-dot{
     fill:#2FD8AC;
-    animation:molFloat 1s ease-in-out infinite alternate;
+    transform-box:fill-box;
+    transform-origin:center;
+    animation:molFloat 6s ease-in-out infinite;
+    will-change:transform;
   }
   .bg-mol .mol-line{
     stroke:#2CC5C0;stroke-width:1;
+    animation:molFade 6s ease-in-out infinite;
   }
   @keyframes molFloat{
-    from{transform:translate(0,0);}
-    to{transform:translate(var(--dx,6px),var(--dy,-8px));}
+    0%   {transform:translate(0,0);}
+    25%  {transform:translate(var(--dx,14px),var(--dy,-18px));}
+    50%  {transform:translate(calc(var(--dx,14px) * -0.6),calc(var(--dy,-18px) * 0.8));}
+    75%  {transform:translate(calc(var(--dx,14px) * 0.4),calc(var(--dy,-18px) * -0.5));}
+    100% {transform:translate(0,0);}
+  }
+  @keyframes molFade{
+    0%,100%{stroke-opacity:inherit;}
+    50%{stroke-opacity:0.05;}
   }
   @media (prefers-reduced-motion: reduce){
-    .bg-mol .mol-dot{animation:none;}
+    .bg-mol .mol-dot,.bg-mol .mol-line{animation:none;}
   }
 
   /* ---------- top bar ---------- */
@@ -541,13 +552,16 @@
           c.setAttribute("fill-opacity", (0.4 + z*0.4).toFixed(2));
           if(!reduce){
             // cada ponto flutua devagar numa direção aleatória, em tempos diferentes
-            var dur = (3 + Math.random()*4).toFixed(2);
-            var dx2 = (Math.random()*16-8).toFixed(1);
-            var dy2 = (Math.random()*16-8).toFixed(1);
+            var dur = (5 + Math.random()*5).toFixed(2);
+            // amplitude maior para movimento visível (18 a 40px)
+            var amp = 18 + Math.random()*22;
+            var ang = Math.random()*Math.PI*2;
+            var dx2 = (Math.cos(ang)*amp).toFixed(1);
+            var dy2 = (Math.sin(ang)*amp).toFixed(1);
             c.style.setProperty("--dx", dx2+"px");
             c.style.setProperty("--dy", dy2+"px");
             c.style.animationDuration = dur+"s";
-            c.style.animationDelay = (Math.random()*-4).toFixed(2)+"s";
+            c.style.animationDelay = (Math.random()*-6).toFixed(2)+"s";
           }
           svg.appendChild(c);
         }
