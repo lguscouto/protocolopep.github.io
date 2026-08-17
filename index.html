@@ -66,25 +66,9 @@
   .bg-mol svg{width:100%;height:100%;display:block;}
   .bg-mol .mol-dot{
     fill:#2FD8AC;
-    transform-box:fill-box;
-    transform-origin:center;
-    animation:molFloat 6s ease-in-out infinite;
-    will-change:transform;
   }
   .bg-mol .mol-line{
     stroke:#2CC5C0;stroke-width:1;
-    animation:molFade 6s ease-in-out infinite;
-  }
-  @keyframes molFloat{
-    0%   {transform:translate(0,0);}
-    25%  {transform:translate(var(--dx,14px),var(--dy,-18px));}
-    50%  {transform:translate(calc(var(--dx,14px) * -0.6),calc(var(--dy,-18px) * 0.8));}
-    75%  {transform:translate(calc(var(--dx,14px) * 0.4),calc(var(--dy,-18px) * -0.5));}
-    100% {transform:translate(0,0);}
-  }
-  @keyframes molFade{
-    0%,100%{stroke-opacity:inherit;}
-    50%{stroke-opacity:0.05;}
   }
   @media (prefers-reduced-motion: reduce){
     .bg-mol .mol-dot,.bg-mol .mol-line{animation:none;}
@@ -502,105 +486,121 @@
 <body>
 <!-- fundo de moléculas: carregado cedo, independente do Firebase -->
 <script>
-/* fundo animado — rede de moléculas 3D (SVG, alta compatibilidade) */
+/* fundo animado — rede de moléculas (SVG + animação por JavaScript, máxima compatibilidade) */
 (function(){
-  function build(){
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var SVGNS = "http://www.w3.org/2000/svg";
+  var systems = [];  // cada container vira um "sistema" de pontos animados
+  var rafId = null;
+
+  function makeSystem(container){
     try{
-      var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if(!container) return null;
+      // usa a dimensão da janela como base (sempre confiável), com fallback
+      var W = window.innerWidth || document.documentElement.clientWidth || container.clientWidth || 360;
+      var H = window.innerHeight || document.documentElement.clientHeight || container.clientHeight || 640;
+      if(W < 50) W = 360;  // proteção contra dimensão inválida
+      if(H < 50) H = 640;
+      var n = Math.round(Math.min(42, Math.max(16, (W*H)/26000)));
 
-      function fill(container){
-        if(!container || container.getAttribute("data-filled")==="1") return;
-        var W = container.clientWidth || window.innerWidth || 360;
-        var H = container.clientHeight || window.innerHeight || 640;
-        // densidade proporcional
-        var n = Math.round(Math.min(42, Math.max(16, (W*H)/26000)));
-        var pts = [];
-        for(var i=0;i<n;i++){
-          pts.push({ x: Math.random()*W, y: Math.random()*H });
-        }
-        var svgns = "http://www.w3.org/2000/svg";
-        var svg = document.createElementNS(svgns, "svg");
-        svg.setAttribute("width","100%");
-        svg.setAttribute("height","100%");
-        svg.setAttribute("viewBox","0 0 "+W+" "+H);
-        svg.setAttribute("preserveAspectRatio","xMidYMid slice");
+      var svg = document.createElementNS(SVGNS, "svg");
+      svg.setAttribute("width","100%");
+      svg.setAttribute("height","100%");
+      svg.setAttribute("viewBox","0 0 "+W+" "+H);
+      svg.setAttribute("preserveAspectRatio","xMidYMid slice");
+      svg.style.display = "block";
 
-        // linhas entre pontos próximos
-        var LINK = 135;
-        for(var a=0;a<pts.length;a++){
-          for(var b=a+1;b<pts.length;b++){
-            var dx=pts[a].x-pts[b].x, dy=pts[a].y-pts[b].y;
-            var d=Math.sqrt(dx*dx+dy*dy);
-            if(d<LINK){
-              var line = document.createElementNS(svgns,"line");
-              line.setAttribute("x1",pts[a].x); line.setAttribute("y1",pts[a].y);
-              line.setAttribute("x2",pts[b].x); line.setAttribute("y2",pts[b].y);
-              line.setAttribute("class","mol-line");
-              line.setAttribute("stroke-opacity", (0.18*(1-d/LINK)).toFixed(3));
-              svg.appendChild(line);
-            }
-          }
-        }
-        // pontos (com profundidade + animação suave)
-        for(var i=0;i<pts.length;i++){
-          var z = Math.random();
-          var c = document.createElementNS(svgns,"circle");
-          c.setAttribute("cx", pts[i].x);
-          c.setAttribute("cy", pts[i].y);
-          c.setAttribute("r", (1.6 + z*2.2).toFixed(2));
-          c.setAttribute("class","mol-dot");
-          c.setAttribute("fill-opacity", (0.4 + z*0.4).toFixed(2));
-          if(!reduce){
-            // cada ponto flutua devagar numa direção aleatória, em tempos diferentes
-            var dur = (5 + Math.random()*5).toFixed(2);
-            // amplitude maior para movimento visível (18 a 40px)
-            var amp = 18 + Math.random()*22;
-            var ang = Math.random()*Math.PI*2;
-            var dx2 = (Math.cos(ang)*amp).toFixed(1);
-            var dy2 = (Math.sin(ang)*amp).toFixed(1);
-            c.style.setProperty("--dx", dx2+"px");
-            c.style.setProperty("--dy", dy2+"px");
-            c.style.animationDuration = dur+"s";
-            c.style.animationDelay = (Math.random()*-6).toFixed(2)+"s";
-          }
-          svg.appendChild(c);
-        }
-
-        container.innerHTML = "";
-        container.appendChild(svg);
-        container.setAttribute("data-filled","1");
+      var pts = [];
+      for(var i=0;i<n;i++){
+        pts.push({
+          x: Math.random()*W, y: Math.random()*H, z: Math.random(),
+          vx: (Math.random()-.5)*1.4, vy: (Math.random()-.5)*1.4  // velocidade px/frame
+        });
       }
 
-      // container global: cria se não existir (à prova de versão antiga)
-      var g = document.getElementById("bg-molecules");
-      if(!g){
-        g = document.createElement("div");
-        g.id = "bg-molecules";
-        g.className = "bg-mol";
-        g.setAttribute("aria-hidden","true");
-        if(document.body) document.body.insertBefore(g, document.body.firstChild);
+      // grupo de linhas (redesenhadas a cada frame)
+      var gLines = document.createElementNS(SVGNS, "g");
+      svg.appendChild(gLines);
+
+      // círculos (movidos a cada frame)
+      var circles = [];
+      for(var i=0;i<pts.length;i++){
+        var c = document.createElementNS(SVGNS, "circle");
+        c.setAttribute("r", (1.6 + pts[i].z*2.2).toFixed(2));
+        c.setAttribute("fill", "#2FD8AC");
+        c.setAttribute("fill-opacity", (0.45 + pts[i].z*0.4).toFixed(2));
+        svg.appendChild(c);
+        circles.push(c);
       }
-      fill(g);
 
-      var lg = document.getElementById("bg-molecules-login");
-      if(lg) fill(lg);
+      container.innerHTML = "";
+      container.appendChild(svg);
 
-      // refazer no redimensionamento (recalcula posições)
-      var rt;
-      window.addEventListener("resize", function(){
-        clearTimeout(rt);
-        rt = setTimeout(function(){
-          [g, document.getElementById("bg-molecules-login")].forEach(function(el){
-            if(el){ el.removeAttribute("data-filled"); fill(el); }
-          });
-        }, 300);
-      });
-
-      return true;
+      return { W:W, H:H, pts:pts, circles:circles, gLines:gLines, container:container };
     }catch(e){
       window.__molErro = (e && e.message) ? e.message : String(e);
-      return false;
+      return null;
     }
+  }
+
+  var LINK = 135;
+  function step(sys){
+    var pts = sys.pts, W = sys.W, H = sys.H;
+    // mover pontos
+    for(var i=0;i<pts.length;i++){
+      var p = pts[i];
+      p.x += p.vx; p.y += p.vy;
+      // wrap-around: sai de um lado, entra do outro (nunca some)
+      if(p.x < -5) p.x = W + 5;
+      else if(p.x > W + 5) p.x = -5;
+      if(p.y < -5) p.y = H + 5;
+      else if(p.y > H + 5) p.y = -5;
+      // atualizar círculo
+      sys.circles[i].setAttribute("cx", p.x.toFixed(1));
+      sys.circles[i].setAttribute("cy", p.y.toFixed(1));
+    }
+    // redesenhar linhas
+    var linesHTML = "";
+    for(var a=0;a<pts.length;a++){
+      for(var b=a+1;b<pts.length;b++){
+        var dx = pts[a].x-pts[b].x, dy = pts[a].y-pts[b].y;
+        var d = Math.sqrt(dx*dx+dy*dy);
+        if(d < LINK){
+          var op = (0.2*(1-d/LINK)).toFixed(3);
+          linesHTML += '<line x1="'+pts[a].x.toFixed(1)+'" y1="'+pts[a].y.toFixed(1)+
+                       '" x2="'+pts[b].x.toFixed(1)+'" y2="'+pts[b].y.toFixed(1)+
+                       '" stroke="#2CC5C0" stroke-width="1" stroke-opacity="'+op+'"/>';
+        }
+      }
+    }
+    sys.gLines.innerHTML = linesHTML;
+  }
+
+  var running = true;
+  function loop(){
+    if(!running){ return; }
+    for(var i=0;i<systems.length;i++){ try{ step(systems[i]); }catch(e){} }
+    rafId = requestAnimationFrame(loop);
+  }
+
+  function iniciarSistemas(){
+    systems = [];
+    // container global (cria se não existir)
+    var g = document.getElementById("bg-molecules");
+    if(!g){
+      g = document.createElement("div");
+      g.id = "bg-molecules";
+      g.className = "bg-mol";
+      g.setAttribute("aria-hidden","true");
+      if(document.body) document.body.insertBefore(g, document.body.firstChild);
+    }
+    var sg = makeSystem(g);
+    if(sg) systems.push(sg);
+
+    var lg = document.getElementById("bg-molecules-login");
+    if(lg){ var sl = makeSystem(lg); if(sl) systems.push(sl); }
+
+    return systems.length > 0;
   }
 
   // debug opcional via ?debug
@@ -614,16 +614,37 @@
       el.style.cssText = "position:fixed;bottom:0;left:0;right:0;z-index:99999;background:rgba(0,0,0,.85);color:#2CC5C0;font:12px sans-serif;padding:8px;text-align:center;";
       document.body.appendChild(el);
     }
-    el.textContent = "moléculas: " + msg + "  [VERSÃO 2026-08-16-SVG]";
+    el.textContent = "moléculas: " + msg + "  [VERSÃO 2026-08-16-JS]";
   }
 
   var jaRodou = false;
   function iniciar(){
     if(jaRodou) return;
-    var ok = build();
-    if(ok){ jaRodou = true; dbg("✓ rodando (SVG)"); }
-    else { dbg("FALHOU — " + (window.__molErro || "erro desconhecido")); }
+    var ok = iniciarSistemas();
+    if(ok){
+      jaRodou = true;
+      if(!reduce){ running = true; loop(); }
+      dbg(reduce ? "✓ estático (movimento reduzido)" : "✓ animando ("+systems.length+" sistemas)");
+    } else {
+      dbg("FALHOU — " + (window.__molErro || "sem container"));
+    }
   }
+
+  // recriar no redimensionamento
+  var rt;
+  window.addEventListener("resize", function(){
+    clearTimeout(rt);
+    rt = setTimeout(function(){
+      jaRodou = false;
+      if(iniciarSistemas() && !reduce){ /* loop já está rodando */ }
+    }, 300);
+  });
+
+  // pausar quando aba não está visível
+  document.addEventListener("visibilitychange", function(){
+    if(document.hidden){ running = false; if(rafId) cancelAnimationFrame(rafId); }
+    else if(jaRodou && !reduce){ running = true; loop(); }
+  });
 
   if(document.readyState !== "loading") iniciar();
   document.addEventListener("DOMContentLoaded", iniciar);
