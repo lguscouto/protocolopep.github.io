@@ -539,7 +539,7 @@
       var cLogin=document.getElementById("bg-molecules-login");
       if(cGlobal){ var f1=makeField(cGlobal); if(f1) fields.push(f1); }
       if(cLogin){ var f2=makeField(cLogin); if(f2) fields.push(f2); }
-      if(!fields.length) return;
+      if(!fields.length) return false;
 
       var raf, running=true;
       function loop(){
@@ -558,15 +558,41 @@
       window.addEventListener("resize", function(){ clearTimeout(rt); rt=setTimeout(function(){ for(var i=0;i<fields.length;i++){ try{ fields[i].init(); }catch(e){} } },200); });
       window.addEventListener("orientationchange", function(){ setTimeout(function(){ for(var i=0;i<fields.length;i++){ try{ fields[i].init(); }catch(e){} } },300); });
       document.addEventListener("visibilitychange", function(){ document.hidden?stop():start(); });
+      return true;
     }catch(e){ /* silencioso: se falhar, o app segue normal sem o fundo */ }
+    return false;
   }
 
-  // roda assim que o DOM estiver pronto (cobre qualquer ordem de carregamento)
-  if(document.readyState==="loading"){
-    document.addEventListener("DOMContentLoaded", startMolecules);
-  } else {
-    startMolecules();
+  // dispara de VÁRIAS formas pra garantir que rode, não importa o que aconteça no resto da página
+  var jaRodou = false;
+  var DEBUG = location.search.indexOf("debug") > -1;
+  function dbg(msg){
+    if(!DEBUG) return;
+    var el=document.getElementById("mol-debug");
+    if(!el){
+      el=document.createElement("div");
+      el.id="mol-debug";
+      el.style.cssText="position:fixed;bottom:0;left:0;right:0;z-index:99999;background:rgba(0,0,0,.85);color:#2CC5C0;font:12px sans-serif;padding:8px;text-align:center;";
+      document.body.appendChild(el);
+    }
+    el.textContent = "moléculas: " + msg;
   }
+  function iniciarUmaVez(){
+    if(jaRodou) return;
+    var ok = startMolecules();
+    if(ok === true){ jaRodou = true; dbg("✓ rodando"); }
+    else { dbg("aguardando canvas… (readyState="+document.readyState+")"); }
+  }
+  // 1) se o DOM já está pronto, roda já
+  if(document.readyState !== "loading"){
+    iniciarUmaVez();
+  }
+  // 2) quando o DOM terminar de montar
+  document.addEventListener("DOMContentLoaded", iniciarUmaVez);
+  // 3) quando tudo (imagens, etc) carregar — rede de segurança
+  window.addEventListener("load", iniciarUmaVez);
+  // 4) fallback final por tempo, caso os eventos acima não disparem
+  setTimeout(iniciarUmaVez, 1200);
 })();
 </script>
 
