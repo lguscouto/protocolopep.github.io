@@ -143,6 +143,34 @@
     .take .rip{display:none;}
   }
 
+  /* ---------- doses múltiplas (caixinhas) ---------- */
+  .doses{display:flex;flex-direction:column;align-items:flex-end;gap:7px;min-width:96px;}
+  .doses-count{font-size:12px;font-weight:700;color:var(--acc);}
+  .doses-boxes{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;}
+  .dosebox{
+    width:38px;min-height:38px;border-radius:10px;
+    border:1.5px solid var(--border2);background:var(--surface3);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    transition:all .2s ease;padding:2px;
+  }
+  .dosebox.on{background:var(--acc);border-color:var(--acc);animation:takePop .35s ease;}
+  .dosebox-ico{font-size:14px;font-weight:800;color:var(--muted2);line-height:1;}
+  .dosebox.on .dosebox-ico{color:#0B1017;}
+  .dosebox-t{font-size:8px;font-weight:600;color:#0B1017;opacity:.8;margin-top:1px;line-height:1;}
+  .doses-btns{display:flex;gap:6px;align-items:center;}
+  .dose-add{
+    background:transparent;border:1.5px solid var(--acc);color:var(--acc);
+    font-family:var(--font);font-weight:700;font-size:12px;
+    padding:7px 12px;border-radius:9px;cursor:pointer;transition:all .18s ease;
+  }
+  .dose-add:hover:not(:disabled){background:color-mix(in srgb, var(--acc) 14%, transparent);}
+  .dose-add:active:not(:disabled){transform:scale(.94);}
+  .dose-add:disabled{opacity:.35;cursor:default;border-color:var(--border2);color:var(--muted);}
+  .dose-undo{
+    background:none;border:none;color:var(--muted);
+    font-family:var(--font);font-size:11px;cursor:pointer;text-decoration:underline;padding:4px;
+  }
+
   /* ---------- week ---------- */
   .panel{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:16px 12px;}
   table{width:100%;border-collapse:collapse;}
@@ -155,6 +183,12 @@
   .cell{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:7px;font-size:12px;font-weight:800;color:#0B1017;}
   .cell.empty{background:var(--surface3);}
   .cell.na{color:var(--muted2);background:transparent;font-weight:400;}
+  .cell.tap{cursor:pointer;transition:transform .12s ease,box-shadow .12s ease;}
+  .cell.tap:hover{transform:scale(1.18);box-shadow:0 2px 8px rgba(0,0,0,.35);}
+  .cell.tap:active{transform:scale(.9);}
+  .cell.empty.tap{border:1px dashed var(--border2);}
+  .cell.empty.tap:hover{border-color:var(--primary);background:color-mix(in srgb, var(--primary) 12%, var(--surface3));}
+  .week-hint{font-size:12.5px;color:var(--muted);margin:-4px 0 12px;line-height:1.4;}
   td.col-today{background:var(--surface2);}
   td.col-today:first-child{border-radius:8px 0 0 8px;}
   td.col-today:last-child{border-radius:0 8px 8px 0;}
@@ -707,6 +741,7 @@
   <!-- SEMANA -->
   <section class="view" id="v-semana">
     <p class="eyebrow">Visão da semana</p>
+    <p class="week-hint">💡 Esqueceu de marcar? Toque em qualquer dia para registrar ou corrigir uma dose.</p>
     <div class="panel">
       <table id="week-table"></table>
       <div class="legend">
@@ -998,10 +1033,21 @@
           <div class="segbtns" id="f-per"><button data-p="dia" class="on">Por dia</button><button data-p="semana">Por semana</button></div>
         </div>
         <div class="fld"><label>Frequência</label>
-          <div class="segbtns" id="f-freqmode"><button data-m="daily" class="on">Todos os dias</button><button data-m="spec">Dias específicos</button></div>
+          <div class="segbtns" id="f-freqmode"><button data-m="daily" class="on">Todos os dias</button><button data-m="spec">Dias específicos</button><button data-m="interval">A cada X dias</button></div>
           <div class="daypick" id="f-days" style="display:none"></div>
+          <div id="f-interval" style="display:none;margin-top:10px;">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              <span style="color:var(--muted);font-size:13px;">Aplicar a cada</span>
+              <input class="txt" id="f-interval-num" type="number" min="1" max="90" value="5" style="width:70px;text-align:center;">
+              <span style="color:var(--muted);font-size:13px;">dias</span>
+            </div>
+            <div class="desc" style="margin-top:6px;">A contagem começa na <b>data de início</b> abaixo. Se não preencher, conta a partir de hoje.</div>
+          </div>
         </div>
         <label class="check"><input type="checkbox" id="f-moon"> Antes de dormir 🌙</label>
+        <div class="fld"><label>Vezes por dia <span class="desc">(ex.: 3x ao dia)</span></label>
+          <div class="segbtns" id="f-perday"><button data-n="1" class="on">1x</button><button data-n="2">2x</button><button data-n="3">3x</button><button data-n="4">4x</button></div>
+        </div>
         <div class="fld"><label>Horário do lembrete <span class="desc">(opcional)</span></label><input class="txt" id="f-time" type="time"></div>
         <div class="fld"><label>Data de início <span class="desc">(opcional)</span></label><input class="txt" id="f-start" type="date"></div>
         <div class="fld"><label>Observação <span class="desc">(opcional)</span></label><textarea class="txt area" id="f-note" rows="2" placeholder="Ex.: começar com meia dose na 1ª semana"></textarea></div>
@@ -1192,7 +1238,28 @@ const STORE_KEY = "peptideos-registro-v1";
 const loadAll = () => LOGS;
 const saveAll = d => { LOGS = d; cloudSave(); };
 const dateKey = d => { const x=new Date(d); x.setMinutes(x.getMinutes()-x.getTimezoneOffset()); return x.toISOString().slice(0,10); };
-const isSched = (p,dow) => p.days===null || p.days.includes(dow);
+// calcula quantos dias entre duas datas (ignorando horas)
+function daysBetween(aKey, bDate){
+  const a = new Date(aKey+"T00:00:00");
+  const b = new Date(bDate); b.setHours(0,0,0,0);
+  return Math.round((b - a) / 86400000);
+}
+// decide se o peptídeo p é agendado para a data 'd' (objeto Date)
+const isSchedOn = (p, d) => {
+  if(p.interval && p.interval>0){
+    // modo "a cada X dias": conta a partir da data de início (ou, se vazia, sempre alinhado)
+    if(!p.start) return true; // sem início definido, mostra todo dia (não dá pra calcular o ciclo)
+    const diff = daysBetween(p.start, d);
+    if(diff < 0) return false;              // antes do início: não aplica
+    return diff % p.interval === 0;         // dia de aplicação
+  }
+  return p.days===null || p.days.includes(d.getDay());
+};
+// compatibilidade: versão antiga por dia-da-semana (usada na tabela semanal)
+const isSched = (p,dow) => {
+  if(p.interval && p.interval>0) return true; // tratado caso a caso em isSchedOn
+  return p.days===null || p.days.includes(dow);
+};
 
 const now = new Date();
 const todayKey = dateKey(now);
@@ -1221,13 +1288,46 @@ function renderToday(){
     cont.innerHTML='<div class="empty-note">Nenhum peptídeo no protocolo ainda.<br>Toque em "Adicionar peptídeo" para começar.</div>';
   }
   due.forEach(p=>{
-    const done = !!rec[p.id];
-    if(done) taken++;
-    const t = (rec[p.id] && rec[p.id].t) ? rec[p.id].t : '';
+    const perDay = p.perDay || 1;
+    const tomadas = dosesTaken(rec, p.id);
+    const done = tomadas >= perDay;   // completou todas as doses do dia
+    // progresso: cada peptídeo conta como fração (doses tomadas / doses do dia)
+    taken += Math.min(tomadas, perDay) / perDay;
+    const horarios = doseTimes(rec, p.id);
+    const t = horarios.length ? horarios[horarios.length-1] : '';
     const moon = p.moon?' 🌙':'';
     const el=document.createElement("div");
     el.className="card"+(done?" done":"");
     el.style.setProperty('--acc',p.accent);
+
+    // controle: botão simples (1x) ou caixinhas (múltiplas)
+    let ctrlHTML;
+    if(perDay <= 1){
+      ctrlHTML = `<button class="take ${done?'done':''}" data-id="${p.id}">
+        <span>${done?'✓ Tomado':'Tomei'}</span>
+        ${done&&t?`<span class="at">${t}</span>`:''}
+      </button>`;
+    } else {
+      // caixinhas: uma por dose
+      let boxes = '';
+      for(let i=0;i<perDay;i++){
+        const marcada = i < tomadas;
+        const hora = marcada && horarios[i] ? horarios[i] : '';
+        boxes += `<div class="dosebox ${marcada?'on':''}">
+          <span class="dosebox-ico">${marcada?'✓':(i+1)}</span>
+          ${hora?`<span class="dosebox-t">${hora}</span>`:''}
+        </div>`;
+      }
+      ctrlHTML = `<div class="doses" data-id="${p.id}">
+        <div class="doses-count">${tomadas} de ${perDay}</div>
+        <div class="doses-boxes">${boxes}</div>
+        <div class="doses-btns">
+          <button class="dose-add" data-id="${p.id}" ${tomadas>=perDay?'disabled':''}>+ dose</button>
+          ${tomadas>0?`<button class="dose-undo" data-id="${p.id}">desfazer</button>`:''}
+        </div>
+      </div>`;
+    }
+
     el.innerHTML=`
       <div class="info">
         <div class="nm"><span class="dot"></span>${p.name}${moon}</div>
@@ -1247,14 +1347,13 @@ function renderToday(){
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/></svg>
         </button>
       </div>
-      <button class="take ${done?'done':''}" data-id="${p.id}">
-        <span>${done?'✓ Tomado':'Tomei'}</span>
-        ${done&&t?`<span class="at">${t}</span>`:''}
-      </button>`;
+      ${ctrlHTML}`;
     cont.appendChild(el);
   });
-  document.getElementById("ring-n").textContent = `${taken} / ${due.length}`;
-  drawRing(taken,due.length);
+  const totalUnidades = due.length;
+  const takenArredondado = Math.round(taken*10)/10;
+  document.getElementById("ring-n").textContent = `${Number.isInteger(takenArredondado)?takenArredondado:takenArredondado.toFixed(1)} / ${totalUnidades}`;
+  drawRing(taken,totalUnidades);
   cont.querySelectorAll(".take").forEach(b=>b.onclick=(ev)=>{
     // efeito ripple no ponto do toque
     try{
@@ -1280,6 +1379,8 @@ function renderToday(){
     if(pb){ pb.classList.add("pop"); pb.addEventListener("animationend",()=>pb.classList.remove("pop"),{once:true}); }
     POP_ID = null;
   }
+  cont.querySelectorAll(".dose-add").forEach(b=>b.onclick=()=>addDose(b.dataset.id));
+  cont.querySelectorAll(".dose-undo").forEach(b=>b.onclick=()=>removeDose(b.dataset.id));
   cont.querySelectorAll(".del").forEach(b=>b.onclick=()=>removePep(b.dataset.id));
   cont.querySelectorAll(".gear").forEach(b=>b.onclick=()=>{ builderProto=null; const p=PEPTIDES.find(x=>x.id===b.dataset.id); if(p) openModal(p); });
 }
@@ -1292,19 +1393,88 @@ function removePep(id){
   }
 }
 
-function toggle(id){
+// ---- múltiplas doses por dia ----
+// Retorna quantas doses foram tomadas de um peptídeo num dia (lida com formato antigo e novo)
+function dosesTaken(rec, id){
+  const v = rec[id];
+  if(!v) return 0;
+  if(Array.isArray(v)) return v.length;   // formato novo: array de {t:horário}
+  return 1;                                // formato antigo: objeto único = 1 dose
+}
+// Retorna os horários das doses tomadas
+function doseTimes(rec, id){
+  const v = rec[id];
+  if(!v) return [];
+  if(Array.isArray(v)) return v.map(x=>x.t);
+  return [v.t || ""];
+}
+// Adiciona uma dose (marca a próxima caixinha)
+function addDose(id){
   const rec = LOGS[todayKey] || {};
-  if(rec[id]){
-    if(!confirm("Desmarcar esta dose de hoje?")) return;
-    delete rec[id];
+  const p = PEPTIDES.find(x=>x.id===id) || {};
+  const perDay = p.perDay || 1;
+  const agora = new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
+  const nova = { t:agora, name:p.name||id, dose:p.dose||"", per:p.per||"" };
+  if(perDay <= 1){
+    rec[id] = nova;  // dose única: mantém formato objeto (compatível)
+  } else {
+    let arr = rec[id];
+    if(!Array.isArray(arr)) arr = arr ? [arr] : [];  // converte formato antigo se preciso
+    if(arr.length >= perDay) return;                  // já completou todas
+    arr.push(nova);
+    rec[id] = arr;
   }
-  else {
-    const p = PEPTIDES.find(x=>x.id===id) || {};
-    rec[id] = { t:new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}), name:p.name||id, dose:p.dose||"", per:p.per||"" };
-    bumpStats({doses:increment(1)});
+  bumpStats({doses:increment(1)});
+  LOGS[todayKey]=rec; saveAll(LOGS);
+  renderToday(); renderWeek(); renderHistory();
+}
+// Remove a última dose (desmarca a última caixinha)
+function removeDose(id){
+  const rec = LOGS[todayKey] || {};
+  const v = rec[id];
+  if(!v) return;
+  if(Array.isArray(v)){
+    v.pop();
+    if(v.length===0) delete rec[id]; else rec[id]=v;
+  } else {
+    delete rec[id];
   }
   LOGS[todayKey]=rec; saveAll(LOGS);
   renderToday(); renderWeek(); renderHistory();
+}
+// marca/desmarca uma dose num dia específico (para corrigir dias esquecidos na tela Semana)
+function toggleOnDate(id, dateK){
+  const rec = LOGS[dateK] || {};
+  const p = PEPTIDES.find(x=>x.id===id) || {};
+  if(dosesTaken(rec, id) > 0){
+    // já tem dose nesse dia — desmarca (remove todas)
+    delete rec[id];
+  } else {
+    // marca (sem horário específico, pois é um registro retroativo)
+    const perDay = p.perDay || 1;
+    const marca = { t:"", name:p.name||id, dose:p.dose||"", per:p.per||"", retro:true };
+    if(perDay <= 1){
+      rec[id] = marca;
+    } else {
+      rec[id] = [marca];  // marca 1 dose; a pessoa pode ajustar depois se quiser
+    }
+    bumpStats({doses:increment(1)});
+  }
+  if(Object.keys(rec).length===0) delete LOGS[dateK]; else LOGS[dateK]=rec;
+  saveAll(LOGS);
+  renderToday(); renderWeek(); renderHistory();
+}
+function toggle(id){
+  // dose única (comportamento antigo): marca/desmarca
+  const rec = LOGS[todayKey] || {};
+  if(dosesTaken(rec,id) > 0){
+    if(!confirm("Desmarcar esta dose de hoje?")) return;
+    delete rec[id];
+    LOGS[todayKey]=rec; saveAll(LOGS);
+    renderToday(); renderWeek(); renderHistory();
+  } else {
+    addDose(id);
+  }
 }
 function removeLog(dk, id){
   const rec = LOGS[dk]; if(!rec || !rec[id]) return;
@@ -1327,14 +1497,24 @@ function renderWeek(){
     days.forEach(d=>{
       const k=dateKey(d), dow=d.getDay(), t=k===todayKey, cls=t?"col-today":"";
       const rec=LOGS[k]||{};
-      if(rec[p.id]){ h+=`<td class="${cls}"><span class="cell" style="background:${p.accent}">✓</span></td>`; }
-      else if(isSched(p,dow)){ h+=`<td class="${cls}"><span class="cell empty"></span></td>`; }
+      const futuro = d > now && !t;  // dias futuros não são marcáveis
+      if(dosesTaken(rec,p.id) > 0){
+        h+=`<td class="${cls}"><span class="cell tap" style="background:${p.accent}" data-id="${p.id}" data-date="${k}" title="Toque para desmarcar">✓</span></td>`;
+      }
+      else if(isSchedOn(p,d)){
+        if(futuro){ h+=`<td class="${cls}"><span class="cell empty"></span></td>`; }
+        else { h+=`<td class="${cls}"><span class="cell empty tap" data-id="${p.id}" data-date="${k}" title="Toque para marcar"></span></td>`; }
+      }
       else { h+=`<td class="${cls}"><span class="cell na">·</span></td>`; }
     });
     h+="</tr>";
   });
   h+="</tbody>";
   document.getElementById("week-table").innerHTML=h;
+  // torna as células clicáveis (marcar/desmarcar dias, inclusive passados)
+  document.querySelectorAll("#week-table .cell.tap").forEach(c=>{
+    c.onclick=()=>toggleOnDate(c.dataset.id, c.dataset.date);
+  });
 }
 
 /* histórico de doses aplicadas */
@@ -1421,7 +1601,7 @@ if(document.readyState==="complete") moveNavInd(document.querySelector(".nav but
    ========================================================= */
 const modal=document.getElementById("add-modal");
 const F={ name:"#f-name", sub:"#f-sub", ui:"#f-ui", dose:"#f-dose" };
-let fPer="dia", fMode="daily", fDays=[], fColor=PALETTE[0], fMoon=false;
+let fPer="dia", fMode="daily", fDays=[], fColor=PALETTE[0], fMoon=false, fInterval=5, fPerDay=1;
 let editingId=null;
 
 
@@ -1508,7 +1688,8 @@ function buildSwatches(){
   });
 }
 document.querySelectorAll("#f-per button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#f-per button").forEach(x=>x.classList.remove("on"));b.classList.add("on");fPer=b.dataset.p;});
-document.querySelectorAll("#f-freqmode button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#f-freqmode button").forEach(x=>x.classList.remove("on"));b.classList.add("on");fMode=b.dataset.m;document.getElementById("f-days").style.display=fMode==="spec"?"flex":"none";});
+document.querySelectorAll("#f-perday button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#f-perday button").forEach(x=>x.classList.remove("on"));b.classList.add("on");fPerDay=+b.dataset.n;});
+document.querySelectorAll("#f-freqmode button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#f-freqmode button").forEach(x=>x.classList.remove("on"));b.classList.add("on");fMode=b.dataset.m;document.getElementById("f-days").style.display=fMode==="spec"?"flex":"none";document.getElementById("f-interval").style.display=fMode==="interval"?"block":"none";});
 document.getElementById("f-moon").onchange=e=>fMoon=e.target.checked;
 
 function openModal(pep){
@@ -1528,21 +1709,27 @@ function openModal(pep){
     document.querySelector(F.ui).value = (pep.ui!=null?pep.ui:"");
     document.querySelector(F.dose).value = (pep.dose && pep.dose!=="—")?pep.dose:"";
     fPer = pep.per||"dia"; fMoon = !!pep.moon; fColor = pep.accent||nextColor();
+    fPerDay = pep.perDay || 1;
     document.getElementById("f-start").value = pep.start||"";
     document.getElementById("f-note").value = pep.note||"";
     document.getElementById("f-time").value = pep.time||"";
-    if(Array.isArray(pep.days)){ fMode="spec"; fDays=[...pep.days]; } else { fMode="daily"; fDays=[]; }
+    if(Array.isArray(pep.days)){ fMode="spec"; fDays=[...pep.days]; }
+    else if(pep.interval && pep.interval>0){ fMode="interval"; fDays=[]; fInterval=pep.interval; }
+    else { fMode="daily"; fDays=[]; }
   } else {
     Object.values(F).forEach(sel=>document.querySelector(sel).value="");
     document.getElementById("f-start").value="";
     document.getElementById("f-note").value="";
     document.getElementById("f-time").value="";
-    fPer="dia"; fMode="daily"; fDays=[]; fColor=nextColor(); fMoon=false;
+    fPer="dia"; fMode="daily"; fDays=[]; fColor=nextColor(); fMoon=false; fInterval=5; fPerDay=1;
   }
   document.getElementById("f-moon").checked=fMoon;
+  document.getElementById("f-interval-num").value = fInterval;
+  document.querySelectorAll("#f-perday button").forEach(b=>b.classList.toggle("on",+b.dataset.n===fPerDay));
   document.querySelectorAll("#f-per button").forEach(b=>b.classList.toggle("on",b.dataset.p===fPer));
   document.querySelectorAll("#f-freqmode button").forEach(b=>b.classList.toggle("on",b.dataset.m===fMode));
   document.getElementById("f-days").style.display = fMode==="spec"?"flex":"none";
+  document.getElementById("f-interval").style.display = fMode==="interval"?"block":"none";
   buildDayPick(); buildSwatches();
   document.querySelectorAll("#f-days button").forEach(b=>b.classList.toggle("on", fDays.includes(+b.dataset.i)));
   modal.classList.add("on");
@@ -1560,13 +1747,16 @@ document.getElementById("modal-save").onclick=()=>{
   const dose=document.querySelector(F.dose).value.trim();
   if(!name){ alert("Dê um nome ao peptídeo."); return; }
   if(!(ui>0)){ alert("Informe a dose em UI."); return; }
-  let days=null, freq="Todos os dias";
+  let days=null, freq="Todos os dias", interval=null;
   if(fMode==="spec"){
     if(fDays.length===0){ alert("Selecione ao menos um dia."); return; }
     days=[...fDays].sort((a,b)=>a-b);
     freq=days.map(i=>DAY_FULL[i]).join(" · ");
+  } else if(fMode==="interval"){
+    interval=Math.max(1, Math.min(90, parseInt(document.getElementById("f-interval-num").value)||5));
+    freq = interval===1 ? "Todos os dias" : ("A cada "+interval+" dias");
   } else if(fMoon){ freq="Antes de dormir"; }
-  const fields={ name, sub:sub||"peptídeo", ui, dose:dose||"—", per:fPer, freq, days, accent:fColor, moon:fMoon, start:document.getElementById("f-start").value||"", note:document.getElementById("f-note").value.trim(), time:document.getElementById("f-time").value||"" };
+  const fields={ name, sub:sub||"peptídeo", ui, dose:dose||"—", per:fPer, freq, days, interval, perDay:fPerDay, accent:fColor, moon:fMoon, start:document.getElementById("f-start").value||"", note:document.getElementById("f-note").value.trim(), time:document.getElementById("f-time").value||"" };
   const arr = builderProto ? builderProto.protocol : PEPTIDES;
   if(editingId){
     const idx=arr.findIndex(p=>p.id===editingId);
