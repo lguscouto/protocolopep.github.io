@@ -2584,13 +2584,29 @@ document.getElementById("nv-publish").onclick=()=>{
   const title=document.getElementById("nv-title-input").value.trim();
   const body=document.getElementById("nv-body-input").value.trim();
   if(!body && !title){ alert("Escreva as novidades."); return; }
-  // grava dentro do doc 'notice' (que já tem permissão), com merge pra não apagar o recado
-  setDoc(doc(db,'meta','notice'), {nvTitle:title, nvBody:body, nvTs:Date.now(), nvActive:true}, {merge:true})
+  // reescreve o doc inteiro (sem merge, igual ao recado) preservando os campos do recado atual
+  const atual = noticeData || {};
+  const novo = {
+    text: atual.text || "",
+    secs: atual.secs || 5,
+    ts: atual.ts || Date.now(),
+    active: atual.active || false,
+    nvTitle: title, nvBody: body, nvTs: Date.now(), nvActive: true
+  };
+  setDoc(doc(db,'meta','notice'), novo)
     .then(()=>alert("Novidade publicada! Vai aparecer para todos ao abrir o app."))
     .catch(e=>{ alert("Não consegui publicar."); console.warn(e); });
 };
 document.getElementById("nv-remove").onclick=()=>{
-  setDoc(doc(db,'meta','notice'), {nvActive:false}, {merge:true})
+  const atual = noticeData || {};
+  const novo = {
+    text: atual.text || "",
+    secs: atual.secs || 5,
+    ts: atual.ts || Date.now(),
+    active: atual.active || false,
+    nvTitle: atual.nvTitle || "", nvBody: atual.nvBody || "", nvTs: atual.nvTs || 0, nvActive: false
+  };
+  setDoc(doc(db,'meta','notice'), novo)
     .then(()=>alert("Novidade removida."))
     .catch(e=>console.warn(e));
 };
@@ -2599,10 +2615,12 @@ document.getElementById("notice-publish").onclick=()=>{
   const t=document.getElementById("notice-input").value.trim();
   if(!t){ alert("Escreva o recado."); return; }
   const secs=Math.min(60, Math.max(2, parseInt(document.getElementById("notice-secs").value)||5));
-  setDoc(doc(db,'meta','notice'), {text:t, secs, ts:Date.now(), active:true}).then(()=>alert("Recado publicado!")).catch(e=>{ alert("Não consegui publicar."); console.warn(e); });
+  const atual = noticeData || {};
+  setDoc(doc(db,'meta','notice'), {text:t, secs, ts:Date.now(), active:true, nvTitle:atual.nvTitle||"", nvBody:atual.nvBody||"", nvTs:atual.nvTs||0, nvActive:atual.nvActive||false}).then(()=>alert("Recado publicado!")).catch(e=>{ alert("Não consegui publicar."); console.warn(e); });
 };
 document.getElementById("notice-remove").onclick=()=>{
-  setDoc(doc(db,'meta','notice'), {active:false}, {merge:true}).then(()=>alert("Recado removido.")).catch(e=>console.warn(e));
+  const atual = noticeData || {};
+  setDoc(doc(db,'meta','notice'), {text:atual.text||"", secs:atual.secs||5, ts:atual.ts||Date.now(), active:false, nvTitle:atual.nvTitle||"", nvBody:atual.nvBody||"", nvTs:atual.nvTs||0, nvActive:atual.nvActive||false}).then(()=>alert("Recado removido.")).catch(e=>console.warn(e));
 };
 </script>
 </body>
