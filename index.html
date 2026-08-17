@@ -55,12 +55,12 @@
       radial-gradient(ellipse 520px 420px at 0% 100%, color-mix(in srgb, var(--tesa) 6%, transparent), transparent 60%),
       var(--bg);
   }
-  .app{max-width:640px;margin:0 auto;min-height:100vh;padding-bottom:96px;position:relative;z-index:1;}
+
 
   /* fundo animado de moléculas (global) */
   #bg-molecules{
     position:fixed;inset:0;width:100%;height:100%;
-    z-index:0;pointer-events:none;display:block;
+    z-index:1;pointer-events:none;display:block;
   }
   @media (prefers-reduced-motion: reduce){
     #bg-molecules{display:none;}
@@ -296,11 +296,20 @@
   .mb-date{flex:none;font-size:11.5px;color:var(--muted2);font-variant-numeric:tabular-nums;}
   .logout:hover{border-color:var(--primary);color:var(--primary);}
 
-  .auth-screen{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;background:color-mix(in srgb, var(--bg) 82%, transparent);padding:24px;overflow-y:auto;}
+  .auth-screen{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;background:var(--bg);padding:24px;overflow-y:auto;}
   .auth-screen.on{display:flex;}
-  /* quando o login está ativo, esconde o app e a nav por trás (deixa só o fundo de moléculas) */
-  body:has(#auth-screen.on) .app,
-  body:has(#auth-screen.on) .nav{visibility:hidden;}
+  /* gradiente sutil sobre o fundo do login */
+  .auth-screen::after{
+    content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
+    background:
+      radial-gradient(ellipse 620px 460px at 100% 0%, color-mix(in srgb, var(--primary) 8%, transparent), transparent 60%),
+      radial-gradient(ellipse 520px 420px at 0% 100%, color-mix(in srgb, var(--tesa) 6%, transparent), transparent 60%);
+  }
+  /* canvas de moléculas próprio do login (fica acima do fundo, abaixo do card) */
+  #bg-molecules-login{
+    position:absolute;inset:0;width:100%;height:100%;
+    z-index:1;pointer-events:none;
+  }
   .auth-card{width:100%;max-width:380px;text-align:center;position:relative;z-index:2;}
   .auth-logo{width:58px;height:58px;margin:0 auto 16px;}
   .auth-title{font-family:var(--display);font-weight:700;font-size:28px;}
@@ -683,6 +692,7 @@
 
 <!-- tela de login / cadastro -->
 <div class="auth-screen on" id="auth-screen">
+  <canvas id="bg-molecules-login" aria-hidden="true"></canvas>
   <div class="auth-card">
     <svg class="auth-logo" viewBox="0 0 32 32" fill="none">
       <rect width="32" height="32" rx="9" fill="#131B26" stroke="#26313F"/>
@@ -2104,74 +2114,77 @@ document.getElementById("notice-remove").onclick=()=>{
 };
 </script>
 <script>
-/* fundo animado — rede de moléculas 3D (leve, Canvas puro) */
+/* fundo animado — rede de moléculas 3D (anima app + login) */
 (function(){
   var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   if(reduce) return;
-  var cv = document.getElementById("bg-molecules");
-  if(!cv) return;
-  var ctx = cv.getContext("2d");
-  var w, h, dpr, pts, raf, running=true;
   var TEAL=[44,197,192], AQUA=[47,216,172];
+  var LINK=135;
 
-  function css(v,fb){ // lê variável de cor do tema, se quiser adaptar (mantém teal por padrão)
-    return fb;
-  }
-  function init(){
-    dpr = Math.min(window.devicePixelRatio||1, 2); // limita a 2x pra performance
-    w = cv.width = innerWidth*dpr;
-    h = cv.height = innerHeight*dpr;
-    cv.style.width = innerWidth+"px";
-    cv.style.height = innerHeight+"px";
-    // densidade proporcional à área (menos pontos em telas pequenas = mais leve)
-    var count = Math.round(Math.min(42, Math.max(16, (innerWidth*innerHeight)/26000)));
-    pts = [];
-    for(var i=0;i<count;i++){
-      pts.push({
-        x:Math.random()*w, y:Math.random()*h, z:Math.random(),
-        vx:(Math.random()-.5)*.22*dpr, vy:(Math.random()-.5)*.22*dpr
-      });
-    }
-  }
-  var LINK = 135; // distância p/ ligar pontos (em px lógicos)
-  function frame(){
-    if(!running) return;
-    ctx.clearRect(0,0,w,h);
-    var link = LINK*dpr;
-    for(var i=0;i<pts.length;i++){
-      var p=pts[i];
-      p.x+=p.vx; p.y+=p.vy;
-      if(p.x<0||p.x>w) p.vx*=-1;
-      if(p.y<0||p.y>h) p.vy*=-1;
-    }
-    // linhas
-    for(var i=0;i<pts.length;i++){
-      for(var j=i+1;j<pts.length;j++){
-        var dx=pts[i].x-pts[j].x, dy=pts[i].y-pts[j].y;
-        var d=Math.sqrt(dx*dx+dy*dy);
-        if(d<link){
-          var a=(1-d/link)*0.22;
-          ctx.strokeStyle="rgba("+TEAL[0]+","+TEAL[1]+","+TEAL[2]+","+a+")";
-          ctx.lineWidth=1;
-          ctx.beginPath(); ctx.moveTo(pts[i].x,pts[i].y); ctx.lineTo(pts[j].x,pts[j].y); ctx.stroke();
-        }
+  function makeField(canvas){
+    var ctx=canvas.getContext("2d");
+    var w,h,dpr,pts;
+    function init(){
+      dpr=Math.min(window.devicePixelRatio||1,2);
+      w=canvas.width=innerWidth*dpr;
+      h=canvas.height=innerHeight*dpr;
+      canvas.style.width=innerWidth+"px";
+      canvas.style.height=innerHeight+"px";
+      var count=Math.round(Math.min(42,Math.max(16,(innerWidth*innerHeight)/26000)));
+      pts=[];
+      for(var i=0;i<count;i++){
+        pts.push({x:Math.random()*w,y:Math.random()*h,z:Math.random(),
+          vx:(Math.random()-.5)*.22*dpr,vy:(Math.random()-.5)*.22*dpr});
       }
     }
-    // pontos (com profundidade)
-    for(var i=0;i<pts.length;i++){
-      var p=pts[i], s=(1.6+p.z*2.2)*dpr, a=0.4+p.z*0.4;
-      ctx.fillStyle="rgba("+AQUA[0]+","+AQUA[1]+","+AQUA[2]+","+a+")";
-      ctx.beginPath(); ctx.arc(p.x,p.y,s,0,6.2832); ctx.fill();
+    function draw(){
+      if(!w||!h) return;
+      ctx.clearRect(0,0,w,h);
+      var link=LINK*dpr;
+      for(var i=0;i<pts.length;i++){
+        var p=pts[i]; p.x+=p.vx; p.y+=p.vy;
+        if(p.x<0||p.x>w)p.vx*=-1; if(p.y<0||p.y>h)p.vy*=-1;
+      }
+      for(var i=0;i<pts.length;i++){
+        for(var j=i+1;j<pts.length;j++){
+          var dx=pts[i].x-pts[j].x, dy=pts[i].y-pts[j].y, d=Math.sqrt(dx*dx+dy*dy);
+          if(d<link){
+            var a=(1-d/link)*0.22;
+            ctx.strokeStyle="rgba("+TEAL[0]+","+TEAL[1]+","+TEAL[2]+","+a+")";
+            ctx.lineWidth=1;
+            ctx.beginPath(); ctx.moveTo(pts[i].x,pts[i].y); ctx.lineTo(pts[j].x,pts[j].y); ctx.stroke();
+          }
+        }
+      }
+      for(var i=0;i<pts.length;i++){
+        var p=pts[i], s=(1.6+p.z*2.2)*dpr, a=0.4+p.z*0.4;
+        ctx.fillStyle="rgba("+AQUA[0]+","+AQUA[1]+","+AQUA[2]+","+a+")";
+        ctx.beginPath(); ctx.arc(p.x,p.y,s,0,6.2832); ctx.fill();
+      }
     }
-    raf=requestAnimationFrame(frame);
+    init();
+    return {init:init, draw:draw};
   }
-  function start(){ if(!running){running=true; frame();} }
+
+  var fields=[];
+  var cGlobal=document.getElementById("bg-molecules");
+  var cLogin=document.getElementById("bg-molecules-login");
+  if(cGlobal) fields.push(makeField(cGlobal));
+  if(cLogin) fields.push(makeField(cLogin));
+  if(!fields.length) return;
+
+  var raf, running=true;
+  function loop(){
+    if(!running) return;
+    for(var i=0;i<fields.length;i++) fields[i].draw();
+    raf=requestAnimationFrame(loop);
+  }
+  function start(){ if(!running){running=true; loop();} }
   function stop(){ running=false; if(raf) cancelAnimationFrame(raf); }
 
-  init(); frame();
+  loop();
   var rt;
-  addEventListener("resize", function(){ clearTimeout(rt); rt=setTimeout(init,200); });
-  // pausa quando a aba não está visível (economiza bateria)
+  addEventListener("resize", function(){ clearTimeout(rt); rt=setTimeout(function(){ for(var i=0;i<fields.length;i++) fields[i].init(); },200); });
   document.addEventListener("visibilitychange", function(){ document.hidden?stop():start(); });
 })();
 </script>
