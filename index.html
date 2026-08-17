@@ -568,7 +568,7 @@
       window.addEventListener("orientationchange", function(){ setTimeout(function(){ for(var i=0;i<fields.length;i++){ try{ fields[i].init(); }catch(e){} } },300); });
       document.addEventListener("visibilitychange", function(){ document.hidden?stop():start(); });
       return true;
-    }catch(e){ /* silencioso: se falhar, o app segue normal sem o fundo */ }
+    }catch(e){ /* silencioso: se falhar, o app segue normal sem o fundo */ window.__molErro = (e && e.message) ? e.message : String(e); }
     return false;
   }
 
@@ -584,13 +584,13 @@
       el.style.cssText="position:fixed;bottom:0;left:0;right:0;z-index:99999;background:rgba(0,0,0,.85);color:#2CC5C0;font:12px sans-serif;padding:8px;text-align:center;";
       document.body.appendChild(el);
     }
-    el.textContent = "moléculas: " + msg + "  [VERSÃO 2026-08-16-B · auto-cria canvas]";
+    el.textContent = "moléculas: " + msg + "  [VERSÃO 2026-08-16-C · diag erro]";
   }
   function iniciarUmaVez(){
     if(jaRodou) return;
     var ok = startMolecules();
     if(ok === true){ jaRodou = true; dbg("✓ rodando"); }
-    else { dbg("aguardando canvas… (readyState="+document.readyState+")"); }
+    else { dbg("FALHOU — " + (window.__molErro || "canvas não criado") + " (readyState="+document.readyState+")"); }
   }
   // 1) se o DOM já está pronto, roda já
   if(document.readyState !== "loading"){
