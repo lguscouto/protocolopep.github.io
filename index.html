@@ -189,6 +189,44 @@
   .cell.empty.tap{border:1px dashed var(--border2);}
   .cell.empty.tap:hover{border-color:var(--primary);background:color-mix(in srgb, var(--primary) 12%, var(--surface3));}
   .week-hint{font-size:12.5px;color:var(--muted);margin:-4px 0 12px;line-height:1.4;}
+
+  /* ---------- marcar dose passada ---------- */
+  .btn-retro{
+    display:flex;align-items:center;gap:8px;width:100%;
+    background:var(--surface);border:1.5px dashed var(--border2);
+    color:var(--primary);font-family:var(--font);font-weight:600;font-size:13.5px;
+    padding:13px 16px;border-radius:13px;cursor:pointer;margin-bottom:18px;
+    transition:all .18s ease;
+  }
+  .btn-retro:hover{background:var(--surface2);border-color:var(--primary);}
+  .retro-overlay{
+    position:fixed;inset:0;z-index:200;
+    display:flex;align-items:center;justify-content:center;padding:24px;
+    background:rgba(5,8,13,.75);backdrop-filter:blur(4px);
+    animation:nvFade .2s ease;
+  }
+  .retro-modal{
+    position:relative;width:100%;max-width:400px;
+    background:var(--surface);border:1px solid var(--border2);
+    border-radius:20px;padding:26px 22px 22px;
+    box-shadow:0 24px 60px rgba(0,0,0,.5);
+    max-height:85vh;overflow-y:auto;
+    animation:nvPop .3s cubic-bezier(.34,1.4,.64,1);
+  }
+  .retro-pep{
+    display:flex;align-items:center;gap:12px;
+    padding:12px 14px;border-radius:12px;
+    background:var(--surface3);border:1px solid var(--border);
+    margin-bottom:8px;cursor:pointer;transition:all .15s ease;
+  }
+  .retro-pep:hover{background:var(--surface2);}
+  .retro-pep input[type=checkbox]{
+    width:20px;height:20px;flex:none;cursor:pointer;
+    accent-color:var(--primary);
+  }
+  .retro-pep-info{flex:1;}
+  .retro-pep-nm{font-size:14px;font-weight:700;color:var(--text);}
+  .retro-pep-sub{font-size:11.5px;color:var(--muted);margin-top:1px;}
   td.col-today{background:var(--surface2);}
   td.col-today:first-child{border-radius:8px 0 0 8px;}
   td.col-today:last-child{border-radius:0 8px 8px 0;}
@@ -810,8 +848,28 @@
       <p class="eyebrow">Histórico de doses</p>
       <span class="hist-count" id="hist-count"></span>
     </div>
+    <button class="btn-retro" id="btn-retro">+ Marcar dose de dia passado</button>
     <div id="hist-list"></div>
   </section>
+
+  <!-- modal: marcar dose de dia passado -->
+  <div class="retro-overlay" id="retro-overlay" style="display:none">
+    <div class="retro-modal">
+      <button class="nv-close" id="retro-close">✕</button>
+      <div class="nv-badge">📅 Dose passada</div>
+      <h3 class="nv-title">Marcar dose de dia passado</h3>
+      <div class="fld" style="margin:14px 0 16px">
+        <label>Selecione a data</label>
+        <input class="txt" type="date" id="retro-date" style="margin-top:6px">
+      </div>
+      <div id="retro-list" style="display:none">
+        <p style="font-size:13px;color:var(--muted);margin-bottom:10px">Marque o que foi tomado nesse dia:</p>
+        <div id="retro-peps"></div>
+        <button class="nv-ok" id="retro-save" style="margin-top:16px">Salvar</button>
+      </div>
+      <p id="retro-empty" style="display:none;font-size:13px;color:var(--muted);text-align:center;padding:12px 0">Nenhum peptídeo agendado para essa data.</p>
+    </div>
+  </div>
 
   <!-- CALCULADORA -->
   <section class="view" id="v-calc">
@@ -2544,6 +2602,92 @@ function renderNotice(){
   const secsInp=document.getElementById("notice-secs");
   if(secsInp && noticeData && noticeData.secs) secsInp.value=noticeData.secs;
 }
+/* ---- marcar dose de dia passado ---- */
+(function(){
+  const overlay = document.getElementById("retro-overlay");
+  const dateInp = document.getElementById("retro-date");
+  const list    = document.getElementById("retro-list");
+  const empty   = document.getElementById("retro-empty");
+  const pepsDiv = document.getElementById("retro-peps");
+
+  // definir máximo como ontem (não faz sentido marcar hoje ou futuro aqui)
+  const ontem = new Date(); ontem.setDate(ontem.getDate()-1);
+  dateInp.max = dateKey(ontem);
+
+  function abrir(){
+    // preencher com ontem como padrão
+    dateInp.value = dateKey(ontem);
+    list.style.display = "none";
+    empty.style.display = "none";
+    overlay.style.display = "flex";
+    carregarDia();
+  }
+  function fechar(){ overlay.style.display = "none"; }
+
+  function carregarDia(){
+    const dk = dateInp.value;
+    if(!dk){ list.style.display="none"; empty.style.display="none"; return; }
+    const d = new Date(dk+"T00:00:00");
+    // peptídeos agendados para esse dia
+    const agendados = PEPTIDES.filter(p => isSchedOn(p, d));
+    if(agendados.length === 0){
+      list.style.display="none"; empty.style.display="block"; return;
+    }
+    empty.style.display = "none";
+    list.style.display = "block";
+    const rec = LOGS[dk] || {};
+    pepsDiv.innerHTML = agendados.map(p=>{
+      const tomado = dosesTaken(rec, p.id) > 0;
+      return `<label class="retro-pep">
+        <input type="checkbox" data-id="${p.id}" ${tomado?"checked":""}>
+        <div class="retro-pep-info">
+          <div class="retro-pep-nm" style="color:${p.accent}">${p.name}</div>
+          <div class="retro-pep-sub">${p.ui} UI · ${p.freq}</div>
+        </div>
+      </label>`;
+    }).join("");
+  }
+
+  function salvar(){
+    const dk = dateInp.value;
+    if(!dk){ alert("Selecione uma data."); return; }
+    const d = new Date(dk+"T00:00:00");
+    const rec = {...(LOGS[dk] || {})};
+    const checks = pepsDiv.querySelectorAll("input[type=checkbox]");
+    let alterou = false;
+    checks.forEach(cb=>{
+      const id = cb.dataset.id;
+      const p = PEPTIDES.find(x=>x.id===id) || {};
+      const jatem = dosesTaken(rec, id) > 0;
+      if(cb.checked && !jatem){
+        // marcar: sem horário (retroativo)
+        rec[id] = {t:"", name:p.name||id, dose:p.dose||"", per:p.per||"", retro:true};
+        alterou = true;
+      } else if(!cb.checked && jatem){
+        // desmarcar
+        delete rec[id];
+        alterou = true;
+      }
+    });
+    if(!alterou){ fechar(); return; }
+    if(Object.keys(rec).length===0) delete LOGS[dk]; else LOGS[dk]=rec;
+    saveAll(LOGS);
+    renderToday(); renderWeek(); renderHistory();
+    fechar();
+    // feedback visual rápido
+    const btn=document.getElementById("btn-retro");
+    const orig=btn.textContent;
+    btn.textContent="✓ Salvo!";
+    setTimeout(()=>btn.textContent=orig, 2000);
+  }
+
+  document.getElementById("btn-retro").onclick = abrir;
+  document.getElementById("retro-close").onclick = fechar;
+  document.getElementById("retro-overlay").onclick = e=>{ if(e.target.id==="retro-overlay") fechar(); };
+  document.getElementById("retro-save").onclick = salvar;
+  dateInp.onchange = carregarDia;
+})();
+
 document.getElementById("notice-x").onclick=()=>{
   try{ if(noticeData&&noticeData.ts) localStorage.setItem("notice-dismissed",String(noticeData.ts)); }catch(e){}
   document.getElementById("notice-banner").style.display="none";
