@@ -475,6 +475,101 @@
 </style>
 </head>
 <body>
+<!-- fundo de moléculas: carregado cedo, independente do Firebase -->
+<script>
+/* fundo animado — rede de moléculas 3D (anima app + login) — versão robusta */
+(function(){
+  function startMolecules(){
+    try{
+      var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if(reduce) return;
+      var TEAL=[44,197,192], AQUA=[47,216,172];
+      var LINK=135;
+
+      function makeField(canvas){
+        var ctx=canvas.getContext("2d");
+        if(!ctx) return null;
+        var w=0,h=0,dpr=1,pts=[];
+        function init(){
+          dpr=Math.min(window.devicePixelRatio||1,2);
+          var vw=window.innerWidth||document.documentElement.clientWidth||360;
+          var vh=window.innerHeight||document.documentElement.clientHeight||640;
+          w=canvas.width=vw*dpr;
+          h=canvas.height=vh*dpr;
+          canvas.style.width=vw+"px";
+          canvas.style.height=vh+"px";
+          var count=Math.round(Math.min(42,Math.max(16,(vw*vh)/26000)));
+          pts=[];
+          for(var i=0;i<count;i++){
+            pts.push({x:Math.random()*w,y:Math.random()*h,z:Math.random(),
+              vx:(Math.random()-.5)*.22*dpr,vy:(Math.random()-.5)*.22*dpr});
+          }
+        }
+        function draw(){
+          if(!w||!h){ init(); if(!w||!h) return; }
+          ctx.clearRect(0,0,w,h);
+          var link=LINK*dpr;
+          for(var i=0;i<pts.length;i++){
+            var p=pts[i]; p.x+=p.vx; p.y+=p.vy;
+            if(p.x<0||p.x>w)p.vx*=-1; if(p.y<0||p.y>h)p.vy*=-1;
+          }
+          for(var i=0;i<pts.length;i++){
+            for(var j=i+1;j<pts.length;j++){
+              var dx=pts[i].x-pts[j].x, dy=pts[i].y-pts[j].y, d=Math.sqrt(dx*dx+dy*dy);
+              if(d<link){
+                var a=(1-d/link)*0.22;
+                ctx.strokeStyle="rgba("+TEAL[0]+","+TEAL[1]+","+TEAL[2]+","+a+")";
+                ctx.lineWidth=1;
+                ctx.beginPath(); ctx.moveTo(pts[i].x,pts[i].y); ctx.lineTo(pts[j].x,pts[j].y); ctx.stroke();
+              }
+            }
+          }
+          for(var i=0;i<pts.length;i++){
+            var p=pts[i], s=(1.6+p.z*2.2)*dpr, a=0.4+p.z*0.4;
+            ctx.fillStyle="rgba("+AQUA[0]+","+AQUA[1]+","+AQUA[2]+","+a+")";
+            ctx.beginPath(); ctx.arc(p.x,p.y,s,0,6.2832); ctx.fill();
+          }
+        }
+        init();
+        return {init:init, draw:draw};
+      }
+
+      var fields=[];
+      var cGlobal=document.getElementById("bg-molecules");
+      var cLogin=document.getElementById("bg-molecules-login");
+      if(cGlobal){ var f1=makeField(cGlobal); if(f1) fields.push(f1); }
+      if(cLogin){ var f2=makeField(cLogin); if(f2) fields.push(f2); }
+      if(!fields.length) return;
+
+      var raf, running=true;
+      function loop(){
+        if(!running) return;
+        for(var i=0;i<fields.length;i++){ try{ fields[i].draw(); }catch(e){} }
+        raf=requestAnimationFrame(loop);
+      }
+      function start(){ if(!running){running=true; loop();} }
+      function stop(){ running=false; if(raf) cancelAnimationFrame(raf); }
+
+      loop();
+      // re-inicializa após um instante (garante dimensões corretas no mobile)
+      setTimeout(function(){ for(var i=0;i<fields.length;i++){ try{ fields[i].init(); }catch(e){} } }, 300);
+
+      var rt;
+      window.addEventListener("resize", function(){ clearTimeout(rt); rt=setTimeout(function(){ for(var i=0;i<fields.length;i++){ try{ fields[i].init(); }catch(e){} } },200); });
+      window.addEventListener("orientationchange", function(){ setTimeout(function(){ for(var i=0;i<fields.length;i++){ try{ fields[i].init(); }catch(e){} } },300); });
+      document.addEventListener("visibilitychange", function(){ document.hidden?stop():start(); });
+    }catch(e){ /* silencioso: se falhar, o app segue normal sem o fundo */ }
+  }
+
+  // roda assim que o DOM estiver pronto (cobre qualquer ordem de carregamento)
+  if(document.readyState==="loading"){
+    document.addEventListener("DOMContentLoaded", startMolecules);
+  } else {
+    startMolecules();
+  }
+})();
+</script>
+
 <canvas id="bg-molecules" aria-hidden="true"></canvas>
 <div class="app">
   <div class="topbar">
@@ -1993,7 +2088,31 @@ function sendProto(id){
    PWA — instalação e service worker
    ========================================================= */
 if('serviceWorker' in navigator){
-  window.addEventListener('load', ()=>{ navigator.serviceWorker.register('./sw.js').catch(()=>{}); });
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('./sw.js').then(function(reg){
+      // procura por atualização toda vez que abre o app
+      reg.update();
+      // se um novo service worker assumir, recarrega a página com o conteúdo novo
+      reg.addEventListener('updatefound', function(){
+        var nw = reg.installing;
+        if(!nw) return;
+        nw.addEventListener('statechange', function(){
+          if(nw.state === 'installed' && navigator.serviceWorker.controller){
+            // versão nova pronta — ativa e recarrega
+            if(nw.postMessage) nw.postMessage({type:'SKIP_WAITING'});
+            window.location.reload();
+          }
+        });
+      });
+    }).catch(()=>{});
+    // quando o controlador muda (nova versão ativa), recarrega uma vez
+    var refreshed = false;
+    navigator.serviceWorker.addEventListener('controllerchange', function(){
+      if(refreshed) return;
+      refreshed = true;
+      window.location.reload();
+    });
+  });
 }
 let deferredPrompt=null;
 const isStandalone=()=> (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone===true;
@@ -2112,81 +2231,6 @@ document.getElementById("notice-publish").onclick=()=>{
 document.getElementById("notice-remove").onclick=()=>{
   setDoc(doc(db,'meta','notice'), {active:false}, {merge:true}).then(()=>alert("Recado removido.")).catch(e=>console.warn(e));
 };
-</script>
-<script>
-/* fundo animado — rede de moléculas 3D (anima app + login) */
-(function(){
-  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  if(reduce) return;
-  var TEAL=[44,197,192], AQUA=[47,216,172];
-  var LINK=135;
-
-  function makeField(canvas){
-    var ctx=canvas.getContext("2d");
-    var w,h,dpr,pts;
-    function init(){
-      dpr=Math.min(window.devicePixelRatio||1,2);
-      w=canvas.width=innerWidth*dpr;
-      h=canvas.height=innerHeight*dpr;
-      canvas.style.width=innerWidth+"px";
-      canvas.style.height=innerHeight+"px";
-      var count=Math.round(Math.min(42,Math.max(16,(innerWidth*innerHeight)/26000)));
-      pts=[];
-      for(var i=0;i<count;i++){
-        pts.push({x:Math.random()*w,y:Math.random()*h,z:Math.random(),
-          vx:(Math.random()-.5)*.22*dpr,vy:(Math.random()-.5)*.22*dpr});
-      }
-    }
-    function draw(){
-      if(!w||!h) return;
-      ctx.clearRect(0,0,w,h);
-      var link=LINK*dpr;
-      for(var i=0;i<pts.length;i++){
-        var p=pts[i]; p.x+=p.vx; p.y+=p.vy;
-        if(p.x<0||p.x>w)p.vx*=-1; if(p.y<0||p.y>h)p.vy*=-1;
-      }
-      for(var i=0;i<pts.length;i++){
-        for(var j=i+1;j<pts.length;j++){
-          var dx=pts[i].x-pts[j].x, dy=pts[i].y-pts[j].y, d=Math.sqrt(dx*dx+dy*dy);
-          if(d<link){
-            var a=(1-d/link)*0.22;
-            ctx.strokeStyle="rgba("+TEAL[0]+","+TEAL[1]+","+TEAL[2]+","+a+")";
-            ctx.lineWidth=1;
-            ctx.beginPath(); ctx.moveTo(pts[i].x,pts[i].y); ctx.lineTo(pts[j].x,pts[j].y); ctx.stroke();
-          }
-        }
-      }
-      for(var i=0;i<pts.length;i++){
-        var p=pts[i], s=(1.6+p.z*2.2)*dpr, a=0.4+p.z*0.4;
-        ctx.fillStyle="rgba("+AQUA[0]+","+AQUA[1]+","+AQUA[2]+","+a+")";
-        ctx.beginPath(); ctx.arc(p.x,p.y,s,0,6.2832); ctx.fill();
-      }
-    }
-    init();
-    return {init:init, draw:draw};
-  }
-
-  var fields=[];
-  var cGlobal=document.getElementById("bg-molecules");
-  var cLogin=document.getElementById("bg-molecules-login");
-  if(cGlobal) fields.push(makeField(cGlobal));
-  if(cLogin) fields.push(makeField(cLogin));
-  if(!fields.length) return;
-
-  var raf, running=true;
-  function loop(){
-    if(!running) return;
-    for(var i=0;i<fields.length;i++) fields[i].draw();
-    raf=requestAnimationFrame(loop);
-  }
-  function start(){ if(!running){running=true; loop();} }
-  function stop(){ running=false; if(raf) cancelAnimationFrame(raf); }
-
-  loop();
-  var rt;
-  addEventListener("resize", function(){ clearTimeout(rt); rt=setTimeout(function(){ for(var i=0;i<fields.length;i++) fields[i].init(); },200); });
-  document.addEventListener("visibilitychange", function(){ document.hidden?stop():start(); });
-})();
 </script>
 </body>
 </html>
