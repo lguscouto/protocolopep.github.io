@@ -488,7 +488,8 @@
 <script>
 /* fundo animado — rede de moléculas (SVG + animação por JavaScript, máxima compatibilidade) */
 (function(){
-  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  // moléculas são um fundo decorativo suave — animam sempre (não seguem prefers-reduced-motion)
+  var reduce = false;
   var SVGNS = "http://www.w3.org/2000/svg";
   var systems = [];  // cada container vira um "sistema" de pontos animados
   var rafId = null;
