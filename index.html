@@ -57,13 +57,26 @@
   }
 
 
-  /* fundo animado de moléculas (global) */
-  #bg-molecules{
+  /* fundo animado de moléculas (SVG — global) */
+  .bg-mol{
     position:fixed;inset:0;width:100%;height:100%;
     z-index:1;pointer-events:none;display:block;
+    overflow:hidden;
+  }
+  .bg-mol svg{width:100%;height:100%;display:block;}
+  .bg-mol .mol-dot{
+    fill:#2FD8AC;
+    animation:molFloat 1s ease-in-out infinite alternate;
+  }
+  .bg-mol .mol-line{
+    stroke:#2CC5C0;stroke-width:1;
+  }
+  @keyframes molFloat{
+    from{transform:translate(0,0);}
+    to{transform:translate(var(--dx,6px),var(--dy,-8px));}
   }
   @media (prefers-reduced-motion: reduce){
-    #bg-molecules{display:none;}
+    .bg-mol .mol-dot{animation:none;}
   }
 
   /* ---------- top bar ---------- */
@@ -305,11 +318,12 @@
       radial-gradient(ellipse 620px 460px at 100% 0%, color-mix(in srgb, var(--primary) 8%, transparent), transparent 60%),
       radial-gradient(ellipse 520px 420px at 0% 100%, color-mix(in srgb, var(--tesa) 6%, transparent), transparent 60%);
   }
-  /* canvas de moléculas próprio do login (fica acima do fundo, abaixo do card) */
+  /* moléculas SVG próprias do login (fica acima do fundo, abaixo do card) */
   #bg-molecules-login{
     position:absolute;inset:0;width:100%;height:100%;
-    z-index:1;pointer-events:none;
+    z-index:1;pointer-events:none;overflow:hidden;
   }
+  #bg-molecules-login svg{width:100%;height:100%;display:block;}
   .auth-card{width:100%;max-width:380px;text-align:center;position:relative;z-index:2;}
   .auth-logo{width:58px;height:58px;margin:0 auto 16px;}
   .auth-title{font-family:var(--display);font-weight:700;font-size:28px;}
@@ -477,135 +491,134 @@
 <body>
 <!-- fundo de moléculas: carregado cedo, independente do Firebase -->
 <script>
-/* fundo animado — rede de moléculas 3D (anima app + login) — versão robusta */
+/* fundo animado — rede de moléculas 3D (SVG, alta compatibilidade) */
 (function(){
-  function startMolecules(){
+  function build(){
     try{
       var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      if(reduce) return;
-      var TEAL=[44,197,192], AQUA=[47,216,172];
-      var LINK=135;
 
-      function makeField(canvas){
-        var ctx=canvas.getContext("2d");
-        if(!ctx) return null;
-        var w=0,h=0,dpr=1,pts=[];
-        function init(){
-          dpr=Math.min(window.devicePixelRatio||1,2);
-          var vw=window.innerWidth||document.documentElement.clientWidth||360;
-          var vh=window.innerHeight||document.documentElement.clientHeight||640;
-          w=canvas.width=vw*dpr;
-          h=canvas.height=vh*dpr;
-          canvas.style.width=vw+"px";
-          canvas.style.height=vh+"px";
-          var count=Math.round(Math.min(42,Math.max(16,(vw*vh)/26000)));
-          pts=[];
-          for(var i=0;i<count;i++){
-            pts.push({x:Math.random()*w,y:Math.random()*h,z:Math.random(),
-              vx:(Math.random()-.5)*.22*dpr,vy:(Math.random()-.5)*.22*dpr});
-          }
+      function fill(container){
+        if(!container || container.getAttribute("data-filled")==="1") return;
+        var W = container.clientWidth || window.innerWidth || 360;
+        var H = container.clientHeight || window.innerHeight || 640;
+        // densidade proporcional
+        var n = Math.round(Math.min(42, Math.max(16, (W*H)/26000)));
+        var pts = [];
+        for(var i=0;i<n;i++){
+          pts.push({ x: Math.random()*W, y: Math.random()*H });
         }
-        function draw(){
-          if(!w||!h){ init(); if(!w||!h) return; }
-          ctx.clearRect(0,0,w,h);
-          var link=LINK*dpr;
-          for(var i=0;i<pts.length;i++){
-            var p=pts[i]; p.x+=p.vx; p.y+=p.vy;
-            if(p.x<0||p.x>w)p.vx*=-1; if(p.y<0||p.y>h)p.vy*=-1;
-          }
-          for(var i=0;i<pts.length;i++){
-            for(var j=i+1;j<pts.length;j++){
-              var dx=pts[i].x-pts[j].x, dy=pts[i].y-pts[j].y, d=Math.sqrt(dx*dx+dy*dy);
-              if(d<link){
-                var a=(1-d/link)*0.22;
-                ctx.strokeStyle="rgba("+TEAL[0]+","+TEAL[1]+","+TEAL[2]+","+a+")";
-                ctx.lineWidth=1;
-                ctx.beginPath(); ctx.moveTo(pts[i].x,pts[i].y); ctx.lineTo(pts[j].x,pts[j].y); ctx.stroke();
-              }
+        var svgns = "http://www.w3.org/2000/svg";
+        var svg = document.createElementNS(svgns, "svg");
+        svg.setAttribute("width","100%");
+        svg.setAttribute("height","100%");
+        svg.setAttribute("viewBox","0 0 "+W+" "+H);
+        svg.setAttribute("preserveAspectRatio","xMidYMid slice");
+
+        // linhas entre pontos próximos
+        var LINK = 135;
+        for(var a=0;a<pts.length;a++){
+          for(var b=a+1;b<pts.length;b++){
+            var dx=pts[a].x-pts[b].x, dy=pts[a].y-pts[b].y;
+            var d=Math.sqrt(dx*dx+dy*dy);
+            if(d<LINK){
+              var line = document.createElementNS(svgns,"line");
+              line.setAttribute("x1",pts[a].x); line.setAttribute("y1",pts[a].y);
+              line.setAttribute("x2",pts[b].x); line.setAttribute("y2",pts[b].y);
+              line.setAttribute("class","mol-line");
+              line.setAttribute("stroke-opacity", (0.18*(1-d/LINK)).toFixed(3));
+              svg.appendChild(line);
             }
           }
-          for(var i=0;i<pts.length;i++){
-            var p=pts[i], s=(1.6+p.z*2.2)*dpr, a=0.4+p.z*0.4;
-            ctx.fillStyle="rgba("+AQUA[0]+","+AQUA[1]+","+AQUA[2]+","+a+")";
-            ctx.beginPath(); ctx.arc(p.x,p.y,s,0,6.2832); ctx.fill();
-          }
         }
-        init();
-        return {init:init, draw:draw};
+        // pontos (com profundidade + animação suave)
+        for(var i=0;i<pts.length;i++){
+          var z = Math.random();
+          var c = document.createElementNS(svgns,"circle");
+          c.setAttribute("cx", pts[i].x);
+          c.setAttribute("cy", pts[i].y);
+          c.setAttribute("r", (1.6 + z*2.2).toFixed(2));
+          c.setAttribute("class","mol-dot");
+          c.setAttribute("fill-opacity", (0.4 + z*0.4).toFixed(2));
+          if(!reduce){
+            // cada ponto flutua devagar numa direção aleatória, em tempos diferentes
+            var dur = (3 + Math.random()*4).toFixed(2);
+            var dx2 = (Math.random()*16-8).toFixed(1);
+            var dy2 = (Math.random()*16-8).toFixed(1);
+            c.style.setProperty("--dx", dx2+"px");
+            c.style.setProperty("--dy", dy2+"px");
+            c.style.animationDuration = dur+"s";
+            c.style.animationDelay = (Math.random()*-4).toFixed(2)+"s";
+          }
+          svg.appendChild(c);
+        }
+
+        container.innerHTML = "";
+        container.appendChild(svg);
+        container.setAttribute("data-filled","1");
       }
 
-      var fields=[];
-      var cGlobal=document.getElementById("bg-molecules");
-      // se o canvas global não existe no HTML, cria um automaticamente (à prova de versão antiga)
-      if(!cGlobal){
-        cGlobal=document.createElement("canvas");
-        cGlobal.id="bg-molecules";
-        cGlobal.setAttribute("aria-hidden","true");
-        cGlobal.style.cssText="position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;display:block;";
-        if(document.body) document.body.insertBefore(cGlobal, document.body.firstChild);
-        else return false;
+      // container global: cria se não existir (à prova de versão antiga)
+      var g = document.getElementById("bg-molecules");
+      if(!g){
+        g = document.createElement("div");
+        g.id = "bg-molecules";
+        g.className = "bg-mol";
+        g.setAttribute("aria-hidden","true");
+        if(document.body) document.body.insertBefore(g, document.body.firstChild);
       }
-      var cLogin=document.getElementById("bg-molecules-login");
-      if(cGlobal){ var f1=makeField(cGlobal); if(f1) fields.push(f1); }
-      if(cLogin){ var f2=makeField(cLogin); if(f2) fields.push(f2); }
-      if(!fields.length) return false;
+      fill(g);
 
-      var raf, running=true;
-      function loop(){
-        if(!running) return;
-        for(var i=0;i<fields.length;i++){ try{ fields[i].draw(); }catch(e){} }
-        raf=requestAnimationFrame(loop);
-      }
-      function start(){ if(!running){running=true; loop();} }
-      function stop(){ running=false; if(raf) cancelAnimationFrame(raf); }
+      var lg = document.getElementById("bg-molecules-login");
+      if(lg) fill(lg);
 
-      loop();
-      // re-inicializa após um instante (garante dimensões corretas no mobile)
-      setTimeout(function(){ for(var i=0;i<fields.length;i++){ try{ fields[i].init(); }catch(e){} } }, 300);
-
+      // refazer no redimensionamento (recalcula posições)
       var rt;
-      window.addEventListener("resize", function(){ clearTimeout(rt); rt=setTimeout(function(){ for(var i=0;i<fields.length;i++){ try{ fields[i].init(); }catch(e){} } },200); });
-      window.addEventListener("orientationchange", function(){ setTimeout(function(){ for(var i=0;i<fields.length;i++){ try{ fields[i].init(); }catch(e){} } },300); });
-      document.addEventListener("visibilitychange", function(){ document.hidden?stop():start(); });
+      window.addEventListener("resize", function(){
+        clearTimeout(rt);
+        rt = setTimeout(function(){
+          [g, document.getElementById("bg-molecules-login")].forEach(function(el){
+            if(el){ el.removeAttribute("data-filled"); fill(el); }
+          });
+        }, 300);
+      });
+
       return true;
-    }catch(e){ /* silencioso: se falhar, o app segue normal sem o fundo */ window.__molErro = (e && e.message) ? e.message : String(e); }
-    return false;
+    }catch(e){
+      window.__molErro = (e && e.message) ? e.message : String(e);
+      return false;
+    }
   }
 
-  // dispara de VÁRIAS formas pra garantir que rode, não importa o que aconteça no resto da página
-  var jaRodou = false;
+  // debug opcional via ?debug
   var DEBUG = location.search.indexOf("debug") > -1;
   function dbg(msg){
     if(!DEBUG) return;
-    var el=document.getElementById("mol-debug");
+    var el = document.getElementById("mol-debug");
     if(!el){
-      el=document.createElement("div");
-      el.id="mol-debug";
-      el.style.cssText="position:fixed;bottom:0;left:0;right:0;z-index:99999;background:rgba(0,0,0,.85);color:#2CC5C0;font:12px sans-serif;padding:8px;text-align:center;";
+      el = document.createElement("div");
+      el.id = "mol-debug";
+      el.style.cssText = "position:fixed;bottom:0;left:0;right:0;z-index:99999;background:rgba(0,0,0,.85);color:#2CC5C0;font:12px sans-serif;padding:8px;text-align:center;";
       document.body.appendChild(el);
     }
-    el.textContent = "moléculas: " + msg + "  [VERSÃO 2026-08-16-C · diag erro]";
+    el.textContent = "moléculas: " + msg + "  [VERSÃO 2026-08-16-SVG]";
   }
-  function iniciarUmaVez(){
+
+  var jaRodou = false;
+  function iniciar(){
     if(jaRodou) return;
-    var ok = startMolecules();
-    if(ok === true){ jaRodou = true; dbg("✓ rodando"); }
-    else { dbg("FALHOU — " + (window.__molErro || "canvas não criado") + " (readyState="+document.readyState+")"); }
+    var ok = build();
+    if(ok){ jaRodou = true; dbg("✓ rodando (SVG)"); }
+    else { dbg("FALHOU — " + (window.__molErro || "erro desconhecido")); }
   }
-  // 1) se o DOM já está pronto, roda já
-  if(document.readyState !== "loading"){
-    iniciarUmaVez();
-  }
-  // 2) quando o DOM terminar de montar
-  document.addEventListener("DOMContentLoaded", iniciarUmaVez);
-  // 3) quando tudo (imagens, etc) carregar — rede de segurança
-  window.addEventListener("load", iniciarUmaVez);
-  // 4) fallback final por tempo, caso os eventos acima não disparem
-  setTimeout(iniciarUmaVez, 1200);
+
+  if(document.readyState !== "loading") iniciar();
+  document.addEventListener("DOMContentLoaded", iniciar);
+  window.addEventListener("load", iniciar);
+  setTimeout(iniciar, 1200);
 })();
 </script>
 
-<canvas id="bg-molecules" aria-hidden="true"></canvas>
+<div id="bg-molecules" class="bg-mol" aria-hidden="true"></div>
 <div class="app">
   <div class="topbar">
     <div class="tb-left">
@@ -822,7 +835,7 @@
 
 <!-- tela de login / cadastro -->
 <div class="auth-screen on" id="auth-screen">
-  <canvas id="bg-molecules-login" aria-hidden="true"></canvas>
+  <div id="bg-molecules-login" class="bg-mol" aria-hidden="true"></div>
   <div class="auth-card">
     <svg class="auth-logo" viewBox="0 0 32 32" fill="none">
       <rect width="32" height="32" rx="9" fill="#131B26" stroke="#26313F"/>
