@@ -2071,9 +2071,7 @@ function showApp(user){
   }
   if(unsub) unsub();
   if(noticeUnsub){ noticeUnsub(); noticeUnsub=null; }
-  noticeUnsub = onSnapshot(doc(db,'meta','notice'), s=>{ noticeData = s.exists()?s.data():null; renderNotice(); }, e=>console.warn('notice',e));
-  if(novidadesUnsub){ novidadesUnsub(); novidadesUnsub=null; }
-  novidadesUnsub = onSnapshot(doc(db,'meta','novidades'), s=>{ novidadesData = s.exists()?s.data():null; renderNovidades(); }, e=>console.warn('novidades',e));
+  noticeUnsub = onSnapshot(doc(db,'meta','notice'), s=>{ noticeData = s.exists()?s.data():null; renderNotice(); renderNovidades(); }, e=>console.warn('notice',e));
   const ref = doc(db,'users',user.uid);
   unsub = onSnapshot(ref, snap=>{
     if(snap.exists()){
@@ -2103,7 +2101,6 @@ function showAuth(){
   if(statsUnsub){ statsUnsub(); statsUnsub=null; }
   if(membersUnsub){ membersUnsub(); membersUnsub=null; }
   if(noticeUnsub){ noticeUnsub(); noticeUnsub=null; }
-  if(novidadesUnsub){ novidadesUnsub(); novidadesUnsub=null; }
   { const ov=document.getElementById("nv-overlay"); if(ov) ov.style.display="none"; }
   adminMembers=[];
   NICKNAME="";
@@ -2494,7 +2491,6 @@ document.getElementById("import-file").addEventListener("change",e=>{
    RECADO DO ADMIN
    ========================================================= */
 let noticeUnsub=null, noticeData=null;
-let novidadesUnsub=null, novidadesData=null;
 let noticeRotTimer=null, noticeMsgs=[], noticeIdx=0;
 function linkifyNotice(msg){
   const tokens=[];
@@ -2553,30 +2549,31 @@ document.getElementById("notice-x").onclick=()=>{
   document.getElementById("notice-banner").style.display="none";
 };
 
-/* ---- novidades / atualizações (pop-up 1x) ---- */
+/* ---- novidades / atualizações (pop-up 1x) — guardadas dentro do doc 'notice' ---- */
 function renderNovidades(){
   const overlay=document.getElementById("nv-overlay");
-  // preencher os campos do admin sempre que houver dados
+  if(!overlay) return;
+  // os dados de novidades vivem em campos nvTitle/nvBody/nvTs/nvActive do doc notice
+  const nd = noticeData || {};
   const ti=document.getElementById("nv-title-input");
   const bi=document.getElementById("nv-body-input");
-  if(novidadesData && novidadesData.active){
-    if(ti && document.activeElement!==ti) ti.value=novidadesData.title||"";
-    if(bi && document.activeElement!==bi) bi.value=novidadesData.body||"";
+  if(nd.nvActive){
+    if(ti && document.activeElement!==ti) ti.value=nd.nvTitle||"";
+    if(bi && document.activeElement!==bi) bi.value=nd.nvBody||"";
   }
-  // mostrar o modal só se: ativo, tem conteúdo, e a pessoa ainda não fechou ESTA versão
   let visto=null;
   try{ visto=localStorage.getItem("novidades-vista"); }catch(e){}
-  const active = novidadesData && novidadesData.active && (novidadesData.body||novidadesData.title) && String(novidadesData.ts)!==visto;
+  const active = nd.nvActive && (nd.nvBody||nd.nvTitle) && String(nd.nvTs)!==visto;
   if(active){
-    document.getElementById("nv-title").textContent = novidadesData.title || "Novidades";
-    document.getElementById("nv-body").textContent = novidadesData.body || "";
+    document.getElementById("nv-title").textContent = nd.nvTitle || "Novidades";
+    document.getElementById("nv-body").textContent = nd.nvBody || "";
     overlay.style.display="flex";
   } else {
     overlay.style.display="none";
   }
 }
 function fecharNovidades(){
-  try{ if(novidadesData&&novidadesData.ts) localStorage.setItem("novidades-vista",String(novidadesData.ts)); }catch(e){}
+  try{ if(noticeData&&noticeData.nvTs) localStorage.setItem("novidades-vista",String(noticeData.nvTs)); }catch(e){}
   document.getElementById("nv-overlay").style.display="none";
 }
 document.getElementById("nv-close").onclick=fecharNovidades;
@@ -2587,12 +2584,13 @@ document.getElementById("nv-publish").onclick=()=>{
   const title=document.getElementById("nv-title-input").value.trim();
   const body=document.getElementById("nv-body-input").value.trim();
   if(!body && !title){ alert("Escreva as novidades."); return; }
-  setDoc(doc(db,'meta','novidades'), {title, body, ts:Date.now(), active:true})
+  // grava dentro do doc 'notice' (que já tem permissão), com merge pra não apagar o recado
+  setDoc(doc(db,'meta','notice'), {nvTitle:title, nvBody:body, nvTs:Date.now(), nvActive:true}, {merge:true})
     .then(()=>alert("Novidade publicada! Vai aparecer para todos ao abrir o app."))
     .catch(e=>{ alert("Não consegui publicar."); console.warn(e); });
 };
 document.getElementById("nv-remove").onclick=()=>{
-  setDoc(doc(db,'meta','novidades'), {active:false}, {merge:true})
+  setDoc(doc(db,'meta','notice'), {nvActive:false}, {merge:true})
     .then(()=>alert("Novidade removida."))
     .catch(e=>console.warn(e));
 };
