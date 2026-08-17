@@ -536,6 +536,15 @@
 
       var fields=[];
       var cGlobal=document.getElementById("bg-molecules");
+      // se o canvas global não existe no HTML, cria um automaticamente (à prova de versão antiga)
+      if(!cGlobal){
+        cGlobal=document.createElement("canvas");
+        cGlobal.id="bg-molecules";
+        cGlobal.setAttribute("aria-hidden","true");
+        cGlobal.style.cssText="position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;display:block;";
+        if(document.body) document.body.insertBefore(cGlobal, document.body.firstChild);
+        else return false;
+      }
       var cLogin=document.getElementById("bg-molecules-login");
       if(cGlobal){ var f1=makeField(cGlobal); if(f1) fields.push(f1); }
       if(cLogin){ var f2=makeField(cLogin); if(f2) fields.push(f2); }
