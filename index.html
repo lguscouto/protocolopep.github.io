@@ -2594,6 +2594,8 @@ function renderNotice(){
   const dismissed=(()=>{ try{ return localStorage.getItem("notice-dismissed"); }catch(e){ return null; } })();
   if(noticeRotTimer){ clearInterval(noticeRotTimer); noticeRotTimer=null; }
   if(window.__noticeAnim){ cancelAnimationFrame(window.__noticeAnim); window.__noticeAnim=null; }
+  // marca esta execução como a "atual" — execuções antigas param de se atualizar
+  const myRun = (window.__noticeRun = (window.__noticeRun||0) + 1);
   const active = noticeData && noticeData.active && noticeData.text && String(noticeData.ts)!==dismissed;
   if(!active){ banner.style.display="none"; return; }
 
@@ -2621,32 +2623,36 @@ function renderNotice(){
   // velocidade lenta e constante (px por segundo) — ajustável aqui
   var VELOCIDADE = 42; // px/s — quanto menor, mais devagar
 
+  // espera 2 frames (garante que o banner já fez reflow com display:flex antes de medir)
   requestAnimationFrame(function(){
-    var larguraTexto = ticker.scrollWidth;
-    var larguraBanner = el.clientWidth || 240;
+    requestAnimationFrame(function(){
+      var larguraTexto = ticker.scrollWidth || ticker.offsetWidth || 300;
+      var larguraBanner = el.clientWidth || el.offsetWidth || banner.clientWidth || 240;
 
-    // se o texto cabe inteiro no banner, não precisa rolar
-    if(larguraTexto <= larguraBanner){
-      ticker.style.transform = "translateX(0)";
-      return;
-    }
+      // se o texto cabe inteiro no banner (com folga), não precisa rolar
+      if(larguraTexto <= larguraBanner + 4){
+        ticker.style.transform = "translateX(0)";
+        return;
+      }
 
-    // posição inicial: começa fora da tela, à direita
-    var pos = larguraBanner;
-    var percursoTotal = larguraBanner + larguraTexto; // até sumir totalmente à esquerda
-    var lastTime = null;
+      // posição inicial: começa fora da tela, à direita
+      var pos = larguraBanner;
+      var lastTime = null;
 
-    function passo(t){
-      if(lastTime === null) lastTime = t;
-      var dt = (t - lastTime) / 1000; // segundos desde o último frame
-      lastTime = t;
-      pos -= VELOCIDADE * dt;
-      if(pos < -larguraTexto){ pos = larguraBanner; } // reinicia o loop
-      ticker.style.transform = "translateX(" + pos.toFixed(1) + "px)";
+      function passo(t){
+        if(window.__noticeRun !== myRun) return; // uma chamada mais nova assumiu — para esta
+        if(lastTime === null) lastTime = t;
+        var dt = (t - lastTime) / 1000; // segundos desde o último frame
+        if(dt > 0.5) dt = 0.016; // proteção contra saltos grandes (aba volta do fundo, etc.)
+        lastTime = t;
+        pos -= VELOCIDADE * dt;
+        if(pos < -larguraTexto){ pos = larguraBanner; } // reinicia o loop
+        ticker.style.transform = "translateX(" + pos.toFixed(1) + "px)";
+        window.__noticeAnim = requestAnimationFrame(passo);
+      }
+      ticker.style.transform = "translateX(" + pos + "px)";
       window.__noticeAnim = requestAnimationFrame(passo);
-    }
-    ticker.style.transform = "translateX(" + pos + "px)";
-    window.__noticeAnim = requestAnimationFrame(passo);
+    });
   });
   const inp=document.getElementById("notice-input");
   if(inp && noticeData && noticeData.text) inp.value=noticeData.active?noticeData.text:"";
