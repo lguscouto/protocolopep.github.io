@@ -990,15 +990,32 @@
       <div class="ad-stat"><div class="ad-v" id="ad-doses">0</div><div class="ad-k">Doses registradas</div></div>
       <div class="ad-stat"><div class="ad-v" id="ad-peps">0</div><div class="ad-k">Peptídeos adicionados</div></div>
     </div>
-    <p class="eyebrow" style="margin-top:22px">Recado para todos <span style="font-weight:400;text-transform:none;letter-spacing:0">(um por linha = rotativo)</span></p>
+    <p class="eyebrow" style="margin-top:22px">Recado para todos <span style="font-weight:400;text-transform:none;letter-spacing:0">(cada caixa é uma notícia — passam em sequência)</span></p>
     <div class="panel">
-      <textarea class="txt area" id="notice-input" rows="4" placeholder="Uma frase por linha. Ex.:&#10;Reunião do grupo sábado às 10h&#10;Novo protocolo disponível!&#10;Confiram a aba Calcular" oninput="
-        var linhas = this.value.split(/\n|\r\n|\r/).map(s=>s.trim()).filter(Boolean);
-        var prev = document.getElementById('notice-preview');
-        if(prev) prev.textContent = linhas.length > 1 ? linhas.length + ' frases detectadas — vão aparecer uma por vez' : '';
-      "></textarea>
+      <div class="ad-note" style="margin-bottom:12px">💡 Preencha as caixas que quiser usar (pode deixar as outras em branco). Para um botão clicável sem expor o número/link: <b>[Fale comigo no WhatsApp](84999937819)</b>.</div>
+      <div id="notice-boxes">
+        <div class="fld" style="margin-bottom:10px">
+          <label>Notícia 1</label>
+          <input class="txt notice-box" data-n="1" placeholder="Ex.: Toda opinião importa! [Fale comigo no WhatsApp](84999937819)" style="margin-top:5px">
+        </div>
+        <div class="fld" style="margin-bottom:10px">
+          <label>Notícia 2</label>
+          <input class="txt notice-box" data-n="2" placeholder="Ex.: Reunião do grupo sábado às 10h" style="margin-top:5px">
+        </div>
+        <div class="fld" style="margin-bottom:10px">
+          <label>Notícia 3</label>
+          <input class="txt notice-box" data-n="3" placeholder="(opcional)" style="margin-top:5px">
+        </div>
+        <div class="fld" style="margin-bottom:10px">
+          <label>Notícia 4</label>
+          <input class="txt notice-box" data-n="4" placeholder="(opcional)" style="margin-top:5px">
+        </div>
+        <div class="fld" style="margin-bottom:10px">
+          <label>Notícia 5</label>
+          <input class="txt notice-box" data-n="5" placeholder="(opcional)" style="margin-top:5px">
+        </div>
+      </div>
       <p id="notice-preview" style="font-size:11.5px;color:var(--primary);margin:4px 0 8px;min-height:1em;"></p>
-      <div class="ad-note" style="margin:8px 0 0">💡 Para um botão clicável sem expor o número/link, escreva assim: <b>[Fale comigo no WhatsApp](84999937819)</b> — aparece só o texto, clicável, abrindo o WhatsApp.</div>
       <div class="inrow" style="margin-top:10px;align-items:center">
         <label style="margin:0;color:var(--muted);font-size:13px;font-weight:600;flex:none">Trocar a cada</label>
         <input class="txt" id="notice-secs" type="number" min="2" max="60" step="1" value="5" style="flex:none;width:90px;text-align:center">
@@ -2607,12 +2624,21 @@ function renderNotice(){
   const active = noticeData && noticeData.active && noticeData.text && String(noticeData.ts)!==dismissed;
   if(!active){ banner.style.display="none"; return; }
 
-  // separar frases: por linha, ou por pontuação se for tudo numa linha só
+  // separar frases: por linha (prioridade), ou por pontuação se for tudo numa linha só
   var raw = noticeData.text;
   var frases = raw.split(/\n|\r\n|\r/).map(function(s){ return s.trim(); }).filter(Boolean);
   if(frases.length <= 1){
     var unica = frases[0] || raw.trim();
-    var porPont = unica.split(/[.!?]+\s+/).map(function(s){ return s.trim(); }).filter(Boolean);
+    // protege links markdown [texto](url) da separação por pontuação (evita cortar no meio de "Fale comigo!(link)")
+    var linksGuardados = [];
+    var semLinks = unica.replace(/\[[^\]]*\]\([^)]*\)/g, function(m){
+      linksGuardados.push(m);
+      return "\u0000L" + (linksGuardados.length-1) + "\u0000";
+    });
+    var porPont = semLinks.split(/[.!?]+\s+/).map(function(s){ return s.trim(); }).filter(Boolean);
+    porPont = porPont.map(function(s){
+      return s.replace(/\u0000L(\d+)\u0000/g, function(_, i){ return linksGuardados[+i]; });
+    });
     frases = porPont.length > 1 ? porPont : [unica];
   }
   noticeMsgs = frases;
@@ -2648,8 +2674,12 @@ function renderNotice(){
     ticker.style.animationDuration = duracao.toFixed(2) + "s";
   }
   calcularEAnimar();
-  const inp=document.getElementById("notice-input");
-  if(inp && noticeData && noticeData.text) inp.value=noticeData.active?noticeData.text:"";
+  if(noticeData && noticeData.active && noticeData.text){
+    var linhasCarregar = noticeData.text.split(/\n|\r\n|\r/);
+    document.querySelectorAll(".notice-box").forEach(function(box, i){
+      if(document.activeElement !== box) box.value = linhasCarregar[i] || "";
+    });
+  }
   const secsInp=document.getElementById("notice-secs");
   if(secsInp && noticeData && noticeData.secs) secsInp.value=noticeData.secs;
 }
@@ -2806,9 +2836,16 @@ document.getElementById("nv-remove").onclick=()=>{
     .catch(e=>console.warn(e));
 };
 
+document.querySelectorAll(".notice-box").forEach(box=>{
+  box.oninput = ()=>{
+    const preenchidas = [...document.querySelectorAll(".notice-box")].filter(b=>b.value.trim()).length;
+    const prev = document.getElementById("notice-preview");
+    if(prev) prev.textContent = preenchidas>0 ? "✓ " + preenchidas + " notícia" + (preenchidas>1?"s":"") + " preenchida" + (preenchidas>1?"s":"") + (preenchidas>1?" — vão passar em sequência":"") : "";
+  };
+});
 document.getElementById("notice-publish").onclick=()=>{
-  const t=document.getElementById("notice-input").value.trim();
-  if(!t){ alert("Escreva o recado."); return; }
+  const t = [...document.querySelectorAll(".notice-box")].map(b=>b.value.trim()).filter(Boolean).join("\n");
+  if(!t){ alert("Preencha ao menos uma caixa de notícia."); return; }
   const secs=Math.min(60, Math.max(2, parseInt(document.getElementById("notice-secs").value)||5));
   const atual = noticeData || {};
   setDoc(doc(db,'meta','notice'), {text:t, secs, ts:Date.now(), active:true, nvTitle:atual.nvTitle||"", nvBody:atual.nvBody||"", nvTs:atual.nvTs||0, nvActive:atual.nvActive||false}).then(()=>alert("Recado publicado!")).catch(e=>{ alert("Não consegui publicar."); console.warn(e); });
