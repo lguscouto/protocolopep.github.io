@@ -340,12 +340,20 @@
   .notice-text{flex:1;font-size:13px;color:var(--text);line-height:1.4;overflow:hidden;white-space:nowrap;position:relative;min-height:1.4em;}
   .notice-text a{color:var(--primary);font-weight:700;text-decoration:underline;}
   .notice-text a.notice-cta{display:inline-block;text-decoration:none;background:var(--primary);color:#0B1017;padding:3px 12px;border-radius:20px;font-size:12px;}
-  /* letreiro contínuo — texto rola da direita pra esquerda sem parar */
+  /* letreiro contínuo — via CSS keyframe (mais garantido que JS manual) */
   .notice-ticker{
     display:inline-block;
     white-space:nowrap;
-    will-change:transform;
+    padding-left:100%;
+    animation-name:noticeScroll;
+    animation-timing-function:linear;
+    animation-iteration-count:infinite;
   }
+  @keyframes noticeScroll{
+    from{ transform:translateX(0); }
+    to{ transform:translateX(-100%); }
+  }
+  .notice-ticker.no-scroll{ animation:none; padding-left:0; }
   .notice-x{flex:none;background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;}
 
   /* ---------- modal de novidades ---------- */
@@ -2620,40 +2628,26 @@ function renderNotice(){
   ticker.innerHTML = textoCompleto;
   el.appendChild(ticker);
 
-  // velocidade lenta e constante (px por segundo) — ajustável aqui
-  var VELOCIDADE = 42; // px/s — quanto menor, mais devagar
+  // velocidade: px por segundo (ajustável). O CSS @keyframes faz a rolagem sozinho.
+  var VELOCIDADE = 55;
 
-  // espera 2 frames (garante que o banner já fez reflow com display:flex antes de medir)
-  requestAnimationFrame(function(){
-    requestAnimationFrame(function(){
-      var larguraTexto = ticker.scrollWidth || ticker.offsetWidth || 300;
-      var larguraBanner = el.clientWidth || el.offsetWidth || banner.clientWidth || 240;
-
-      // se o texto cabe inteiro no banner (com folga), não precisa rolar
-      if(larguraTexto <= larguraBanner + 4){
-        ticker.style.transform = "translateX(0)";
-        return;
-      }
-
-      // posição inicial: começa fora da tela, à direita
-      var pos = larguraBanner;
-      var lastTime = null;
-
-      function passo(t){
-        if(window.__noticeRun !== myRun) return; // uma chamada mais nova assumiu — para esta
-        if(lastTime === null) lastTime = t;
-        var dt = (t - lastTime) / 1000; // segundos desde o último frame
-        if(dt > 0.5) dt = 0.016; // proteção contra saltos grandes (aba volta do fundo, etc.)
-        lastTime = t;
-        pos -= VELOCIDADE * dt;
-        if(pos < -larguraTexto){ pos = larguraBanner; } // reinicia o loop
-        ticker.style.transform = "translateX(" + pos.toFixed(1) + "px)";
-        window.__noticeAnim = requestAnimationFrame(passo);
-      }
-      ticker.style.transform = "translateX(" + pos + "px)";
-      window.__noticeAnim = requestAnimationFrame(passo);
-    });
-  });
+  function calcularEAnimar(){
+    var larguraTexto = ticker.scrollWidth || ticker.offsetWidth || 0;
+    var larguraBanner = el.clientWidth || el.offsetWidth || banner.clientWidth || 0;
+    if(larguraTexto < 10 || larguraBanner < 10){
+      // ainda não tem medidas válidas — tenta de novo em breve
+      setTimeout(calcularEAnimar, 150);
+      return;
+    }
+    if(larguraTexto <= larguraBanner + 4){
+      ticker.classList.add("no-scroll");
+      return;
+    }
+    // duração = distância total percorrida (banner + texto) dividido pela velocidade
+    var duracao = (larguraBanner + larguraTexto) / VELOCIDADE;
+    ticker.style.animationDuration = duracao.toFixed(2) + "s";
+  }
+  calcularEAnimar();
   const inp=document.getElementById("notice-input");
   if(inp && noticeData && noticeData.text) inp.value=noticeData.active?noticeData.text:"";
   const secsInp=document.getElementById("notice-secs");
