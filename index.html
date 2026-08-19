@@ -340,13 +340,12 @@
   .notice-text{flex:1;font-size:13px;color:var(--text);line-height:1.4;overflow:hidden;white-space:nowrap;position:relative;min-height:1.4em;}
   .notice-text a{color:var(--primary);font-weight:700;text-decoration:underline;}
   .notice-text a.notice-cta{display:inline-block;text-decoration:none;background:var(--primary);color:#0B1017;padding:3px 12px;border-radius:20px;font-size:12px;}
-  /* slide lateral — frase entra pela direita, sai pela esquerda */
-  .notice-msg{display:inline-block;width:100%;transition:transform .45s cubic-bezier(.4,0,.2,1), opacity .45s ease;}
-  .notice-msg.slide-out{transform:translateX(-110%);opacity:0;}
-  .notice-msg.slide-in{transform:translateX(110%);opacity:0;transition:none;}
-  .notice-msg.slide-active{transform:translateX(0);opacity:1;}
-  /* cada letra é um span individual (não usado no slide, mas mantido) */
-  .notice-text .nl{display:inline;}
+  /* letreiro contínuo — texto rola da direita pra esquerda sem parar */
+  .notice-ticker{
+    display:inline-block;
+    white-space:nowrap;
+    will-change:transform;
+  }
   .notice-x{flex:none;background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;}
 
   /* ---------- modal de novidades ---------- */
@@ -2594,66 +2593,61 @@ function renderNotice(){
   const el=document.getElementById("notice-text");
   const dismissed=(()=>{ try{ return localStorage.getItem("notice-dismissed"); }catch(e){ return null; } })();
   if(noticeRotTimer){ clearInterval(noticeRotTimer); noticeRotTimer=null; }
-  if(window.__noticeAnim){ clearTimeout(window.__noticeAnim); window.__noticeAnim=null; }
+  if(window.__noticeAnim){ cancelAnimationFrame(window.__noticeAnim); window.__noticeAnim=null; }
   const active = noticeData && noticeData.active && noticeData.text && String(noticeData.ts)!==dismissed;
   if(!active){ banner.style.display="none"; return; }
 
-  // separar frases por linha (cada linha = uma frase)
-  noticeMsgs = noticeData.text.split(/\n|\r\n|\r/).map(s=>s.trim()).filter(Boolean);
-  if(noticeMsgs.length===0){ banner.style.display="none"; return; }
+  // separar frases: por linha, ou por pontuação se for tudo numa linha só
+  var raw = noticeData.text;
+  var frases = raw.split(/\n|\r\n|\r/).map(function(s){ return s.trim(); }).filter(Boolean);
+  if(frases.length <= 1){
+    var unica = frases[0] || raw.trim();
+    var porPont = unica.split(/[.!?]+\s+/).map(function(s){ return s.trim(); }).filter(Boolean);
+    frases = porPont.length > 1 ? porPont : [unica];
+  }
+  noticeMsgs = frases;
   banner.style.display="flex";
 
-  // tempo que cada frase fica visível: proporcional ao tamanho da frase
-  // mínimo 2s, máximo 8s — ~60ms por caractere
-  function tempoFrase(msg){ return Math.min(8000, Math.max(2000, msg.length * 60)); }
+  // juntar todas as frases num único texto corrido, separadas por espaçador
+  var separador = "\u00a0\u00a0\u00a0\u2022\u00a0\u00a0\u00a0";
+  var textoCompleto = noticeMsgs.map(function(m){ return linkifyNotice(m); }).join(separador);
 
-  function mostrarFrase(idx){
-    var html = linkifyNotice(noticeMsgs[idx]||"");
-    var cur = el.querySelector(".notice-msg");
-    var nov = document.createElement("span");
-    nov.className = "notice-msg slide-in";
-    nov.innerHTML = html;
-    el.appendChild(nov);
-
-    // força reflow e anima entrada (da direita)
-    requestAnimationFrame(function(){ requestAnimationFrame(function(){
-      nov.classList.remove("slide-in");
-      nov.classList.add("slide-active");
-      // aguarda leitura e anima saída (pela esquerda)
-      var tempo = tempoFrase(noticeMsgs[idx]||"");
-      window.__noticeAnim = setTimeout(function(){
-        // sai pela esquerda
-        if(cur){ cur.classList.remove("slide-active"); cur.classList.add("slide-out"); }
-        nov.classList.remove("slide-active");
-        nov.classList.add("slide-out");
-        // remove o antigo após animação e mostra a próxima
-        setTimeout(function(){
-          if(cur && cur.parentNode) cur.remove();
-          if(nov && nov.parentNode) nov.remove();
-          var proximo = (idx+1) % noticeMsgs.length;
-          mostrarFrase(proximo);
-        }, 480);
-      }, tempo);
-    }); });
-  }
-
-  // primeira frase entra direto (sem slide, já aparece pronta)
-  var primeiro = document.createElement("span");
-  primeiro.className = "notice-msg slide-active";
-  primeiro.innerHTML = linkifyNotice(noticeMsgs[0]);
   el.innerHTML = "";
-  el.appendChild(primeiro);
-  var tempo0 = tempoFrase(noticeMsgs[0]);
-  if(noticeMsgs.length > 1){
-    window.__noticeAnim = setTimeout(function(){
-      primeiro.classList.remove("slide-active");
-      primeiro.classList.add("slide-out");
-      setTimeout(function(){
-        if(primeiro && primeiro.parentNode) primeiro.remove();
-        mostrarFrase(1);
-      }, 480);
-    }, tempo0);
-  }
+  var ticker = document.createElement("span");
+  ticker.className = "notice-ticker";
+  ticker.innerHTML = textoCompleto;
+  el.appendChild(ticker);
+
+  // velocidade lenta e constante (px por segundo) — ajustável aqui
+  var VELOCIDADE = 42; // px/s — quanto menor, mais devagar
+
+  requestAnimationFrame(function(){
+    var larguraTexto = ticker.scrollWidth;
+    var larguraBanner = el.clientWidth || 240;
+
+    // se o texto cabe inteiro no banner, não precisa rolar
+    if(larguraTexto <= larguraBanner){
+      ticker.style.transform = "translateX(0)";
+      return;
+    }
+
+    // posição inicial: começa fora da tela, à direita
+    var pos = larguraBanner;
+    var percursoTotal = larguraBanner + larguraTexto; // até sumir totalmente à esquerda
+    var lastTime = null;
+
+    function passo(t){
+      if(lastTime === null) lastTime = t;
+      var dt = (t - lastTime) / 1000; // segundos desde o último frame
+      lastTime = t;
+      pos -= VELOCIDADE * dt;
+      if(pos < -larguraTexto){ pos = larguraBanner; } // reinicia o loop
+      ticker.style.transform = "translateX(" + pos.toFixed(1) + "px)";
+      window.__noticeAnim = requestAnimationFrame(passo);
+    }
+    ticker.style.transform = "translateX(" + pos + "px)";
+    window.__noticeAnim = requestAnimationFrame(passo);
+  });
   const inp=document.getElementById("notice-input");
   if(inp && noticeData && noticeData.text) inp.value=noticeData.active?noticeData.text:"";
   const secsInp=document.getElementById("notice-secs");
