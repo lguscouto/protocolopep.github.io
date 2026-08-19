@@ -344,16 +344,15 @@
   .notice-ticker{
     display:inline-block;
     white-space:nowrap;
-    padding-left:100%;
-    animation-name:noticeScroll;
+    animation-name:noticeScrollOnce;
     animation-timing-function:linear;
-    animation-iteration-count:infinite;
+    animation-fill-mode:forwards;
   }
-  @keyframes noticeScroll{
-    from{ transform:translateX(0); }
-    to{ transform:translateX(-100%); }
+  @keyframes noticeScrollOnce{
+    from{ transform:translateX(var(--start, 100%)); }
+    to{ transform:translateX(var(--end, -100%)); }
   }
-  .notice-ticker.no-scroll{ animation:none; padding-left:0; }
+  .notice-ticker.no-scroll{ animation:none; transform:translateX(0); }
   .notice-x{flex:none;background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;}
 
   /* ---------- modal de novidades ---------- */
@@ -2644,36 +2643,49 @@ function renderNotice(){
   noticeMsgs = frases;
   banner.style.display="flex";
 
-  // juntar todas as frases num único texto corrido, separadas por espaçador
-  var separador = "\u00a0\u00a0\u00a0\u2022\u00a0\u00a0\u00a0";
-  var textoCompleto = noticeMsgs.map(function(m){ return linkifyNotice(m); }).join(separador);
+  var VELOCIDADE = 55; // px/s
 
-  el.innerHTML = "";
-  var ticker = document.createElement("span");
-  ticker.className = "notice-ticker";
-  ticker.innerHTML = textoCompleto;
-  el.appendChild(ticker);
+  function animarFrase(idx){
+    if(window.__noticeRun !== myRun) return; // execução antiga — não continua
+    var texto = linkifyNotice(noticeMsgs[idx] || "");
+    el.innerHTML = "";
+    var ticker = document.createElement("span");
+    ticker.className = "notice-ticker";
+    ticker.innerHTML = texto;
+    el.appendChild(ticker);
 
-  // velocidade: px por segundo (ajustável). O CSS @keyframes faz a rolagem sozinho.
-  var VELOCIDADE = 55;
+    function medir(){
+      if(window.__noticeRun !== myRun) return;
+      var larguraTexto = ticker.scrollWidth || ticker.offsetWidth || 0;
+      var larguraBanner = el.clientWidth || el.offsetWidth || banner.clientWidth || 0;
+      if(larguraTexto < 4 || larguraBanner < 10){ setTimeout(medir, 150); return; }
 
-  function calcularEAnimar(){
-    var larguraTexto = ticker.scrollWidth || ticker.offsetWidth || 0;
-    var larguraBanner = el.clientWidth || el.offsetWidth || banner.clientWidth || 0;
-    if(larguraTexto < 10 || larguraBanner < 10){
-      // ainda não tem medidas válidas — tenta de novo em breve
-      setTimeout(calcularEAnimar, 150);
-      return;
+      var proximo = function(){
+        var prox = (idx + 1) % noticeMsgs.length;
+        // pequena pausa entre uma frase e a próxima
+        window.__noticeAnim = setTimeout(function(){ animarFrase(prox); }, 400);
+      };
+
+      if(larguraTexto <= larguraBanner){
+        // texto curto: fica parado um tempo e passa pra próxima
+        ticker.classList.add("no-scroll");
+        window.__noticeAnim = setTimeout(proximo, 2500);
+        return;
+      }
+
+      // começa fora da tela à direita, termina fora da tela à esquerda
+      var distancia = larguraBanner + larguraTexto;
+      var duracao = distancia / VELOCIDADE;
+      ticker.style.setProperty("--start", larguraBanner + "px");
+      ticker.style.setProperty("--end", (-larguraTexto) + "px");
+      ticker.style.animationDuration = duracao.toFixed(2) + "s";
+      // quando a animação desta frase terminar, mostra a próxima
+      ticker.addEventListener("animationend", proximo, {once:true});
     }
-    if(larguraTexto <= larguraBanner + 4){
-      ticker.classList.add("no-scroll");
-      return;
-    }
-    // duração = distância total percorrida (banner + texto) dividido pela velocidade
-    var duracao = (larguraBanner + larguraTexto) / VELOCIDADE;
-    ticker.style.animationDuration = duracao.toFixed(2) + "s";
+    medir();
   }
-  calcularEAnimar();
+
+  animarFrase(0);
   if(noticeData && noticeData.active && noticeData.text){
     var linhasCarregar = noticeData.text.split(/\n|\r\n|\r/);
     document.querySelectorAll(".notice-box").forEach(function(box, i){
