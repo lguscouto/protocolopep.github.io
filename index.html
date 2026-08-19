@@ -2636,7 +2636,6 @@ function renderNotice(){
   noticeMsgs = frases;
   banner.style.display="flex";
 
-  var VELOCIDADE = 55; // px/s
   var DEBUG_NOTICE = location.search.indexOf("debug") > -1;
   function dbgN(msg){
     if(!DEBUG_NOTICE) return;
@@ -2678,8 +2677,10 @@ function renderNotice(){
       // sempre anima (entra pela direita, sai pela esquerda), mesmo textos curtos —
       // mantém o movimento consistente em todas as notícias, igual um letreiro de verdade
       var distancia = larguraBanner + larguraTexto;
-      var duracao = Math.max(1400, (distancia / VELOCIDADE) * 1000);
-      dbgN("frase " + idx + ": ANIMANDO texto=" + larguraTexto + "px banner=" + larguraBanner + "px duracao=" + duracao.toFixed(0) + "ms — waapi=" + (typeof ticker.animate));
+      // duração = o valor definido em "Trocar a cada X segundos" no Admin
+      var segsConfig = Math.min(60, Math.max(2, Number(noticeData.secs) || 5));
+      var duracao = segsConfig * 1000;
+      dbgN("frase " + idx + ": ANIMANDO texto=" + larguraTexto + "px banner=" + larguraBanner + "px duracao=" + duracao.toFixed(0) + "ms (config: " + segsConfig + "s) — waapi=" + (typeof ticker.animate));
 
       if(typeof ticker.animate !== "function"){
         // navegador sem suporte a WAAPI (raríssimo) — fallback: fica parado, avança sozinho
