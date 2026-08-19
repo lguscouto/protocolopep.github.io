@@ -344,15 +344,7 @@
   .notice-ticker{
     display:inline-block;
     white-space:nowrap;
-    animation-name:noticeScrollOnce;
-    animation-timing-function:linear;
-    animation-fill-mode:forwards;
   }
-  @keyframes noticeScrollOnce{
-    from{ transform:translateX(var(--start, 100%)); }
-    to{ transform:translateX(var(--end, -100%)); }
-  }
-  .notice-ticker.no-scroll{ animation:none; transform:translateX(0); }
   .notice-x{flex:none;background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;}
 
   /* ---------- modal de novidades ---------- */
@@ -2617,7 +2609,8 @@ function renderNotice(){
   const el=document.getElementById("notice-text");
   const dismissed=(()=>{ try{ return localStorage.getItem("notice-dismissed"); }catch(e){ return null; } })();
   if(noticeRotTimer){ clearInterval(noticeRotTimer); noticeRotTimer=null; }
-  if(window.__noticeAnim){ cancelAnimationFrame(window.__noticeAnim); window.__noticeAnim=null; }
+  if(window.__noticeAnim){ clearTimeout(window.__noticeAnim); window.__noticeAnim=null; }
+  if(window.__noticeCurrentAnim){ try{ window.__noticeCurrentAnim.cancel(); }catch(e){} window.__noticeCurrentAnim=null; }
   // marca esta execução como a "atual" — execuções antigas param de se atualizar
   const myRun = (window.__noticeRun = (window.__noticeRun||0) + 1);
   const active = noticeData && noticeData.active && noticeData.text && String(noticeData.ts)!==dismissed;
@@ -2661,26 +2654,32 @@ function renderNotice(){
       if(larguraTexto < 4 || larguraBanner < 10){ setTimeout(medir, 150); return; }
 
       var proximo = function(){
+        if(window.__noticeRun !== myRun) return;
         var prox = (idx + 1) % noticeMsgs.length;
-        // pequena pausa entre uma frase e a próxima
         window.__noticeAnim = setTimeout(function(){ animarFrase(prox); }, 400);
       };
 
       if(larguraTexto <= larguraBanner){
         // texto curto: fica parado um tempo e passa pra próxima
-        ticker.classList.add("no-scroll");
+        ticker.style.transform = "translateX(0)";
         window.__noticeAnim = setTimeout(proximo, 2500);
         return;
       }
 
       // começa fora da tela à direita, termina fora da tela à esquerda
       var distancia = larguraBanner + larguraTexto;
-      var duracao = distancia / VELOCIDADE;
-      ticker.style.setProperty("--start", larguraBanner + "px");
-      ticker.style.setProperty("--end", (-larguraTexto) + "px");
-      ticker.style.animationDuration = duracao.toFixed(2) + "s";
-      // quando a animação desta frase terminar, mostra a próxima
-      ticker.addEventListener("animationend", proximo, {once:true});
+      var duracao = Math.max(1000, (distancia / VELOCIDADE) * 1000); // ms
+
+      // Web Animations API — animação nativa e contínua, controlada pelo navegador
+      var anim = ticker.animate(
+        [
+          { transform: "translateX(" + larguraBanner + "px)" },
+          { transform: "translateX(" + (-larguraTexto) + "px)" }
+        ],
+        { duration: duracao, easing: "linear", fill: "forwards" }
+      );
+      anim.onfinish = proximo;
+      window.__noticeCurrentAnim = anim;
     }
     medir();
   }
