@@ -2675,15 +2675,10 @@ function renderNotice(){
         window.__noticeAnim = setTimeout(function(){ animarFrase(prox); }, 400);
       };
 
-      if(larguraTexto <= larguraBanner){
-        dbgN("frase " + idx + ": curta, parada 2.5s (texto=" + larguraTexto + " banner=" + larguraBanner + ")");
-        ticker.style.transform = "translateX(0)";
-        window.__noticeAnim = setTimeout(proximo, 2500);
-        return;
-      }
-
+      // sempre anima (entra pela direita, sai pela esquerda), mesmo textos curtos —
+      // mantém o movimento consistente em todas as notícias, igual um letreiro de verdade
       var distancia = larguraBanner + larguraTexto;
-      var duracao = Math.max(1000, (distancia / VELOCIDADE) * 1000);
+      var duracao = Math.max(1400, (distancia / VELOCIDADE) * 1000);
       dbgN("frase " + idx + ": ANIMANDO texto=" + larguraTexto + "px banner=" + larguraBanner + "px duracao=" + duracao.toFixed(0) + "ms — waapi=" + (typeof ticker.animate));
 
       if(typeof ticker.animate !== "function"){
