@@ -2893,5 +2893,187 @@ document.getElementById("notice-remove").onclick=()=>{
   setDoc(doc(db,'meta','notice'), {text:atual.text||"", secs:atual.secs||5, ts:atual.ts||Date.now(), active:false, nvTitle:atual.nvTitle||"", nvBody:atual.nvBody||"", nvTs:atual.nvTs||0, nvActive:atual.nvActive||false}).then(()=>alert("Recado removido.")).catch(e=>console.warn(e));
 };
 </script>
+<!-- ============ DOSE CALCULADA DENTRO DO MODAL — v1 ============ -->
+<style>
+#fx-calcbox .fx-row{display:flex;gap:8px;align-items:stretch;}
+#fx-calcbox .fx-row input.num{flex:1;min-width:0;}
+#fx-calcbox .unittoggle button{padding:0 11px;font-size:12.5px;}
+#fx-syr button{padding:10px 2px;font-size:12.5px;}
+.fx-res{background:var(--surface2);border:1px solid var(--border2);border-radius:14px;padding:13px 15px;margin:0 0 14px;}
+.fx-empty{color:var(--muted);font-size:12.5px;}
+.fx-main{display:flex;align-items:baseline;gap:8px;}
+.fx-big{font-family:var(--display);font-size:34px;font-weight:700;line-height:1;color:var(--primary);font-variant-numeric:tabular-nums;}
+.fx-u{font-family:var(--display);font-size:13px;font-weight:600;color:var(--muted);}
+.fx-sub{color:var(--muted);font-size:12px;margin-top:6px;line-height:1.55;}
+.fx-sub b{color:var(--text);font-family:var(--display);}
+.fx-warn{margin-top:9px;font-size:12px;padding:9px 11px;border-radius:10px;background:var(--warn-bg);color:var(--warn-tx);border:1px solid var(--warn-bd);line-height:1.45;}
+.fx-warn.danger{background:#2A1518;color:#F3969E;border-color:#5A2830;}
+#act-topep{flex:1.5;}
+</style>
+<script>
+(function(){
+"use strict";
+var modal=document.getElementById("add-modal");
+if(!modal) return;
+var origFld2=modal.querySelector(".form .fld2");
+if(!origFld2) return;
+
+/* ---------- utilitários ---------- */
+var LS="pep-frasco-v1";
+function ld(){ try{ return JSON.parse(localStorage.getItem(LS))||{}; }catch(e){ return {}; } }
+function sv(o){ try{ localStorage.setItem(LS,JSON.stringify(o)); }catch(e){} }
+function num(v){ var x=parseFloat(String(v==null?"":v).replace(",",".")); return isFinite(x)?x:NaN; }
+function br(x){ if(!isFinite(x)) return "—"; return (Math.round(x*100)/100).toString().replace(".",","); }
+
+/* ---------- HTML injetado no modal ---------- */
+var html=''+
+'<div class="fld"><label>Como informar a dose</label>'+
+'<div class="segbtns" id="fx-mode"><button type="button" data-m="calc" class="on">Calcular pelo frasco</button><button type="button" data-m="manual">Informar UI</button></div></div>'+
+'<div id="fx-calcbox">'+
+'<div class="fld2">'+
+'<div class="fld"><label>Frasco (massa)</label><div class="fx-row"><input class="num" id="fx-mass" inputmode="decimal" placeholder="Ex.: 15"><div class="unittoggle" id="fx-mass-unit"><button type="button" data-u="mg" class="on">mg</button><button type="button" data-u="mcg">mcg</button></div></div></div>'+
+'<div class="fld"><label>Diluente (mL)</label><input class="num" id="fx-dil" inputmode="decimal" placeholder="Ex.: 1"></div>'+
+'</div>'+
+'<div class="fld2">'+
+'<div class="fld"><label>Dose por aplicação</label><div class="fx-row"><input class="num" id="fx-dose" inputmode="decimal" placeholder="Ex.: 2,5"><div class="unittoggle" id="fx-dose-unit"><button type="button" data-u="mg" class="on">mg</button><button type="button" data-u="mcg">mcg</button></div></div></div>'+
+'<div class="fld"><label>Seringa (UI)</label><div class="segbtns" id="fx-syr"><button type="button" data-s="30">30</button><button type="button" data-s="50">50</button><button type="button" data-s="100" class="on">100</button></div></div>'+
+'</div>'+
+'<div class="fx-res" id="fx-res"><div class="fx-empty">Preencha frasco, diluente e dose — as UI aparecem aqui.</div></div>'+
+'</div>';
+origFld2.insertAdjacentHTML("beforebegin",html);
+
+var iMass=document.getElementById("fx-mass"),
+    iDil =document.getElementById("fx-dil"),
+    iDose=document.getElementById("fx-dose"),
+    boxC =document.getElementById("fx-calcbox"),
+    res  =document.getElementById("fx-res");
+
+var mode="calc", uMass="mg", uDose="mg", syr=100;
+
+function syncBtns(){
+  document.querySelectorAll("#fx-mass-unit button").forEach(function(x){ x.classList.toggle("on", x.dataset.u===uMass); });
+  document.querySelectorAll("#fx-dose-unit button").forEach(function(x){ x.classList.toggle("on", x.dataset.u===uDose); });
+  document.querySelectorAll("#fx-syr button").forEach(function(x){ x.classList.toggle("on", (+x.dataset.s)===syr); });
+  document.querySelectorAll("#fx-mode button").forEach(function(x){ x.classList.toggle("on", x.dataset.m===mode); });
+}
+
+/* ---------- núcleo do cálculo (seringa U-100: 1 UI = 0,01 mL) ---------- */
+function calcReconst(o){
+  var massMg = o.massUnit==="mcg" ? o.mass/1000 : o.mass;
+  var doseMg = o.doseUnit==="mcg" ? o.dose/1000 : o.dose;
+  if(!(massMg>0) || !(o.dil>0) || !(doseMg>0)) return null;
+  var conc   = massMg/o.dil;      // mg/mL
+  var mgPerUi= conc/100;          // mg por 1 UI
+  var units  = doseMg/mgPerUi;    // UI a puxar
+  return { conc:conc, mgPerUi:mgPerUi, units:units, volMl:units*0.01,
+           dosesNoFrasco:massMg/doseMg, excede:units>o.syr };
+}
+
+function recalc(){
+  if(mode!=="calc") return;
+  var r=calcReconst({ mass:num(iMass.value), massUnit:uMass, dil:num(iDil.value),
+                      dose:num(iDose.value), doseUnit:uDose, syr:syr });
+  if(!r){ res.innerHTML='<div class="fx-empty">Preencha frasco, diluente e dose — as UI aparecem aqui.</div>'; return; }
+  var ui=Math.round(r.units*10)/10;
+  var uiTxt=(Math.abs(ui-Math.round(ui))<1e-9)?String(Math.round(ui)):String(ui);
+  var fUi=document.getElementById("f-ui"), fDose=document.getElementById("f-dose");
+  if(fUi)   fUi.value  = uiTxt;                                  // ponto: parseFloat entende
+  if(fDose) fDose.value= br(num(iDose.value))+" "+uDose;         // rótulo em pt-BR
+  var perUi = r.mgPerUi*1000>=1000 ? br(r.mgPerUi)+" mg" : Math.round(r.mgPerUi*1000)+" mcg";
+  var h='<div class="fx-main"><span class="fx-big">'+uiTxt.replace(".",",")+'</span><span class="fx-u">UI na seringa</span></div>'+
+        '<div class="fx-sub">≈ <b>'+br(r.volMl)+' mL</b> · concentração <b>'+br(r.conc)+' mg/mL</b> · 1 UI = <b>'+perUi+'</b> · rende <b>'+Math.floor(r.dosesNoFrasco)+' doses</b></div>';
+  if(r.excede) h+='<div class="fx-warn danger">⚠️ '+br(r.units)+' UI passa da capacidade da seringa de '+syr+' UI. Use seringa maior, mais diluente, ou divida a aplicação.</div>';
+  else if(r.units<2) h+='<div class="fx-warn">Volume bem pequeno ('+br(r.units)+' UI) — difícil de medir com precisão. Considere usar mais diluente.</div>';
+  res.innerHTML=h;
+}
+
+function setMode(m){
+  mode = (m==="manual") ? "manual" : "calc";
+  boxC.style.display     = mode==="calc" ? "block" : "none";
+  origFld2.style.display = mode==="calc" ? "none"  : "grid";   /* .form .fld2 é grid */
+  syncBtns();
+  if(mode==="calc") recalc();
+}
+
+function fill(v){
+  v=v||{};
+  iMass.value = (v.mass!=null?v.mass:"");
+  iDil.value  = (v.dil !=null?v.dil :"");
+  iDose.value = (v.dose!=null?v.dose:"");
+  uMass=v.massUnit||"mg"; uDose=v.doseUnit||"mg"; syr=v.syr||100;
+  syncBtns();
+}
+
+/* ---------- eventos dos campos ---------- */
+[iMass,iDil,iDose].forEach(function(el){ el.addEventListener("input",recalc); });
+document.querySelectorAll("#fx-mass-unit button").forEach(function(x){ x.onclick=function(){ uMass=x.dataset.u; syncBtns(); recalc(); }; });
+document.querySelectorAll("#fx-dose-unit button").forEach(function(x){ x.onclick=function(){ uDose=x.dataset.u; syncBtns(); recalc(); }; });
+document.querySelectorAll("#fx-syr button").forEach(function(x){ x.onclick=function(){ syr=+x.dataset.s; syncBtns(); recalc(); }; });
+document.querySelectorAll("#fx-mode button").forEach(function(x){ x.onclick=function(){ setMode(x.dataset.m); }; });
+
+/* ---------- ao abrir o modal: carrega o frasco salvo ou limpa ---------- */
+new MutationObserver(function(){
+  if(!modal.classList.contains("on")) return;
+  var editando = /Editar/.test((document.getElementById("modal-title")||{}).textContent||"");
+  var nome = ((document.getElementById("f-name")||{}).value||"").trim().toLowerCase();
+  var v = (editando && nome) ? ld()[nome] : null;
+  if(v){ fill(v); setMode("calc"); }
+  else if(editando){ fill(null); setMode("manual"); }   /* pep antigo sem frasco: modo manual */
+  else { fill(null); setMode("calc"); }                 /* novo pep: já entra calculando */
+}).observe(modal,{attributes:true,attributeFilter:["class"]});
+
+/* ---------- ao salvar: guarda (ou apaga) o frasco daquele peptídeo ---------- */
+document.addEventListener("click",function(e){
+  if(!e.target||!e.target.closest||!e.target.closest("#modal-save")) return;
+  var nome=((document.getElementById("f-name")||{}).value||"").trim().toLowerCase();
+  if(!nome) return;
+  var st=ld();
+  if(mode==="calc"){
+    var m=num(iMass.value), d=num(iDil.value), s=num(iDose.value);
+    if(m>0&&d>0&&s>0) st[nome]={mass:m,massUnit:uMass,dil:d,dose:s,doseUnit:uDose,syr:syr};
+    else delete st[nome];
+  } else { delete st[nome]; }
+  sv(st);
+},true);
+
+/* ---------- produto JÁ DILUÍDO: a UI vem da tabela, força modo manual ---------- */
+document.addEventListener("click",function(e){
+  if(e.target&&e.target.closest&&e.target.closest(".dg-row")) setMode("manual");
+});
+
+/* ---------- correção: aceitar vírgula em todos os campos numéricos ---------- */
+document.addEventListener("input",function(e){
+  var t=e.target;
+  if(!t||!t.classList||!t.classList.contains("num")) return;
+  if(typeof t.value!=="string"||t.value.indexOf(",")<0) return;
+  var p=t.selectionStart;
+  t.value=t.value.replace(/,/g,".");
+  try{ t.setSelectionRange(p,p); }catch(err){}
+},true);
+
+/* ---------- ponte: aba Calcular → "Adicionar ao protocolo" ---------- */
+var actRow=document.querySelector("#v-calc .act-row");
+if(actRow){
+  var bt=document.createElement("button");
+  bt.type="button"; bt.className="act"; bt.id="act-topep";
+  bt.textContent="＋ Adicionar ao protocolo";
+  actRow.insertBefore(bt,actRow.firstChild);
+  bt.onclick=function(){
+    var s={}; try{ s=JSON.parse(localStorage.getItem("peptideos-calc-v2"))||{}; }catch(e){}
+    var ab=document.getElementById("add-pep-btn"); if(ab) ab.click();
+    setTimeout(function(){
+      var nm=document.getElementById("f-name");
+      var nome=((document.getElementById("c-name")||{}).value||s.name||"").trim();
+      if(nm&&nome) nm.value=nome;
+      fill({mass:s.mass,massUnit:s.massUnit||"mg",dil:s.dil,dose:s.dose,doseUnit:s.doseUnit||"mg",syr:s.syr||100});
+      setMode("calc");
+    },80);
+  };
+}
+
+setMode("calc");
+})();
+</script>
+<!-- ============ FIM DO BLOCO ============ -->
 </body>
 </html>
