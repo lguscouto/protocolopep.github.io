@@ -2260,11 +2260,10 @@ if(!banAlvo) return;
 const v=document.getElementById("ban-until").value;
 const until=v?new Date(v).getTime():0;
 if(!isFinite(until)||until<=Date.now()){ alert("Escolha uma data e hora no futuro."); return; }
-BANS[banAlvo.uid]={until:until, email:banAlvo.email, reason:(document.getElementById("ban-reason").value||"").trim()};
+BANS[banAlvo.uid]={until:until, reason:(document.getElementById("ban-reason").value||"").trim()};
 salvarBans().then(()=>{ fecharBan(); renderMembers(); }).catch(e=>{ alert("Não consegui salvar o bloqueio."); console.warn(e); });
 };
-document.getElementById("ban-exit").onclick=()=>{ signOut(auth); };  list.innerHTML=arr.map(m=>`<div class="mb-row"><span class="mb-email">${esc(m.email)}</span><span class="mb-date">${m.d||''}</span></div>`).join('');
-}
+document.getElementById("ban-exit").onclick=()=>{ signOut(auth); }; 
 
 function renderAdmin(d){
   d=d||{};
@@ -2323,8 +2322,7 @@ setDoc(_mref,{email:user.email||"", ts:Date.now(), criadoEm}, {merge:true}).catc
   if(isAdmin){
     renderMembers();
     statsUnsub = onSnapshot(statsRef(), s=>renderAdmin(s.exists()?s.data():{}), e=>console.warn('stats',e));
-    membersUnsub = onSnapshot(collection(membersUnsub = onSnapshot(collection(db,'members'), snap=>{ adminMembers = snap.docs.map(d=>({uid:d.id, ...d.data()})); renderMembers(); }, e=>console.warn('members',e));
-  }
+   membersUnsub = onSnapshot(collection(db,'members'), snap=>{ adminMembers = snap.docs.map(d=>({uid:d.id, ...d.data()})); renderMembers(); }, e=>console.warn('members',e));
   if(unsub) unsub();
   if(noticeUnsub){ noticeUnsub(); noticeUnsub=null; }
   noticeUnsub = onSnapshot(doc(db,'meta','notice'), s=>{ noticeData = s.exists()?s.data():null; renderNotice(); renderNovidades(); }, e=>console.warn('notice',e));
