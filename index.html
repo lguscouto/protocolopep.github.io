@@ -16,6 +16,30 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
+  /* ---------- contas: recentes / todas + bloqueio ---------- */
+.mb-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 2px 10px;border-bottom:1px solid var(--border);}
+.mb-head-t{font-size:12px;font-weight:600;color:var(--muted);line-height:1.35;}
+.mb-toggle{flex:none;display:inline-flex;align-items:center;gap:5px;background:var(--surface3);border:1px solid var(--border2);color:var(--muted);font-family:var(--font);font-weight:600;font-size:11.5px;padding:5px 10px;border-radius:9px;cursor:pointer;}
+.mb-toggle:hover{border-color:var(--primary);color:var(--primary);}
+.mb-toggle svg{width:13px;height:13px;transition:transform .22s ease;}
+.mb-toggle.open svg{transform:rotate(180deg);}
+.mb-list.limitada{max-height:340px;overflow-y:auto;}
+.mb-info{flex:1;min-width:0;}
+.mb-sub{font-size:11px;color:var(--muted2);margin-top:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.mb-ban,.mb-unban{flex:none;font-family:var(--font);font-size:11px;padding:5px 9px;border-radius:8px;cursor:pointer;}
+.mb-ban{background:var(--surface3);border:1px solid var(--border2);color:var(--muted);font-weight:600;}
+.mb-ban:hover{border-color:var(--danger);color:var(--danger);}
+.mb-unban{background:var(--primary-dim);border:1px solid var(--primary);color:var(--primary);font-weight:700;}
+.mb-row.banido{background:#2A1518;border-radius:10px;padding-left:8px;padding-right:8px;}
+.mb-row.banido .mb-email{color:#F3969E;}
+.mb-tag{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;background:#5A2830;color:#F3969E;}
+.ban-screen{position:fixed;inset:0;z-index:300;display:none;align-items:center;justify-content:center;background:var(--bg);padding:26px;}
+.ban-screen.on{display:flex;}
+.ban-card{width:100%;max-width:380px;text-align:center;background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:30px 24px 24px;}
+.ban-ic{font-size:42px;line-height:1;margin-bottom:12px;}
+.ban-t{font-family:var(--display);font-weight:700;font-size:21px;margin-bottom:10px;}
+.ban-d{color:var(--muted);font-size:13.5px;line-height:1.6;}
+.ban-d b{color:var(--text);}
   :root{
     --bg:#0B1017; --surface:#131B26; --surface2:#1A2532; --surface3:#212E3D;
     --border:#26313F; --border2:#324152;
@@ -1028,7 +1052,13 @@
       </div>
     </div>
     <p class="eyebrow" style="margin-top:22px">Contas registradas</p>
-    <div class="panel"><div id="ad-members"></div></div>
+<div class="panel">
+<div class="mb-head">
+<span class="mb-head-t" id="mb-head-t">—</span>
+<button class="mb-toggle" id="mb-toggle"><span id="mb-toggle-tx">ver todas</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+</div>
+<div id="ad-members" class="mb-list"></div>
+</div>
     <p class="eyebrow" style="margin-top:22px">Peptídeos mais usados</p>
     <div class="panel"><div id="ad-rank"></div></div>
     <div class="ad-note">Os protocolos individuais permanecem privados (só cada pessoa vê o seu). Você, como administrador, vê os e-mails cadastrados e os números de uso. A lista de contas mostra quem entrou a partir desta versão.</div>
@@ -1206,7 +1236,31 @@
     </div>
   </div>
 </div>
+<!-- modal: bloquear conta -->
+<div class="retro-overlay" id="ban-overlay" style="display:none">
+<div class="retro-modal" style="max-width:390px">
+<button class="nv-close" id="ban-close">✕</button>
+<div class="nv-badge" style="background:#2A1518;border-color:#5A2830;color:#F3969E">⛔ Bloqueio temporário</div>
+<h3 class="nv-title">Bloquear conta</h3>
+<p style="font-size:12.5px;color:var(--muted);margin:0 0 16px;word-break:break-all" id="ban-email"></p>
+<div class="fld"><label>Liberar automaticamente em</label><input class="txt" type="datetime-local" id="ban-until"></div>
+<div class="fld"><label>Atalhos</label>
+<div class="segbtns" id="ban-quick"><button type="button" data-h="1">1 h</button><button type="button" data-h="24">24 h</button><button type="button" data-h="168">7 dias</button><button type="button" data-h="720">30 dias</button></div>
+</div>
+<div class="fld"><label>Motivo <span class="desc">(opcional — a pessoa vê)</span></label><input class="txt" id="ban-reason" placeholder="Ex.: uso indevido"></div>
+<button class="nv-ok" id="ban-save" style="background:var(--danger);color:#fff">Bloquear acesso</button>
+</div>
+</div>
 
+<!-- tela de acesso suspenso -->
+<div class="ban-screen" id="ban-screen">
+<div class="ban-card">
+<div class="ban-ic">⛔</div>
+<div class="ban-t">Acesso suspenso</div>
+<div class="ban-d" id="ban-msg"></div>
+<button class="btn-ghost" id="ban-exit" style="width:100%;margin-top:20px">Sair</button>
+</div>
+</div>
 <!-- bottom nav -->
 <nav class="nav">
   <span class="nav-ind" id="nav-ind"></span>
@@ -2087,19 +2141,129 @@ let adminMembers = [];
 const authScreen = document.getElementById("auth-screen");
 const authErr = document.getElementById("auth-err");
 
+/* ---------- contas registradas + bloqueio temporário ---------- */
+let BANS = {};
+let bansUnsub = null;
+let mbExpandido = false;
+let banAlvo = null;
+
+function banAtivo(uid){ const b=uid?BANS[uid]:null; return (b && b.until && b.until>Date.now()) ? b : null; }
+function dtLocal(ms){ const d=new Date(ms); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); return d.toISOString().slice(0,16); }
+function dtHora(ms){ return new Date(ms).toLocaleString("pt-BR",{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}); }
+function salvarBans(){ return setDoc(doc(db,'meta','bans'), BANS); }
+
+function listaContas(){
+const map=new Map();
+SEED_MEMBERS.forEach(m=>map.set(m.email.toLowerCase(), {email:m.email, d:m.d, ts:0, criado:0, uid:null}));
+adminMembers.forEach(m=>{
+const e=(m.email||'').toLowerCase(); if(!e) return;
+const ts=m.ts||0, criado=m.criadoEm||m.ts||0;
+const ant=map.get(e);
+if(ant){ ant.uid=m.uid||ant.uid; if(ts>ant.ts) ant.ts=ts; if(!ant.criado) ant.criado=criado; }
+else map.set(e,{email:m.email, d:'', ts, criado, uid:m.uid||null});
+});
+return [...map.values()].sort((a,b)=>((b.criado||b.ts||0)-(a.criado||a.ts||0)));
+}
+
 function renderMembers(){
-  const list=document.getElementById("ad-members");
-  if(!list) return;
-  const map=new Map();
-  SEED_MEMBERS.forEach(m=>map.set(m.email.toLowerCase(), {email:m.email, d:m.d}));
-  adminMembers.forEach(m=>{
-    const e=(m.email||'').toLowerCase(); if(!e) return;
-    if(!map.has(e)){ const d=m.ts?new Date(m.ts).toLocaleDateString("pt-BR",{day:'2-digit',month:'2-digit'}):''; map.set(e,{email:m.email,d}); }
-  });
-  const arr=[...map.values()];
-  document.getElementById("ad-users").textContent = arr.length;
-  if(arr.length===0){ list.innerHTML='<div class="empty-note">Ninguém entrou ainda.</div>'; return; }
-  list.innerHTML=arr.map(m=>`<div class="mb-row"><span class="mb-email">${esc(m.email)}</span><span class="mb-date">${m.d||''}</span></div>`).join('');
+const list=document.getElementById("ad-members");
+if(!list) return;
+const arr=listaContas();
+const cnt=document.getElementById("ad-users"); if(cnt) cnt.textContent=arr.length;
+
+/* desbanimento automático: apaga do banco os bloqueios que já venceram */
+const vencidos=Object.keys(BANS).filter(u=>!(BANS[u]&&BANS[u].until>Date.now()));
+if(vencidos.length && !window.__limpandoBans){
+window.__limpandoBans=true;
+vencidos.forEach(u=>{ delete BANS[u]; });
+salvarBans().catch(e=>console.warn('bans',e)).finally(()=>{ window.__limpandoBans=false; });
+}
+
+const corte=Date.now()-86400000;
+const recentes=arr.filter(m=>(m.criado||m.ts||0)>=corte);
+let mostrar;
+if(mbExpandido) mostrar=arr;
+else { mostrar=recentes.slice(); arr.forEach(m=>{ if(banAtivo(m.uid) && mostrar.indexOf(m)<0) mostrar.push(m); }); }
+
+const ht=document.getElementById("mb-head-t");
+if(ht) ht.textContent = mbExpandido ? (arr.length+(arr.length===1?" conta no total":" contas no total")) : (recentes.length+" nas últimas 24 h · "+arr.length+" no total");
+const tx=document.getElementById("mb-toggle-tx"); if(tx) tx.textContent = mbExpandido?"ver só recentes":"ver todas";
+const tg=document.getElementById("mb-toggle"); if(tg) tg.classList.toggle("open", mbExpandido);
+list.className = mbExpandido ? "mb-list limitada" : "mb-list";
+
+if(!mostrar.length){
+list.innerHTML='<div class="empty-note">'+(mbExpandido?'Ninguém entrou ainda.':'Nenhuma conta nova nas últimas 24 horas.<br>Toque em "ver todas" para o histórico.')+'</div>';
+return;
+}
+list.innerHTML=mostrar.map(m=>{
+const b=banAtivo(m.uid);
+const stamp=m.criado||m.ts||0;
+const quando = stamp ? dtHora(stamp) : (m.d?("desde "+m.d):"");
+const ehAdmin=(m.email||"").toLowerCase()===ADMIN_EMAIL;
+let acao='';
+if(m.uid && !ehAdmin){
+acao = b ? `<button class="mb-unban" data-uid="${m.uid}">Liberar</button>`
+: `<button class="mb-ban" data-uid="${m.uid}" data-email="${esc(m.email)}">Bloquear</button>`;
+}
+return `<div class="mb-row${b?' banido':''}">
+<div class="mb-info"><div class="mb-email">${esc(m.email)}</div><div class="mb-sub">${quando}${b?`<span class="mb-tag">bloqueado até ${dtHora(b.until)}</span>`:''}</div></div>
+${acao}
+</div>`;
+}).join('');
+list.querySelectorAll(".mb-ban").forEach(b=>b.onclick=()=>abrirBan(b.dataset.uid,b.dataset.email));
+list.querySelectorAll(".mb-unban").forEach(b=>b.onclick=()=>{
+if(!confirm("Liberar o acesso desta conta agora?")) return;
+delete BANS[b.dataset.uid];
+salvarBans().then(()=>renderMembers()).catch(e=>{ alert("Não consegui salvar."); console.warn(e); });
+});
+}
+
+function abrirBan(uid,email){
+banAlvo={uid:uid, email:email||""};
+document.getElementById("ban-email").textContent=email||uid;
+const at=BANS[uid];
+const base=(at&&at.until>Date.now())?at.until:(Date.now()+86400000);
+document.getElementById("ban-until").value=dtLocal(base);
+document.getElementById("ban-reason").value=(at&&at.reason)||"";
+document.getElementById("ban-overlay").style.display="flex";
+}
+function fecharBan(){ document.getElementById("ban-overlay").style.display="none"; banAlvo=null; }
+
+function checarBanimento(){
+const scr=document.getElementById("ban-screen");
+if(!scr) return;
+if(!currentUser){ scr.classList.remove("on"); return; }
+if((currentUser.email||"").toLowerCase()===ADMIN_EMAIL){ scr.classList.remove("on"); return; }
+const b=banAtivo(currentUser.uid);
+if(b){
+document.getElementById("ban-msg").innerHTML="Seu acesso foi suspenso temporariamente.<br><br>Liberação automática em <b>"+dtHora(b.until)+"</b>."+(b.reason?"<br><br>Motivo: "+esc(b.reason):"");
+scr.classList.add("on");
+const a=document.querySelector(".app"); if(a) a.style.visibility="hidden";
+const n=document.querySelector(".nav"); if(n) n.style.visibility="hidden";
+} else if(scr.classList.contains("on")){
+scr.classList.remove("on");
+const a=document.querySelector(".app"); if(a) a.style.visibility="visible";
+const n=document.querySelector(".nav"); if(n) n.style.visibility="visible";
+}
+}
+setInterval(checarBanimento, 20000);
+setInterval(()=>{ const v=document.getElementById("v-admin"); if(v && v.classList.contains("on")) renderMembers(); }, 60000);
+
+document.getElementById("mb-toggle").onclick=()=>{ mbExpandido=!mbExpandido; renderMembers(); };
+document.getElementById("ban-close").onclick=fecharBan;
+document.getElementById("ban-overlay").onclick=e=>{ if(e.target.id==="ban-overlay") fecharBan(); };
+document.querySelectorAll("#ban-quick button").forEach(b=>b.onclick=()=>{
+document.getElementById("ban-until").value=dtLocal(Date.now()+(+b.dataset.h)*3600000);
+});
+document.getElementById("ban-save").onclick=()=>{
+if(!banAlvo) return;
+const v=document.getElementById("ban-until").value;
+const until=v?new Date(v).getTime():0;
+if(!isFinite(until)||until<=Date.now()){ alert("Escolha uma data e hora no futuro."); return; }
+BANS[banAlvo.uid]={until:until, email:banAlvo.email, reason:(document.getElementById("ban-reason").value||"").trim()};
+salvarBans().then(()=>{ fecharBan(); renderMembers(); }).catch(e=>{ alert("Não consegui salvar o bloqueio."); console.warn(e); });
+};
+document.getElementById("ban-exit").onclick=()=>{ signOut(auth); };  list.innerHTML=arr.map(m=>`<div class="mb-row"><span class="mb-email">${esc(m.email)}</span><span class="mb-date">${m.d||''}</span></div>`).join('');
 }
 
 function renderAdmin(d){
@@ -2146,17 +2310,26 @@ function showApp(user){
   document.getElementById("acct-row").style.display = "flex";
   const isAdmin = (user.email||"").toLowerCase() === ADMIN_EMAIL;
   document.getElementById("admin-btn").style.display = isAdmin ? "inline-flex" : "none";
-  try{ setDoc(doc(db,'members',user.uid), {email:user.email||"", ts:Date.now()}, {merge:true}); }catch(e){}
+  try{
+const _mref=doc(db,'members',user.uid);
+getDoc(_mref).then(s=>{
+const d0=s.exists()?s.data():null;
+const criadoEm=(d0&&d0.criadoEm)?d0.criadoEm:((d0&&d0.ts)?d0.ts:Date.now());
+setDoc(_mref,{email:user.email||"", ts:Date.now(), criadoEm}, {merge:true}).catch(()=>{});
+}).catch(()=>{ setDoc(_mref,{email:user.email||"", ts:Date.now()},{merge:true}).catch(()=>{}); });
+}catch(e){}
   if(statsUnsub){ statsUnsub(); statsUnsub=null; }
   if(membersUnsub){ membersUnsub(); membersUnsub=null; }
   if(isAdmin){
     renderMembers();
     statsUnsub = onSnapshot(statsRef(), s=>renderAdmin(s.exists()?s.data():{}), e=>console.warn('stats',e));
-    membersUnsub = onSnapshot(collection(db,'members'), snap=>{ adminMembers = snap.docs.map(d=>d.data()); renderMembers(); }, e=>console.warn('members',e));
+    membersUnsub = onSnapshot(collection(membersUnsub = onSnapshot(collection(db,'members'), snap=>{ adminMembers = snap.docs.map(d=>({uid:d.id, ...d.data()})); renderMembers(); }, e=>console.warn('members',e));
   }
   if(unsub) unsub();
   if(noticeUnsub){ noticeUnsub(); noticeUnsub=null; }
   noticeUnsub = onSnapshot(doc(db,'meta','notice'), s=>{ noticeData = s.exists()?s.data():null; renderNotice(); renderNovidades(); }, e=>console.warn('notice',e));
+  if(bansUnsub){ bansUnsub(); bansUnsub=null; }
+bansUnsub = onSnapshot(doc(db,'meta','bans'), s=>{ BANS = (s.exists()&&s.data())?s.data():{}; checarBanimento(); if(isAdmin) renderMembers(); }, e=>console.warn('bans',e));
   const ref = doc(db,'users',user.uid);
   unsub = onSnapshot(ref, snap=>{
     if(snap.exists()){
@@ -2188,6 +2361,9 @@ function showAuth(){
   if(noticeUnsub){ noticeUnsub(); noticeUnsub=null; }
   { const ov=document.getElementById("nv-overlay"); if(ov) ov.style.display="none"; }
   adminMembers=[];
+  if(bansUnsub){ bansUnsub(); bansUnsub=null; }
+BANS={};
+{ const bs=document.getElementById("ban-screen"); if(bs) bs.classList.remove("on"); }
   NICKNAME="";
   authScreen.classList.add("on");
   const _app=document.querySelector(".app"); if(_app) _app.style.visibility="hidden";
