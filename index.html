@@ -2306,7 +2306,7 @@ function checkReminders(){
     const hm=String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0");
     const tk=dateKey(now); const rec=LOGS[tk]||{};
     PEPTIDES.forEach(p=>{
-      if(p.time && p.time===hm && !rec[p.id]){
+      if(p.time && p.time===hm && dosesTaken(rec,p.id) < (p.perDay||1)){
         const k=tk+"|p|"+p.id;
         if(!firedKeys.has(k)){ firedKeys.add(k); notify("Hora do "+p.name, `${p.ui} UI${p.dose&&p.dose!=="—"?" · "+p.dose:""}`); }
       }
