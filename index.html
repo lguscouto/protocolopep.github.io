@@ -41,7 +41,7 @@
     <section class="view on" id="view-today">
       <!-- Banner Informativo / Feedback -->
       <div class="dash-banner" id="dash-banner">
-        <a href="mailto:lguscouto@gmail.com?subject=Protocolo%20PEP%20%E2%80%94%20Sugest%C3%A3o%20%2F%20Feedback&body=Ol%C3%A1%2C%0A%0AGostaria%20de%20enviar%20o%20seguinte%20feedback%20%2F%20sugest%C3%A3o%20para%20o%20Protocolo%20PEP%3A%0A%0A%0A---%0AVers%C3%A3o%20do%20App%3A%201.6.0%0ADispositivo%3A%20Android" class="dash-banner-content" id="dash-banner-link" target="_blank" rel="noopener noreferrer" title="Toque para enviar sugestões ou feedback por e-mail" aria-label="Enviar sugestão ou feedback por e-mail">
+        <a href="mailto:lguscouto@gmail.com?subject=Protocolo%20PEP%20%E2%80%94%20Sugest%C3%A3o%20%2F%20Feedback&body=Ol%C3%A1%2C%0A%0AGostaria%20de%20enviar%20o%20seguinte%20feedback%20%2F%20sugest%C3%A3o%20para%20o%20Protocolo%20PEP%3A%0A%0A%0A---%0AVers%C3%A3o%20do%20App%3A%201.7.0%0ADispositivo%3A%20Android" class="dash-banner-content" id="dash-banner-link" target="_blank" rel="noopener noreferrer" title="Toque para enviar sugestões ou feedback por e-mail" aria-label="Enviar sugestão ou feedback por e-mail">
           <span class="dash-banner-icon">📢</span>
           <span class="dash-banner-text">Toda opinião importa! <b>Fale conosco ou envie sugestões</b></span>
         </a>
@@ -210,7 +210,7 @@
 
       <div class="panel">
         <div style="font-weight:700;font-family:var(--display);">Protocolo PEP Android</div>
-        <div style="font-size:12px;color:var(--muted);">Versão 1.6.0 · Local-First Edition</div>
+        <div style="font-size:12px;color:var(--muted);">Versão 1.7.0 · Local-First Edition</div>
       </div>
     </section>
   </main>
@@ -266,10 +266,12 @@
         <button class="sheet-x" id="edit-close">✕</button>
       </div>
       <div class="sheet-body">
-        <div class="mini-lab" style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted2);font-weight:700;margin-bottom:8px;">
-          Biblioteca Rápida (Toque para selecionar)
+        <!-- Seção de Busca na Biblioteca (Exibida no modo Adicionar) -->
+        <div class="modal-lib-section" id="modal-lib-section" style="margin-bottom:14px;">
+          <label style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:6px;">Biblioteca de Peptídeos (Busca rápida)</label>
+          <input type="text" class="txt lib-search-input" id="lib-search-input" placeholder="🔍 Buscar peptídeo ou categoria..." autocomplete="off" />
+          <div class="lib-list" id="modal-lib-list"></div>
         </div>
-        <div class="lib-chips" id="modal-lib-chips"></div>
 
         <div style="margin-bottom:12px;">
           <label style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;">Nome do Peptídeo</label>

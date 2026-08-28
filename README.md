@@ -1,6 +1,6 @@
 # 🧪 Protocolo PEP · App Android (Local-First)
 
-![Version](https://img.shields.io/badge/version-1.6.0-2CC5C0)
+![Version](https://img.shields.io/badge/version-1.7.0-2CC5C0)
 ![Android](https://img.shields.io/badge/Android-8.0%2B-green)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![CI](https://github.com/lguscouto/protocolopep.github.io/actions/workflows/ci.yml/badge.svg)
@@ -9,7 +9,16 @@ Aplicativo Android nativo para acompanhamento de protocolos de peptídeos, cálc
 
 ---
 
-## 🚀 Novidades da Versão 1.6.0
+## 🚀 Novidades da Versão 1.7.0
+
+- **Barra de Pesquisa em Tempo Real de Peptídeos:** Novo campo de busca instantânea (`🔍 Buscar peptídeo ou categoria...`) no modal de criação de protocolo, permitindo encontrar rapidamente compostos por nome (ex: *BPC*, *Tirzepatida*, *Epitalon*) ou por classe terapêutica/categoria (ex: *GLP-1*, *reparo*, *sono*, *mitocondrial*).
+- **Lista Vertical Minimalista & Fluida:** Substituição dos chips horizontais por uma lista vertical limpa com rolagem suave, exibindo nome em destaque e categoria discreta à direita.
+- **Preenchimento Automático Inteligente:** Ao selecionar qualquer composto da biblioteca, os campos de nome e subtítulo são preenchidos automaticamente com destaque cromático (`.selected`) e feedback tátil (`@capacitor/haptics`), mantendo total liberdade para personalizar doses e horários.
+- **Visibilidade Contextual:** A barra de busca e a biblioteca de compostos são exibidas exclusivamente no fluxo de adição, sendo ocultadas ao editar um peptídeo existente para focar na alteração de doses e dias.
+
+---
+
+## 🚀 Novidades Anteriores (Versão 1.6.0)
 
 - **Novo Ícone de Aplicativo Personalizado:** Identidade visual moderna e exclusiva combinando a **dupla hélice de DNA**, a precisão de uma **microsseringa platinada** e **esferas de ligações peptídicas** brilhantes em ciano/esmeralda (`#2CC5C0`) sobre fundo escuro OLED (`#080C11`).
 - **Suporte Completo a Ícones Adaptativos do Android:** Assets gerados com interpolação Lanczos para todas as densidades de tela (`mdpi`, `hdpi`, `xhdpi`, `xxhdpi`, `xxxhdpi`) com zona de segurança perfeitamente enquadrada.

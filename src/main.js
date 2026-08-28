@@ -952,7 +952,13 @@ function setupModalsAndButtons() {
     });
   }
 
-  renderLibraryChips();
+  const libSearchInput = document.getElementById("lib-search-input");
+  if (libSearchInput) {
+    libSearchInput.addEventListener("input", (e) => {
+      renderLibraryList(e.target.value);
+    });
+  }
+  renderLibraryList();
 
   // Segmented controls do editor
   document.querySelectorAll("#edit-period-toggle button").forEach((b) => {
@@ -1167,22 +1173,51 @@ function updateNotifModalUI() {
   }
 }
 
-function renderLibraryChips() {
-  const cont = document.getElementById("modal-lib-chips");
+function normalizeStr(str) {
+  return (str || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function renderLibraryList(filterText = "") {
+  const cont = document.getElementById("modal-lib-list");
   if (!cont) return;
 
-  cont.innerHTML = LIBRARY.map((item) => `
-    <button type="button" class="lib-chip" data-name="${esc(item.name)}" data-sub="${esc(item.sub || "")}">
-      + ${esc(item.name)}
-    </button>
-  `).join("");
+  const query = normalizeStr(filterText.trim());
+  const filtered = LIBRARY.filter((item) => {
+    if (!query) return true;
+    const nameNorm = normalizeStr(item.name);
+    const subNorm = normalizeStr(item.sub);
+    return nameNorm.includes(query) || subNorm.includes(query);
+  });
 
-  cont.querySelectorAll(".lib-chip").forEach((btn) => {
-    btn.addEventListener("click", () => {
+  if (filtered.length === 0) {
+    cont.innerHTML = `<div class="lib-empty">Nenhum peptídeo encontrado na biblioteca. Digite um nome personalizado abaixo.</div>`;
+    return;
+  }
+
+  const currentName = (document.getElementById("edit-name")?.value || "").trim().toLowerCase();
+
+  cont.innerHTML = filtered.map((item) => {
+    const isSelected = item.name.trim().toLowerCase() === currentName;
+    return `
+      <div class="lib-item ${isSelected ? "selected" : ""}" data-name="${esc(item.name)}" data-sub="${esc(item.sub || "")}">
+        <span class="lib-item-name">${esc(item.name)}</span>
+        <span class="lib-item-sub">${esc(item.sub || "")}</span>
+      </div>
+    `;
+  }).join("");
+
+  cont.querySelectorAll(".lib-item").forEach((el) => {
+    el.addEventListener("click", () => {
       const nameInput = document.getElementById("edit-name");
       const subInput = document.getElementById("edit-sub");
-      if (nameInput) nameInput.value = btn.dataset.name;
-      if (subInput) subInput.value = btn.dataset.sub;
+      if (nameInput) nameInput.value = el.dataset.name;
+      if (subInput) subInput.value = el.dataset.sub;
+
+      cont.querySelectorAll(".lib-item").forEach((i) => i.classList.remove("selected"));
+      el.classList.add("selected");
       haptics.light();
     });
   });
@@ -1305,6 +1340,18 @@ function openEditModal(pepId) {
   const delBtn = document.getElementById("edit-del-btn");
   if (delBtn) {
     delBtn.style.display = pepId ? "inline-flex" : "none";
+  }
+
+  const libSection = document.getElementById("modal-lib-section");
+  const libSearchInput = document.getElementById("lib-search-input");
+  if (libSection) {
+    if (pepId) {
+      libSection.style.display = "none";
+    } else {
+      libSection.style.display = "flex";
+      if (libSearchInput) libSearchInput.value = "";
+      renderLibraryList("");
+    }
   }
 
   modal.classList.add("on");

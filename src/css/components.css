@@ -1342,32 +1342,85 @@ body.theme-light .daypick button.on {
   color: #FFFFFF;
 }
 
-.lib-chips {
+.modal-lib-section {
   display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
-  margin-bottom: 20px;
-  max-height: 140px;
+  flex-direction: column;
+}
+
+.lib-search-input {
+  width: 100%;
+  margin-bottom: 8px;
+  font-size: 13px;
+  padding: 9px 12px;
+}
+
+.lib-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 155px;
   overflow-y: auto;
-  padding-bottom: 2px;
-}
-
-.lib-chip {
+  padding: 4px;
+  background: var(--surface);
   border: 1px solid var(--border2);
-  background: var(--surface2);
-  color: var(--muted);
-  font-family: var(--font);
-  font-weight: 600;
-  font-size: 12.5px;
-  padding: 7px 12px;
-  border-radius: 20px;
-  cursor: pointer;
-  transition: all 0.15s;
+  border-radius: 10px;
+  overscroll-behavior: contain;
 }
 
-.lib-chip:active {
-  border-color: var(--primary);
+.lib-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.lib-item:hover {
+  background: var(--surface2);
+}
+
+.lib-item:active {
+  transform: scale(0.99);
+  background: var(--surface2);
+}
+
+.lib-item.selected {
+  background: rgba(44, 197, 192, 0.12);
+  border-color: rgba(44, 197, 192, 0.4);
+}
+
+.lib-item-name {
+  font-size: 13px;
+  font-weight: 600;
   color: var(--text);
+}
+
+.lib-item.selected .lib-item-name {
+  color: var(--primary);
+}
+
+.lib-item-sub {
+  font-size: 11.5px;
+  color: var(--muted);
+  font-weight: 500;
+  margin-left: 8px;
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+
+.lib-empty {
+  padding: 14px 10px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
 }
 
 /* ---------- Controles Segmentados e Seletor de Frequência ---------- */
