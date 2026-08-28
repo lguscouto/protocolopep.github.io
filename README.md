@@ -1,6 +1,6 @@
 # 🧪 Protocolo PEP · App Android (Local-First)
 
-![Version](https://img.shields.io/badge/version-1.4.0-2CC5C0)
+![Version](https://img.shields.io/badge/version-1.5.0-2CC5C0)
 ![Android](https://img.shields.io/badge/Android-8.0%2B-green)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![CI](https://github.com/lguscouto/protocolopep.github.io/actions/workflows/ci.yml/badge.svg)
@@ -9,7 +9,16 @@ Aplicativo Android nativo para acompanhamento de protocolos de peptídeos, cálc
 
 ---
 
-## 🚀 Novidades da Versão 1.4.0
+## 🚀 Novidades da Versão 1.5.0
+
+- **Canal Direto de Feedback & Sugestões:** O card de destaque do Dashboard (*"📢 Toda opinião importa! Fale conosco ou envie sugestões"*) agora é clicável e integrado com o aplicativo de e-mail padrão do Android (Gmail / cliente nativo), disparando a composição direta para `lguscouto@gmail.com`.
+- **Preenchimento Inteligente de E-mail:** Assunto e corpo do e-mail são automaticamente estruturados com campos para a mensagem do usuário e identificação da versão (`v1.5.0 · Android`).
+- **Isolamento Confiável de Ações:** O botão de fechar (`✕`) utiliza controle estrito de eventos (`stopPropagation`), garantindo que o fechamento do banner ocorra de forma instantânea sem disparar o cliente de e-mail.
+- **Interatividade & Haptics Aprimorados:** Efeito visual de escala `:active` e vibração tátil nativa (`@capacitor/haptics`) ao tocar no canal de feedback.
+
+---
+
+## 🚀 Novidades Anteriores (Versão 1.4.0)
 
 - **Transformação Completa em Dashboard:** A tela principal foi redesenhada e renomeada para **Dashboard**, trazendo uma visão centralizada e rica em informações com ícone temático de grid de painel na barra inferior.
 - **Hero Card de Progresso com Anel Gráfico SVG:** Exibição dinâmica da porcentagem exata (`0%` a `100%`) no centro do anel e métricas de doses em tipografia display (`X / Y tomados hoje`).

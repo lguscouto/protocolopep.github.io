@@ -1050,13 +1050,24 @@ function setupModalsAndButtons() {
   // Dashboard Actions & Banner
   const dashBanner = document.getElementById("dash-banner");
   const dashBannerClose = document.getElementById("dash-banner-close");
+  const dashBannerLink = document.getElementById("dash-banner-link");
+
   if (localStorage.getItem("pep_banner_dismissed") === "true" && dashBanner) {
     dashBanner.style.display = "none";
   }
+
   if (dashBannerClose && dashBanner) {
-    dashBannerClose.addEventListener("click", () => {
+    dashBannerClose.addEventListener("click", (e) => {
+      e.stopPropagation();
+      e.preventDefault();
       dashBanner.style.display = "none";
       localStorage.setItem("pep_banner_dismissed", "true");
+      haptics.light();
+    });
+  }
+
+  if (dashBannerLink) {
+    dashBannerLink.addEventListener("click", () => {
       haptics.light();
     });
   }

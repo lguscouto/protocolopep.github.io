@@ -123,11 +123,27 @@
   justify-content: space-between;
   gap: 10px;
   animation: fadeIn 0.3s ease;
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.15s ease, opacity 0.15s ease, border-color 0.15s ease;
+}
+
+.dash-banner:hover {
+  border-color: rgba(44, 197, 192, 0.6);
+}
+
+.dash-banner:active {
+  transform: scale(0.985);
+  opacity: 0.92;
 }
 
 body.theme-light .dash-banner {
   background: linear-gradient(135deg, #E6FAF8 0%, #D4F4F1 100%);
   border-color: #A5E8E2;
+}
+
+body.theme-light .dash-banner:hover {
+  border-color: #2CC5C0;
 }
 
 .dash-banner-content {
@@ -136,6 +152,9 @@ body.theme-light .dash-banner {
   gap: 10px;
   flex: 1;
   min-width: 0;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
 }
 
 .dash-banner-icon {
