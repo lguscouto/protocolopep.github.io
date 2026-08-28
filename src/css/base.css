@@ -1,0 +1,47 @@
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+input, textarea {
+  user-select: text;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* Fundo sutil com gradiente suave */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 620px 460px at 100% 0%, color-mix(in srgb, var(--primary) 7%, transparent), transparent 60%),
+    radial-gradient(ellipse 520px 420px at 0% 100%, color-mix(in srgb, var(--tesa) 5%, transparent), transparent 60%),
+    var(--bg);
+  transition: background 0.3s ease;
+}
+
+.app {
+  position: relative;
+  z-index: 1;
+  max-width: 640px;
+  margin: 0 auto;
+  min-height: 100vh;
+  padding-bottom: calc(85px + env(safe-area-inset-bottom));
+}

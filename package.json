@@ -1,0 +1,28 @@
+{
+  "name": "protocolo-pep-android",
+  "version": "1.0.0",
+  "private": true,
+  "description": "App Android Local-First para acompanhamento e cálculo de protocolos de peptídeos.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "cap:sync": "npm run build && npx cap sync",
+    "cap:open": "npx cap open android",
+    "android:build": "npm run build && npx cap sync android && cd android && .\\gradlew assembleDebug"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.2.0",
+    "@capacitor/app": "^6.0.2",
+    "@capacitor/core": "^6.2.0",
+    "@capacitor/haptics": "^6.0.2",
+    "@capacitor/local-notifications": "^6.1.1",
+    "@capacitor/preferences": "^6.0.3",
+    "@capacitor/splash-screen": "^6.0.3",
+    "@capacitor/status-bar": "^6.0.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.2.0",
+    "vite": "^5.4.14"
+  }
+}

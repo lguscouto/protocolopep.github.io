@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Build outputs
+dist/
+build/
+
+# Android build and local files
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/.idea/
+android/*.iml
+android/app/*.iml
+
+# Screenshots / Temp artifacts
+android_screenshot*.png
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
