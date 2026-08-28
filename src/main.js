@@ -184,7 +184,7 @@ function drawRing(taken, total) {
   if (!circle || !pctEl) return;
 
   const pct = total > 0 ? Math.min(100, Math.round((taken / total) * 100)) : 0;
-  const circumference = 2 * Math.PI * 20; // r=20
+  const circumference = 2 * Math.PI * 18; // r=18
   const offset = circumference - (pct / 100) * circumference;
 
   circle.style.strokeDasharray = `${circumference}`;
@@ -616,7 +616,7 @@ function renderHistory() {
   if (countEl) countEl.textContent = `${totalDoses} doses registradas`;
 
   if (totalDoses === 0) {
-    container.innerHTML = `<div class="empty-note">Nenhum registro de dose ainda.<br>Marque suas aplicações na tela <b>Hoje</b> ou na <b>Semana</b>.</div>`;
+    container.innerHTML = `<div class="empty-note">Nenhum registro de dose ainda.<br>Marque suas aplicações no <b>Dashboard</b> ou na <b>Semana</b>.</div>`;
   } else {
     container.innerHTML = html;
   }
@@ -1044,6 +1044,93 @@ function setupModalsAndButtons() {
       };
       reader.readAsText(file);
       e.target.value = "";
+    });
+  }
+
+  // Dashboard Actions & Banner
+  const dashBanner = document.getElementById("dash-banner");
+  const dashBannerClose = document.getElementById("dash-banner-close");
+  if (localStorage.getItem("pep_banner_dismissed") === "true" && dashBanner) {
+    dashBanner.style.display = "none";
+  }
+  if (dashBannerClose && dashBanner) {
+    dashBannerClose.addEventListener("click", () => {
+      dashBanner.style.display = "none";
+      localStorage.setItem("pep_banner_dismissed", "true");
+      haptics.light();
+    });
+  }
+
+  const dashShareBtn = document.getElementById("dash-share-btn");
+  if (dashShareBtn) {
+    dashShareBtn.addEventListener("click", async () => {
+      haptics.light();
+      const peptides = storage.getPeptides();
+      const logs = storage.getLogs();
+      const now = new Date();
+      const todayK = dateKey(now);
+      const rec = logs[todayK] || {};
+      const scheduled = getScheduledPeptides(peptides, now);
+
+      let text = `🧪 Protocolo PEP — ${fmtBR(todayK)}\n`;
+      const progress = calculateDayProgress(peptides, logs, now);
+      text += `Progresso Hoje: ${progress.totalTaken} de ${progress.totalDue} doses tomadas (${progress.percent}%)\n\n`;
+
+      if (scheduled.length === 0) {
+        text += `Nenhuma dose programada para hoje.\n`;
+      } else {
+        scheduled.forEach((p) => {
+          const taken = dosesTaken(rec, p.id);
+          const perDay = p.perDay || 1;
+          const status = taken >= perDay ? "✓ Concluído" : `${taken}/${perDay}`;
+          text += `• ${p.name}: ${p.dose || ""}/${p.per || "dia"} (${p.ui} UI) — ${status}\n`;
+        });
+      }
+      text += `\nGerado no Protocolo PEP (Local-First)`;
+
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: "Protocolo PEP — Acompanhamento do Dia",
+            text: text
+          });
+        } catch (e) {
+          // Cancelado pelo usuário
+        }
+      } else if (navigator.clipboard) {
+        await navigator.clipboard.writeText(text);
+        alert("Resumo do protocolo copiado para a área de transferência! ✓");
+      } else {
+        alert(text);
+      }
+    });
+  }
+
+  const dashExportBtn = document.getElementById("dash-export-btn");
+  if (dashExportBtn) {
+    dashExportBtn.addEventListener("click", () => {
+      const backupPayload = storage.exportBackup(theme.getTheme());
+      const blob = new Blob([backupPayload], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `protocolo-pep-backup-${dateKey(new Date())}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      haptics.success();
+    });
+  }
+
+  const dashImportBtn = document.getElementById("dash-import-btn");
+  if (dashImportBtn && importFile) {
+    dashImportBtn.addEventListener("click", () => importFile.click());
+  }
+
+  const dashCalcBtn = document.getElementById("dash-calc-btn");
+  if (dashCalcBtn) {
+    dashCalcBtn.addEventListener("click", () => {
+      haptics.light();
+      switchTab("calc");
     });
   }
 }

@@ -37,15 +37,31 @@
 
   <!-- Conteúdo Principal do App -->
   <main class="app">
-    <!-- ABA: HOJE -->
+    <!-- ABA: HOJE / DASHBOARD -->
     <section class="view on" id="view-today">
-      <div class="eyebrow">Acompanhamento Diário</div>
+      <!-- Banner Informativo / Feedback -->
+      <div class="dash-banner" id="dash-banner">
+        <div class="dash-banner-content">
+          <span class="dash-banner-icon">📢</span>
+          <span class="dash-banner-text">Toda opinião importa! <b>Fale conosco ou envie sugestões</b></span>
+        </div>
+        <button type="button" class="dash-banner-close" id="dash-banner-close" aria-label="Fechar banner">✕</button>
+      </div>
+
+      <div class="eyebrow">Seu Protocolo</div>
       
-      <div class="todayhead">
-        <svg class="ring" id="ring" viewBox="0 0 36 36"></svg>
-        <div class="th-txt">
-          <div class="n" id="ring-n">0 / 0</div>
-          <div class="l">Doses tomadas hoje</div>
+      <!-- Hero Card: Progresso & Estatísticas -->
+      <div class="dash-hero" id="dash-hero">
+        <div class="dash-hero-ring-wrap">
+          <svg class="dash-ring" viewBox="0 0 44 44">
+            <circle class="dash-ring-bg" cx="22" cy="22" r="18" />
+            <circle class="dash-ring-circle" id="ring-circle" cx="22" cy="22" r="18" />
+          </svg>
+          <div class="dash-ring-pct" id="ring-pct">0%</div>
+        </div>
+        <div class="dash-hero-info">
+          <div class="dash-hero-count" id="ring-n">0 / 0</div>
+          <div class="dash-hero-label">tomados hoje</div>
         </div>
       </div>
 
@@ -54,6 +70,34 @@
       <button class="add-pep" id="add-pep-btn">
         <span>+</span> Adicionar Peptídeo ao Protocolo
       </button>
+
+      <!-- Barra de Ações Rápidas do Dashboard -->
+      <div class="dash-actions-wrap">
+        <div class="dash-actions-grid">
+          <button type="button" class="dash-action-btn" id="dash-share-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            <span>Compartilhar</span>
+          </button>
+          <button type="button" class="dash-action-btn" id="dash-export-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>Exportar</span>
+          </button>
+          <button type="button" class="dash-action-btn" id="dash-import-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <span>Importar</span>
+          </button>
+          <button type="button" class="dash-action-btn" id="dash-calc-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="16" y1="14" x2="16" y2="18"/><path d="M16 10h.01M12 10h.01M8 10h.01M12 14h.01M8 14h.01M12 18h.01M8 18h.01"/></svg>
+            <span>Calculadora</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Rodapé Informativo e Médico -->
+      <div class="dash-footer-disclaimer">
+        Referência pessoal e informativa. Os cálculos são estimativas matemáticas e os registros ficam salvos apenas neste dispositivo.<br>
+        Confirme doses, diluição e segurança com um profissional de saúde.
+      </div>
     </section>
 
     <!-- ABA: SEMANA -->
@@ -166,7 +210,7 @@
 
       <div class="panel">
         <div style="font-weight:700;font-family:var(--display);">Protocolo PEP Android</div>
-        <div style="font-size:12px;color:var(--muted);">Versão 1.3.0 · Local-First Edition</div>
+        <div style="font-size:12px;color:var(--muted);">Versão 1.4.0 · Local-First Edition</div>
       </div>
     </section>
   </main>
@@ -176,12 +220,12 @@
     <div class="nav-ind"></div>
     <button class="on" data-tab="today">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-        <line x1="16" y1="2" x2="16" y2="6"/>
-        <line x1="8" y1="2" x2="8" y2="6"/>
-        <line x1="3" y1="10" x2="21" y2="10"/>
+        <rect x="3" y="3" width="7" height="9" rx="1"/>
+        <rect x="14" y="3" width="7" height="5" rx="1"/>
+        <rect x="14" y="12" width="7" height="9" rx="1"/>
+        <rect x="3" y="16" width="7" height="5" rx="1"/>
       </svg>
-      Hoje
+      Dashboard
     </button>
     <button data-tab="week">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

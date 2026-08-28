@@ -1,6 +1,6 @@
 # 🧪 Protocolo PEP · App Android (Local-First)
 
-![Version](https://img.shields.io/badge/version-1.3.0-2CC5C0)
+![Version](https://img.shields.io/badge/version-1.4.0-2CC5C0)
 ![Android](https://img.shields.io/badge/Android-8.0%2B-green)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![CI](https://github.com/lguscouto/protocolopep.github.io/actions/workflows/ci.yml/badge.svg)
@@ -9,12 +9,27 @@ Aplicativo Android nativo para acompanhamento de protocolos de peptídeos, cálc
 
 ---
 
-## 🚀 Novidades da Versão 1.3.0
+## 🚀 Novidades da Versão 1.4.0
+
+- **Transformação Completa em Dashboard:** A tela principal foi redesenhada e renomeada para **Dashboard**, trazendo uma visão centralizada e rica em informações com ícone temático de grid de painel na barra inferior.
+- **Hero Card de Progresso com Anel Gráfico SVG:** Exibição dinâmica da porcentagem exata (`0%` a `100%`) no centro do anel e métricas de doses em tipografia display (`X / Y tomados hoje`).
+- **Banner Informativo & Canal de Sugestões:** Faixa de comunicação (`📢 Toda opinião importa!`) com dismiss persistente no armazenamento local.
+- **Cartões de Compostos com Accent Line:** Identificação cromática através de barra lateral correspondente à cor do peptídeo, com badges de UI, frequência, concentração e notas.
+- **Barra de Ações Rápidas do Dashboard (Grid 2x2):**
+  - 🔗 **Compartilhar:** Gera resumo textual do protocolo e dispara o compartilhador nativo Android (`navigator.share`).
+  - ⬇️ **Exportar:** Gera e baixa o backup JSON seguro do protocolo e histórico.
+  - ⬆️ **Importar:** Atalho direto para upload de arquivo e restauração atômica.
+  - 🧮 **Calculadora:** Acesso imediato à ferramenta de reconstituição.
+- **Rodapé de Governança & Transparência Médica:** Disclaimer de segurança, precisão matemática e privacidade 100% offline.
+
+---
+
+## 🚀 Novidades Anteriores (Versão 1.3.0)
 
 - **Modal de Confirmação In-App Confiável:** Substituição do diálogo `window.confirm()` por um modal nativo in-app assíncrono (`#confirm-modal`), corrigindo falhas silenciosas de exclusão de peptídeos no Android WebView.
 - **Exclusão Rápida no Editor:** Adicionado botão de ação rápida "Excluir" em destaque no rodapé do modal de edição (`#edit-modal`).
 - **Interatividade no Calendário Semanal:** Os nomes dos peptídeos na grade semanal agora são clicáveis e abrem diretamente o painel de edição e gerenciamento.
-- **Sincronização Reativa Total:** Ao excluir ou editar um peptídeo, a tabela semanal, a lista do dia de Hoje, o anel de progresso, o histórico e as notificações nativas são recalculados e atualizados instantaneamente.
+- **Sincronização Reativa Total:** Ao excluir ou editar um peptídeo, a tabela semanal, a lista do Dashboard, o anel de progresso, o histórico e as notificações nativas são recalculados e atualizados instantaneamente.
 
 ---
 
