@@ -1,6 +1,6 @@
 # 🧪 Protocolo PEP · App Android (Local-First)
 
-![Version](https://img.shields.io/badge/version-1.5.0-2CC5C0)
+![Version](https://img.shields.io/badge/version-1.6.0-2CC5C0)
 ![Android](https://img.shields.io/badge/Android-8.0%2B-green)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![CI](https://github.com/lguscouto/protocolopep.github.io/actions/workflows/ci.yml/badge.svg)
@@ -9,7 +9,16 @@ Aplicativo Android nativo para acompanhamento de protocolos de peptídeos, cálc
 
 ---
 
-## 🚀 Novidades da Versão 1.5.0
+## 🚀 Novidades da Versão 1.6.0
+
+- **Novo Ícone de Aplicativo Personalizado:** Identidade visual moderna e exclusiva combinando a **dupla hélice de DNA**, a precisão de uma **microsseringa platinada** e **esferas de ligações peptídicas** brilhantes em ciano/esmeralda (`#2CC5C0`) sobre fundo escuro OLED (`#080C11`).
+- **Suporte Completo a Ícones Adaptativos do Android:** Assets gerados com interpolação Lanczos para todas as densidades de tela (`mdpi`, `hdpi`, `xhdpi`, `xxhdpi`, `xxxhdpi`) com zona de segurança perfeitamente enquadrada.
+- **Logotipo e Branding no Cabeçalho:** O cabeçalho superior do app agora integra o novo ícone estilizado com cantos arredondados suaves (`border-radius: 8px`), harmonizando com a interface do Dashboard.
+- **Assets Web & PWA de Alta Resolução:** Atualização de `icon-180.png`, `icon-192.png` e `icon-512.png`.
+
+---
+
+## 🚀 Novidades Anteriores (Versão 1.5.0)
 
 - **Canal Direto de Feedback & Sugestões:** O card de destaque do Dashboard (*"📢 Toda opinião importa! Fale conosco ou envie sugestões"*) agora é clicável e integrado com o aplicativo de e-mail padrão do Android (Gmail / cliente nativo), disparando a composição direta para `lguscouto@gmail.com`.
 - **Preenchimento Inteligente de E-mail:** Assunto e corpo do e-mail são automaticamente estruturados com campos para a mensagem do usuário e identificação da versão (`v1.5.0 · Android`).
