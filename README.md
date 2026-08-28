@@ -1,6 +1,6 @@
 # 🧪 Protocolo PEP · App Android (Local-First)
 
-![Version](https://img.shields.io/badge/version-1.2.0-2CC5C0)
+![Version](https://img.shields.io/badge/version-1.3.0-2CC5C0)
 ![Android](https://img.shields.io/badge/Android-8.0%2B-green)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![CI](https://github.com/lguscouto/protocolopep.github.io/actions/workflows/ci.yml/badge.svg)
@@ -9,7 +9,16 @@ Aplicativo Android nativo para acompanhamento de protocolos de peptídeos, cálc
 
 ---
 
-## 🚀 Novidades da Versão 1.2.0
+## 🚀 Novidades da Versão 1.3.0
+
+- **Modal de Confirmação In-App Confiável:** Substituição do diálogo `window.confirm()` por um modal nativo in-app assíncrono (`#confirm-modal`), corrigindo falhas silenciosas de exclusão de peptídeos no Android WebView.
+- **Exclusão Rápida no Editor:** Adicionado botão de ação rápida "Excluir" em destaque no rodapé do modal de edição (`#edit-modal`).
+- **Interatividade no Calendário Semanal:** Os nomes dos peptídeos na grade semanal agora são clicáveis e abrem diretamente o painel de edição e gerenciamento.
+- **Sincronização Reativa Total:** Ao excluir ou editar um peptídeo, a tabela semanal, a lista do dia de Hoje, o anel de progresso, o histórico e as notificações nativas são recalculados e atualizados instantaneamente.
+
+---
+
+## 🚀 Novidades Anteriores (Versão 1.2.0)
 
 - **Arquitetura Pura de Domínio (`src/domain/`):** Isolamento total da lógica de negócio, eliminando acoplamentos com o DOM e garantindo testabilidade pura.
 - **Persistência Fail-Closed & Atômica (`src/services/storage.js`):** Snapshot automático antes de operações de gravação e rollback imediato em caso de erro.

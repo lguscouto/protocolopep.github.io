@@ -466,7 +466,7 @@ function renderWeek() {
     peptides.forEach((p) => {
       tableHtml += `
         <tr>
-          <td class="pep" style="color:${sanitizeColor(p.accent, "var(--primary)")}">${esc(p.name)}</td>
+          <td class="pep" data-id="${sanitizeId(p.id)}" style="color:${sanitizeColor(p.accent, "var(--primary)")};cursor:pointer;" title="Toque para editar ou excluir">${esc(p.name)}</td>
           ${daysOfWeek.map((d) => {
             const isScheduled = isScheduledOnDate(p, d.date);
             const rec = logs[d.key] || {};
@@ -492,6 +492,13 @@ function renderWeek() {
 
   tableHtml += `</tbody></table>`;
   container.innerHTML = tableHtml;
+
+  container.querySelectorAll(".pep[data-id]").forEach((cell) => {
+    cell.addEventListener("click", () => {
+      openEditModal(cell.dataset.id);
+      haptics.light();
+    });
+  });
 
   container.querySelectorAll(".cell.tap").forEach((cell) => {
     cell.addEventListener("click", () => {
@@ -651,24 +658,82 @@ function deleteHistoryEntry(dKey, pId, idx) {
   renderHistory();
 }
 
-function deletePeptide(id) {
+function showConfirmDialog({ title = "Confirmar", message = "", confirmText = "Confirmar", cancelText = "Cancelar", isDanger = true }) {
+  return new Promise((resolve) => {
+    const modal = document.getElementById("confirm-modal");
+    const titleEl = document.getElementById("confirm-title");
+    const msgEl = document.getElementById("confirm-message");
+    const okBtn = document.getElementById("confirm-ok");
+    const cancelBtn = document.getElementById("confirm-cancel");
+    const closeBtn = document.getElementById("confirm-close");
+
+    if (!modal) {
+      const res = window.confirm(message);
+      return resolve(res);
+    }
+
+    if (titleEl) titleEl.textContent = title;
+    if (msgEl) msgEl.textContent = message;
+    if (okBtn) {
+      okBtn.textContent = confirmText;
+      okBtn.className = isDanger ? "btn-danger" : "btn-primary";
+    }
+    if (cancelBtn) cancelBtn.textContent = cancelText;
+
+    const cleanup = () => {
+      modal.classList.remove("on");
+      okBtn?.removeEventListener("click", onOk);
+      cancelBtn?.removeEventListener("click", onCancel);
+      closeBtn?.removeEventListener("click", onCancel);
+    };
+
+    const onOk = () => {
+      cleanup();
+      resolve(true);
+    };
+
+    const onCancel = () => {
+      cleanup();
+      resolve(false);
+    };
+
+    okBtn?.addEventListener("click", onOk);
+    cancelBtn?.addEventListener("click", onCancel);
+    closeBtn?.addEventListener("click", onCancel);
+
+    modal.classList.add("on");
+    haptics.warning();
+  });
+}
+
+async function deletePeptide(id) {
   const peptides = storage.getPeptides();
   const p = peptides.find((x) => x.id === id);
   if (!p) return;
 
-  if (confirm(`Remover "${p.name}" do seu protocolo? (Os registros de histórico anteriores serão mantidos)`)) {
-    const updated = peptides.filter((x) => x.id !== id);
-    const res = storage.setPeptides(updated);
-    if (!res.success) {
-      alert("Erro ao remover peptídeo: " + (res.error || "Armazenamento indisponível"));
-      return;
-    }
-    haptics.medium();
-    renderToday();
-    renderWeek();
-    renderHistory();
-    notifications.schedulePeptideReminders(updated);
+  const confirmed = await showConfirmDialog({
+    title: "Excluir Peptídeo",
+    message: `Deseja realmente remover "${p.name}" do seu protocolo? Os registros de histórico anteriores serão preservados.`,
+    confirmText: "Excluir",
+    cancelText: "Cancelar",
+    isDanger: true
+  });
+
+  if (!confirmed) return;
+
+  const updated = peptides.filter((x) => x.id !== id);
+  const res = storage.setPeptides(updated);
+  if (!res.success) {
+    alert("Erro ao remover peptídeo: " + (res.error || "Armazenamento indisponível"));
+    return;
   }
+
+  haptics.medium();
+  closeAllModals();
+  renderToday();
+  renderWeek();
+  renderHistory();
+  notifications.schedulePeptideReminders(updated);
 }
 
 function setupCalculator() {
@@ -846,6 +911,15 @@ function setupModalsAndButtons() {
     savePepBtn.addEventListener("click", saveEditedPeptide);
   }
 
+  const editDelBtn = document.getElementById("edit-del-btn");
+  if (editDelBtn) {
+    editDelBtn.addEventListener("click", () => {
+      if (editingPeptideId) {
+        deletePeptide(editingPeptideId);
+      }
+    });
+  }
+
   const nfEnable = document.getElementById("nf-enable");
   if (nfEnable) {
     nfEnable.addEventListener("click", async () => {
@@ -944,8 +1018,15 @@ function setupModalsAndButtons() {
       const file = e.target.files[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = () => {
-        if (confirm("Isto substituirá seu protocolo e registros atuais pelos dados do arquivo. Continuar?")) {
+      reader.onload = async () => {
+        const confirmed = await showConfirmDialog({
+          title: "Restaurar Backup",
+          message: "Esta ação substituirá o seu protocolo e todos os registros atuais pelos dados contidos no arquivo de backup. Deseja continuar?",
+          confirmText: "Restaurar",
+          cancelText: "Cancelar",
+          isDanger: true
+        });
+        if (confirmed) {
           const res = storage.importBackup(reader.result);
           if (res.success) {
             if (res.theme) theme.setTheme(res.theme);
@@ -1122,6 +1203,11 @@ function openEditModal(pepId) {
 
   selectedColor = p ? p.accent || PALETTE[0] : PALETTE[peptides.length % PALETTE.length];
   renderColorSwatches();
+
+  const delBtn = document.getElementById("edit-del-btn");
+  if (delBtn) {
+    delBtn.style.display = pepId ? "inline-flex" : "none";
+  }
 
   modal.classList.add("on");
 }

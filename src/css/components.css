@@ -1061,6 +1061,48 @@ body.theme-light .btn-primary {
   cursor: pointer;
 }
 
+.btn-danger {
+  background: var(--danger);
+  border: none;
+  color: #FFFFFF;
+  font-family: var(--font);
+  font-weight: 700;
+  font-size: 14.5px;
+  padding: 13px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-danger:active {
+  transform: scale(0.98);
+  filter: brightness(0.9);
+}
+
+.btn-subtle {
+  background: var(--surface3);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  font-family: var(--font);
+  font-weight: 600;
+  font-size: 14px;
+  padding: 13px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-subtle:active {
+  transform: scale(0.98);
+  filter: brightness(0.95);
+}
+
 /* Swatches & Chips in Modals */
 .swatches {
   display: flex;
