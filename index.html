@@ -244,20 +244,67 @@
           </div>
         </div>
 
-        <div style="display:grid;grid-template-columns:1.2fr 0.8fr;gap:10px;margin-bottom:12px;">
-          <div>
-            <label style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;">Frequência</label>
-            <input type="text" class="txt" id="edit-freq" value="Todos os dias" />
+        <!-- Período: Por dia / Por semana -->
+        <div style="margin-bottom:12px;">
+          <label style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:6px;">Período</label>
+          <div class="seg-control" id="edit-period-toggle">
+            <button type="button" class="on" data-per="dia">Por dia</button>
+            <button type="button" data-per="semana">Por semana</button>
           </div>
+        </div>
+
+        <!-- Frequência: Todos os dias / Dias específicos / A cada X dias -->
+        <div style="margin-bottom:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <label style="font-size:12.5px;font-weight:600;color:var(--muted);">Frequência</label>
+            <div class="days-preview-txt" id="edit-freq-preview">Todos os dias</div>
+          </div>
+          <div class="seg-control" id="edit-freq-type-toggle">
+            <button type="button" class="on" data-type="todos">Todos os dias</button>
+            <button type="button" data-type="especificos">Dias específicos</button>
+            <button type="button" data-type="intervalo">A cada X dias</button>
+          </div>
+
+          <!-- Seletor de Dias Específicos: D S T Q Q S S -->
+          <div id="edit-days-wrap" style="display:none;">
+            <div class="days-grid" id="edit-days-grid">
+              <button type="button" class="day-chip" data-day="0">D</button>
+              <button type="button" class="day-chip" data-day="1">S</button>
+              <button type="button" class="day-chip" data-day="2">T</button>
+              <button type="button" class="day-chip" data-day="3">Q</button>
+              <button type="button" class="day-chip" data-day="4">Q</button>
+              <button type="button" class="day-chip" data-day="5">S</button>
+              <button type="button" class="day-chip" data-day="6">S</button>
+            </div>
+          </div>
+
+          <!-- Seletor de Intervalo (A cada X dias) -->
+          <div id="edit-interval-wrap" style="display:none;">
+            <div class="interval-box">
+              <div style="flex:1;">
+                <label style="display:block;font-size:11.5px;color:var(--muted2);font-weight:600;margin-bottom:4px;">A cada</label>
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <input type="number" class="num" id="edit-interval-val" value="2" min="2" max="30" style="width:70px;" />
+                  <span style="font-size:13px;color:var(--muted);font-weight:600;">dias</span>
+                </div>
+              </div>
+              <div style="flex:1.2;">
+                <label style="display:block;font-size:11.5px;color:var(--muted2);font-weight:600;margin-bottom:4px;">A partir de</label>
+                <input type="date" class="txt" id="edit-start-date" style="padding:8px 10px;font-size:12px;" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
           <div>
             <label style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;">Doses/Dia</label>
             <input type="number" class="num" id="edit-perday" value="1" min="1" max="6" />
           </div>
-        </div>
-
-        <div style="margin-bottom:12px;">
-          <label style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;">Horário Programado (Lembrete)</label>
-          <input type="time" class="txt" id="edit-time" />
+          <div>
+            <label style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;">Horário (Lembrete)</label>
+            <input type="time" class="txt" id="edit-time" />
+          </div>
         </div>
 
         <div style="margin-bottom:14px;">

@@ -1138,3 +1138,102 @@ body.theme-light .daypick button.on {
   border-color: var(--primary);
   color: var(--text);
 }
+
+/* ---------- Controles Segmentados e Seletor de Frequência ---------- */
+.seg-control {
+  display: flex;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 12px;
+  padding: 3px;
+  gap: 3px;
+  width: 100%;
+}
+
+.seg-control button {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--display);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 9px 8px;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.seg-control button:active {
+  transform: scale(0.98);
+}
+
+.seg-control button.on {
+  background: var(--surface3);
+  color: var(--primary);
+  font-weight: 700;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+.days-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.day-chip {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  color: var(--muted);
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 13.5px;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.day-chip:active {
+  transform: scale(0.95);
+}
+
+.day-chip.on {
+  background: rgba(44, 197, 192, 0.12);
+  border-color: var(--primary);
+  color: var(--primary);
+  box-shadow: 0 0 0 1px rgba(44, 197, 192, 0.2);
+}
+
+body.theme-light .day-chip.on {
+  background: rgba(44, 197, 192, 0.15);
+  border-color: var(--primary);
+  color: #0E8580;
+}
+
+.days-preview-txt {
+  font-size: 11.5px;
+  color: var(--primary);
+  font-weight: 600;
+  margin-top: 6px;
+  text-align: right;
+  min-height: 16px;
+}
+
+.interval-box {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-top: 10px;
+}
+

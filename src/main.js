@@ -827,6 +827,53 @@ function setupModalsAndButtons() {
   renderLibraryChips();
   renderColorSwatches();
 
+  // Período toggle: Por dia / Por semana
+  document.querySelectorAll("#edit-period-toggle button").forEach((b) => {
+    b.addEventListener("click", () => {
+      document.querySelectorAll("#edit-period-toggle button").forEach((x) => x.classList.remove("on"));
+      b.classList.add("on");
+      selectedPer = b.dataset.per;
+      haptics.light();
+    });
+  });
+
+  // Frequência toggle: Todos os dias / Dias específicos / A cada X dias
+  document.querySelectorAll("#edit-freq-type-toggle button").forEach((b) => {
+    b.addEventListener("click", () => {
+      document.querySelectorAll("#edit-freq-type-toggle button").forEach((x) => x.classList.remove("on"));
+      b.classList.add("on");
+      selectedFreqType = b.dataset.type;
+      if (selectedFreqType === "especificos" && (selectedDays.length === 0 || selectedDays.length === 7)) {
+        selectedDays = [1, 3, 5];
+        renderDayChipsUI();
+      }
+      updateFreqPreviewAndUI();
+      haptics.light();
+    });
+  });
+
+  // Day chips: D, S, T, Q, Q, S, S
+  document.querySelectorAll("#edit-days-grid .day-chip").forEach((b) => {
+    b.addEventListener("click", () => {
+      const d = parseInt(b.dataset.day);
+      if (selectedDays.includes(d)) {
+        selectedDays = selectedDays.filter((x) => x !== d);
+      } else {
+        selectedDays.push(d);
+      }
+      renderDayChipsUI();
+      updateFreqPreviewAndUI();
+      haptics.light();
+    });
+  });
+
+  const intervalValInput = document.getElementById("edit-interval-val");
+  if (intervalValInput) {
+    intervalValInput.addEventListener("input", () => {
+      updateFreqPreviewAndUI();
+    });
+  }
+
   const exportBtn = document.getElementById("export-btn");
   if (exportBtn) {
     exportBtn.addEventListener("click", () => {
@@ -909,12 +956,78 @@ function renderLibraryChips() {
       const subInput = document.getElementById("edit-sub");
       if (nmInput) nmInput.value = b.dataset.name;
       if (subInput) subInput.value = b.dataset.sub;
+
+      const protoMatch = DEFAULT_PROTOCOL.find((x) => x.name.toLowerCase() === b.dataset.name.toLowerCase());
+      if (protoMatch) {
+        if (protoMatch.dose) document.getElementById("edit-dose").value = protoMatch.dose;
+        if (protoMatch.ui) document.getElementById("edit-ui").value = protoMatch.ui;
+        selectedPer = protoMatch.per || "dia";
+        if (Array.isArray(protoMatch.days) && protoMatch.days.length > 0) {
+          selectedFreqType = "especificos";
+          selectedDays = [...protoMatch.days];
+        } else {
+          selectedFreqType = "todos";
+          selectedDays = [0, 1, 2, 3, 4, 5, 6];
+        }
+        document.querySelectorAll("#edit-period-toggle button").forEach((x) => x.classList.toggle("on", x.dataset.per === selectedPer));
+        document.querySelectorAll("#edit-freq-type-toggle button").forEach((x) => x.classList.toggle("on", x.dataset.type === selectedFreqType));
+        renderDayChipsUI();
+        updateFreqPreviewAndUI();
+      }
+
       haptics.light();
     });
   });
 }
 
 let selectedColor = PALETTE[0];
+let selectedPer = "dia";
+let selectedFreqType = "todos";
+let selectedDays = [0, 1, 2, 3, 4, 5, 6];
+let selectedInterval = 2;
+let selectedStartDate = "";
+
+function formatDaysLabel(days) {
+  if (!days || days.length === 0 || days.length === 7) return "Todos os dias";
+  if (days.length === 2 && days.includes(0) && days.includes(6)) return "Fins de semana";
+  if (days.length === 5 && !days.includes(0) && !days.includes(6)) return "Seg a Sex";
+  const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+  return [...days].sort((a, b) => a - b).map((d) => dayNames[d]).join(" · ");
+}
+
+function updateFreqPreviewAndUI() {
+  const preview = document.getElementById("edit-freq-preview");
+  const daysWrap = document.getElementById("edit-days-wrap");
+  const intervalWrap = document.getElementById("edit-interval-wrap");
+
+  if (selectedFreqType === "todos") {
+    if (preview) preview.textContent = "Todos os dias";
+    if (daysWrap) daysWrap.style.display = "none";
+    if (intervalWrap) intervalWrap.style.display = "none";
+  } else if (selectedFreqType === "especificos") {
+    if (daysWrap) daysWrap.style.display = "block";
+    if (intervalWrap) intervalWrap.style.display = "none";
+    const label = formatDaysLabel(selectedDays);
+    if (preview) preview.textContent = label;
+  } else if (selectedFreqType === "intervalo") {
+    if (daysWrap) daysWrap.style.display = "none";
+    if (intervalWrap) intervalWrap.style.display = "block";
+    const intVal = parseInt(document.getElementById("edit-interval-val")?.value) || 2;
+    if (preview) preview.textContent = `A cada ${intVal} dias`;
+  }
+}
+
+function renderDayChipsUI() {
+  document.querySelectorAll("#edit-days-grid .day-chip").forEach((b) => {
+    const d = parseInt(b.dataset.day);
+    if (selectedDays.includes(d)) {
+      b.classList.add("on");
+    } else {
+      b.classList.remove("on");
+    }
+  });
+}
+
 function renderColorSwatches() {
   const cont = document.getElementById("modal-swatches");
   if (!cont) return;
@@ -948,10 +1061,35 @@ function openEditModal(pepId) {
   document.getElementById("edit-sub").value = p ? p.sub || "" : "";
   document.getElementById("edit-dose").value = p ? p.dose || "" : "";
   document.getElementById("edit-ui").value = p ? p.ui || 10 : 10;
-  document.getElementById("edit-freq").value = p ? p.freq || "Todos os dias" : "Todos os dias";
   document.getElementById("edit-perday").value = p ? p.perDay || 1 : 1;
   document.getElementById("edit-time").value = p ? p.time || "" : "";
   document.getElementById("edit-note").value = p ? p.note || "" : "";
+
+  selectedPer = p?.per || "dia";
+  document.querySelectorAll("#edit-period-toggle button").forEach((b) => {
+    b.classList.toggle("on", b.dataset.per === selectedPer);
+  });
+
+  if (p?.interval && p.interval > 0) {
+    selectedFreqType = "intervalo";
+    selectedInterval = p.interval;
+    selectedStartDate = p.start || dateKey(new Date());
+    document.getElementById("edit-interval-val").value = selectedInterval;
+    document.getElementById("edit-start-date").value = selectedStartDate;
+  } else if (Array.isArray(p?.days) && p.days.length > 0 && p.days.length < 7) {
+    selectedFreqType = "especificos";
+    selectedDays = [...p.days];
+  } else {
+    selectedFreqType = "todos";
+    selectedDays = [0, 1, 2, 3, 4, 5, 6];
+  }
+
+  document.querySelectorAll("#edit-freq-type-toggle button").forEach((b) => {
+    b.classList.toggle("on", b.dataset.type === selectedFreqType);
+  });
+
+  renderDayChipsUI();
+  updateFreqPreviewAndUI();
 
   selectedColor = p ? p.accent || PALETTE[0] : PALETTE[peptides.length % PALETTE.length];
   renderColorSwatches();
@@ -969,10 +1107,32 @@ function saveEditedPeptide() {
   const sub = document.getElementById("edit-sub").value.trim();
   const dose = document.getElementById("edit-dose").value.trim();
   const ui = parseInt(document.getElementById("edit-ui").value) || 10;
-  const freq = document.getElementById("edit-freq").value.trim() || "Todos os dias";
   const perDay = parseInt(document.getElementById("edit-perday").value) || 1;
   const time = document.getElementById("edit-time").value.trim();
   const note = document.getElementById("edit-note").value.trim();
+
+  let days = null;
+  let interval = null;
+  let start = null;
+  let freq = "Todos os dias";
+
+  if (selectedFreqType === "especificos") {
+    if (selectedDays.length === 0) {
+      alert("Selecione pelo menos um dia da semana.");
+      return;
+    }
+    days = [...selectedDays].sort((a, b) => a - b);
+    freq = formatDaysLabel(days);
+  } else if (selectedFreqType === "intervalo") {
+    const intVal = parseInt(document.getElementById("edit-interval-val")?.value) || 2;
+    const sDate = document.getElementById("edit-start-date")?.value || dateKey(new Date());
+    interval = intVal;
+    start = sDate;
+    freq = `A cada ${intVal} dias`;
+  } else {
+    freq = "Todos os dias";
+    days = null;
+  }
 
   const peptides = [...storage.getPeptides()];
 
@@ -985,7 +1145,11 @@ function saveEditedPeptide() {
         sub,
         dose,
         ui,
+        per: selectedPer,
         freq,
+        days,
+        interval,
+        start,
         perDay,
         time,
         note,
@@ -1000,12 +1164,15 @@ function saveEditedPeptide() {
       sub,
       dose,
       ui,
+      per: selectedPer,
       freq,
+      days,
+      interval,
+      start,
       perDay,
       time,
       note,
-      accent: selectedColor,
-      days: null
+      accent: selectedColor
     });
   }
 
@@ -1021,3 +1188,4 @@ function saveEditedPeptide() {
 }
 
 document.addEventListener("DOMContentLoaded", initApp);
+

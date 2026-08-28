@@ -18,6 +18,7 @@ android/app/*.iml
 # Screenshots / Temp artifacts
 android_screenshot*.png
 *.log
+*.apk
 
 # OS files
 .DS_Store
