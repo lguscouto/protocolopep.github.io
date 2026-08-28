@@ -8,15 +8,19 @@ import { theme } from "./services/theme.js";
 import { haptics } from "./services/haptics.js";
 import { notifications } from "./services/notifications.js";
 import { appBridge } from "./services/app-bridge.js";
-import { DEFAULT_PROTOCOL, LIBRARY, PALETTE, DAY_FULL, DAY_W } from "./data/default-library.js";
+import { LIBRARY, PALETTE, DAY_FULL, DAY_W } from "./data/default-library.js";
+import { calculateReconstitution, convertDoseValue } from "./domain/calculator.js";
+import {
+  dateToKey,
+  daysBetween,
+  isScheduledOnDate,
+  getScheduledPeptides,
+  calculateDayProgress
+} from "./domain/schedule.js";
+import { createPeptide, validatePeptide } from "./domain/protocol.js";
+import { escapeHtml, sanitizeColor, sanitizeId } from "./ui/dom.js";
 
-function esc(s) {
-  return String(s || "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
+const esc = escapeHtml;
 
 function fmtBR(iso) {
   if (!iso) return "";
@@ -24,35 +28,14 @@ function fmtBR(iso) {
   return `${d}/${m}`;
 }
 
-const dateKey = (d) => {
-  const x = new Date(d);
-  x.setMinutes(x.getMinutes() - x.getTimezoneOffset());
-  return x.toISOString().slice(0, 10);
-};
-
-function daysBetween(aKey, bDate) {
-  const a = new Date(aKey + "T00:00:00");
-  const b = new Date(bDate);
-  b.setHours(0, 0, 0, 0);
-  return Math.round((b - a) / 86400000);
-}
-
-const isSchedOn = (p, d) => {
-  if (p.interval && p.interval > 0) {
-    if (!p.start) return true;
-    const diff = daysBetween(p.start, d);
-    if (diff < 0) return false;
-    return diff % p.interval === 0;
-  }
-  return p.days === null || (Array.isArray(p.days) && p.days.includes(d.getDay()));
-};
+const dateKey = dateToKey;
 
 let currentTab = "today";
 let editingPeptideId = null;
 
 async function initApp() {
   await theme.init();
-  await storage.init();
+  storage.init();
   await notifications.init();
   initAnimatedBg();
 
@@ -99,117 +82,114 @@ function initAnimatedBg() {
   const container = document.getElementById("bg-molecules");
   if (!container) return;
 
-  const w = window.innerWidth;
-  const h = window.innerHeight;
-  const numNodes = Math.min(22, Math.floor((w * h) / 38000));
-  const nodes = [];
-
-  for (let i = 0; i < numNodes; i++) {
-    nodes.push({
-      x: Math.random() * w,
-      y: Math.random() * h,
-      vx: (Math.random() - 0.5) * 0.35,
-      vy: (Math.random() - 0.5) * 0.35,
-      r: Math.random() * 2 + 2
-    });
+  if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    return;
   }
 
-  let svgHtml = `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><g id="mol-lines"></g><g id="mol-dots"></g></svg>`;
-  container.innerHTML = svgHtml;
+  const canvas = document.createElement("canvas");
+  container.appendChild(canvas);
+  const ctx = canvas.getContext("2d");
 
-  const linesGroup = container.querySelector("#mol-lines");
-  const dotsGroup = container.querySelector("#mol-dots");
+  let w = (canvas.width = window.innerWidth);
+  let h = (canvas.height = window.innerHeight);
+
+  window.addEventListener("resize", () => {
+    w = canvas.width = window.innerWidth;
+    h = canvas.height = window.innerHeight;
+  });
+
+  const particles = Array.from({ length: 18 }, () => ({
+    x: Math.random() * w,
+    y: Math.random() * h,
+    vx: (Math.random() - 0.5) * 0.4,
+    vy: (Math.random() - 0.5) * 0.4,
+    r: Math.random() * 2 + 1.2
+  }));
 
   function animate() {
-    for (const n of nodes) {
-      n.x += n.vx;
-      n.y += n.vy;
-      if (n.x < 0 || n.x > w) n.vx *= -1;
-      if (n.y < 0 || n.y > h) n.vy *= -1;
-    }
+    ctx.clearRect(0, 0, w, h);
+    const isWhite = theme.getTheme() === "white";
+    ctx.fillStyle = isWhite ? "rgba(14, 133, 128, 0.2)" : "rgba(44, 197, 192, 0.15)";
+    ctx.strokeStyle = isWhite ? "rgba(14, 133, 128, 0.08)" : "rgba(44, 197, 192, 0.06)";
 
-    let dotsStr = "";
-    for (const n of nodes) {
-      dotsStr += `<circle class="mol-dot" cx="${n.x.toFixed(1)}" cy="${n.y.toFixed(1)}" r="${n.r}"/>`;
-    }
+    for (let i = 0; i < particles.length; i++) {
+      const p = particles[i];
+      p.x += p.vx;
+      p.y += p.vy;
 
-    let linesStr = "";
-    const maxDist = 130;
-    for (let i = 0; i < nodes.length; i++) {
-      for (let j = i + 1; j < nodes.length; j++) {
-        const dx = nodes[i].x - nodes[j].x;
-        const dy = nodes[i].y - nodes[j].y;
+      if (p.x < 0) p.x = w;
+      if (p.x > w) p.x = 0;
+      if (p.y < 0) p.y = h;
+      if (p.y > h) p.y = 0;
+
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fill();
+
+      for (let j = i + 1; j < particles.length; j++) {
+        const p2 = particles[j];
+        const dx = p.x - p2.x;
+        const dy = p.y - p2.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < maxDist) {
-          linesStr += `<line class="mol-line" x1="${nodes[i].x.toFixed(1)}" y1="${nodes[i].y.toFixed(1)}" x2="${nodes[j].x.toFixed(1)}" y2="${nodes[j].y.toFixed(1)}"/>`;
+
+        if (dist < 110) {
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(p2.x, p2.y);
+          ctx.stroke();
         }
       }
     }
 
-    if (dotsGroup) dotsGroup.innerHTML = dotsStr;
-    if (linesGroup) linesGroup.innerHTML = linesStr;
-
     requestAnimationFrame(animate);
   }
 
-  requestAnimationFrame(animate);
+  animate();
 }
 
 function setupNavigation() {
-  const navButtons = document.querySelectorAll(".nav button");
-  const navInd = document.querySelector(".nav-ind");
-
-  navButtons.forEach((btn) => {
+  const navBtns = document.querySelectorAll(".nav button");
+  navBtns.forEach((btn) => {
     btn.addEventListener("click", () => {
       const tab = btn.dataset.tab;
       if (tab) {
-        haptics.light();
+        haptics.selection();
         switchTab(tab);
       }
     });
   });
-
-  const activeBtn = document.querySelector(`.nav button[data-tab="${currentTab}"]`);
-  if (activeBtn && navInd) {
-    navInd.style.left = `${activeBtn.offsetLeft}px`;
-    navInd.style.width = `${activeBtn.offsetWidth}px`;
-    navInd.style.opacity = "1";
-  }
 }
 
-function switchTab(tab) {
-  currentTab = tab;
-  document.querySelectorAll(".view").forEach((v) => v.classList.remove("on"));
-  document.querySelectorAll(".nav button").forEach((b) => b.classList.toggle("on", b.dataset.tab === tab));
+function switchTab(tabId) {
+  currentTab = tabId;
 
-  const targetView = document.getElementById(`view-${tab}`);
-  if (targetView) targetView.classList.add("on");
+  document.querySelectorAll(".view").forEach((view) => {
+    view.classList.remove("on");
+  });
+  const activeView = document.getElementById(`view-${tabId}`);
+  if (activeView) activeView.classList.add("on");
 
-  const btn = document.querySelector(`.nav button[data-tab="${tab}"]`);
-  const navInd = document.querySelector(".nav-ind");
-  if (navInd && btn) {
-    navInd.style.left = `${btn.offsetLeft}px`;
-    navInd.style.width = `${btn.offsetWidth}px`;
-    navInd.style.opacity = "1";
-  }
+  document.querySelectorAll(".nav button").forEach((btn) => {
+    btn.classList.toggle("on", btn.dataset.tab === tabId);
+  });
 
-  if (tab === "today") renderToday();
-  if (tab === "week") renderWeek();
-  if (tab === "history") renderHistory();
+  if (tabId === "today") renderToday();
+  if (tabId === "week") renderWeek();
+  if (tabId === "history") renderHistory();
 }
 
 function drawRing(taken, total) {
-  const pct = total ? taken / total : 0;
-  const r = 16, c = 2 * Math.PI * r;
-  const ringEl = document.getElementById("ring");
-  if (!ringEl) return;
-  ringEl.innerHTML = `
-    <circle cx="18" cy="18" r="${r}" fill="none" stroke="var(--surface3)" stroke-width="3.6"/>
-    <circle cx="18" cy="18" r="${r}" fill="none" stroke="var(--primary)" stroke-width="3.6"
-      stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${c * (1 - pct)}"
-      transform="rotate(-90 18 18)" style="transition:stroke-dashoffset .4s ease"/>
-    <text x="18" y="19" text-anchor="middle" dominant-baseline="middle"
-      font-family="var(--display)" font-size="9.5" font-weight="700" fill="var(--text)">${total ? Math.round(pct * 100) : 0}%</text>`;
+  const circle = document.getElementById("ring-circle");
+  const pctEl = document.getElementById("ring-pct");
+  if (!circle || !pctEl) return;
+
+  const pct = total > 0 ? Math.min(100, Math.round((taken / total) * 100)) : 0;
+  const circumference = 2 * Math.PI * 20; // r=20
+  const offset = circumference - (pct / 100) * circumference;
+
+  circle.style.strokeDasharray = `${circumference}`;
+  circle.style.strokeDashoffset = `${offset}`;
+  pctEl.textContent = `${pct}%`;
 }
 
 function dosesTaken(rec, id) {
@@ -222,30 +202,34 @@ function dosesTaken(rec, id) {
 function doseTimes(rec, id) {
   const v = rec[id];
   if (!v) return [];
-  if (Array.isArray(v)) return v.map((x) => x.t);
+  if (Array.isArray(v)) return v.map((x) => x.t || "");
   return [v.t || ""];
 }
 
 function renderToday() {
   const peptides = storage.getPeptides();
   const logs = storage.getLogs();
-  const todayK = dateKey(new Date());
+  const now = new Date();
+  const todayK = dateKey(now);
   const rec = logs[todayK] || {};
   const container = document.getElementById("today-cards");
   if (!container) return;
 
   container.innerHTML = "";
-  let takenCount = 0;
+
+  // Filtrar apenas compostos agendados para o dia de hoje
+  const scheduledToday = getScheduledPeptides(peptides, now);
 
   if (peptides.length === 0) {
     container.innerHTML = `<div class="empty-note">Nenhum peptídeo no seu protocolo ainda.<br>Toque no botão abaixo para adicionar.</div>`;
+  } else if (scheduledToday.length === 0) {
+    container.innerHTML = `<div class="empty-note">Nenhuma dose programada para hoje.<br>Acompanhe sua grade na aba <b>Semana</b>.</div>`;
   }
 
-  peptides.forEach((p) => {
+  scheduledToday.forEach((p) => {
     const perDay = p.perDay || 1;
     const tomadas = dosesTaken(rec, p.id);
     const done = tomadas >= perDay;
-    takenCount += Math.min(tomadas, perDay) / perDay;
 
     const horarios = doseTimes(rec, p.id);
     const lastTime = horarios.length ? horarios[horarios.length - 1] : "";
@@ -253,14 +237,14 @@ function renderToday() {
 
     const card = document.createElement("div");
     card.className = `card ${done ? "done" : ""}`;
-    card.style.setProperty("--acc", p.accent || "var(--primary)");
+    card.style.setProperty("--acc", sanitizeColor(p.accent, "var(--primary)"));
 
     let ctrlHTML;
     if (perDay <= 1) {
       ctrlHTML = `
-        <button class="take ${done ? "done" : ""}" data-id="${p.id}">
+        <button class="take ${done ? "done" : ""}" data-id="${sanitizeId(p.id)}">
           <span>${done ? "✓ Tomado" : "Tomei"}</span>
-          ${done && lastTime ? `<span class="at">${lastTime}</span>` : ""}
+          ${done && lastTime ? `<span class="at">${esc(lastTime)}</span>` : ""}
         </button>`;
     } else {
       let boxes = "";
@@ -270,16 +254,16 @@ function renderToday() {
         boxes += `
           <div class="dosebox ${marcada ? "on" : ""}">
             <span class="dosebox-ico">${marcada ? "✓" : i + 1}</span>
-            ${hora ? `<span class="dosebox-t">${hora}</span>` : ""}
+            ${hora ? `<span class="dosebox-t">${esc(hora)}</span>` : ""}
           </div>`;
       }
       ctrlHTML = `
-        <div class="doses" data-id="${p.id}">
+        <div class="doses" data-id="${sanitizeId(p.id)}">
           <div class="doses-count">${tomadas} de ${perDay}</div>
           <div class="doses-boxes">${boxes}</div>
           <div class="doses-btns">
-            <button class="dose-add" data-id="${p.id}" ${tomadas >= perDay ? "disabled" : ""}>+ dose</button>
-            ${tomadas > 0 ? `<button class="dose-undo" data-id="${p.id}">desfazer</button>` : ""}
+            <button class="dose-add" data-id="${sanitizeId(p.id)}" ${tomadas >= perDay ? "disabled" : ""}>+ dose</button>
+            ${tomadas > 0 ? `<button class="dose-undo" data-id="${sanitizeId(p.id)}">desfazer</button>` : ""}
           </div>
         </div>`;
     }
@@ -295,16 +279,16 @@ function renderToday() {
         </div>
         ${(p.start || p.note || p.time) ? `
           <div class="note-line">
-            ${p.time ? `<span class="note-start">⏰ ${p.time}</span>` : ""}
+            ${p.time ? `<span class="note-start">⏰ ${esc(p.time)}</span>` : ""}
             ${p.start ? `<span class="note-start">início ${fmtBR(p.start)}</span>` : ""}
             ${p.note ? `<span class="note-txt">${esc(p.note)}</span>` : ""}
           </div>` : ""}
       </div>
       <div class="ctrls">
-        <button class="gear" data-id="${p.id}" title="Editar">
+        <button class="gear" data-id="${sanitizeId(p.id)}" title="Editar">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         </button>
-        <button class="del" data-id="${p.id}" title="Remover">
+        <button class="del" data-id="${sanitizeId(p.id)}" title="Remover">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/></svg>
         </button>
       </div>
@@ -313,13 +297,13 @@ function renderToday() {
     container.appendChild(card);
   });
 
-  const total = peptides.length;
-  const takenRounded = Math.round(takenCount * 10) / 10;
+  // Cálculo canônico do anel diário
+  const dayProgress = calculateDayProgress(peptides, logs, now);
   const ringN = document.getElementById("ring-n");
   if (ringN) {
-    ringN.textContent = `${Number.isInteger(takenRounded) ? takenRounded : takenRounded.toFixed(1)} / ${total}`;
+    ringN.textContent = `${dayProgress.totalTaken} / ${dayProgress.totalDue}`;
   }
-  drawRing(takenCount, total);
+  drawRing(dayProgress.totalTaken, dayProgress.totalDue);
 
   container.querySelectorAll(".take").forEach((b) => {
     b.addEventListener("click", () => toggleDose(b.dataset.id));
@@ -348,16 +332,25 @@ function toggleDose(id) {
 
   const nowTime = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
-  if (rec[id]) {
+  if (dosesTaken(rec, id) > 0) {
     delete rec[id];
     haptics.light();
   } else {
     rec[id] = { t: nowTime, name: p.name, dose: p.dose, per: p.per };
-    haptics.medium();
+    haptics.success();
   }
 
-  logs[todayK] = rec;
-  storage.setLogs(logs);
+  if (Object.keys(rec).length === 0) {
+    delete logs[todayK];
+  } else {
+    logs[todayK] = rec;
+  }
+
+  const res = storage.setLogs(logs);
+  if (!res.success) {
+    alert("Erro ao gravar aplicação: " + (res.error || "Armazenamento local indisponível"));
+    return;
+  }
   renderToday();
   renderWeek();
   renderHistory();
@@ -372,21 +365,28 @@ function addSingleDose(id) {
   if (!p) return;
 
   const perDay = p.perDay || 1;
-  const nowTime = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-  const nova = { t: nowTime, name: p.name, dose: p.dose, per: p.per };
+  const curr = rec[id];
+  let arr = [];
 
-  let arr = rec[id];
-  if (!Array.isArray(arr)) arr = arr ? [arr] : [];
+  if (Array.isArray(curr)) {
+    arr = [...curr];
+  } else if (curr && typeof curr === "object") {
+    arr = [{ t: curr.t || "", name: p.name, dose: p.dose, per: p.per }];
+  }
+
   if (arr.length >= perDay) return;
 
-  arr.push(nova);
+  const nowTime = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  arr.push({ t: nowTime, name: p.name, dose: p.dose, per: p.per });
   rec[id] = arr;
   logs[todayK] = rec;
 
+  const res = storage.setLogs(logs);
+  if (!res.success) {
+    alert("Erro ao gravar dose: " + (res.error || "Armazenamento indisponível"));
+    return;
+  }
   haptics.medium();
-  if (arr.length === perDay) haptics.success();
-
-  storage.setLogs(logs);
   renderToday();
   renderWeek();
   renderHistory();
@@ -396,43 +396,32 @@ function undoSingleDose(id) {
   const logs = storage.getLogs();
   const todayK = dateKey(new Date());
   const rec = { ...(logs[todayK] || {}) };
-  const v = rec[id];
-  if (!v) return;
+  const curr = rec[id];
 
-  if (Array.isArray(v)) {
-    v.pop();
-    if (v.length === 0) delete rec[id];
-    else rec[id] = v;
-  } else {
+  if (Array.isArray(curr) && curr.length > 0) {
+    curr.pop();
+    if (curr.length === 0) delete rec[id];
+    else rec[id] = curr;
+  } else if (curr) {
     delete rec[id];
   }
 
-  logs[todayK] = rec;
+  if (Object.keys(rec).length === 0) delete logs[todayK];
+  else logs[todayK] = rec;
+
+  const res = storage.setLogs(logs);
+  if (!res.success) {
+    alert("Erro ao remover dose: " + (res.error || "Armazenamento indisponível"));
+    return;
+  }
   haptics.light();
-  storage.setLogs(logs);
   renderToday();
   renderWeek();
   renderHistory();
 }
 
-function deletePeptide(id) {
-  const peptides = storage.getPeptides();
-  const p = peptides.find((x) => x.id === id);
-  if (!p) return;
-
-  if (confirm(`Remover "${p.name}" do seu protocolo?`)) {
-    haptics.error();
-    const updated = peptides.filter((x) => x.id !== id);
-    storage.setPeptides(updated);
-    renderToday();
-    renderWeek();
-    renderHistory();
-    notifications.schedulePeptideReminders(updated);
-  }
-}
-
 function renderWeek() {
-  const container = document.getElementById("week-table-wrap");
+  const container = document.getElementById("week-table-wrap") || document.getElementById("week-grid");
   if (!container) return;
 
   const peptides = storage.getPeptides();
@@ -477,9 +466,9 @@ function renderWeek() {
     peptides.forEach((p) => {
       tableHtml += `
         <tr>
-          <td class="pep" style="color:${p.accent || "var(--primary)"}">${esc(p.name)}</td>
+          <td class="pep" style="color:${sanitizeColor(p.accent, "var(--primary)")}">${esc(p.name)}</td>
           ${daysOfWeek.map((d) => {
-            const isScheduled = isSchedOn(p, d.date);
+            const isScheduled = isScheduledOnDate(p, d.date);
             const rec = logs[d.key] || {};
             const taken = dosesTaken(rec, p.id) > 0;
 
@@ -490,9 +479,9 @@ function renderWeek() {
             return `
               <td class="${d.isToday ? "col-today" : ""}">
                 <span class="cell tap ${taken ? "" : "empty"}"
-                      data-pep="${p.id}"
-                      data-date="${d.key}"
-                      style="${taken ? `background:${p.accent || "var(--primary)"}` : ""}">
+                      data-pep="${sanitizeId(p.id)}"
+                      data-date="${sanitizeId(d.key)}"
+                      style="${taken ? `background:${sanitizeColor(p.accent, "var(--primary)")}` : ""}">
                   ${taken ? "✓" : ""}
                 </span>
               </td>`;
@@ -529,7 +518,11 @@ function toggleDateLog(id, dKey) {
   if (Object.keys(rec).length === 0) delete logs[dKey];
   else logs[dKey] = rec;
 
-  storage.setLogs(logs);
+  const res = storage.setLogs(logs);
+  if (!res.success) {
+    alert("Erro ao gravar registro: " + (res.error || "Armazenamento indisponível"));
+    return;
+  }
   renderToday();
   renderWeek();
   renderHistory();
@@ -553,7 +546,10 @@ function renderHistory() {
 
     const pepEntries = [];
     Object.keys(rec).forEach((pId) => {
-      const p = peptides.find((x) => x.id === pId) || { name: pId, accent: "#2CC5C0" };
+      const p = peptides.find((x) => x.id === pId) || {
+        name: (rec[pId] && !Array.isArray(rec[pId]) && rec[pId].name) || pId,
+        accent: "#2CC5C0"
+      };
       const val = rec[pId];
 
       if (Array.isArray(val)) {
@@ -561,20 +557,20 @@ function renderHistory() {
           totalDoses++;
           pepEntries.push({
             id: pId,
-            name: p.name,
+            name: doseItem.name || p.name,
             accent: p.accent,
             time: doseItem.t || "Retroativo",
             dose: doseItem.dose || p.dose || "",
             idx: idx
           });
         });
-      } else if (val) {
+      } else if (val && typeof val === "object") {
         totalDoses++;
         pepEntries.push({
           id: pId,
-          name: p.name,
+          name: val.name || p.name,
           accent: p.accent,
-          time: val.t || "Retroativo",
+          time: val.t || (val.retro ? "Retroativo" : ""),
           dose: val.dose || p.dose || "",
           idx: 0
         });
@@ -582,100 +578,139 @@ function renderHistory() {
     });
 
     if (pepEntries.length > 0) {
-      const dObj = new Date(dk + "T00:00:00");
-      const dFmt = dObj.toLocaleDateString("pt-BR", {
-        weekday: "short",
-        day: "numeric",
-        month: "short"
-      });
+      const [y, m, d] = dk.split("-").map(Number);
+      const dateObj = new Date(y, m - 1, d);
+      const dayName = DAY_FULL[dateObj.getDay()] || "";
+      const formattedDate = `${String(d).padStart(2, "0")}/${String(m).padStart(2, "0")}/${y}`;
 
       html += `
         <div class="hist-day">
           <div class="hist-date">
-            <span>${dFmt}</span>
-            <span class="hist-n">${pepEntries.length}</span>
+            <span>${formattedDate} · ${dayName}</span>
+            <span class="hist-n">${pepEntries.length} dose${pepEntries.length > 1 ? "s" : ""}</span>
           </div>
-          ${pepEntries.map((item) => `
-            <div class="hist-item">
-              <span class="hist-dot" style="background:${item.accent || "var(--primary)"}"></span>
-              <div class="hist-info">
-                <div class="hist-name">${esc(item.name)}</div>
-                <div class="hist-dose">${esc(item.dose)}</div>
+          <div class="hist-list">
+            ${pepEntries.map((e) => `
+              <div class="hist-item">
+                <span class="hist-dot" style="background:${sanitizeColor(e.accent, "var(--primary)")};"></span>
+                <div class="hist-info">
+                  <div class="hist-name">${esc(e.name)}</div>
+                  ${e.dose ? `<div class="hist-dose">${esc(e.dose)}</div>` : ""}
+                </div>
+                <span class="hist-time">${esc(e.time || "Feito")}</span>
+                <button class="hist-rm" data-date="${sanitizeId(dk)}" data-pep="${sanitizeId(e.id)}" data-idx="${e.idx}" title="Excluir dose">✕</button>
               </div>
-              <div class="hist-time">${item.time}</div>
-              <button class="hist-rm" data-key="${dk}" data-id="${item.id}" data-idx="${item.idx}" title="Excluir">✕</button>
-            </div>
-          `).join("")}
+            `).join("")}
+          </div>
         </div>`;
     }
   });
 
-  if (totalDoses === 0) {
-    html = `<div class="empty-note">Nenhum registro de dose ainda.</div>`;
-  }
+  if (countEl) countEl.textContent = `${totalDoses} doses registradas`;
 
-  if (countEl) countEl.textContent = `${totalDoses} dose(s) registradas`;
-  container.innerHTML = html;
+  if (totalDoses === 0) {
+    container.innerHTML = `<div class="empty-note">Nenhum registro de dose ainda.<br>Marque suas aplicações na tela <b>Hoje</b> ou na <b>Semana</b>.</div>`;
+  } else {
+    container.innerHTML = html;
+  }
 
   container.querySelectorAll(".hist-rm").forEach((btn) => {
     btn.addEventListener("click", () => {
-      removeHistoryEntry(btn.dataset.key, btn.dataset.id, Number(btn.dataset.idx));
+      const dKey = btn.dataset.date;
+      const pId = btn.dataset.pep;
+      const idx = parseInt(btn.dataset.idx, 10);
+      deleteHistoryEntry(dKey, pId, idx);
     });
   });
 }
 
-function removeHistoryEntry(dKey, pId, idx) {
+function deleteHistoryEntry(dKey, pId, idx) {
   const logs = storage.getLogs();
-  const rec = logs[dKey];
-  if (!rec || !rec[pId]) return;
+  if (!logs[dKey] || !logs[dKey][pId]) return;
 
-  if (Array.isArray(rec[pId])) {
-    rec[pId].splice(idx, 1);
-    if (rec[pId].length === 0) delete rec[pId];
+  const val = logs[dKey][pId];
+  if (Array.isArray(val)) {
+    val.splice(idx, 1);
+    if (val.length === 0) delete logs[dKey][pId];
   } else {
-    delete rec[pId];
+    delete logs[dKey][pId];
   }
 
-  if (Object.keys(rec).length === 0) delete logs[dKey];
+  if (Object.keys(logs[dKey]).length === 0) {
+    delete logs[dKey];
+  }
+
+  const res = storage.setLogs(logs);
+  if (!res.success) {
+    alert("Erro ao remover registro: " + (res.error || "Armazenamento indisponível"));
+    return;
+  }
   haptics.light();
-  storage.setLogs(logs);
   renderToday();
   renderWeek();
   renderHistory();
 }
 
+function deletePeptide(id) {
+  const peptides = storage.getPeptides();
+  const p = peptides.find((x) => x.id === id);
+  if (!p) return;
+
+  if (confirm(`Remover "${p.name}" do seu protocolo? (Os registros de histórico anteriores serão mantidos)`)) {
+    const updated = peptides.filter((x) => x.id !== id);
+    const res = storage.setPeptides(updated);
+    if (!res.success) {
+      alert("Erro ao remover peptídeo: " + (res.error || "Armazenamento indisponível"));
+      return;
+    }
+    haptics.medium();
+    renderToday();
+    renderWeek();
+    renderHistory();
+    notifications.schedulePeptideReminders(updated);
+  }
+}
+
 function setupCalculator() {
   let vialMg = 5;
   let diluentMl = 2;
-  let desiredDoseMcg = 250;
+  let desiredDoseVal = 250;
+  let doseUnit = "mcg";
 
   const mgChips = document.querySelectorAll("#calc-mg-chips .chip");
   const mlChips = document.querySelectorAll("#calc-ml-chips .chip");
   const doseInput = document.getElementById("calc-dose-input");
   const unitBtns = document.querySelectorAll("#calc-unit-toggle button");
 
-  let doseUnit = "mcg";
-
   function recalculate() {
-    let desiredMg = doseUnit === "mcg" ? desiredDoseMcg / 1000 : desiredDoseMcg;
-    if (desiredMg <= 0 || vialMg <= 0 || diluentMl <= 0) return;
-
-    const concentration = vialMg / diluentMl;
-    const volumeMl = desiredMg / concentration;
-    const ui = volumeMl * 100;
-    const uiRounded = Math.round(ui * 10) / 10;
-
     const resBig = document.getElementById("calc-res-big");
     const resSub = document.getElementById("calc-res-sub");
     const resConc = document.getElementById("calc-res-conc");
     const resDoses = document.getElementById("calc-res-doses");
 
-    if (resBig) resBig.textContent = uiRounded;
-    if (resSub) resSub.innerHTML = `Puxar <b>${uiRounded} UI</b> na seringa de insulina U-100 (${volumeMl.toFixed(3)} ml)`;
-    if (resConc) resConc.textContent = `${concentration.toFixed(1)} mg/ml`;
-    if (resDoses) resDoses.textContent = `${Math.floor(vialMg / desiredMg)} doses`;
+    const result = calculateReconstitution({
+      vialMg,
+      waterMl: diluentMl,
+      doseVal: desiredDoseVal,
+      doseUnit,
+      syringeMaxUI: 100
+    });
 
-    renderSyringe(uiRounded);
+    if (!result.valid) {
+      if (resBig) resBig.textContent = "--";
+      if (resSub) resSub.innerHTML = `<span style="color:var(--danger)">${esc(result.error)}</span>`;
+      if (resConc) resConc.textContent = "--";
+      if (resDoses) resDoses.textContent = "--";
+      renderSyringe(0);
+      return;
+    }
+
+    if (resBig) resBig.textContent = result.unitsUI;
+    if (resSub) resSub.innerHTML = `Puxar <b>${result.unitsUI} UI</b> na seringa de insulina U-100 (${result.volumeMl} mL)`;
+    if (resConc) resConc.textContent = `${result.concentrationMgMl} mg/mL`;
+    if (resDoses) resDoses.textContent = `${result.dosesPerVial} doses`;
+
+    renderSyringe(result.unitsUI);
   }
 
   function renderSyringe(ui) {
@@ -724,21 +759,31 @@ function setupCalculator() {
   if (doseInput) {
     doseInput.addEventListener("input", (e) => {
       const val = parseFloat(e.target.value);
-      if (!isNaN(val) && val > 0) {
-        desiredDoseMcg = val;
-        recalculate();
-      }
+      desiredDoseVal = !isNaN(val) ? val : 0;
+      recalculate();
     });
   }
 
   unitBtns.forEach((b) => {
     b.addEventListener("click", () => {
+      const oldUnit = doseUnit;
+      const newUnit = b.dataset.u;
+      if (oldUnit === newUnit) return;
+
       unitBtns.forEach((x) => x.classList.remove("on"));
       b.classList.add("on");
-      doseUnit = b.dataset.u;
+      doseUnit = newUnit;
+
+      if (doseInput && doseInput.value) {
+        const converted = convertDoseValue(doseInput.value, oldUnit, newUnit);
+        doseInput.value = converted;
+        desiredDoseVal = parseFloat(converted) || 0;
+      }
+
       if (doseInput) {
         doseInput.placeholder = doseUnit === "mcg" ? "ex: 250" : "ex: 2.5";
       }
+
       haptics.light();
       recalculate();
     });
@@ -758,76 +803,84 @@ function setupModalsAndButtons() {
   if (themeBtn) {
     themeBtn.addEventListener("click", async () => {
       haptics.medium();
-      await theme.toggleTheme();
+      await theme.toggle();
     });
   }
 
   const notifBtn = document.getElementById("notif-btn");
   const notifModal = document.getElementById("notif-modal");
-  const notifClose = document.getElementById("notif-close");
-  const notifDone = document.getElementById("nf-done");
-
   if (notifBtn && notifModal) {
     notifBtn.addEventListener("click", () => {
-      haptics.light();
       updateNotifModalUI();
       notifModal.classList.add("on");
+      haptics.light();
     });
   }
-  if (notifClose && notifModal) {
-    notifClose.addEventListener("click", () => notifModal.classList.remove("on"));
+
+  const addPepBtn = document.getElementById("add-pep-btn");
+  if (addPepBtn) {
+    addPepBtn.addEventListener("click", () => {
+      openEditModal(null);
+      haptics.light();
+    });
   }
-  if (notifDone && notifModal) {
-    notifDone.addEventListener("click", () => notifModal.classList.remove("on"));
+
+  document.querySelectorAll(".sheet-x, #nf-done, .modal-close").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      closeAllModals();
+      haptics.light();
+    });
+  });
+
+  document.querySelectorAll(".modal").forEach((m) => {
+    m.addEventListener("click", (e) => {
+      if (e.target === m) {
+        closeAllModals();
+        haptics.light();
+      }
+    });
+  });
+
+  const savePepBtn = document.getElementById("edit-save") || document.getElementById("save-pep-btn");
+  if (savePepBtn) {
+    savePepBtn.addEventListener("click", saveEditedPeptide);
   }
 
   const nfEnable = document.getElementById("nf-enable");
   if (nfEnable) {
     nfEnable.addEventListener("click", async () => {
-      notifications.ensureAudio();
-      const granted = await notifications.requestPermission();
       const cfg = notifications.getConfig();
-      cfg.enabled = granted ? !cfg.enabled : false;
-      notifications.saveConfig(cfg);
-      updateNotifModalUI();
-      if (cfg.enabled) {
-        notifications.sendInstantNotification("Protocolo PEP", "Lembretes e notificações ativados com sucesso! ✓");
-        notifications.schedulePeptideReminders(storage.getPeptides());
+      if (!cfg.enabled) {
+        const granted = await notifications.requestPermission();
+        if (granted) {
+          notifications.saveConfig({ enabled: true });
+          notifications.schedulePeptideReminders(storage.getPeptides());
+          haptics.success();
+        } else {
+          alert("Permissão de notificação não concedida nas configurações do dispositivo.");
+        }
+      } else {
+        notifications.saveConfig({ enabled: false });
+        await notifications.cancelAllPepReminders();
+        haptics.light();
       }
+      updateNotifModalUI();
     });
   }
 
   const nfTest = document.getElementById("nf-test");
   if (nfTest) {
-    nfTest.addEventListener("click", () => {
-      notifications.sendInstantNotification("Teste de Lembrete", "Se você viu este aviso, as notificações estão funcionando! ✓");
+    nfTest.addEventListener("click", async () => {
+      await notifications.sendInstantNotification(
+        "Protocolo PEP · Notificação de Teste",
+        "Seus lembretes de peptídeos estão funcionando perfeitamente! 💉"
+      );
     });
-  }
-
-  const addBtn = document.getElementById("add-pep-btn");
-  if (addBtn) {
-    addBtn.addEventListener("click", () => {
-      haptics.light();
-      openEditModal(null);
-    });
-  }
-
-  const editModal = document.getElementById("edit-modal");
-  const editClose = document.getElementById("edit-close");
-  const editSave = document.getElementById("edit-save");
-
-  if (editClose && editModal) {
-    editClose.addEventListener("click", () => editModal.classList.remove("on"));
-  }
-
-  if (editSave) {
-    editSave.addEventListener("click", () => saveEditedPeptide());
   }
 
   renderLibraryChips();
-  renderColorSwatches();
 
-  // Período toggle: Por dia / Por semana
+  // Segmented controls do editor
   document.querySelectorAll("#edit-period-toggle button").forEach((b) => {
     b.addEventListener("click", () => {
       document.querySelectorAll("#edit-period-toggle button").forEach((x) => x.classList.remove("on"));
@@ -837,22 +890,16 @@ function setupModalsAndButtons() {
     });
   });
 
-  // Frequência toggle: Todos os dias / Dias específicos / A cada X dias
   document.querySelectorAll("#edit-freq-type-toggle button").forEach((b) => {
     b.addEventListener("click", () => {
       document.querySelectorAll("#edit-freq-type-toggle button").forEach((x) => x.classList.remove("on"));
       b.classList.add("on");
       selectedFreqType = b.dataset.type;
-      if (selectedFreqType === "especificos" && (selectedDays.length === 0 || selectedDays.length === 7)) {
-        selectedDays = [1, 3, 5];
-        renderDayChipsUI();
-      }
-      updateFreqPreviewAndUI();
       haptics.light();
+      updateFreqPreviewAndUI();
     });
   });
 
-  // Day chips: D, S, T, Q, Q, S, S
   document.querySelectorAll("#edit-days-grid .day-chip").forEach((b) => {
     b.addEventListener("click", () => {
       const d = parseInt(b.dataset.day);
@@ -861,9 +908,9 @@ function setupModalsAndButtons() {
       } else {
         selectedDays.push(d);
       }
+      haptics.light();
       renderDayChipsUI();
       updateFreqPreviewAndUI();
-      haptics.light();
     });
   });
 
@@ -877,8 +924,8 @@ function setupModalsAndButtons() {
   const exportBtn = document.getElementById("export-btn");
   if (exportBtn) {
     exportBtn.addEventListener("click", () => {
-      const backup = storage.exportBackup();
-      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+      const backupPayload = storage.exportBackup(theme.getTheme());
+      const blob = new Blob([backupPayload], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -898,19 +945,20 @@ function setupModalsAndButtons() {
       if (!file) return;
       const reader = new FileReader();
       reader.onload = () => {
-        try {
-          const data = JSON.parse(reader.result);
-          if (confirm("Isto substituirá seu protocolo e registros atuais pelos dados do arquivo. Continuar?")) {
-            storage.importBackup(data);
+        if (confirm("Isto substituirá seu protocolo e registros atuais pelos dados do arquivo. Continuar?")) {
+          const res = storage.importBackup(reader.result);
+          if (res.success) {
+            if (res.theme) theme.setTheme(res.theme);
             renderToday();
             renderWeek();
             renderHistory();
             notifications.schedulePeptideReminders(storage.getPeptides());
-            alert("Backup importado com sucesso! ✓");
+            alert(`Backup importado com sucesso! ✓\n• Peptídeos: ${res.stats.peptideCount}\n• Dias com registros: ${res.stats.logDaysCount}\n• Total de doses: ${res.stats.totalDosesCount}`);
             haptics.success();
+          } else {
+            alert("Erro ao importar backup: " + res.error);
+            haptics.warning();
           }
-        } catch (err) {
-          alert("Arquivo inválido. Use um arquivo de backup exportado pelo aplicativo.");
         }
       };
       reader.readAsText(file);
@@ -928,15 +976,15 @@ function updateNotifModalUI() {
   if (cfg.enabled) {
     st.className = "stat";
     st.style.borderColor = "var(--primary)";
-    st.style.color = "var(--primary)";
     st.textContent = "Notificações Ativadas ✓";
     en.textContent = "Desativar Lembretes";
+    en.className = "btn-subtle";
   } else {
-    st.className = "stat";
+    st.className = "stat off";
     st.style.borderColor = "var(--border)";
-    st.style.color = "var(--muted)";
     st.textContent = "Notificações Desativadas";
     en.textContent = "Ativar Lembretes";
+    en.className = "btn-cta";
   }
 }
 
@@ -945,36 +993,17 @@ function renderLibraryChips() {
   if (!cont) return;
 
   cont.innerHTML = LIBRARY.map((item) => `
-    <button type="button" class="lib-chip" data-name="${esc(item.name)}" data-sub="${esc(item.sub)}">
-      ${esc(item.name)}
+    <button type="button" class="lib-chip" data-name="${esc(item.name)}" data-sub="${esc(item.sub || "")}">
+      + ${esc(item.name)}
     </button>
   `).join("");
 
-  cont.querySelectorAll(".lib-chip").forEach((b) => {
-    b.addEventListener("click", () => {
-      const nmInput = document.getElementById("edit-name");
+  cont.querySelectorAll(".lib-chip").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const nameInput = document.getElementById("edit-name");
       const subInput = document.getElementById("edit-sub");
-      if (nmInput) nmInput.value = b.dataset.name;
-      if (subInput) subInput.value = b.dataset.sub;
-
-      const protoMatch = DEFAULT_PROTOCOL.find((x) => x.name.toLowerCase() === b.dataset.name.toLowerCase());
-      if (protoMatch) {
-        if (protoMatch.dose) document.getElementById("edit-dose").value = protoMatch.dose;
-        if (protoMatch.ui) document.getElementById("edit-ui").value = protoMatch.ui;
-        selectedPer = protoMatch.per || "dia";
-        if (Array.isArray(protoMatch.days) && protoMatch.days.length > 0) {
-          selectedFreqType = "especificos";
-          selectedDays = [...protoMatch.days];
-        } else {
-          selectedFreqType = "todos";
-          selectedDays = [0, 1, 2, 3, 4, 5, 6];
-        }
-        document.querySelectorAll("#edit-period-toggle button").forEach((x) => x.classList.toggle("on", x.dataset.per === selectedPer));
-        document.querySelectorAll("#edit-freq-type-toggle button").forEach((x) => x.classList.toggle("on", x.dataset.type === selectedFreqType));
-        renderDayChipsUI();
-        updateFreqPreviewAndUI();
-      }
-
+      if (nameInput) nameInput.value = btn.dataset.name;
+      if (subInput) subInput.value = btn.dataset.sub;
       haptics.light();
     });
   });
@@ -1134,49 +1163,40 @@ function saveEditedPeptide() {
     days = null;
   }
 
+  const peptideData = createPeptide({
+    id: editingPeptideId,
+    name,
+    sub,
+    dose,
+    ui,
+    per: selectedPer,
+    freq,
+    days,
+    interval,
+    start,
+    perDay,
+    time,
+    note,
+    accent: selectedColor
+  });
+
   const peptides = [...storage.getPeptides()];
 
   if (editingPeptideId) {
     const idx = peptides.findIndex((x) => x.id === editingPeptideId);
     if (idx >= 0) {
-      peptides[idx] = {
-        ...peptides[idx],
-        name,
-        sub,
-        dose,
-        ui,
-        per: selectedPer,
-        freq,
-        days,
-        interval,
-        start,
-        perDay,
-        time,
-        note,
-        accent: selectedColor
-      };
+      peptides[idx] = peptideData;
     }
   } else {
-    const newId = "pep_" + Date.now().toString(36);
-    peptides.push({
-      id: newId,
-      name,
-      sub,
-      dose,
-      ui,
-      per: selectedPer,
-      freq,
-      days,
-      interval,
-      start,
-      perDay,
-      time,
-      note,
-      accent: selectedColor
-    });
+    peptides.push(peptideData);
   }
 
-  storage.setPeptides(peptides);
+  const res = storage.setPeptides(peptides);
+  if (!res.success) {
+    alert("Erro ao salvar peptídeo: " + (res.error || "Armazenamento local indisponível"));
+    return;
+  }
+
   renderToday();
   renderWeek();
   renderHistory();
@@ -1187,5 +1207,8 @@ function saveEditedPeptide() {
   haptics.success();
 }
 
-document.addEventListener("DOMContentLoaded", initApp);
-
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initApp);
+} else {
+  initApp();
+}

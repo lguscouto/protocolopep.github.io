@@ -7,7 +7,7 @@ class HapticsService {
       try {
         await Haptics.impact({ style: ImpactStyle.Light });
       } catch (e) {}
-    } else if (navigator.vibrate) {
+    } else if (typeof navigator !== "undefined" && navigator.vibrate) {
       navigator.vibrate(20);
     }
   }
@@ -17,8 +17,20 @@ class HapticsService {
       try {
         await Haptics.impact({ style: ImpactStyle.Medium });
       } catch (e) {}
-    } else if (navigator.vibrate) {
+    } else if (typeof navigator !== "undefined" && navigator.vibrate) {
       navigator.vibrate(40);
+    }
+  }
+
+  async selection() {
+    if (Capacitor.isNativePlatform()) {
+      try {
+        await Haptics.selectionChanged();
+      } catch (e) {
+        await this.light();
+      }
+    } else if (typeof navigator !== "undefined" && navigator.vibrate) {
+      navigator.vibrate(15);
     }
   }
 
@@ -27,8 +39,18 @@ class HapticsService {
       try {
         await Haptics.notification({ type: NotificationType.Success });
       } catch (e) {}
-    } else if (navigator.vibrate) {
+    } else if (typeof navigator !== "undefined" && navigator.vibrate) {
       navigator.vibrate([40, 60, 40]);
+    }
+  }
+
+  async warning() {
+    if (Capacitor.isNativePlatform()) {
+      try {
+        await Haptics.notification({ type: NotificationType.Warning });
+      } catch (e) {}
+    } else if (typeof navigator !== "undefined" && navigator.vibrate) {
+      navigator.vibrate([60, 40, 60]);
     }
   }
 
@@ -37,7 +59,7 @@ class HapticsService {
       try {
         await Haptics.notification({ type: NotificationType.Error });
       } catch (e) {}
-    } else if (navigator.vibrate) {
+    } else if (typeof navigator !== "undefined" && navigator.vibrate) {
       navigator.vibrate([80, 50, 80]);
     }
   }

@@ -1,9 +1,5 @@
-export const DEFAULT_PROTOCOL = [
-  { id: "motsc", name: "MOTS-c", sub: "peptídeo mitocondrial", ui: 14, dose: "5,4 mg", per: "semana", freq: "Seg · Qua · Sex", days: [1, 3, 5], accent: "#2FD8AC", moon: false, perDay: 1 },
-  { id: "aod", name: "AOD-9604", sub: "fragmento de GH", ui: 15, dose: "500 mcg", per: "dia", freq: "Todos os dias", days: null, accent: "#F59158", moon: false, perDay: 1 },
-  { id: "tesa", name: "Tesamorelina", sub: "análogo de GHRH", ui: 30, dose: "2 mg", per: "dia", freq: "Antes de dormir", days: null, accent: "#8593F7", moon: true, perDay: 1 },
-  { id: "ghk", name: "GHK-Cu", sub: "peptídeo de cobre · reparo", ui: 12, dose: "4 mg", per: "dia", freq: "Todos os dias", days: null, accent: "#D89A5C", moon: false, perDay: 1 }
-];
+// Primeiro uso inicia com protocolo vazio (sem prescrições ativas predefinidas)
+export const DEFAULT_PROTOCOL = [];
 
 export const LIBRARY = [
   { name: "Tirzepatida", sub: "GLP-1 / GIP" },

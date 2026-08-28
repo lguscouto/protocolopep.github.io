@@ -1,43 +1,43 @@
 import { DEFAULT_PROTOCOL } from "../data/default-library.js";
+import { migrateAppState, migratePeptides, migrateLogs, CURRENT_SCHEMA_VERSION } from "../domain/migrations.js";
+import { validateAndParseBackup, createBackupPayload } from "../domain/backup.js";
 
 const KEYS = {
   PROTOCOL: "pep_protocol_v2",
   LOGS: "pep_logs_v2",
-  PATIENTS: "pep_patients_v2",
-  PROFILE: "pep_profile_v2",
   SETTINGS: "pep_settings_v2",
+  ROLLBACK_SNAPSHOT: "pep_rollback_snapshot",
   LEGACY_PROTO: "peptideos-protocolo-v1",
   LEGACY_LOGS: "peptideos-registro-v1"
 };
 
-class StorageService {
+export class StorageService {
   constructor() {
     this.peptides = [];
     this.logs = {};
-    this.patients = [];
-    this.profile = { nickname: "", email: "" };
     this.listeners = new Set();
   }
 
-  async init() {
+  init() {
     try {
       // 1. Carregar Protocolo
       let storedProto = localStorage.getItem(KEYS.PROTOCOL);
       if (!storedProto) {
-        // Tentar migrar de chave antiga v1 se existir
         const legacyProto = localStorage.getItem(KEYS.LEGACY_PROTO);
         if (legacyProto) {
           try {
-            this.peptides = JSON.parse(legacyProto);
+            const raw = JSON.parse(legacyProto);
+            this.peptides = migratePeptides(raw);
           } catch (e) {
-            this.peptides = [...DEFAULT_PROTOCOL];
+            this.peptides = migratePeptides(DEFAULT_PROTOCOL);
           }
         } else {
-          this.peptides = [...DEFAULT_PROTOCOL];
+          this.peptides = migratePeptides(DEFAULT_PROTOCOL);
         }
         this.saveProtocol();
       } else {
-        this.peptides = JSON.parse(storedProto);
+        const raw = JSON.parse(storedProto);
+        this.peptides = migratePeptides(raw);
       }
 
       // 2. Carregar Logs
@@ -46,7 +46,8 @@ class StorageService {
         const legacyLogs = localStorage.getItem(KEYS.LEGACY_LOGS);
         if (legacyLogs) {
           try {
-            this.logs = JSON.parse(legacyLogs);
+            const raw = JSON.parse(legacyLogs);
+            this.logs = migrateLogs(raw);
           } catch (e) {
             this.logs = {};
           }
@@ -55,29 +56,20 @@ class StorageService {
         }
         this.saveLogs();
       } else {
-        this.logs = JSON.parse(storedLogs);
+        const raw = JSON.parse(storedLogs);
+        this.logs = migrateLogs(raw);
       }
-
-      // 3. Carregar Pacientes / Protocolos salvos
-      let storedPatients = localStorage.getItem(KEYS.PATIENTS);
-      this.patients = storedPatients ? JSON.parse(storedPatients) : [];
-
-      // 4. Carregar Perfil Local
-      let storedProfile = localStorage.getItem(KEYS.PROFILE);
-      this.profile = storedProfile ? JSON.parse(storedProfile) : { nickname: "", email: "" };
 
     } catch (err) {
       console.error("[Storage] Erro ao inicializar storage local:", err);
-      this.peptides = [...DEFAULT_PROTOCOL];
+      this.peptides = migratePeptides(DEFAULT_PROTOCOL);
       this.logs = {};
     }
 
     this.notify();
     return {
       peptides: this.peptides,
-      logs: this.logs,
-      patients: this.patients,
-      profile: this.profile
+      logs: this.logs
     };
   }
 
@@ -86,16 +78,24 @@ class StorageService {
   }
 
   setPeptides(newPeptides) {
-    this.peptides = Array.isArray(newPeptides) ? newPeptides : [];
-    this.saveProtocol();
+    const backupSnapshot = this.takeSnapshot();
+    this.peptides = migratePeptides(newPeptides);
+    const res = this.saveProtocol();
+    if (!res.success) {
+      this.restoreSnapshot(backupSnapshot);
+      return res;
+    }
     this.notify();
+    return { success: true };
   }
 
   saveProtocol() {
     try {
       localStorage.setItem(KEYS.PROTOCOL, JSON.stringify(this.peptides));
+      return { success: true };
     } catch (e) {
-      console.warn("[Storage] Erro salvando protocolo:", e);
+      console.error("[Storage] Erro ao salvar protocolo:", e);
+      return { success: false, error: e.message || "Falha ao gravar no armazenamento local" };
     }
   }
 
@@ -104,76 +104,81 @@ class StorageService {
   }
 
   setLogs(newLogs) {
-    this.logs = newLogs && typeof newLogs === "object" ? newLogs : {};
-    this.saveLogs();
+    const backupSnapshot = this.takeSnapshot();
+    this.logs = migrateLogs(newLogs);
+    const res = this.saveLogs();
+    if (!res.success) {
+      this.restoreSnapshot(backupSnapshot);
+      return res;
+    }
     this.notify();
+    return { success: true };
   }
 
   saveLogs() {
     try {
       localStorage.setItem(KEYS.LOGS, JSON.stringify(this.logs));
+      return { success: true };
     } catch (e) {
-      console.warn("[Storage] Erro salvando logs:", e);
+      console.error("[Storage] Erro ao salvar logs:", e);
+      return { success: false, error: e.message || "Falha ao gravar logs no armazenamento local" };
     }
   }
 
-  getPatients() {
-    return this.patients;
-  }
-
-  savePatients(patients) {
-    this.patients = Array.isArray(patients) ? patients : [];
-    try {
-      localStorage.setItem(KEYS.PATIENTS, JSON.stringify(this.patients));
-    } catch (e) {
-      console.warn("[Storage] Erro salvando pacientes:", e);
-    }
-    this.notify();
-  }
-
-  getProfile() {
-    return this.profile;
-  }
-
-  saveProfile(profile) {
-    this.profile = { ...this.profile, ...profile };
-    try {
-      localStorage.setItem(KEYS.PROFILE, JSON.stringify(this.profile));
-    } catch (e) {
-      console.warn("[Storage] Erro salvando perfil:", e);
-    }
-    this.notify();
-  }
-
-  exportBackup() {
+  takeSnapshot() {
     return {
-      version: "2.0",
-      app: "Protocolo PEP Android",
-      exportedAt: new Date().toISOString(),
-      profile: this.profile,
-      protocol: this.peptides,
-      logs: this.logs,
-      patients: this.patients
+      peptides: JSON.parse(JSON.stringify(this.peptides)),
+      logs: JSON.parse(JSON.stringify(this.logs))
     };
   }
 
-  importBackup(backupData) {
-    if (!backupData || !Array.isArray(backupData.protocol)) {
-      throw new Error("Formato de backup inválido.");
+  restoreSnapshot(snapshot) {
+    if (!snapshot) return;
+    this.peptides = snapshot.peptides || [];
+    this.logs = snapshot.logs || {};
+    try {
+      localStorage.setItem(KEYS.PROTOCOL, JSON.stringify(this.peptides));
+      localStorage.setItem(KEYS.LOGS, JSON.stringify(this.logs));
+    } catch (e) {
+      console.error("[Storage] Erro ao restaurar snapshot:", e);
     }
-    this.peptides = backupData.protocol;
-    this.logs = backupData.logs && typeof backupData.logs === "object" ? backupData.logs : {};
-    if (Array.isArray(backupData.patients)) {
-      this.patients = backupData.patients;
-      this.savePatients(this.patients);
-    }
-    if (backupData.profile) {
-      this.profile = { ...this.profile, ...backupData.profile };
-      this.saveProfile(this.profile);
-    }
-    this.saveProtocol();
-    this.saveLogs();
     this.notify();
+  }
+
+  exportBackup(theme = "black") {
+    return createBackupPayload(this.peptides, this.logs, theme);
+  }
+
+  importBackup(jsonString) {
+    const validation = validateAndParseBackup(jsonString);
+    if (!validation.valid) {
+      return { success: false, error: validation.error };
+    }
+
+    const snapshot = this.takeSnapshot();
+    try {
+      const clean = validation.data;
+      this.peptides = clean.protocol;
+      this.logs = clean.logs;
+
+      const resProto = this.saveProtocol();
+      const resLogs = this.saveLogs();
+
+      if (!resProto.success || !resLogs.success) {
+        throw new Error(resProto.error || resLogs.error || "Falha na escrita local");
+      }
+
+      this.notify();
+      return {
+        success: true,
+        stats: validation.stats,
+        theme: clean.theme
+      };
+    } catch (err) {
+      console.error("[Storage] Erro ao importar backup. Executando rollback:", err);
+      this.restoreSnapshot(snapshot);
+      return { success: false, error: err.message };
+    }
   }
 
   subscribe(listener) {
@@ -186,9 +191,7 @@ class StorageService {
       try {
         listener({
           peptides: this.peptides,
-          logs: this.logs,
-          patients: this.patients,
-          profile: this.profile
+          logs: this.logs
         });
       } catch (e) {
         console.error("[Storage] Listener error:", e);

@@ -35,6 +35,10 @@ class ThemeService {
     return this.currentTheme;
   }
 
+  async toggle() {
+    return this.toggleTheme();
+  }
+
   async toggleTheme() {
     const next = this.currentTheme === "branco" ? "preto" : "branco";
     this.applyTheme(next);
@@ -43,15 +47,15 @@ class ThemeService {
   }
 
   async applyTheme(themeName) {
-    this.currentTheme = themeName === "branco" ? "branco" : "preto";
+    this.currentTheme = (themeName === "branco" || themeName === "light") ? "branco" : "preto";
     const isLight = this.currentTheme === "branco";
 
     if (isLight) {
-      document.body.classList.remove("theme-dark");
+      document.body.classList.remove("theme-dark", "dark");
       document.body.classList.add("theme-light", "light");
     } else {
       document.body.classList.remove("theme-light", "light");
-      document.body.classList.add("theme-dark");
+      document.body.classList.add("theme-dark", "dark");
     }
 
     // Atualizar meta theme-color do HTML

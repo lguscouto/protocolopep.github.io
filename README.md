@@ -1,86 +1,86 @@
 # 🧪 Protocolo PEP · App Android (Local-First)
 
-Aplicativo Android nativo para acompanhamento de protocolos de peptídeos, cálculo de reconstituição e registro diário de doses, construído com arquitetura **100% Local-First** e suporte aos **temas Branco e Preto (Dark/OLED)**.
+Aplicativo Android nativo para acompanhamento de protocolos de peptídeos, cálculo de reconstituição e registro diário de doses, construído com arquitetura **100% Local-First**, segurança matemática auditável e suporte aos **temas Branco e Preto OLED**.
 
 ---
 
 ## 📱 Destaques do Projeto
 
-- **⚡ 100% Local-First (Offline por Padrão):** O app funciona instantaneamente no dispositivo sem necessidade de conexão com a internet ou telas de bloqueio de login. Todos os dados são salvos localmente com máxima privacidade e velocidade.
+- **⚡ 100% Local-First (Offline por Padrão):** O app opera totalmente sem internet. Nenhum dado de saúde é transmitido a servidores remotos.
+- **🛡️ Confiabilidade Matemática & Domínio Puro:**
+  - Conversões canônicas em microgramas (`mcg`) e mililitros (`mL`) com validação de capacidade da seringa U-100.
+  - Motor de agenda puro (`src/domain/schedule.js`) que unifica a visão "Hoje", a grade "Semana" e os alarmes.
 - **🌓 Temas Branco e Preto (Light & True Black OLED):**
-  - **Tema Preto:** Fundo preto puro (`#080C11`), ideal para telas OLED/AMOLED com economia de bateria e conforto visual noturno.
-  - **Tema Branco:** Fundo limpo e alto contraste para leitura clara em ambientes iluminados.
-  - **Sincronização Nativa da Barra de Status:** A cor da Status Bar do Android se adapta dinamicamente ao tema ativo.
-- **🔔 Notificações Locais Confiáveis:** Integração nativa com o `AlarmManager` do Android via `@capacitor/local-notifications`, disparando lembretes de doses no horário configurado mesmo com o app fechado.
-- **📳 Haptic Feedback:** Vibrações táteis nativas (`@capacitor/haptics`) ao marcar doses e interagir com o app.
-- **💉 Calculadora de Reconstituição Interativa:** Cálculo automático de concentração (mg/ml), doses por frasco, unidades UI e renderização interativa do êmbolo da seringa U-100 em SVG.
-- **📅 Acompanhamento Semanal & Histórico:** Grade semanal interativa com marcação de doses e histórico cronológico completo.
-- **💾 Backup & Restauração JSON:** Exportação e importação offline de todo o protocolo e histórico para arquivos `.json`.
+  - **Tema Preto:** Fundo preto puro (`#080C11`), otimizado para telas OLED com economia de bateria.
+  - **Tema Branco:** Alto contraste e excelente legibilidade sob luz solar.
+  - **Sincronização Nativa da Barra de Status:** A cor da Status Bar se adapta dinamicamente.
+- **🔔 Notificações Nativas Confiáveis:** Integração com o `AlarmManager` do Android via `@capacitor/local-notifications`, agendando horizonte concreto e permitindo cancelamento real de pendências.
+- **📳 Haptic Feedback:** Vibrações táteis nativas (`@capacitor/haptics`) ao marcar aplicações e interagir com seletores.
+- **💾 Backup Seguro e Reversível:** Validação de esquema com contagens de prévia, limites de payload e transação atômica com rollback.
+- **⚖️ Aviso Médico & Não Prescrição:** Primeiro uso limpo, disclaimers em destaque e respeito às diretrizes de aplicativos de saúde.
 
 ---
 
-## 🛠️ Tecnologias Utilizadas
-
-- **Frontend:** JavaScript Moderno (ES2020+), CSS3 Modular, HTML5
-- **Build Tool:** [Vite](https://vitejs.dev/)
-- **Mobile Engine:** [Capacitor 6](https://capacitorjs.com/)
-- **Nativo Android:** Gradle, Java/Kotlin, Android SDK (minSdk 24 até API 34/35)
-
----
-
-## 📂 Estrutura do Projeto
+## 📂 Estrutura Arquitetural
 
 ```
 pep-protocol/
 ├── src/
-│   ├── main.js                  # Controlador principal da aplicação
-│   ├── css/                     # Estilos modulares (variables, base, components, animated-bg)
-│   ├── data/                    # Catálogo offline e paleta de cores
-│   └── services/
-│       ├── storage.js           # Gerenciador de persistência Local-First
-│       ├── theme.js             # Gerenciador de temas e Status Bar nativa
-│       ├── notifications.js     # Agendador nativo de alarmes e notificações
-│       ├── haptics.js           # Feedback tátil nativo
-│       └── app-bridge.js        # Tratamento do ciclo de vida e botão Voltar
-├── public/                      # Ícones e assets estáticos
+│   ├── main.js                  # Controlador e interface
+│   ├── domain/                  # Lógica pura e auditável (sem dependência do DOM)
+│   │   ├── calculator.js        # Reconstituição, conversão e limites
+│   │   ├── schedule.js          # Motor de agendamento e ocorrências
+│   │   ├── protocol.js          # Entidades e sanitização
+│   │   ├── backup.js            # Validação e serialização segura
+│   │   └── migrations.js        # Migrações de dados idempotentes
+│   ├── services/
+│   │   ├── storage.js           # Persistência observável com rollback
+│   │   ├── notifications.js     # Alarmes e notificações locais
+│   │   ├── theme.js             # Gerenciamento de temas e status bar
+│   │   ├── haptics.js           # Feedback tátil nativo
+│   │   └── app-bridge.js        # Botão voltar e ciclo de vida
+│   ├── ui/
+│   │   └── dom.js               # Construtor seguro e sanitização anti-XSS
+│   ├── data/                    # Catálogo nominal de referência
+│   └── css/                     # Estilos modulares e responsivos
+├── tests/
+│   └── unit/                    # Suíte completa de testes com Vitest
+├── docs/
+│   ├── PRODUCT.md               # Contrato do produto e público-alvo
+│   └── PRIVACY.md               # Política de privacidade Local-First
 ├── android/                     # Projeto nativo Android (Gradle)
-├── capacitor.config.json        # Configuração do Capacitor
-├── vite.config.js               # Configuração do Vite Bundler
-└── package.json                 # Dependências e scripts
+└── .github/workflows/           # CI automatizado com GitHub Actions
 ```
 
 ---
 
-## 🚀 Como Executar e Compilar
+## 🚀 Executar, Testar e Compilar
 
-### Pré-requisitos
-- [Node.js](https://nodejs.org/) (v18+)
-- [Android SDK](https://developer.android.com/studio) instalado
-
-### Instalação
+### 1. Instalação
 ```bash
 npm install
 ```
 
-### Desenvolvimento Web
+### 2. Executar Suíte de Testes Unitários
 ```bash
-npm run dev
+npm test
 ```
 
-### Compilar Web & Sincronizar com Android
+### 3. Compilar Web & Sincronizar com Android
 ```bash
 npm run cap:sync
 ```
 
-### Compilar APK Nativo Debug
+### 4. Compilar APK Debug Android
 ```bash
 npm run android:build
 ```
-O arquivo APK gerado estará em:
+O APK gerado estará em:
 `android/app/build/outputs/apk/debug/app-debug.apk`
 
 ---
 
-## 📄 Licença
-
-Distribuído sob licença livre para uso e customização.
+## 📄 Governança & Políticas
+- [Contrato do Produto](docs/PRODUCT.md)
+- [Política de Privacidade](docs/PRIVACY.md)
+- [Diretrizes de Engenharia](AGENTS.md)

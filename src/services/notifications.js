@@ -1,10 +1,12 @@
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { Capacitor } from "@capacitor/core";
 import { haptics } from "./haptics.js";
+import { isScheduledOnDate } from "../domain/schedule.js";
 
 const NOTIF_CFG_KEY = "pep_notif_config";
+export const NOTIF_CHANNEL_ID = "pep_lembretes";
 
-class NotificationService {
+export class NotificationService {
   constructor() {
     this.cfg = { enabled: false, sound: true, summary: "" };
     this.audioCtx = null;
@@ -21,12 +23,11 @@ class NotificationService {
     if (Capacitor.isNativePlatform()) {
       try {
         await LocalNotifications.createChannel({
-          id: "pep_lembretes",
+          id: NOTIF_CHANNEL_ID,
           name: "Lembretes de Peptídeos",
           description: "Notificações para horários de doses do seu protocolo",
           importance: 5,
           visibility: 1,
-          sound: "beep.wav",
           vibration: true
         });
       } catch (e) {
@@ -55,7 +56,7 @@ class NotificationService {
         return false;
       }
     } else {
-      return "Notification" in window && Notification.permission === "granted";
+      return typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted";
     }
   }
 
@@ -67,7 +68,7 @@ class NotificationService {
       } catch (e) {
         return false;
       }
-    } else if ("Notification" in window) {
+    } else if (typeof window !== "undefined" && "Notification" in window) {
       try {
         const perm = await Notification.requestPermission();
         return perm === "granted";
@@ -80,7 +81,7 @@ class NotificationService {
 
   ensureAudio() {
     try {
-      if (!this.audioCtx) {
+      if (!this.audioCtx && typeof window !== "undefined") {
         const AC = window.AudioContext || window.webkitAudioContext;
         if (AC) this.audioCtx = new AC();
       }
@@ -120,8 +121,8 @@ class NotificationService {
               id: Math.floor(Math.random() * 100000),
               title: title,
               body: body,
-              channelId: "pep_lembretes",
-              smallIcon: "ic_stat_icon_config_sample",
+              channelId: NOTIF_CHANNEL_ID,
+              smallIcon: "ic_stat_pep",
               iconColor: "#2CC5C0"
             }
           ]
@@ -131,7 +132,7 @@ class NotificationService {
         console.warn("[Notif] Send instant error:", err);
       }
     } else {
-      if ("Notification" in window && Notification.permission === "granted") {
+      if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
         new Notification(title, { body, icon: "icon-192.png" });
         if (this.cfg.sound) {
           this.beep();
@@ -141,62 +142,91 @@ class NotificationService {
     }
   }
 
-  async schedulePeptideReminders(peptides) {
-    if (!this.cfg.enabled) return;
+  async cancelAllPepReminders() {
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const pending = await LocalNotifications.getPending();
+        if (pending.notifications && pending.notifications.length > 0) {
+          await LocalNotifications.cancel(pending);
+          console.log(`[Notif] ${pending.notifications.length} lembretes pendentes cancelados.`);
+        }
+      } catch (e) {
+        console.warn("[Notif] Erro ao cancelar lembretes pendentes:", e);
+      }
+    }
+  }
+
+  async schedulePeptideReminders(peptides = []) {
+    // 1. Sempre cancelar lembretes anteriores
+    await this.cancelAllPepReminders();
+
+    // Se notificações estiverem desativadas, parar por aqui garantindo que nada fique agendado
+    if (!this.cfg.enabled) {
+      return { scheduledCount: 0 };
+    }
 
     if (Capacitor.isNativePlatform()) {
       try {
-        // Cancelar agendamentos anteriores
-        const pending = await LocalNotifications.getPending();
-        if (pending.notifications.length > 0) {
-          await LocalNotifications.cancel(pending);
-        }
-
         const notifications = [];
-        let idCount = 100;
+        let notifId = 1000;
+        const now = new Date();
 
-        for (const p of peptides) {
-          if (!p.time) continue;
-          const [h, m] = p.time.split(":").map(Number);
-          if (isNaN(h) || isNaN(m)) continue;
+        // Agendar horizonte de 14 dias concretos baseados no motor puro de agenda
+        for (let dayOffset = 0; dayOffset < 14; dayOffset++) {
+          const targetDate = new Date(now);
+          targetDate.setDate(now.getDate() + dayOffset);
 
-          // Agendamento diário recorrente nativo no Android
-          notifications.push({
-            id: idCount++,
-            title: `Hora do ${p.name}`,
-            body: `${p.ui} UI ${p.dose ? "· " + p.dose : ""}${p.sub ? " (" + p.sub + ")" : ""}`,
-            channelId: "pep_lembretes",
-            schedule: {
-              on: {
-                hour: h,
-                minute: m
-              },
-              allowWhileIdle: true
-            },
-            smallIcon: "ic_stat_icon_config_sample",
-            iconColor: "#2CC5C0"
-          });
+          for (const p of peptides) {
+            if (!isScheduledOnDate(p, targetDate)) continue;
+
+            const timeList = Array.isArray(p.times) && p.times.length > 0
+              ? p.times
+              : (p.time ? [p.time] : []);
+
+            for (const tStr of timeList) {
+              const [h, m] = tStr.split(":").map(Number);
+              if (isNaN(h) || isNaN(m)) continue;
+
+              const schedDate = new Date(targetDate);
+              schedDate.setHours(h, m, 0, 0);
+
+              // Apenas agendar se a data/hora for futura
+              if (schedDate.getTime() > now.getTime()) {
+                notifications.push({
+                  id: notifId++,
+                  title: `Lembrete: ${p.name}`,
+                  body: `${p.ui ? p.ui + " UI · " : ""}${p.dose ? p.dose : "Dose programada"}${p.sub ? " (" + p.sub + ")" : ""}`,
+                  channelId: NOTIF_CHANNEL_ID,
+                  schedule: { at: schedDate, allowWhileIdle: true },
+                  smallIcon: "ic_stat_pep",
+                  iconColor: "#2CC5C0"
+                });
+              }
+            }
+          }
         }
 
-        // Resumo diário
+        // Resumo diário nos próximos 14 dias
         if (this.cfg.summary) {
           const [sh, sm] = this.cfg.summary.split(":").map(Number);
           if (!isNaN(sh) && !isNaN(sm)) {
-            notifications.push({
-              id: 999,
-              title: "Protocolo PEP · Resumo do Dia",
-              body: "Verifique suas doses de peptídeos programadas para hoje.",
-              channelId: "pep_lembretes",
-              schedule: {
-                on: {
-                  hour: sh,
-                  minute: sm
-                },
-                allowWhileIdle: true
-              },
-              smallIcon: "ic_stat_icon_config_sample",
-              iconColor: "#2CC5C0"
-            });
+            for (let dayOffset = 0; dayOffset < 14; dayOffset++) {
+              const sumDate = new Date(now);
+              sumDate.setDate(now.getDate() + dayOffset);
+              sumDate.setHours(sh, sm, 0, 0);
+
+              if (sumDate.getTime() > now.getTime()) {
+                notifications.push({
+                  id: notifId++,
+                  title: "Protocolo PEP · Resumo Diário",
+                  body: "Verifique suas doses de peptídeos programadas para hoje.",
+                  channelId: NOTIF_CHANNEL_ID,
+                  schedule: { at: sumDate, allowWhileIdle: true },
+                  smallIcon: "ic_stat_pep",
+                  iconColor: "#2CC5C0"
+                });
+              }
+            }
           }
         }
 
@@ -204,10 +234,15 @@ class NotificationService {
           await LocalNotifications.schedule({ notifications });
           console.log(`[Notif] ${notifications.length} lembretes nativos agendados.`);
         }
+
+        return { scheduledCount: notifications.length };
       } catch (e) {
         console.warn("[Notif] Native scheduling error:", e);
+        return { scheduledCount: 0, error: e.message };
       }
     }
+
+    return { scheduledCount: 0 };
   }
 }
 
