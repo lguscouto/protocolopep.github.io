@@ -153,7 +153,7 @@
           <div class="lab">Dose desejada por aplicação <small>Digite a dose prescrita</small></div>
         </div>
         <div style="display:flex;gap:8px;">
-          <input type="number" class="num" id="calc-dose-input" value="250" placeholder="ex: 250" step="any" />
+          <input type="number" class="num" id="calc-dose-input" placeholder="ex: 250" step="any" />
           <div class="unittoggle" id="calc-unit-toggle">
             <button class="on" data-u="mcg">mcg</button>
             <button data-u="mg">mg</button>
@@ -164,22 +164,37 @@
       <!-- Resultado e Seringa -->
       <div class="result">
         <div class="res-main">
-          <span class="big" id="calc-res-big">10</span>
+          <span class="big" id="calc-res-big">--</span>
           <span class="unit">UI</span>
         </div>
-        <div class="res-sub" id="calc-res-sub">Puxar 10 UI na seringa de insulina U-100</div>
+        <div class="res-sub" id="calc-res-sub">Informe a dose pretendida acima para calcular.</div>
 
         <div class="syringe" id="calc-syringe"></div>
 
         <div class="grid2">
           <div class="stat">
-            <div class="v" id="calc-res-conc">2.5 mg/ml</div>
+            <div class="v" id="calc-res-conc">--</div>
             <div class="k">Concentração da solução</div>
           </div>
           <div class="stat">
-            <div class="v" id="calc-res-doses">20 doses</div>
+            <div class="v" id="calc-res-doses">--</div>
             <div class="k">Rendimento estimado</div>
           </div>
+        </div>
+
+        <!-- Trilha de Auditoria e Dupla Conferência (V02) -->
+        <div class="calc-audit-card" id="calc-audit-card" style="display:none;margin-top:14px;">
+          <div class="calc-audit-header">
+            <span>🔬 Conferência Matemática Auditável</span>
+          </div>
+          <div class="calc-audit-formula" id="calc-audit-formula">--</div>
+          <div class="calc-audit-trail" id="calc-audit-trail">--</div>
+        </div>
+
+        <div style="margin-top:16px;">
+          <button type="button" class="btn-primary" id="calc-use-btn" style="width:100%;padding:13px;font-size:14px;" disabled>
+            + Usar no Protocolo
+          </button>
         </div>
 
         <div style="margin-top:14px;padding:10px 12px;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:10px;font-size:11.5px;color:var(--muted);line-height:1.4;">
@@ -209,8 +224,15 @@
       </div>
 
       <div class="panel">
-        <div style="font-weight:700;font-family:var(--display);">Protocolo PEP Android</div>
-        <div style="font-size:12px;color:var(--muted);">Versão 1.7.0 · Local-First Edition</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-weight:700;font-family:var(--display);">Protocolo PEP Android</div>
+            <div style="font-size:12px;color:var(--muted);">Versão 1.7.0 · Local-First Edition</div>
+          </div>
+          <button type="button" class="btn-ghost" id="reopen-onboarding-btn" style="font-size:11.5px;padding:6px 12px;">
+            Termos & Info
+          </button>
+        </div>
       </div>
     </section>
   </main>
@@ -290,8 +312,14 @@
           </div>
           <div>
             <label style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;">Unidades (UI)</label>
-            <input type="number" class="num" id="edit-ui" value="10" />
+            <input type="number" class="num" id="edit-ui" placeholder="ex: 10" />
           </div>
+        </div>
+
+        <!-- Detalhe do Cálculo Vinculado (V02) -->
+        <div id="modal-calc-info" style="display:none;margin-bottom:12px;padding:8px 10px;background:rgba(44,197,192,0.08);border:1px solid rgba(44,197,192,0.2);border-radius:10px;font-size:11.5px;color:var(--text);">
+          <span style="font-weight:700;color:var(--primary);">🔬 Reconstituição Vinculada:</span>
+          <div id="modal-calc-info-txt" style="margin-top:2px;font-family:monospace;color:var(--muted);">--</div>
         </div>
 
         <!-- Período: Por dia / Por semana -->

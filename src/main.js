@@ -19,6 +19,8 @@ import {
 } from "./domain/schedule.js";
 import { createPeptide, validatePeptide } from "./domain/protocol.js";
 import { escapeHtml, sanitizeColor, sanitizeId } from "./ui/dom.js";
+import { shouldShowOnboarding, showOnboarding } from "./ui/onboarding.js";
+import { createCalculationSnapshot, formatAuditTrail } from "./domain/calculation-record.js";
 
 const esc = escapeHtml;
 
@@ -32,6 +34,7 @@ const dateKey = dateToKey;
 
 let currentTab = "today";
 let editingPeptideId = null;
+let pendingCalculationSnapshot = null;
 
 async function initApp() {
   await theme.init();
@@ -41,6 +44,14 @@ async function initApp() {
 
   appBridge.init(
     () => {
+      const onboardingOverlay = document.getElementById("onboarding-overlay");
+      if (onboardingOverlay) {
+        if (!shouldShowOnboarding()) {
+          onboardingOverlay.remove();
+          return true;
+        }
+        return true; // Bloqueia saída acidental enquanto no onboarding inicial obrigatório
+      }
       const openModal = document.querySelector(".modal.on, .sheet.on, #retro-overlay[style*='flex'], #notif-modal.on");
       if (openModal) {
         closeAllModals();
@@ -56,6 +67,10 @@ async function initApp() {
       return false;
     }
   );
+
+  if (shouldShowOnboarding()) {
+    showOnboarding();
+  }
 
   const now = new Date();
   const datestrip = document.getElementById("datestrip");
@@ -277,10 +292,11 @@ function renderToday() {
           <span class="freq">· ${esc(p.freq || "")}</span>
           <span class="chip-acc">${esc(p.dose || "")}/${esc(p.per || "dia")}</span>
         </div>
-        ${(p.start || p.note || p.time) ? `
+        ${(p.start || p.note || p.time || p.calculationSnapshot) ? `
           <div class="note-line">
             ${p.time ? `<span class="note-start">⏰ ${esc(p.time)}</span>` : ""}
             ${p.start ? `<span class="note-start">início ${fmtBR(p.start)}</span>` : ""}
+            ${p.calculationSnapshot ? `<span class="note-calc" title="${esc(p.calculationSnapshot.formula || '')}">🔬 ${esc(String(p.calculationSnapshot.vialMg))}mg/${esc(String(p.calculationSnapshot.waterMl))}mL</span>` : ""}
             ${p.note ? `<span class="note-txt">${esc(p.note)}</span>` : ""}
           </div>` : ""}
       </div>
@@ -739,19 +755,38 @@ async function deletePeptide(id) {
 function setupCalculator() {
   let vialMg = 5;
   let diluentMl = 2;
-  let desiredDoseVal = 250;
+  let desiredDoseVal = NaN;
   let doseUnit = "mcg";
+  let currentCalculationSnapshot = null;
 
   const mgChips = document.querySelectorAll("#calc-mg-chips .chip");
   const mlChips = document.querySelectorAll("#calc-ml-chips .chip");
   const doseInput = document.getElementById("calc-dose-input");
   const unitBtns = document.querySelectorAll("#calc-unit-toggle button");
+  const auditCard = document.getElementById("calc-audit-card");
+  const auditFormula = document.getElementById("calc-audit-formula");
+  const auditTrail = document.getElementById("calc-audit-trail");
+  const useBtn = document.getElementById("calc-use-btn");
 
   function recalculate() {
     const resBig = document.getElementById("calc-res-big");
     const resSub = document.getElementById("calc-res-sub");
     const resConc = document.getElementById("calc-res-conc");
     const resDoses = document.getElementById("calc-res-doses");
+
+    const concentrationMgMl = (vialMg / diluentMl).toFixed(2);
+    if (resConc) resConc.textContent = `${concentrationMgMl} mg/mL`;
+
+    if (isNaN(desiredDoseVal) || desiredDoseVal <= 0) {
+      if (resBig) resBig.textContent = "--";
+      if (resSub) resSub.innerHTML = `Informe a dose pretendida acima para calcular as unidades (UI).`;
+      if (resDoses) resDoses.textContent = "--";
+      if (auditCard) auditCard.style.display = "none";
+      if (useBtn) useBtn.disabled = true;
+      currentCalculationSnapshot = null;
+      renderSyringe(0);
+      return;
+    }
 
     const result = calculateReconstitution({
       vialMg,
@@ -764,16 +799,27 @@ function setupCalculator() {
     if (!result.valid) {
       if (resBig) resBig.textContent = "--";
       if (resSub) resSub.innerHTML = `<span style="color:var(--danger)">${esc(result.error)}</span>`;
-      if (resConc) resConc.textContent = "--";
       if (resDoses) resDoses.textContent = "--";
+      if (auditCard) auditCard.style.display = "none";
+      if (useBtn) useBtn.disabled = true;
+      currentCalculationSnapshot = null;
       renderSyringe(0);
       return;
     }
 
     if (resBig) resBig.textContent = result.unitsUI;
     if (resSub) resSub.innerHTML = `Puxar <b>${result.unitsUI} UI</b> na seringa de insulina U-100 (${result.volumeMl} mL)`;
-    if (resConc) resConc.textContent = `${result.concentrationMgMl} mg/mL`;
     if (resDoses) resDoses.textContent = `${result.dosesPerVial} doses`;
+
+    currentCalculationSnapshot = createCalculationSnapshot(result);
+
+    if (auditCard) {
+      auditCard.style.display = "flex";
+      if (auditFormula) auditFormula.textContent = result.formula;
+      if (auditTrail) auditTrail.textContent = formatAuditTrail(currentCalculationSnapshot);
+    }
+
+    if (useBtn) useBtn.disabled = false;
 
     renderSyringe(result.unitsUI);
   }
@@ -823,8 +869,9 @@ function setupCalculator() {
 
   if (doseInput) {
     doseInput.addEventListener("input", (e) => {
-      const val = parseFloat(e.target.value);
-      desiredDoseVal = !isNaN(val) ? val : 0;
+      const raw = e.target.value.trim();
+      const val = parseFloat(raw);
+      desiredDoseVal = raw !== "" && !isNaN(val) ? val : NaN;
       recalculate();
     });
   }
@@ -853,6 +900,18 @@ function setupCalculator() {
       recalculate();
     });
   });
+
+  if (useBtn) {
+    useBtn.addEventListener("click", () => {
+      if (!currentCalculationSnapshot) return;
+      haptics.medium();
+      openEditModal(null, {
+        dose: `${desiredDoseVal} ${doseUnit}`,
+        ui: currentCalculationSnapshot.unitsUI,
+        calculationSnapshot: currentCalculationSnapshot
+      });
+    });
+  }
 
   recalculate();
 }
@@ -1050,6 +1109,14 @@ function setupModalsAndButtons() {
       };
       reader.readAsText(file);
       e.target.value = "";
+    });
+  }
+
+  const reopenOnboardingBtn = document.getElementById("reopen-onboarding-btn");
+  if (reopenOnboardingBtn) {
+    reopenOnboardingBtn.addEventListener("click", () => {
+      haptics.light();
+      showOnboarding({ isReview: true });
     });
   }
 
@@ -1289,7 +1356,7 @@ function renderColorSwatches() {
   });
 }
 
-function openEditModal(pepId) {
+function openEditModal(pepId, prefillData = null) {
   editingPeptideId = pepId;
   const modal = document.getElementById("edit-modal");
   const title = document.getElementById("modal-title");
@@ -1300,13 +1367,26 @@ function openEditModal(pepId) {
 
   if (title) title.textContent = p ? `Editar ${p.name}` : "Adicionar Peptídeo";
 
-  document.getElementById("edit-name").value = p ? p.name : "";
-  document.getElementById("edit-sub").value = p ? p.sub || "" : "";
-  document.getElementById("edit-dose").value = p ? p.dose || "" : "";
-  document.getElementById("edit-ui").value = p ? p.ui || 10 : 10;
+  document.getElementById("edit-name").value = p ? p.name : (prefillData?.name || "");
+  document.getElementById("edit-sub").value = p ? p.sub || "" : (prefillData?.sub || "");
+  document.getElementById("edit-dose").value = p ? p.dose || "" : (prefillData?.dose || "");
+  document.getElementById("edit-ui").value = p && p.ui !== undefined ? p.ui : (prefillData?.ui !== undefined ? prefillData.ui : "");
   document.getElementById("edit-perday").value = p ? p.perDay || 1 : 1;
   document.getElementById("edit-time").value = p ? p.time || "" : "";
   document.getElementById("edit-note").value = p ? p.note || "" : "";
+
+  pendingCalculationSnapshot = p ? (p.calculationSnapshot || null) : (prefillData?.calculationSnapshot || null);
+
+  const calcInfoEl = document.getElementById("modal-calc-info");
+  const calcInfoTxt = document.getElementById("modal-calc-info-txt");
+  if (calcInfoEl && calcInfoTxt) {
+    if (pendingCalculationSnapshot) {
+      calcInfoEl.style.display = "block";
+      calcInfoTxt.textContent = `${pendingCalculationSnapshot.vialMg} mg frasco / ${pendingCalculationSnapshot.waterMl} mL diluente ➔ ${pendingCalculationSnapshot.doseVal} ${pendingCalculationSnapshot.doseUnit} (${pendingCalculationSnapshot.unitsUI} UI)`;
+    } else {
+      calcInfoEl.style.display = "none";
+    }
+  }
 
   selectedPer = p?.per || "dia";
   document.querySelectorAll("#edit-period-toggle button").forEach((b) => {
@@ -1366,8 +1446,8 @@ function saveEditedPeptide() {
 
   const sub = document.getElementById("edit-sub").value.trim();
   const dose = document.getElementById("edit-dose").value.trim();
-  const ui = parseInt(document.getElementById("edit-ui").value) || 10;
-  const perDay = parseInt(document.getElementById("edit-perday").value) || 1;
+  const ui = parseInt(document.getElementById("edit-ui").value, 10) || 0;
+  const perDay = parseInt(document.getElementById("edit-perday").value, 10) || 1;
   const time = document.getElementById("edit-time").value.trim();
   const note = document.getElementById("edit-note").value.trim();
 
@@ -1408,7 +1488,8 @@ function saveEditedPeptide() {
     perDay,
     time,
     note,
-    accent: selectedColor
+    accent: selectedColor,
+    calculationSnapshot: pendingCalculationSnapshot
   });
 
   const peptides = [...storage.getPeptides()];
@@ -1435,6 +1516,7 @@ function saveEditedPeptide() {
 
   const modal = document.getElementById("edit-modal");
   if (modal) modal.classList.remove("on");
+  switchTab("today");
   haptics.success();
 }
 

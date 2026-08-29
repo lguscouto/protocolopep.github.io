@@ -86,7 +86,8 @@ export function createPeptide(data = {}) {
     times,
     time,
     note,
-    accent
+    accent,
+    calculationSnapshot: data.calculationSnapshot ? { ...data.calculationSnapshot } : null
   };
 }
 

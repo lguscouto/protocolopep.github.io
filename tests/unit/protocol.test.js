@@ -43,9 +43,37 @@ describe("Protocol Domain", () => {
     expect(pep.id).toMatch(/^pep_/);
   });
 
+  it("cria peptídeo preservando calculationSnapshot imutável e auditável", () => {
+    const snap = {
+      id: "calc_123",
+      algorithmVersion: "1",
+      vialMg: 5,
+      waterMl: 2,
+      doseVal: 250,
+      doseUnit: "mcg",
+      concentrationMgMl: 2.5,
+      volumeMl: 0.1,
+      unitsUI: 10,
+      formula: "250 mcg / 2.5 mg/mL = 0.1 mL (10 UI)"
+    };
+
+    const pep = createPeptide({
+      name: "BPC-157",
+      dose: "250 mcg",
+      ui: 10,
+      calculationSnapshot: snap
+    });
+
+    expect(pep.calculationSnapshot).toBeDefined();
+    expect(pep.calculationSnapshot.vialMg).toBe(5);
+    expect(pep.calculationSnapshot.unitsUI).toBe(10);
+    expect(pep.calculationSnapshot.formula).toContain("250 mcg");
+  });
+
   it("valida objeto de peptídeo", () => {
     expect(validatePeptide(null).valid).toBe(false);
     expect(validatePeptide({ name: "" }).valid).toBe(false);
     expect(validatePeptide({ name: "CJC-1295" }).valid).toBe(true);
   });
 });
+
