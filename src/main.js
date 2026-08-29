@@ -30,6 +30,8 @@ import { setupReportModal } from "./ui/report-preview.js";
 import { setupDiagnosticsModal } from "./ui/diagnostics.js";
 import { setupInventoryUI } from "./ui/inventory.js";
 import { calculateRemainingDoses, getExpirationStatus } from "./domain/inventory.js";
+import { setupInjectionSitesUI } from "./ui/injection-sites.js";
+import { getNextSite, getLastUsedSite } from "./domain/injection-sites.js";
 
 const esc = escapeHtml;
 
@@ -44,6 +46,8 @@ const dateKey = dateToKey;
 let currentTab = "today";
 let editingPeptideId = null;
 let pendingCalculationSnapshot = null;
+let inventoryUI = null;
+let sitesUI = null;
 
 async function initApp() {
   await theme.init();
@@ -81,10 +85,10 @@ async function initApp() {
     showOnboarding();
   }
 
-  const now = new Date();
-  const datestrip = document.getElementById("datestrip");
-  if (datestrip) {
-    datestrip.textContent = now.toLocaleDateString("pt-BR", {
+  const dateEl = document.getElementById("header-date");
+  if (dateEl) {
+    const today = new Date();
+    dateEl.textContent = today.toLocaleDateString("pt-BR", {
       weekday: "long",
       day: "numeric",
       month: "long"
@@ -98,6 +102,13 @@ async function initApp() {
   inventoryUI = setupInventoryUI({
     storage,
     onInventoryChange: () => {
+      renderToday();
+      renderWeek();
+    }
+  });
+  sitesUI = setupInjectionSitesUI({
+    storage,
+    onSitesChange: () => {
       renderToday();
       renderWeek();
     }
@@ -251,6 +262,9 @@ function switchTab(tabId) {
     if (inventoryUI && typeof inventoryUI.renderInventoryList === "function") {
       inventoryUI.renderInventoryList();
     }
+    if (sitesUI && typeof sitesUI.updateSummary === "function") {
+      sitesUI.updateSummary();
+    }
   }
 }
 
@@ -353,6 +367,16 @@ function renderToday() {
       vialBadgeHTML = `<span class="chip-acc" style="background:rgba(14,133,128,0.12);color:var(--accent);font-size:11px;font-weight:700;" title="Saldo: ${activeVial.remainingMcg} mcg">🧪 ~${remDoses} doses${expAlert}</span>`;
     }
 
+    const configuredSites = storage.getSites();
+    let siteBadgeHTML = "";
+    if (configuredSites && configuredSites.length > 0) {
+      const lastUsed = getLastUsedSite(storage.getLogs(), p.id);
+      const nextSite = getNextSite(configuredSites, lastUsed ? lastUsed.site : null);
+      if (nextSite) {
+        siteBadgeHTML = `<span class="chip-acc" style="background:rgba(99,102,241,0.12);color:var(--primary);font-size:11px;font-weight:700;" title="Próximo sítio na sua rotação">📍 ${esc(nextSite)}</span>`;
+      }
+    }
+
     card.innerHTML = `
       <div class="info">
         <div class="nm"><span class="dot"></span>${esc(p.name)}${moon}</div>
@@ -362,6 +386,7 @@ function renderToday() {
           <span class="freq">· ${esc(p.freq || "")}</span>
           <span class="chip-acc">${esc(p.dose || "")}/${esc(p.per || "dia")}</span>
           ${vialBadgeHTML}
+          ${siteBadgeHTML}
         </div>
         ${(p.start || p.note || p.time || p.calculationSnapshot) ? `
           <div class="note-line">
@@ -425,12 +450,17 @@ function toggleDose(id) {
     delete rec[id];
     haptics.light();
   } else {
+    const configuredSites = storage.getSites();
+    const lastUsed = getLastUsedSite(logs, p.id);
+    const currentSite = getNextSite(configuredSites, lastUsed ? lastUsed.site : null) || "";
+
     createdLog = createDoseLog({
       peptideId: p.id,
       scheduledDate: todayK,
       time: nowTime,
       dose: p.dose,
       ui: p.ui,
+      site: currentSite,
       retroactive: false
     });
     rec[id] = [createdLog];
@@ -485,6 +515,10 @@ function addSingleDose(id) {
 
   if (arr.length >= perDay) return;
 
+  const configuredSites = storage.getSites();
+  const lastUsed = getLastUsedSite(logs, p.id);
+  const currentSite = getNextSite(configuredSites, lastUsed ? lastUsed.site : null) || "";
+
   const nowTime = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
   const doseLog = createDoseLog({
     peptideId: p.id,
@@ -492,6 +526,7 @@ function addSingleDose(id) {
     time: nowTime,
     dose: p.dose,
     ui: p.ui,
+    site: currentSite,
     retroactive: false
   });
   arr.push(doseLog);
@@ -694,6 +729,7 @@ function openRetroLogModal(prefillDate = null, prefillPepId = null) {
   }
 
   const pepSelect = document.getElementById("retro-pep-select");
+  const siteSelect = document.getElementById("retro-site-select");
   const dateInput = document.getElementById("retro-date-input");
   const timeInput = document.getElementById("retro-time-input");
   const doseInput = document.getElementById("retro-dose-input");
@@ -726,6 +762,15 @@ function openRetroLogModal(prefillDate = null, prefillPepId = null) {
         if (doseInput) doseInput.value = p.dose || "";
         if (uiInput) uiInput.value = p.ui !== undefined && p.ui !== null ? p.ui : "";
       }
+      if (siteSelect) {
+        const configuredSites = storage.getSites();
+        const lastUsed = getLastUsedSite(storage.getLogs(), selectedId);
+        const nextSite = getNextSite(configuredSites, lastUsed ? lastUsed.site : null);
+        siteSelect.innerHTML = `
+          <option value="">-- Não especificado --</option>
+          ${configuredSites.map((s) => `<option value="${esc(s)}" ${s === nextSite ? "selected" : ""}>${esc(s)}</option>`).join("")}
+        `;
+      }
     };
 
     pepSelect.onchange = updateDoseAndUi;
@@ -739,6 +784,7 @@ function openRetroLogModal(prefillDate = null, prefillPepId = null) {
 
 function saveRetroLog() {
   const pepSelect = document.getElementById("retro-pep-select");
+  const siteSelect = document.getElementById("retro-site-select");
   const dateInput = document.getElementById("retro-date-input");
   const timeInput = document.getElementById("retro-time-input");
   const doseInput = document.getElementById("retro-dose-input");
@@ -746,6 +792,7 @@ function saveRetroLog() {
   const noteInput = document.getElementById("retro-note-input");
 
   const pepId = pepSelect ? pepSelect.value : "";
+  const siteVal = siteSelect ? siteSelect.value.trim() : "";
   const dKey = dateInput ? dateInput.value : "";
   const timeVal = timeInput ? timeInput.value : "12:00";
   const doseVal = doseInput ? doseInput.value.trim() : "";
@@ -775,6 +822,7 @@ function saveRetroLog() {
     dose: doseVal,
     ui: uiVal,
     note: noteVal,
+    site: siteVal,
     retroactive: dKey < todayKey
   });
 
@@ -851,6 +899,7 @@ function renderHistory() {
               dose: norm.dose || p.dose || "",
               ui: norm.ui || p.ui || 0,
               note: norm.note || "",
+              site: norm.site || "",
               retroactive: norm.retroactive,
               idx: idx
             });
@@ -868,6 +917,7 @@ function renderHistory() {
             dose: norm.dose || p.dose || "",
             ui: norm.ui || p.ui || 0,
             note: norm.note || "",
+            site: norm.site || "",
             retroactive: norm.retroactive,
             idx: 0
           });
@@ -894,7 +944,7 @@ function renderHistory() {
                 <div class="hist-info">
                   <div class="hist-name">${esc(e.name)}</div>
                   <div class="hist-dose">
-                    ${esc(e.dose)}${e.ui ? ` · ${esc(String(e.ui))} UI` : ""}
+                    ${esc(e.dose)}${e.ui ? ` · ${esc(String(e.ui))} UI` : ""}${e.site ? ` · 📍 ${esc(e.site)}` : ""}
                   </div>
                   ${e.note ? `<div class="hist-note">💬 ${esc(e.note)}</div>` : ""}
                 </div>

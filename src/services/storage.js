@@ -1,12 +1,14 @@
 import { DEFAULT_PROTOCOL } from "../data/default-library.js";
-import { migrateAppState, migratePeptides, migrateLogs, migrateInventory, CURRENT_SCHEMA_VERSION } from "../domain/migrations.js";
+import { migrateAppState, migratePeptides, migrateLogs, migrateInventory, migrateSites, CURRENT_SCHEMA_VERSION } from "../domain/migrations.js";
 import { validateAndParseBackup, createBackupPayload } from "../domain/backup.js";
 import { debitVialDose, creditVialDose } from "../domain/inventory.js";
+import { getDefaultSites } from "../domain/injection-sites.js";
 
 const KEYS = {
   PROTOCOL: "pep_protocol_v2",
   LOGS: "pep_logs_v2",
   INVENTORY: "pep_inventory_v2",
+  SITES: "pep_sites_v2",
   SETTINGS: "pep_settings_v2",
   ROLLBACK_SNAPSHOT: "pep_rollback_snapshot",
   LEGACY_PROTO: "peptideos-protocolo-v1",
@@ -18,6 +20,7 @@ export class StorageService {
     this.peptides = [];
     this.logs = {};
     this.inventory = [];
+    this.sites = getDefaultSites();
     this.listeners = new Set();
   }
 
@@ -76,18 +79,34 @@ export class StorageService {
         this.inventory = [];
       }
 
+      // 4. Carregar Sítios de Aplicação (V11)
+      let storedSites = localStorage.getItem(KEYS.SITES);
+      if (storedSites) {
+        try {
+          const raw = JSON.parse(storedSites);
+          this.sites = migrateSites(raw);
+        } catch (e) {
+          this.sites = getDefaultSites();
+        }
+      } else {
+        this.sites = getDefaultSites();
+        this.saveSites();
+      }
+
     } catch (err) {
       console.error("[Storage] Erro ao inicializar storage local:", err);
       this.peptides = migratePeptides(DEFAULT_PROTOCOL);
       this.logs = {};
       this.inventory = [];
+      this.sites = getDefaultSites();
     }
 
     this.notify();
     return {
       peptides: this.peptides,
       logs: this.logs,
-      inventory: this.inventory
+      inventory: this.inventory,
+      sites: this.sites
     };
   }
 
@@ -218,11 +237,38 @@ export class StorageService {
     return { success: true, vial: creditRes.vial, creditedMcg: creditRes.creditedMcg };
   }
 
+  getSites() {
+    return Array.isArray(this.sites) ? [...this.sites] : getDefaultSites();
+  }
+
+  setSites(newSites) {
+    const backupSnapshot = this.takeSnapshot();
+    this.sites = migrateSites(newSites);
+    const res = this.saveSites();
+    if (!res.success) {
+      this.restoreSnapshot(backupSnapshot);
+      return res;
+    }
+    this.notify();
+    return { success: true, sites: this.sites };
+  }
+
+  saveSites() {
+    try {
+      localStorage.setItem(KEYS.SITES, JSON.stringify(this.sites));
+      return { success: true };
+    } catch (e) {
+      console.error("[Storage] Erro ao salvar sítios:", e);
+      return { success: false, error: e.message || "Falha ao gravar sítios no armazenamento local" };
+    }
+  }
+
   takeSnapshot() {
     return {
       peptides: JSON.parse(JSON.stringify(this.peptides)),
       logs: JSON.parse(JSON.stringify(this.logs)),
-      inventory: JSON.parse(JSON.stringify(this.inventory))
+      inventory: JSON.parse(JSON.stringify(this.inventory)),
+      sites: JSON.parse(JSON.stringify(this.sites))
     };
   }
 
@@ -231,10 +277,12 @@ export class StorageService {
     this.peptides = snapshot.peptides || [];
     this.logs = snapshot.logs || {};
     this.inventory = snapshot.inventory || [];
+    this.sites = snapshot.sites || getDefaultSites();
     try {
       localStorage.setItem(KEYS.PROTOCOL, JSON.stringify(this.peptides));
       localStorage.setItem(KEYS.LOGS, JSON.stringify(this.logs));
       localStorage.setItem(KEYS.INVENTORY, JSON.stringify(this.inventory));
+      localStorage.setItem(KEYS.SITES, JSON.stringify(this.sites));
     } catch (e) {
       console.error("[Storage] Erro ao restaurar snapshot:", e);
     }
@@ -242,7 +290,7 @@ export class StorageService {
   }
 
   exportBackup(theme = "black") {
-    return createBackupPayload(this.peptides, this.logs, theme, this.inventory);
+    return createBackupPayload(this.peptides, this.logs, theme, this.inventory, this.sites);
   }
 
   importBackup(jsonString) {
@@ -257,13 +305,15 @@ export class StorageService {
       this.peptides = clean.protocol;
       this.logs = clean.logs;
       this.inventory = clean.inventory || [];
+      this.sites = clean.sites || getDefaultSites();
 
       const resProto = this.saveProtocol();
       const resLogs = this.saveLogs();
       const resInv = this.saveInventory();
+      const resSites = this.saveSites();
 
-      if (!resProto.success || !resLogs.success || !resInv.success) {
-        throw new Error(resProto.error || resLogs.error || resInv.error || "Falha na escrita local");
+      if (!resProto.success || !resLogs.success || !resInv.success || !resSites.success) {
+        throw new Error(resProto.error || resLogs.error || resInv.error || resSites.error || "Falha na escrita local");
       }
 
       this.notify();
@@ -290,7 +340,8 @@ export class StorageService {
         listener({
           peptides: this.peptides,
           logs: this.logs,
-          inventory: this.inventory
+          inventory: this.inventory,
+          sites: this.sites
         });
       } catch (e) {
         console.error("[Storage] Listener error:", e);

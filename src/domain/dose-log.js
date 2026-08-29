@@ -86,6 +86,7 @@ export function normalizeDoseEntry(entry, scheduledDate, peptideId) {
     dose: typeof entry === "object" ? entry.dose || "" : "",
     ui: typeof entry === "object" ? entry.ui || 0 : 0,
     note: typeof entry === "object" ? entry.note || "" : "",
+    site: typeof entry === "object" ? entry.site || "" : "",
     retroactive: scheduledDate < dateToKey(new Date())
   });
 }

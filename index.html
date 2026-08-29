@@ -234,6 +234,19 @@
         <div id="inventory-list"></div>
       </div>
 
+      <!-- Card de Rotação de Sítios de Aplicação (V11) -->
+      <div class="panel" style="margin-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:12px;">
+          <div>
+            <div style="font-size:14px;font-weight:700;">Rotação de Sítios</div>
+            <div style="font-size:12px;color:var(--muted);" id="sites-summary-text">Sequência de locais para alternância</div>
+          </div>
+          <button type="button" class="btn-primary" id="open-sites-settings-btn" style="width:auto;font-size:11.5px;padding:6px 12px;white-space:nowrap;flex-shrink:0;">
+            ⚙ Configurar
+          </button>
+        </div>
+      </div>
+
       <!-- Card de Lembretes & Notificações (V05) -->
       <div class="panel" style="margin-bottom:16px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
@@ -531,6 +544,11 @@
           <select class="txt" id="retro-pep-select" style="width:100%;"></select>
         </div>
 
+        <div style="margin-bottom:12px;">
+          <label for="retro-site-select" style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;">Sítio de Aplicação (Rotação)</label>
+          <select class="txt" id="retro-site-select" style="width:100%;"></select>
+        </div>
+
         <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:10px;margin-bottom:12px;">
           <div>
             <label for="retro-date-input" style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;">Data da Aplicação</label>
@@ -768,6 +786,38 @@
       <div class="sheet-foot">
         <button type="button" class="btn-primary" onclick="document.getElementById('vial-history-modal').classList.remove('on')" style="width:100%;">
           Fechar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Configuração de Sítios de Aplicação (V11) -->
+  <div class="modal" id="sites-modal" role="dialog" aria-modal="true" aria-labelledby="sites-modal-title">
+    <div class="sheet" style="max-width:480px;">
+      <div class="sheet-head">
+        <div>
+          <div class="sheet-title" id="sites-modal-title">Rotação de Sítios</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px;">Alterne a ordem sequencial das suas aplicações</div>
+        </div>
+        <button type="button" class="sheet-x" id="sites-modal-close" aria-label="Fechar configuração de sítios">✕</button>
+      </div>
+      <div class="sheet-body" style="max-height:60vh;overflow-y:auto;">
+        <div id="sites-manage-list" style="margin-bottom:16px;"></div>
+
+        <div style="font-size:12px;font-weight:700;margin-bottom:6px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">Adicionar Novo Sítio</div>
+        <div style="display:flex;gap:8px;margin-bottom:16px;">
+          <input type="text" id="sites-new-name" placeholder="Ex: Glúteo Esquerdo" style="flex:1;padding:8px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--surface2);color:var(--text);font-size:13px;" maxlength="50">
+          <button type="button" class="btn-primary" id="sites-add-btn" style="width:auto;padding:8px 16px;font-size:13px;white-space:nowrap;">
+            + Adicionar
+          </button>
+        </div>
+      </div>
+      <div class="sheet-foot" style="display:flex;justify-content:space-between;gap:8px;">
+        <button type="button" class="btn-subtle" id="sites-reset-btn" style="font-size:12px;padding:8px 12px;width:auto;">
+          Restaurar Padrão
+        </button>
+        <button type="button" class="btn-primary" onclick="document.getElementById('sites-modal').classList.remove('on')" style="font-size:12px;padding:8px 20px;width:auto;">
+          Concluído
         </button>
       </div>
     </div>
