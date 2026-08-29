@@ -1,0 +1,91 @@
+/**
+ * Domínio de Log e Rastreabilidade de Doses / Aplicações (V03)
+ */
+
+import { dateToKey } from "./schedule.js";
+
+export function createDoseLog(data = {}) {
+  const todayKey = dateToKey(new Date());
+  const scheduledDate = data.scheduledDate || todayKey;
+
+  // Se a data agendada for anterior a hoje, ou data.retroactive for true, marca explicitamente como retroativo
+  const isPastDate = scheduledDate < todayKey;
+  const isRetroactive = Boolean(data.retroactive !== undefined ? data.retroactive : isPastDate);
+
+  const now = new Date();
+  let takenAt = data.takenAt;
+  if (!takenAt) {
+    if (isRetroactive && scheduledDate) {
+      // Se for retroativo e não informou takenAt completo, compõe a data com o horário
+      const timeStr = data.time || "12:00";
+      const [hh, mm] = timeStr.split(":").map(Number);
+      const pastD = new Date(`${scheduledDate}T${String(hh || 12).padStart(2, "0")}:${String(mm || 0).padStart(2, "0")}:00`);
+      takenAt = pastD.toISOString();
+    } else {
+      takenAt = now.toISOString();
+    }
+  }
+
+  const time = data.time || (takenAt ? new Date(takenAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "12:00");
+
+  return {
+    id: data.id && typeof data.id === "string" && data.id.startsWith("log_")
+      ? data.id
+      : `log_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`,
+    peptideId: data.peptideId ? String(data.peptideId) : "",
+    scheduledDate,
+    takenAt,
+    time,
+    dose: data.dose ? String(data.dose).trim() : "",
+    ui: Number.isFinite(Number(data.ui)) ? Number(data.ui) : 0,
+    note: data.note ? String(data.note).trim() : "",
+    site: data.site ? String(data.site).trim() : "",
+    retroactive: isRetroactive,
+    createdAt: data.createdAt || now.toISOString(),
+    editedAt: data.editedAt || null
+  };
+}
+
+export function validateDoseLog(log) {
+  if (!log || typeof log !== "object") {
+    return { valid: false, error: "Objeto de log de dose inválido ou nulo." };
+  }
+
+  if (!log.peptideId) {
+    return { valid: false, error: "peptideId é obrigatório no log de dose." };
+  }
+
+  if (!log.scheduledDate || !/^\d{4}-\d{2}-\d{2}$/.test(log.scheduledDate)) {
+    return { valid: false, error: "scheduledDate inválida (deve ser formato YYYY-MM-DD)." };
+  }
+
+  const todayKey = dateToKey(new Date());
+  if (log.scheduledDate > todayKey) {
+    return { valid: false, error: "Não é permitido registrar aplicações em datas futuras." };
+  }
+
+  return { valid: true };
+}
+
+export function normalizeDoseEntry(entry, scheduledDate, peptideId) {
+  if (!entry) return null;
+
+  if (typeof entry === "object" && entry.id && entry.peptideId) {
+    return createDoseLog({
+      ...entry,
+      scheduledDate: entry.scheduledDate || scheduledDate,
+      peptideId: entry.peptideId || peptideId
+    });
+  }
+
+  // Objeto legado (ex: { time: "08:30" } ou { taken: true })
+  return createDoseLog({
+    peptideId,
+    scheduledDate,
+    time: typeof entry === "object" ? entry.time || "12:00" : "12:00",
+    dose: typeof entry === "object" ? entry.dose || "" : "",
+    ui: typeof entry === "object" ? entry.ui || 0 : 0,
+    note: typeof entry === "object" ? entry.note || "" : "",
+    retroactive: scheduledDate < dateToKey(new Date())
+  });
+}

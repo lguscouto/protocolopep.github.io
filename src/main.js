@@ -21,6 +21,7 @@ import { createPeptide, validatePeptide } from "./domain/protocol.js";
 import { escapeHtml, sanitizeColor, sanitizeId } from "./ui/dom.js";
 import { shouldShowOnboarding, showOnboarding } from "./ui/onboarding.js";
 import { createCalculationSnapshot, formatAuditTrail } from "./domain/calculation-record.js";
+import { createDoseLog, validateDoseLog, normalizeDoseEntry } from "./domain/dose-log.js";
 
 const esc = escapeHtml;
 
@@ -352,7 +353,15 @@ function toggleDose(id) {
     delete rec[id];
     haptics.light();
   } else {
-    rec[id] = { t: nowTime, name: p.name, dose: p.dose, per: p.per };
+    const doseLog = createDoseLog({
+      peptideId: p.id,
+      scheduledDate: todayK,
+      time: nowTime,
+      dose: p.dose,
+      ui: p.ui,
+      retroactive: false
+    });
+    rec[id] = [doseLog];
     haptics.success();
   }
 
@@ -387,13 +396,22 @@ function addSingleDose(id) {
   if (Array.isArray(curr)) {
     arr = [...curr];
   } else if (curr && typeof curr === "object") {
-    arr = [{ t: curr.t || "", name: p.name, dose: p.dose, per: p.per }];
+    const norm = normalizeDoseEntry(curr, todayK, id);
+    if (norm) arr = [norm];
   }
 
   if (arr.length >= perDay) return;
 
   const nowTime = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-  arr.push({ t: nowTime, name: p.name, dose: p.dose, per: p.per });
+  const doseLog = createDoseLog({
+    peptideId: p.id,
+    scheduledDate: todayK,
+    time: nowTime,
+    dose: p.dose,
+    ui: p.ui,
+    retroactive: false
+  });
+  arr.push(doseLog);
   rec[id] = arr;
   logs[todayK] = rec;
 
@@ -448,17 +466,11 @@ function renderWeek() {
   const sunday = new Date(now);
   sunday.setDate(now.getDate() - currentDow);
 
-  const daysOfWeek = [];
+  const weekDays = [];
   for (let i = 0; i < 7; i++) {
     const d = new Date(sunday);
     d.setDate(sunday.getDate() + i);
-    daysOfWeek.push({
-      date: d,
-      key: dateKey(d),
-      dow: i,
-      dayNum: d.getDate(),
-      isToday: i === currentDow
-    });
+    weekDays.push(d);
   }
 
   let tableHtml = `
@@ -466,10 +478,10 @@ function renderWeek() {
       <thead>
         <tr>
           <th style="text-align:left;padding-left:8px;">Peptídeo</th>
-          ${daysOfWeek.map((d) => `
-            <th class="${d.isToday ? "today" : ""}">
-              <span class="dw">${DAY_W[d.dow]}</span>
-              <span class="dn">${d.dayNum}</span>
+          ${weekDays.map((d, i) => `
+            <th class="${i === currentDow ? "today" : ""}">
+              <span class="dw">${DAY_W[i]}</span>
+              <span class="dn">${d.getDate()}</span>
             </th>
           `).join("")}
         </tr>
@@ -483,20 +495,21 @@ function renderWeek() {
       tableHtml += `
         <tr>
           <td class="pep" data-id="${sanitizeId(p.id)}" style="color:${sanitizeColor(p.accent, "var(--primary)")};cursor:pointer;" title="Toque para editar ou excluir">${esc(p.name)}</td>
-          ${daysOfWeek.map((d) => {
-            const isScheduled = isScheduledOnDate(p, d.date);
-            const rec = logs[d.key] || {};
+          ${weekDays.map((d) => {
+            const dK = dateKey(d);
+            const isScheduled = isScheduledOnDate(p, d);
+            const rec = logs[dK] || {};
             const taken = dosesTaken(rec, p.id) > 0;
 
             if (!isScheduled && !taken) {
-              return `<td class="${d.isToday ? "col-today" : ""}"><span class="cell na">·</span></td>`;
+              return `<td class="${dK === dateKey(now) ? "col-today" : ""}"><span class="cell na">·</span></td>`;
             }
 
             return `
-              <td class="${d.isToday ? "col-today" : ""}">
+              <td class="${dK === dateKey(now) ? "col-today" : ""}">
                 <span class="cell tap ${taken ? "" : "empty"}"
                       data-pep="${sanitizeId(p.id)}"
-                      data-date="${sanitizeId(d.key)}"
+                      data-date="${sanitizeId(dK)}"
                       style="${taken ? `background:${sanitizeColor(p.accent, "var(--primary)")}` : ""}">
                   ${taken ? "✓" : ""}
                 </span>
@@ -523,29 +536,178 @@ function renderWeek() {
   });
 }
 
-function toggleDateLog(id, dKey) {
+async function toggleDateLog(id, dKey) {
   const peptides = storage.getPeptides();
   const logs = storage.getLogs();
   const rec = { ...(logs[dKey] || {}) };
   const p = peptides.find((x) => x.id === id);
   if (!p) return;
 
-  if (dosesTaken(rec, id) > 0) {
-    delete rec[id];
-    haptics.light();
-  } else {
-    rec[id] = { t: "", name: p.name, dose: p.dose, per: p.per, retro: true };
-    haptics.medium();
+  const todayK = dateKey(new Date());
+
+  if (dKey > todayK) {
+    alert("Não é permitido registrar aplicações em datas futuras.");
+    return;
   }
 
-  if (Object.keys(rec).length === 0) delete logs[dKey];
-  else logs[dKey] = rec;
+  if (dKey < todayK) {
+    if (dosesTaken(rec, id) > 0) {
+      const confirmed = await showConfirmDialog({
+        title: "Remover Dose Passada",
+        message: `Deseja remover a aplicação de ${p.name} registrada em ${fmtBR(dKey)}?`,
+        confirmText: "Remover",
+        isDanger: true
+      });
+      if (!confirmed) return;
+
+      delete rec[id];
+      if (Object.keys(rec).length === 0) delete logs[dKey];
+      else logs[dKey] = rec;
+
+      const res = storage.setLogs(logs);
+      if (!res.success) {
+        alert("Erro ao remover registro: " + (res.error || "Armazenamento indisponível"));
+        return;
+      }
+      haptics.light();
+      renderToday();
+      renderWeek();
+      renderHistory();
+    } else {
+      openRetroLogModal(dKey, id);
+    }
+    return;
+  }
+
+  toggleDose(id);
+}
+
+function openRetroLogModal(prefillDate = null, prefillPepId = null) {
+  const modal = document.getElementById("retro-log-modal");
+  if (!modal) return;
+
+  const peptides = storage.getPeptides();
+  if (peptides.length === 0) {
+    alert("Adicione pelo menos um peptídeo ao seu protocolo antes de registrar aplicações.");
+    return;
+  }
+
+  const pepSelect = document.getElementById("retro-pep-select");
+  const dateInput = document.getElementById("retro-date-input");
+  const timeInput = document.getElementById("retro-time-input");
+  const doseInput = document.getElementById("retro-dose-input");
+  const uiInput = document.getElementById("retro-ui-input");
+  const noteInput = document.getElementById("retro-note-input");
+
+  const todayKey = dateKey(new Date());
+
+  if (dateInput) {
+    dateInput.max = todayKey;
+    dateInput.value = prefillDate || todayKey;
+  }
+
+  const nowTime = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  if (timeInput) {
+    timeInput.value = nowTime;
+  }
+
+  if (pepSelect) {
+    pepSelect.innerHTML = peptides.map((p) => `
+      <option value="${esc(p.id)}" ${p.id === prefillPepId ? "selected" : ""}>
+        ${esc(p.name)} (${esc(p.dose || "")}${p.ui ? ` · ${esc(String(p.ui))} UI` : ""})
+      </option>
+    `).join("");
+
+    const updateDoseAndUi = () => {
+      const selectedId = pepSelect.value;
+      const p = peptides.find((x) => x.id === selectedId);
+      if (p) {
+        if (doseInput) doseInput.value = p.dose || "";
+        if (uiInput) uiInput.value = p.ui !== undefined && p.ui !== null ? p.ui : "";
+      }
+    };
+
+    pepSelect.onchange = updateDoseAndUi;
+    updateDoseAndUi();
+  }
+
+  if (noteInput) noteInput.value = "";
+
+  modal.classList.add("on");
+}
+
+function saveRetroLog() {
+  const pepSelect = document.getElementById("retro-pep-select");
+  const dateInput = document.getElementById("retro-date-input");
+  const timeInput = document.getElementById("retro-time-input");
+  const doseInput = document.getElementById("retro-dose-input");
+  const uiInput = document.getElementById("retro-ui-input");
+  const noteInput = document.getElementById("retro-note-input");
+
+  const pepId = pepSelect ? pepSelect.value : "";
+  const dKey = dateInput ? dateInput.value : "";
+  const timeVal = timeInput ? timeInput.value : "12:00";
+  const doseVal = doseInput ? doseInput.value.trim() : "";
+  const uiVal = uiInput ? parseInt(uiInput.value, 10) || 0 : 0;
+  const noteVal = noteInput ? noteInput.value.trim() : "";
+
+  if (!pepId) {
+    alert("Selecione um peptídeo.");
+    return;
+  }
+
+  if (!dKey) {
+    alert("Selecione a data da aplicação.");
+    return;
+  }
+
+  const todayKey = dateKey(new Date());
+  if (dKey > todayKey) {
+    alert("Não é permitido registrar aplicações em datas futuras.");
+    return;
+  }
+
+  const logEntry = createDoseLog({
+    peptideId: pepId,
+    scheduledDate: dKey,
+    time: timeVal,
+    dose: doseVal,
+    ui: uiVal,
+    note: noteVal,
+    retroactive: dKey < todayKey
+  });
+
+  const validRes = validateDoseLog(logEntry);
+  if (!validRes.valid) {
+    alert(validRes.error || "Dados inválidos para registro de dose.");
+    return;
+  }
+
+  const logs = storage.getLogs();
+  const rec = { ...(logs[dKey] || {}) };
+  const curr = rec[pepId];
+  let arr = [];
+  if (Array.isArray(curr)) {
+    arr = [...curr];
+  } else if (curr && typeof curr === "object") {
+    const norm = normalizeDoseEntry(curr, dKey, pepId);
+    if (norm) arr = [norm];
+  }
+
+  arr.push(logEntry);
+  rec[pepId] = arr;
+  logs[dKey] = rec;
 
   const res = storage.setLogs(logs);
   if (!res.success) {
-    alert("Erro ao gravar registro: " + (res.error || "Armazenamento indisponível"));
+    alert("Erro ao gravar aplicação: " + (res.error || "Armazenamento indisponível"));
     return;
   }
+
+  const modal = document.getElementById("retro-log-modal");
+  if (modal) modal.classList.remove("on");
+
+  haptics.success();
   renderToday();
   renderWeek();
   renderHistory();
@@ -570,33 +732,45 @@ function renderHistory() {
     const pepEntries = [];
     Object.keys(rec).forEach((pId) => {
       const p = peptides.find((x) => x.id === pId) || {
-        name: (rec[pId] && !Array.isArray(rec[pId]) && rec[pId].name) || pId,
+        name: pId,
         accent: "#2CC5C0"
       };
       const val = rec[pId];
 
       if (Array.isArray(val)) {
         val.forEach((doseItem, idx) => {
+          const norm = normalizeDoseEntry(doseItem, dk, pId);
+          if (norm) {
+            totalDoses++;
+            pepEntries.push({
+              id: pId,
+              name: p.name || norm.name || pId,
+              accent: p.accent,
+              time: norm.time || "12:00",
+              dose: norm.dose || p.dose || "",
+              ui: norm.ui || p.ui || 0,
+              note: norm.note || "",
+              retroactive: norm.retroactive,
+              idx: idx
+            });
+          }
+        });
+      } else if (val && typeof val === "object") {
+        const norm = normalizeDoseEntry(val, dk, pId);
+        if (norm) {
           totalDoses++;
           pepEntries.push({
             id: pId,
-            name: doseItem.name || p.name,
+            name: p.name || norm.name || pId,
             accent: p.accent,
-            time: doseItem.t || "Retroativo",
-            dose: doseItem.dose || p.dose || "",
-            idx: idx
+            time: norm.time || "12:00",
+            dose: norm.dose || p.dose || "",
+            ui: norm.ui || p.ui || 0,
+            note: norm.note || "",
+            retroactive: norm.retroactive,
+            idx: 0
           });
-        });
-      } else if (val && typeof val === "object") {
-        totalDoses++;
-        pepEntries.push({
-          id: pId,
-          name: val.name || p.name,
-          accent: p.accent,
-          time: val.t || (val.retro ? "Retroativo" : ""),
-          dose: val.dose || p.dose || "",
-          idx: 0
-        });
+        }
       }
     });
 
@@ -618,9 +792,15 @@ function renderHistory() {
                 <span class="hist-dot" style="background:${sanitizeColor(e.accent, "var(--primary)")};"></span>
                 <div class="hist-info">
                   <div class="hist-name">${esc(e.name)}</div>
-                  ${e.dose ? `<div class="hist-dose">${esc(e.dose)}</div>` : ""}
+                  <div class="hist-dose">
+                    ${esc(e.dose)}${e.ui ? ` · ${esc(String(e.ui))} UI` : ""}
+                  </div>
+                  ${e.note ? `<div class="hist-note">💬 ${esc(e.note)}</div>` : ""}
                 </div>
-                <span class="hist-time">${esc(e.time || "Feito")}</span>
+                <div class="hist-time">
+                  <span>${esc(e.time)}</span>
+                  ${e.retroactive ? `<span class="badge-retro">Retroativo</span>` : ""}
+                </div>
                 <button class="hist-rm" data-date="${sanitizeId(dk)}" data-pep="${sanitizeId(e.id)}" data-idx="${e.idx}" title="Excluir dose">✕</button>
               </div>
             `).join("")}
@@ -632,17 +812,25 @@ function renderHistory() {
   if (countEl) countEl.textContent = `${totalDoses} doses registradas`;
 
   if (totalDoses === 0) {
-    container.innerHTML = `<div class="empty-note">Nenhum registro de dose ainda.<br>Marque suas aplicações no <b>Dashboard</b> ou na <b>Semana</b>.</div>`;
+    container.innerHTML = `<div class="empty-note">Nenhum registro de dose ainda.<br>Marque suas aplicações no <b>Dashboard</b>, <b>Semana</b> ou toque em <b>+ Retroativo</b>.</div>`;
   } else {
     container.innerHTML = html;
   }
 
   container.querySelectorAll(".hist-rm").forEach((btn) => {
-    btn.addEventListener("click", () => {
+    btn.addEventListener("click", async () => {
       const dKey = btn.dataset.date;
       const pId = btn.dataset.pep;
       const idx = parseInt(btn.dataset.idx, 10);
-      deleteHistoryEntry(dKey, pId, idx);
+      const confirmed = await showConfirmDialog({
+        title: "Excluir Registro",
+        message: "Deseja realmente remover este registro de dose do histórico?",
+        confirmText: "Excluir",
+        isDanger: true
+      });
+      if (confirmed) {
+        deleteHistoryEntry(dKey, pId, idx);
+      }
     });
   });
 }
@@ -976,6 +1164,27 @@ function setupModalsAndButtons() {
       if (editingPeptideId) {
         deletePeptide(editingPeptideId);
       }
+    });
+  }
+
+  const histRetroBtn = document.getElementById("hist-retro-btn");
+  if (histRetroBtn) {
+    histRetroBtn.addEventListener("click", () => {
+      openRetroLogModal();
+      haptics.light();
+    });
+  }
+
+  const retroSaveBtn = document.getElementById("retro-save");
+  if (retroSaveBtn) {
+    retroSaveBtn.addEventListener("click", saveRetroLog);
+  }
+
+  const retroCancelBtn = document.getElementById("retro-cancel");
+  if (retroCancelBtn) {
+    retroCancelBtn.addEventListener("click", () => {
+      closeAllModals();
+      haptics.light();
     });
   }
 

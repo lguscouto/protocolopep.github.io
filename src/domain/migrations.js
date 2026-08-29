@@ -1,8 +1,5 @@
-/**
- * Migrações de Esquema de Dados Local-First (Idempotentes)
- */
-
 import { createPeptide } from "./protocol.js";
+import { normalizeDoseEntry } from "./dose-log.js";
 
 export const CURRENT_SCHEMA_VERSION = 2;
 
@@ -23,9 +20,12 @@ export function migrateLogs(rawLogs = {}) {
     cleaned[dateKey] = {};
     Object.entries(rec).forEach(([pepId, doseData]) => {
       if (Array.isArray(doseData)) {
-        cleaned[dateKey][pepId] = doseData.filter((d) => d && typeof d === "object");
+        cleaned[dateKey][pepId] = doseData
+          .map((d) => normalizeDoseEntry(d, dateKey, pepId))
+          .filter(Boolean);
       } else if (doseData && typeof doseData === "object") {
-        cleaned[dateKey][pepId] = doseData;
+        const norm = normalizeDoseEntry(doseData, dateKey, pepId);
+        if (norm) cleaned[dateKey][pepId] = [norm];
       }
     });
   });
