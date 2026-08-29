@@ -171,8 +171,8 @@ function initAnimatedBg() {
 }
 
 function setupNavigation() {
-  const navBtns = document.querySelectorAll(".nav button");
-  navBtns.forEach((btn) => {
+  const navBtns = Array.from(document.querySelectorAll(".nav button"));
+  navBtns.forEach((btn, index) => {
     btn.addEventListener("click", () => {
       const tab = btn.dataset.tab;
       if (tab) {
@@ -180,6 +180,38 @@ function setupNavigation() {
         switchTab(tab);
       }
     });
+
+    btn.addEventListener("keydown", (e) => {
+      let targetIndex = null;
+      if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        targetIndex = (index + 1) % navBtns.length;
+      } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        targetIndex = (index - 1 + navBtns.length) % navBtns.length;
+      } else if (e.key === "Home") {
+        targetIndex = 0;
+      } else if (e.key === "End") {
+        targetIndex = navBtns.length - 1;
+      }
+
+      if (targetIndex !== null) {
+        e.preventDefault();
+        const nextBtn = navBtns[targetIndex];
+        nextBtn.focus();
+        const tab = nextBtn.dataset.tab;
+        if (tab) switchTab(tab);
+      }
+    });
+  });
+
+  // Listener global de acessibilidade para tecla Escape fechar modais
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      const openModal = document.querySelector(".modal.on, .sheet.on, #retro-overlay[style*='flex']");
+      if (openModal) {
+        closeAllModals();
+        haptics.light();
+      }
+    }
   });
 }
 
@@ -193,7 +225,10 @@ function switchTab(tabId) {
   if (activeView) activeView.classList.add("on");
 
   document.querySelectorAll(".nav button").forEach((btn) => {
-    btn.classList.toggle("on", btn.dataset.tab === tabId);
+    const isSelected = btn.dataset.tab === tabId;
+    btn.classList.toggle("on", isSelected);
+    btn.setAttribute("aria-selected", isSelected ? "true" : "false");
+    btn.setAttribute("tabindex", isSelected ? "0" : "-1");
   });
 
   if (tabId === "today") renderToday();

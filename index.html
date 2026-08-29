@@ -2,33 +2,33 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#080C11">
   <link rel="icon" type="image/png" href="/icon-192.png">
   <title>Protocolo PEP</title>
 </head>
 <body class="theme-dark">
   <!-- Fundo Animado de Moléculas -->
-  <div class="bg-mol" id="bg-molecules"></div>
+  <div class="bg-mol" id="bg-molecules" aria-hidden="true"></div>
 
   <!-- Topbar Fixa -->
   <header class="topbar">
     <div class="brand">
-      <img src="/icon-192.png" alt="Logo" class="logo" />
+      <img src="/icon-192.png" alt="Logo Protocolo PEP" class="logo" />
       <div>
         <div class="t">Protocolo <span>PEP</span></div>
         <div class="datestrip" id="datestrip">Hoje</div>
       </div>
     </div>
     <div class="acct">
-      <button class="icon-b" id="notif-btn" title="Lembretes e Notificações" aria-label="Notificações">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <button class="icon-b" id="notif-btn" title="Lembretes e Notificações" aria-label="Lembretes e Notificações">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
           <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
         </svg>
       </button>
-      <button class="icon-b" id="theme-btn" title="Alternar Tema (Branco / Preto)" aria-label="Tema">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <button class="icon-b" id="theme-btn" title="Alternar Tema (Branco / Preto)" aria-label="Alternar Tema">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
         </svg>
       </button>
@@ -36,23 +36,23 @@
   </header>
 
   <!-- Conteúdo Principal do App -->
-  <main class="app">
+  <main class="app" id="main-content">
     <!-- ABA: HOJE / DASHBOARD -->
-    <section class="view on" id="view-today">
+    <section class="view on" id="view-today" role="tabpanel" aria-labelledby="tab-today">
       <!-- Banner Informativo / Feedback -->
       <div class="dash-banner" id="dash-banner">
         <a href="mailto:lguscouto@gmail.com?subject=Protocolo%20PEP%20%E2%80%94%20Sugest%C3%A3o%20%2F%20Feedback&body=Ol%C3%A1%2C%0A%0AGostaria%20de%20enviar%20o%20seguinte%20feedback%20%2F%20sugest%C3%A3o%20para%20o%20Protocolo%20PEP%3A%0A%0A%0A---%0AVers%C3%A3o%20do%20App%3A%201.7.0%0ADispositivo%3A%20Android" class="dash-banner-content" id="dash-banner-link" target="_blank" rel="noopener noreferrer" title="Toque para enviar sugestões ou feedback por e-mail" aria-label="Enviar sugestão ou feedback por e-mail">
-          <span class="dash-banner-icon">📢</span>
+          <span class="dash-banner-icon" aria-hidden="true">📢</span>
           <span class="dash-banner-text">Toda opinião importa! <b>Fale conosco ou envie sugestões</b></span>
         </a>
         <button type="button" class="dash-banner-close" id="dash-banner-close" aria-label="Fechar banner">✕</button>
       </div>
 
-      <div class="eyebrow">Seu Protocolo</div>
+      <div class="eyebrow" id="today-heading">Seu Protocolo</div>
       
       <!-- Hero Card: Progresso & Estatísticas -->
-      <div class="dash-hero" id="dash-hero">
-        <div class="dash-hero-ring-wrap">
+      <div class="dash-hero" id="dash-hero" aria-label="Progresso de doses do dia">
+        <div class="dash-hero-ring-wrap" aria-hidden="true">
           <svg class="dash-ring" viewBox="0 0 44 44">
             <circle class="dash-ring-bg" cx="22" cy="22" r="18" />
             <circle class="dash-ring-circle" id="ring-circle" cx="22" cy="22" r="18" />
@@ -65,29 +65,29 @@
         </div>
       </div>
 
-      <div id="today-cards"></div>
+      <div id="today-cards" role="region" aria-live="polite"></div>
 
-      <button class="add-pep" id="add-pep-btn">
-        <span>+</span> Adicionar Peptídeo ao Protocolo
+      <button type="button" class="add-pep" id="add-pep-btn" aria-label="Adicionar Novo Peptídeo ao Protocolo">
+        <span aria-hidden="true">+</span> Adicionar Peptídeo ao Protocolo
       </button>
 
       <!-- Barra de Ações Rápidas do Dashboard -->
-      <div class="dash-actions-wrap">
+      <div class="dash-actions-wrap" role="toolbar" aria-label="Ações Rápidas">
         <div class="dash-actions-grid">
-          <button type="button" class="dash-action-btn" id="dash-share-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          <button type="button" class="dash-action-btn" id="dash-share-btn" aria-label="Compartilhar resumo do dia">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
             <span>Compartilhar</span>
           </button>
-          <button type="button" class="dash-action-btn" id="dash-export-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <button type="button" class="dash-action-btn" id="dash-export-btn" aria-label="Exportar backup dos dados">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             <span>Exportar</span>
           </button>
-          <button type="button" class="dash-action-btn" id="dash-import-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <button type="button" class="dash-action-btn" id="dash-import-btn" aria-label="Importar backup de dados">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
             <span>Importar</span>
           </button>
-          <button type="button" class="dash-action-btn" id="dash-calc-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="16" y1="14" x2="16" y2="18"/><path d="M16 10h.01M12 10h.01M8 10h.01M12 14h.01M8 14h.01M12 18h.01M8 18h.01"/></svg>
+          <button type="button" class="dash-action-btn" id="dash-calc-btn" aria-label="Abrir calculadora de reconstituição">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="16" y1="14" x2="16" y2="18"/><path d="M16 10h.01M12 10h.01M8 10h.01M12 14h.01M8 14h.01M12 18h.01M8 18h.01"/></svg>
             <span>Calculadora</span>
           </button>
         </div>
@@ -101,27 +101,27 @@
     </section>
 
     <!-- ABA: SEMANA -->
-    <section class="view" id="view-week">
+    <section class="view" id="view-week" role="tabpanel" aria-labelledby="tab-week">
       <div class="eyebrow">Grade Semanal</div>
-      <div class="panel" id="week-table-wrap"></div>
+      <div class="panel" id="week-table-wrap" role="region" aria-label="Tabela de doses da semana"></div>
     </section>
 
     <!-- ABA: HISTÓRICO -->
-    <section class="view" id="view-history">
+    <section class="view" id="view-history" role="tabpanel" aria-labelledby="tab-history">
       <div class="eyebrow-row" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px;">
         <div>
           <div class="eyebrow" style="margin:0;">Histórico de Doses</div>
           <div class="hist-count" id="history-count" style="font-size:11.5px;color:var(--muted);font-weight:600;margin-top:2px;"></div>
         </div>
-        <button type="button" class="btn-ghost" id="hist-retro-btn" style="font-size:12px;padding:6px 12px;border:1px solid var(--border2);border-radius:8px;">
+        <button type="button" class="btn-ghost" id="hist-retro-btn" style="font-size:12px;padding:6px 12px;border:1px solid var(--border2);border-radius:8px;" aria-label="Adicionar registro de dose retroativo">
           + Retroativo
         </button>
       </div>
-      <div id="history-list"></div>
+      <div id="history-list" role="feed" aria-label="Lista de doses históricas"></div>
     </section>
 
     <!-- ABA: CALCULADORA -->
-    <section class="view" id="view-calc">
+    <section class="view" id="view-calc" role="tabpanel" aria-labelledby="tab-calc">
       <div class="eyebrow">Calculadora de Reconstituição</div>
       
       <div class="step">
@@ -209,7 +209,7 @@
     </section>
 
     <!-- ABA: CONFIGURAÇÕES & BACKUP -->
-    <section class="view" id="view-settings">
+    <section class="view" id="view-settings" role="tabpanel" aria-labelledby="tab-settings">
       <div class="eyebrow">Configurações & Lembretes</div>
 
       <!-- Card de Lembretes & Notificações (V05) -->
@@ -258,10 +258,10 @@
   </main>
 
   <!-- Bottom Navigation Bar -->
-  <nav class="nav">
-    <div class="nav-ind"></div>
-    <button class="on" data-tab="today">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <nav class="nav" role="tablist" aria-label="Navegação Principal">
+    <div class="nav-ind" aria-hidden="true"></div>
+    <button class="on" data-tab="today" role="tab" id="tab-today" aria-controls="view-today" aria-selected="true" tabindex="0">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <rect x="3" y="3" width="7" height="9" rx="1"/>
         <rect x="14" y="3" width="7" height="5" rx="1"/>
         <rect x="14" y="12" width="7" height="9" rx="1"/>
@@ -269,21 +269,21 @@
       </svg>
       Dashboard
     </button>
-    <button data-tab="week">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <button data-tab="week" role="tab" id="tab-week" aria-controls="view-week" aria-selected="false" tabindex="-1">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/>
       </svg>
       Semana
     </button>
-    <button data-tab="history">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <button data-tab="history" role="tab" id="tab-history" aria-controls="view-history" aria-selected="false" tabindex="-1">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <circle cx="12" cy="12" r="10"/>
         <polyline points="12 6 12 12 16 14"/>
       </svg>
       Histórico
     </button>
-    <button data-tab="calc">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <button data-tab="calc" role="tab" id="tab-calc" aria-controls="view-calc" aria-selected="false" tabindex="-1">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <rect x="4" y="2" width="16" height="20" rx="2"/>
         <line x1="8" y1="6" x2="16" y2="6"/>
         <line x1="16" y1="14" x2="16" y2="18"/>
@@ -291,8 +291,8 @@
       </svg>
       Calculadora
     </button>
-    <button data-tab="settings">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <button data-tab="settings" role="tab" id="tab-settings" aria-controls="view-settings" aria-selected="false" tabindex="-1">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <circle cx="12" cy="12" r="3"/>
         <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
       </svg>
@@ -301,43 +301,43 @@
   </nav>
 
   <!-- Modal: Edição de Peptídeo -->
-  <div class="modal" id="edit-modal">
+  <div class="modal" id="edit-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
     <div class="sheet">
       <div class="sheet-head">
         <div class="sheet-title" id="modal-title">Adicionar Peptídeo</div>
-        <button class="sheet-x" id="edit-close">✕</button>
+        <button type="button" class="sheet-x" id="edit-close" aria-label="Fechar editor de peptídeo">✕</button>
       </div>
       <div class="sheet-body">
         <!-- Seção de Busca na Biblioteca (Exibida no modo Adicionar) -->
         <div class="modal-lib-section" id="modal-lib-section" style="margin-bottom:14px;">
-          <label style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:6px;">Biblioteca de Peptídeos (Busca rápida)</label>
+          <label for="lib-search-input" style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:6px;">Biblioteca de Peptídeos (Busca rápida)</label>
           <input type="text" class="txt lib-search-input" id="lib-search-input" placeholder="🔍 Buscar peptídeo ou categoria..." autocomplete="off" />
-          <div class="lib-list" id="modal-lib-list"></div>
+          <div class="lib-list" id="modal-lib-list" role="listbox" aria-label="Sugestões de peptídeos"></div>
         </div>
 
         <div style="margin-bottom:12px;">
-          <label style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;">Nome do Peptídeo</label>
+          <label for="edit-name" style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;">Nome do Peptídeo</label>
           <input type="text" class="txt" id="edit-name" placeholder="ex: BPC-157" />
         </div>
 
         <div style="margin-bottom:12px;">
-          <label style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;">Subtítulo / Categoria</label>
+          <label for="edit-sub" style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;">Subtítulo / Categoria</label>
           <input type="text" class="txt" id="edit-sub" placeholder="ex: reparo tecidual" />
         </div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
           <div>
-            <label style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;">Dose (mg/mcg)</label>
+            <label for="edit-dose" style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;">Dose (mg/mcg)</label>
             <input type="text" class="txt" id="edit-dose" placeholder="ex: 250 mcg" />
           </div>
           <div>
-            <label style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;">Unidades (UI)</label>
+            <label for="edit-ui" style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;">Unidades (UI)</label>
             <input type="number" class="num" id="edit-ui" placeholder="ex: 10" />
           </div>
         </div>
 
         <!-- Detalhe do Cálculo Vinculado (V02) -->
-        <div id="modal-calc-info" style="display:none;margin-bottom:12px;padding:8px 10px;background:rgba(44,197,192,0.08);border:1px solid rgba(44,197,192,0.2);border-radius:10px;font-size:11.5px;color:var(--text);">
+        <div id="modal-calc-info" style="display:none;margin-bottom:12px;padding:8px 10px;background:rgba(44,197,192,0.08);border:1px solid rgba(44,197,192,0.2);border-radius:10px;font-size:11.5px;color:var(--text);" role="status">
           <span style="font-weight:700;color:var(--primary);">🔬 Reconstituição Vinculada:</span>
           <div id="modal-calc-info-txt" style="margin-top:2px;font-family:monospace;color:var(--muted);">--</div>
         </div>
@@ -345,7 +345,7 @@
         <!-- Período: Por dia / Por semana -->
         <div style="margin-bottom:12px;">
           <label style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:6px;">Período</label>
-          <div class="seg-control" id="edit-period-toggle">
+          <div class="seg-control" id="edit-period-toggle" role="group" aria-label="Frequência periódica">
             <button type="button" class="on" data-per="dia">Por dia</button>
             <button type="button" data-per="semana">Por semana</button>
           </div>
@@ -357,7 +357,7 @@
             <label style="font-size:12.5px;font-weight:600;color:var(--muted);">Frequência</label>
             <div class="days-preview-txt" id="edit-freq-preview">Todos os dias</div>
           </div>
-          <div class="seg-control" id="edit-freq-type-toggle">
+          <div class="seg-control" id="edit-freq-type-toggle" role="group" aria-label="Tipo de agendamento">
             <button type="button" class="on" data-type="todos">Todos os dias</button>
             <button type="button" data-type="especificos">Dias específicos</button>
             <button type="button" data-type="intervalo">A cada X dias</button>
@@ -365,14 +365,14 @@
 
           <!-- Seletor de Dias Específicos: D S T Q Q S S -->
           <div id="edit-days-wrap" style="display:none;">
-            <div class="days-grid" id="edit-days-grid">
-              <button type="button" class="day-chip" data-day="0">D</button>
-              <button type="button" class="day-chip" data-day="1">S</button>
-              <button type="button" class="day-chip" data-day="2">T</button>
-              <button type="button" class="day-chip" data-day="3">Q</button>
-              <button type="button" class="day-chip" data-day="4">Q</button>
-              <button type="button" class="day-chip" data-day="5">S</button>
-              <button type="button" class="day-chip" data-day="6">S</button>
+            <div class="days-grid" id="edit-days-grid" role="group" aria-label="Dias da semana">
+              <button type="button" class="day-chip" data-day="0" aria-label="Domingo">D</button>
+              <button type="button" class="day-chip" data-day="1" aria-label="Segunda-feira">S</button>
+              <button type="button" class="day-chip" data-day="2" aria-label="Terça-feira">T</button>
+              <button type="button" class="day-chip" data-day="3" aria-label="Quarta-feira">Q</button>
+              <button type="button" class="day-chip" data-day="4" aria-label="Quinta-feira">Q</button>
+              <button type="button" class="day-chip" data-day="5" aria-label="Sexta-feira">S</button>
+              <button type="button" class="day-chip" data-day="6" aria-label="Sábado">S</button>
             </div>
           </div>
 
@@ -380,14 +380,14 @@
           <div id="edit-interval-wrap" style="display:none;">
             <div class="interval-box">
               <div style="flex:1;">
-                <label style="display:block;font-size:11.5px;color:var(--muted2);font-weight:600;margin-bottom:4px;">A cada</label>
+                <label for="edit-interval-val" style="display:block;font-size:11.5px;color:var(--muted2);font-weight:600;margin-bottom:4px;">A cada</label>
                 <div style="display:flex;align-items:center;gap:6px;">
                   <input type="number" class="num" id="edit-interval-val" value="2" min="2" max="30" style="width:70px;" />
                   <span style="font-size:13px;color:var(--muted);font-weight:600;">dias</span>
                 </div>
               </div>
               <div style="flex:1.2;">
-                <label style="display:block;font-size:11.5px;color:var(--muted2);font-weight:600;margin-bottom:4px;">A partir de</label>
+                <label for="edit-start-date" style="display:block;font-size:11.5px;color:var(--muted2);font-weight:600;margin-bottom:4px;">A partir de</label>
                 <input type="date" class="txt" id="edit-start-date" style="padding:8px 10px;font-size:12px;" />
               </div>
             </div>
@@ -397,11 +397,11 @@
         <div style="margin-bottom:12px;">
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
             <div>
-              <label style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;">Doses por Dia</label>
+              <label for="edit-perday" style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;">Doses por Dia</label>
               <input type="number" class="num" id="edit-perday" value="1" min="1" max="6" />
             </div>
             <div>
-              <label style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;">Horário Principal</label>
+              <label for="edit-time" style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;">Horário Principal</label>
               <input type="time" class="txt" id="edit-time" />
             </div>
           </div>
@@ -413,13 +413,13 @@
         </div>
 
         <div style="margin-bottom:14px;">
-          <label style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;">Observações</label>
+          <label for="edit-note" style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;">Observações</label>
           <input type="text" class="txt" id="edit-note" placeholder="ex: em jejum pela manhã" />
         </div>
 
         <div style="margin-bottom:16px;">
           <label style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:8px;">Cor de Identificação</label>
-          <div class="swatches" id="modal-swatches"></div>
+          <div class="swatches" id="modal-swatches" role="group" aria-label="Seletor de cor"></div>
         </div>
       </div>
       <div class="sheet-foot" style="display:flex;gap:10px;">
@@ -430,11 +430,11 @@
   </div>
 
   <!-- Modal: Notificações e Lembretes (V05) -->
-  <div class="modal" id="notif-modal">
+  <div class="modal" id="notif-modal" role="dialog" aria-modal="true" aria-labelledby="notif-modal-title">
     <div class="sheet" style="max-width:480px;">
       <div class="sheet-head">
-        <div class="sheet-title">Lembretes & Alarmes Locais</div>
-        <button class="sheet-x" id="notif-close">✕</button>
+        <div class="sheet-title" id="notif-modal-title">Lembretes & Alarmes Locais</div>
+        <button type="button" class="sheet-x" id="notif-close" aria-label="Fechar lembretes">✕</button>
       </div>
       <div class="sheet-body">
         <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:12px;padding:12px 14px;margin-bottom:14px;">
@@ -450,7 +450,7 @@
         <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:12px;padding:12px 14px;margin-bottom:14px;">
           <div style="font-size:12.5px;font-weight:700;color:var(--text);margin-bottom:10px;">Opções de Notificação</div>
           
-          <label style="display:flex;align-items:flex-start;gap:10px;margin-bottom:12px;cursor:pointer;">
+          <label for="nf-discrete-toggle" style="display:flex;align-items:flex-start;gap:10px;margin-bottom:12px;cursor:pointer;">
             <input type="checkbox" id="nf-discrete-toggle" checked style="accent-color:var(--primary);width:17px;height:17px;margin-top:2px;" />
             <div>
               <div style="font-size:13px;font-weight:600;color:var(--text);">Conteúdo Discreto (Recomendado)</div>
@@ -458,7 +458,7 @@
             </div>
           </label>
 
-          <label style="display:flex;align-items:center;gap:10px;margin-bottom:12px;cursor:pointer;">
+          <label for="nf-sound-toggle" style="display:flex;align-items:center;gap:10px;margin-bottom:12px;cursor:pointer;">
             <input type="checkbox" id="nf-sound-toggle" checked style="accent-color:var(--primary);width:17px;height:17px;" />
             <div>
               <div style="font-size:13px;font-weight:600;color:var(--text);">Som e Vibração</div>
@@ -467,7 +467,7 @@
 
           <div style="padding-top:8px;border-top:1px solid var(--border2);display:flex;justify-content:space-between;align-items:center;">
             <div>
-              <div style="font-size:12.5px;font-weight:600;color:var(--text);">Resumo Diário da Manhã</div>
+              <label for="nf-summary-time" style="font-size:12.5px;font-weight:600;color:var(--text);display:block;">Resumo Diário da Manhã</label>
               <div style="font-size:11px;color:var(--muted);">Lembrete geral das doses do dia</div>
             </div>
             <input type="time" class="txt" id="nf-summary-time" style="width:110px;padding:6px 8px;font-size:12.5px;" />
@@ -492,42 +492,42 @@
   </div>
 
   <!-- Modal: Registro de Dose Retroativo / Auditável (V03) -->
-  <div class="modal" id="retro-log-modal">
+  <div class="modal" id="retro-log-modal" role="dialog" aria-modal="true" aria-labelledby="retro-modal-title">
     <div class="sheet" style="max-width:460px;">
       <div class="sheet-head">
         <div class="sheet-title" id="retro-modal-title">Registrar Aplicação</div>
-        <button class="sheet-x" id="retro-close">✕</button>
+        <button type="button" class="sheet-x" id="retro-close" aria-label="Fechar registro de aplicação">✕</button>
       </div>
       <div class="sheet-body">
         <div style="margin-bottom:12px;">
-          <label style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;">Peptídeo</label>
+          <label for="retro-pep-select" style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;">Peptídeo</label>
           <select class="txt" id="retro-pep-select" style="width:100%;"></select>
         </div>
 
         <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:10px;margin-bottom:12px;">
           <div>
-            <label style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;">Data da Aplicação</label>
+            <label for="retro-date-input" style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;">Data da Aplicação</label>
             <input type="date" class="txt" id="retro-date-input" style="padding:8px 10px;font-size:13px;" />
           </div>
           <div>
-            <label style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;">Horário</label>
+            <label for="retro-time-input" style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;">Horário</label>
             <input type="time" class="txt" id="retro-time-input" style="padding:8px 10px;font-size:13px;" />
           </div>
         </div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
           <div>
-            <label style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;">Dose</label>
+            <label for="retro-dose-input" style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;">Dose</label>
             <input type="text" class="txt" id="retro-dose-input" placeholder="ex: 250 mcg" />
           </div>
           <div>
-            <label style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;">Unidades (UI)</label>
+            <label for="retro-ui-input" style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;">Unidades (UI)</label>
             <input type="number" class="num" id="retro-ui-input" placeholder="ex: 10" />
           </div>
         </div>
 
         <div style="margin-bottom:14px;">
-          <label style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;">Observações / Motivo</label>
+          <label for="retro-note-input" style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;">Observações / Motivo</label>
           <input type="text" class="txt" id="retro-note-input" placeholder="ex: esqueci de anotar ontem" />
         </div>
 
@@ -543,25 +543,25 @@
   </div>
 
   <!-- Modal: Prévia de Compartilhamento Seguro (V04) -->
-  <div class="modal" id="share-preview-modal">
+  <div class="modal" id="share-preview-modal" role="dialog" aria-modal="true" aria-labelledby="share-preview-title">
     <div class="sheet" style="max-width:480px;">
       <div class="sheet-head">
-        <div class="sheet-title">Compartilhar Progresso</div>
-        <button class="sheet-x" id="share-close">✕</button>
+        <div class="sheet-title" id="share-preview-title">Compartilhar Progresso</div>
+        <button type="button" class="sheet-x" id="share-close" aria-label="Fechar compartilhamento">✕</button>
       </div>
       <div class="sheet-body">
         <div style="margin-bottom:12px;">
-          <label style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:6px;">Prévia do Resumo</label>
+          <label for="share-preview-text" style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:6px;">Prévia do Resumo</label>
           <textarea id="share-preview-text" class="txt" style="width:100%;height:140px;font-size:12px;line-height:1.45;font-family:monospace;resize:none;" readonly></textarea>
         </div>
 
         <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:12px;padding:12px 14px;margin-bottom:14px;">
           <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;">Opções de Privacidade</div>
-          <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text);margin-bottom:6px;cursor:pointer;">
+          <label for="share-opt-doses" style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text);margin-bottom:6px;cursor:pointer;">
             <input type="checkbox" id="share-opt-doses" checked style="accent-color:var(--primary);width:16px;height:16px;" />
             <span>Incluir dosagens e unidades</span>
           </label>
-          <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text);cursor:pointer;">
+          <label for="share-opt-names" style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text);cursor:pointer;">
             <input type="checkbox" id="share-opt-names" checked style="accent-color:var(--primary);width:16px;height:16px;" />
             <span>Incluir nomes dos peptídeos</span>
           </label>
@@ -579,11 +579,11 @@
   </div>
 
   <!-- Modal: Prévia de Backup e Restauração (V06) -->
-  <div class="modal" id="backup-preview-modal">
+  <div class="modal" id="backup-preview-modal" role="dialog" aria-modal="true" aria-labelledby="backup-preview-title">
     <div class="sheet" style="max-width:480px;">
       <div class="sheet-head">
-        <div class="sheet-title">Restaurar Backup Local</div>
-        <button class="sheet-x" id="backup-preview-close">✕</button>
+        <div class="sheet-title" id="backup-preview-title">Restaurar Backup Local</div>
+        <button type="button" class="sheet-x" id="backup-preview-close" aria-label="Fechar restauração">✕</button>
       </div>
       <div class="sheet-body">
         <div id="backup-preview-content"></div>
@@ -596,11 +596,11 @@
   </div>
 
   <!-- Modal: Confirmação de Ação In-App -->
-  <div class="modal" id="confirm-modal">
+  <div class="modal" id="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
     <div class="sheet" style="max-width:440px;">
       <div class="sheet-head">
         <div class="sheet-title" id="confirm-title">Confirmar Ação</div>
-        <button class="sheet-x" id="confirm-close">✕</button>
+        <button type="button" class="sheet-x" id="confirm-close" aria-label="Fechar confirmação">✕</button>
       </div>
       <div class="sheet-body" style="padding:18px 20px;">
         <p id="confirm-message" style="color:var(--text);font-size:14.5px;line-height:1.5;margin:0 0 20px;"></p>
