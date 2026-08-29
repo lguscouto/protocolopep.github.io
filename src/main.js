@@ -22,6 +22,7 @@ import { escapeHtml, sanitizeColor, sanitizeId } from "./ui/dom.js";
 import { shouldShowOnboarding, showOnboarding } from "./ui/onboarding.js";
 import { createCalculationSnapshot, formatAuditTrail } from "./domain/calculation-record.js";
 import { createDoseLog, validateDoseLog, normalizeDoseEntry } from "./domain/dose-log.js";
+import { generateDailySummary } from "./domain/daily-summary.js";
 
 const esc = escapeHtml;
 
@@ -1356,45 +1357,65 @@ function setupModalsAndButtons() {
 
   const dashShareBtn = document.getElementById("dash-share-btn");
   if (dashShareBtn) {
-    dashShareBtn.addEventListener("click", async () => {
+    dashShareBtn.addEventListener("click", () => {
       haptics.light();
-      const peptides = storage.getPeptides();
-      const logs = storage.getLogs();
-      const now = new Date();
-      const todayK = dateKey(now);
-      const rec = logs[todayK] || {};
-      const scheduled = getScheduledPeptides(peptides, now);
+      openSharePreviewModal();
+    });
+  }
 
-      let text = `🧪 Protocolo PEP — ${fmtBR(todayK)}\n`;
-      const progress = calculateDayProgress(peptides, logs, now);
-      text += `Progresso Hoje: ${progress.totalTaken} de ${progress.totalDue} doses tomadas (${progress.percent}%)\n\n`;
+  const shareCopyBtn = document.getElementById("share-copy-btn");
+  if (shareCopyBtn) {
+    shareCopyBtn.addEventListener("click", async () => {
+      const previewText = document.getElementById("share-preview-text");
+      const text = previewText ? previewText.value : "";
+      if (!text) return;
 
-      if (scheduled.length === 0) {
-        text += `Nenhuma dose programada para hoje.\n`;
-      } else {
-        scheduled.forEach((p) => {
-          const taken = dosesTaken(rec, p.id);
-          const perDay = p.perDay || 1;
-          const status = taken >= perDay ? "✓ Concluído" : `${taken}/${perDay}`;
-          text += `• ${p.name}: ${p.dose || ""}/${p.per || "dia"} (${p.ui} UI) — ${status}\n`;
-        });
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const textarea = document.createElement("textarea");
+          textarea.value = text;
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand("copy");
+          document.body.removeChild(textarea);
+        }
+        haptics.success();
+        alert("Resumo copiado para a área de transferência! ✓");
+      } catch (err) {
+        console.error("Falha ao copiar:", err);
+        alert("Não foi possível copiar automaticamente.");
       }
-      text += `\nGerado no Protocolo PEP (Local-First)`;
+    });
+  }
+
+  const shareNativeBtn = document.getElementById("share-native-btn");
+  if (shareNativeBtn) {
+    shareNativeBtn.addEventListener("click", async () => {
+      const previewText = document.getElementById("share-preview-text");
+      const text = previewText ? previewText.value : "";
+      if (!text) return;
 
       if (navigator.share) {
         try {
           await navigator.share({
-            title: "Protocolo PEP — Acompanhamento do Dia",
+            title: "Protocolo PEP — Resumo Diário",
             text: text
           });
         } catch (e) {
-          // Cancelado pelo usuário
+          // Cancelamento pelo usuário no sheet nativo
         }
-      } else if (navigator.clipboard) {
-        await navigator.clipboard.writeText(text);
-        alert("Resumo do protocolo copiado para a área de transferência! ✓");
       } else {
-        alert(text);
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(text);
+          }
+          haptics.success();
+          alert("Compartilhamento nativo indisponível. Resumo copiado para a área de transferência! ✓");
+        } catch (err) {
+          alert("Compartilhamento não suportado.");
+        }
       }
     });
   }
@@ -1727,6 +1748,32 @@ function saveEditedPeptide() {
   if (modal) modal.classList.remove("on");
   switchTab("today");
   haptics.success();
+}
+
+function openSharePreviewModal() {
+  const modal = document.getElementById("share-preview-modal");
+  const previewText = document.getElementById("share-preview-text");
+  const optDoses = document.getElementById("share-opt-doses");
+  const optNames = document.getElementById("share-opt-names");
+  if (!modal || !previewText) return;
+
+  const updatePreview = () => {
+    const peptides = storage.getPeptides();
+    const logs = storage.getLogs();
+    const now = new Date();
+    const text = generateDailySummary(peptides, logs, now, {
+      includeDoses: optDoses ? optDoses.checked : true,
+      includeNames: optNames ? optNames.checked : true,
+      includeDisclaimer: true
+    });
+    previewText.value = text;
+  };
+
+  if (optDoses) optDoses.onchange = updatePreview;
+  if (optNames) optNames.onchange = updatePreview;
+
+  updatePreview();
+  modal.classList.add("on");
 }
 
 if (document.readyState === "loading") {

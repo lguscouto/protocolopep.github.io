@@ -479,6 +479,42 @@
     </div>
   </div>
 
+  <!-- Modal: Prévia de Compartilhamento Seguro (V04) -->
+  <div class="modal" id="share-preview-modal">
+    <div class="sheet" style="max-width:480px;">
+      <div class="sheet-head">
+        <div class="sheet-title">Compartilhar Progresso</div>
+        <button class="sheet-x" id="share-close">✕</button>
+      </div>
+      <div class="sheet-body">
+        <div style="margin-bottom:12px;">
+          <label style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:6px;">Prévia do Resumo</label>
+          <textarea id="share-preview-text" class="txt" style="width:100%;height:140px;font-size:12px;line-height:1.45;font-family:monospace;resize:none;" readonly></textarea>
+        </div>
+
+        <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:12px;padding:12px 14px;margin-bottom:14px;">
+          <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;">Opções de Privacidade</div>
+          <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text);margin-bottom:6px;cursor:pointer;">
+            <input type="checkbox" id="share-opt-doses" checked style="accent-color:var(--primary);width:16px;height:16px;" />
+            <span>Incluir dosagens e unidades</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text);cursor:pointer;">
+            <input type="checkbox" id="share-opt-names" checked style="accent-color:var(--primary);width:16px;height:16px;" />
+            <span>Incluir nomes dos peptídeos</span>
+          </label>
+        </div>
+
+        <div style="font-size:11px;color:var(--muted);line-height:1.4;margin-bottom:6px;">
+          🔒 O texto é gerado exclusivamente neste dispositivo antes de ser enviado para qualquer outro app.
+        </div>
+      </div>
+      <div class="sheet-foot" style="display:flex;gap:10px;">
+        <button type="button" class="btn-subtle" id="share-copy-btn" style="flex:1;">Copiar Texto</button>
+        <button type="button" class="btn-primary" id="share-native-btn" style="flex:1.5;">Compartilhar...</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal: Confirmação de Ação In-App -->
   <div class="modal" id="confirm-modal">
     <div class="sheet" style="max-width:440px;">
