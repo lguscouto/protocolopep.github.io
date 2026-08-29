@@ -210,7 +210,21 @@
 
     <!-- ABA: CONFIGURAÇÕES & BACKUP -->
     <section class="view" id="view-settings">
-      <div class="eyebrow">Configurações & Backup Local</div>
+      <div class="eyebrow">Configurações & Lembretes</div>
+
+      <!-- Card de Lembretes & Notificações (V05) -->
+      <div class="panel" style="margin-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <div style="font-size:14px;font-weight:700;">Lembretes & Notificações</div>
+          <span class="badge badge-neutral" id="settings-notif-badge">Desativado</span>
+        </div>
+        <div style="font-size:12.5px;color:var(--muted);line-height:1.5;margin-bottom:14px;" id="settings-notif-msg">
+          Configure alarmes locais para os horários das suas aplicações diárias.
+        </div>
+        <button type="button" class="btn-primary" id="open-notif-modal-btn" style="width:100%;">
+          Configurar Lembretes
+        </button>
+      </div>
       
       <div class="panel" style="margin-bottom:16px;">
         <div style="font-size:14px;font-weight:700;margin-bottom:6px;">Arquitetura 100% Local-First</div>
@@ -379,14 +393,21 @@
           </div>
         </div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
-          <div>
-            <label style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;">Doses/Dia</label>
-            <input type="number" class="num" id="edit-perday" value="1" min="1" max="6" />
+        <div style="margin-bottom:12px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div>
+              <label style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;">Doses por Dia</label>
+              <input type="number" class="num" id="edit-perday" value="1" min="1" max="6" />
+            </div>
+            <div>
+              <label style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;">Horário Principal</label>
+              <input type="time" class="txt" id="edit-time" />
+            </div>
           </div>
-          <div>
-            <label style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;">Horário (Lembrete)</label>
-            <input type="time" class="txt" id="edit-time" />
+          <!-- Horários adicionais se doses/dia > 1 -->
+          <div id="edit-extra-times-wrap" style="display:none;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:10px 12px;margin-top:8px;">
+            <label style="display:block;font-size:11.5px;font-weight:600;color:var(--muted);margin-bottom:6px;">Horários das Demais Aplicações</label>
+            <div id="edit-extra-times-list" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
           </div>
         </div>
 
@@ -407,23 +428,64 @@
     </div>
   </div>
 
-  <!-- Modal: Notificações e Lembretes -->
+  <!-- Modal: Notificações e Lembretes (V05) -->
   <div class="modal" id="notif-modal">
-    <div class="sheet">
+    <div class="sheet" style="max-width:480px;">
       <div class="sheet-head">
-        <div class="sheet-title">Lembretes & Alarmes</div>
+        <div class="sheet-title">Lembretes & Alarmes Locais</div>
         <button class="sheet-x" id="notif-close">✕</button>
       </div>
       <div class="sheet-body">
-        <div class="stat" id="nf-status" style="margin-bottom:14px;">Notificações Desativadas</div>
-        <button class="btn-primary" id="nf-enable" style="margin-bottom:10px;">Ativar Lembretes</button>
-        <button class="btn-sec" id="nf-test" style="width:100%;">Enviar Notificação de Teste</button>
-        <div style="font-size:12px;color:var(--muted2);margin-top:14px;line-height:1.5;">
-          No Android, os lembretes são agendados diretamente no sistema operacional e disparam mesmo com o aplicativo fechado.
+        <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:12px;padding:12px 14px;margin-bottom:14px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <div style="font-size:12.5px;font-weight:700;color:var(--text);">Estado do Sistema</div>
+            <span class="badge badge-neutral" id="nf-status-badge">Desativado</span>
+          </div>
+          <div style="font-size:12px;color:var(--muted);line-height:1.45;" id="nf-status-msg">
+            Ative os lembretes para receber notificações locais nos horários programados.
+          </div>
+        </div>
+
+        <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:12px;padding:12px 14px;margin-bottom:14px;">
+          <div style="font-size:12.5px;font-weight:700;color:var(--text);margin-bottom:10px;">Opções de Notificação</div>
+          
+          <label style="display:flex;align-items:flex-start;gap:10px;margin-bottom:12px;cursor:pointer;">
+            <input type="checkbox" id="nf-discrete-toggle" checked style="accent-color:var(--primary);width:17px;height:17px;margin-top:2px;" />
+            <div>
+              <div style="font-size:13px;font-weight:600;color:var(--text);">Conteúdo Discreto (Recomendado)</div>
+              <div style="font-size:11.5px;color:var(--muted);line-height:1.35;">Oculta nomes de compostos e doses na tela de bloqueio do aparelho.</div>
+            </div>
+          </label>
+
+          <label style="display:flex;align-items:center;gap:10px;margin-bottom:12px;cursor:pointer;">
+            <input type="checkbox" id="nf-sound-toggle" checked style="accent-color:var(--primary);width:17px;height:17px;" />
+            <div>
+              <div style="font-size:13px;font-weight:600;color:var(--text);">Som e Vibração</div>
+            </div>
+          </label>
+
+          <div style="padding-top:8px;border-top:1px solid var(--border2);display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <div style="font-size:12.5px;font-weight:600;color:var(--text);">Resumo Diário da Manhã</div>
+              <div style="font-size:11px;color:var(--muted);">Lembrete geral das doses do dia</div>
+            </div>
+            <input type="time" class="txt" id="nf-summary-time" style="width:110px;padding:6px 8px;font-size:12.5px;" />
+          </div>
+        </div>
+
+        <button type="button" class="btn-primary" id="nf-enable" style="width:100%;margin-bottom:10px;">Ativar Lembretes</button>
+        
+        <div style="display:flex;gap:10px;margin-bottom:12px;">
+          <button type="button" class="btn-subtle" id="nf-test" style="flex:1;">Testar Alerta</button>
+          <button type="button" class="btn-subtle" id="nf-reschedule" style="flex:1;">Reagendar</button>
+        </div>
+
+        <div style="font-size:11px;color:var(--muted);line-height:1.4;">
+          🔒 As notificações funcionam de forma 100% autônoma através do AlarmManager nativo do Android, sem servidores externos ou rastreamento.
         </div>
       </div>
       <div class="sheet-foot">
-        <button class="btn-primary" id="nf-done">Concluído</button>
+        <button type="button" class="btn-primary" id="nf-done">Concluído</button>
       </div>
     </div>
   </div>

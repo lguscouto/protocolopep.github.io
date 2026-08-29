@@ -2,13 +2,19 @@ import { LocalNotifications } from "@capacitor/local-notifications";
 import { Capacitor } from "@capacitor/core";
 import { haptics } from "./haptics.js";
 import { isScheduledOnDate } from "../domain/schedule.js";
+import { formatNotificationContent, getNotificationVisualState } from "../domain/notification-formatter.js";
 
 const NOTIF_CFG_KEY = "pep_notif_config";
 export const NOTIF_CHANNEL_ID = "pep_lembretes";
 
 export class NotificationService {
   constructor() {
-    this.cfg = { enabled: false, sound: true, summary: "" };
+    this.cfg = {
+      enabled: false,
+      sound: true,
+      summary: "",
+      discreteMode: true
+    };
     this.audioCtx = null;
   }
 
@@ -79,6 +85,40 @@ export class NotificationService {
     return false;
   }
 
+  async getSystemStatus() {
+    let permission = "prompt";
+    let pendingCount = 0;
+
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const permRes = await LocalNotifications.checkPermissions();
+        if (permRes.display === "granted") {
+          permission = "granted";
+        } else if (permRes.display === "denied") {
+          permission = "denied";
+        } else {
+          permission = "prompt";
+        }
+
+        const pending = await LocalNotifications.getPending();
+        pendingCount = pending && pending.notifications ? pending.notifications.length : 0;
+      } catch (e) {
+        permission = "denied";
+      }
+    } else {
+      if (typeof window !== "undefined" && "Notification" in window) {
+        permission = Notification.permission;
+      }
+    }
+
+    return getNotificationVisualState({
+      enabled: this.cfg.enabled,
+      permission,
+      pendingCount,
+      horizonDays: 14
+    });
+  }
+
   ensureAudio() {
     try {
       if (!this.audioCtx && typeof window !== "undefined") {
@@ -146,7 +186,7 @@ export class NotificationService {
     if (Capacitor.isNativePlatform()) {
       try {
         const pending = await LocalNotifications.getPending();
-        if (pending.notifications && pending.notifications.length > 0) {
+        if (pending && pending.notifications && pending.notifications.length > 0) {
           await LocalNotifications.cancel(pending);
           console.log(`[Notif] ${pending.notifications.length} lembretes pendentes cancelados.`);
         }
@@ -192,10 +232,14 @@ export class NotificationService {
 
               // Apenas agendar se a data/hora for futura
               if (schedDate.getTime() > now.getTime()) {
+                const formatted = formatNotificationContent(p, {
+                  discreteMode: this.cfg.discreteMode
+                });
+
                 notifications.push({
                   id: notifId++,
-                  title: `Lembrete: ${p.name}`,
-                  body: `${p.ui ? p.ui + " UI · " : ""}${p.dose ? p.dose : "Dose programada"}${p.sub ? " (" + p.sub + ")" : ""}`,
+                  title: formatted.title,
+                  body: formatted.body,
                   channelId: NOTIF_CHANNEL_ID,
                   schedule: { at: schedDate, allowWhileIdle: true },
                   smallIcon: "ic_stat_pep",

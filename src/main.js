@@ -23,6 +23,7 @@ import { shouldShowOnboarding, showOnboarding } from "./ui/onboarding.js";
 import { createCalculationSnapshot, formatAuditTrail } from "./domain/calculation-record.js";
 import { createDoseLog, validateDoseLog, normalizeDoseEntry } from "./domain/dose-log.js";
 import { generateDailySummary } from "./domain/daily-summary.js";
+import { updateNotificationUI, setupNotificationListeners } from "./ui/notification-settings.js";
 
 const esc = escapeHtml;
 
@@ -86,11 +87,13 @@ async function initApp() {
 
   setupNavigation();
   setupModalsAndButtons();
+  setupNotificationListeners(storage);
   setupCalculator();
 
   renderToday();
   renderWeek();
   renderHistory();
+  updateNotificationUI(storage.getPeptides());
 
   notifications.schedulePeptideReminders(storage.getPeptides());
 }
@@ -193,6 +196,7 @@ function switchTab(tabId) {
   if (tabId === "today") renderToday();
   if (tabId === "week") renderWeek();
   if (tabId === "history") renderHistory();
+  if (tabId === "settings") updateNotificationUI(storage.getPeptides());
 }
 
 function drawRing(taken, total) {
@@ -1605,6 +1609,39 @@ function openEditModal(pepId, prefillData = null) {
   document.getElementById("edit-time").value = p ? p.time || "" : "";
   document.getElementById("edit-note").value = p ? p.note || "" : "";
 
+  const perDayInput = document.getElementById("edit-perday");
+  const extraTimesWrap = document.getElementById("edit-extra-times-wrap");
+  const extraTimesList = document.getElementById("edit-extra-times-list");
+
+  const renderExtraTimes = () => {
+    const pd = Math.min(6, Math.max(1, parseInt(perDayInput?.value, 10) || 1));
+    if (!extraTimesWrap || !extraTimesList) return;
+    if (pd <= 1) {
+      extraTimesWrap.style.display = "none";
+      extraTimesList.innerHTML = "";
+      return;
+    }
+
+    extraTimesWrap.style.display = "block";
+    const existingTimes = p?.times || [];
+    let html = "";
+    for (let i = 2; i <= pd; i++) {
+      const val = existingTimes[i - 1] || "";
+      html += `
+        <div style="flex:1;min-width:120px;">
+          <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:3px;">Horário Dose ${i}</label>
+          <input type="time" class="txt edit-extra-time" data-index="${i}" value="${esc(val)}" style="width:100%;padding:6px 8px;font-size:12.5px;" />
+        </div>
+      `;
+    }
+    extraTimesList.innerHTML = html;
+  };
+
+  if (perDayInput) {
+    perDayInput.oninput = renderExtraTimes;
+  }
+  renderExtraTimes();
+
   pendingCalculationSnapshot = p ? (p.calculationSnapshot || null) : (prefillData?.calculationSnapshot || null);
 
   const calcInfoEl = document.getElementById("modal-calc-info");
@@ -1678,8 +1715,15 @@ function saveEditedPeptide() {
   const dose = document.getElementById("edit-dose").value.trim();
   const ui = parseInt(document.getElementById("edit-ui").value, 10) || 0;
   const perDay = parseInt(document.getElementById("edit-perday").value, 10) || 1;
-  const time = document.getElementById("edit-time").value.trim();
+  const mainTime = document.getElementById("edit-time").value.trim();
   const note = document.getElementById("edit-note").value.trim();
+
+  const times = [];
+  if (mainTime) times.push(mainTime);
+  document.querySelectorAll(".edit-extra-time").forEach((input) => {
+    const val = input.value.trim();
+    if (val) times.push(val);
+  });
 
   let days = null;
   let interval = null;
@@ -1716,7 +1760,8 @@ function saveEditedPeptide() {
     interval,
     start,
     perDay,
-    time,
+    times,
+    time: mainTime,
     note,
     accent: selectedColor,
     calculationSnapshot: pendingCalculationSnapshot
@@ -1742,6 +1787,7 @@ function saveEditedPeptide() {
   renderToday();
   renderWeek();
   renderHistory();
+  updateNotificationUI(peptides);
   notifications.schedulePeptideReminders(peptides);
 
   const modal = document.getElementById("edit-modal");
