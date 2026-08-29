@@ -27,6 +27,7 @@ import { updateNotificationUI, setupNotificationListeners } from "./ui/notificat
 import { setupBackupPreview } from "./ui/backup-preview.js";
 import { recordBackupExport, renderBackupStatusUI } from "./ui/backup-status.js";
 import { setupReportModal } from "./ui/report-preview.js";
+import { setupDiagnosticsModal } from "./ui/diagnostics.js";
 
 const esc = escapeHtml;
 
@@ -1346,6 +1347,11 @@ function setupModalsAndButtons() {
   });
 
   setupReportModal(storage);
+  setupDiagnosticsModal({
+    storage,
+    getNotificationsActive: () => notifications.isEnabled(),
+    appVersion: "1.7.0"
+  });
 
   const reopenOnboardingBtn = document.getElementById("reopen-onboarding-btn");
   if (reopenOnboardingBtn) {
@@ -1445,6 +1451,7 @@ function setupModalsAndButtons() {
     });
   }
 
+  const dashExportBtn = document.getElementById("dash-export-btn");
   if (dashExportBtn) {
     dashExportBtn.addEventListener("click", handleExport);
   }

@@ -46,6 +46,10 @@ export class NotificationService {
     return this.cfg;
   }
 
+  isEnabled() {
+    return Boolean(this.cfg && this.cfg.enabled);
+  }
+
   saveConfig(newCfg) {
     this.cfg = { ...this.cfg, ...newCfg };
     try {

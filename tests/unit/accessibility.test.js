@@ -38,6 +38,8 @@ describe("Acessibilidade e Navegação (V07)", () => {
     expect(htmlContent).toContain('id="retro-log-modal" role="dialog" aria-modal="true"');
     expect(htmlContent).toContain('id="share-preview-modal" role="dialog" aria-modal="true"');
     expect(htmlContent).toContain('id="backup-preview-modal" role="dialog" aria-modal="true"');
+    expect(htmlContent).toContain('id="report-modal" role="dialog" aria-modal="true"');
+    expect(htmlContent).toContain('id="diag-modal" role="dialog" aria-modal="true"');
     expect(htmlContent).toContain('id="confirm-modal" role="dialog" aria-modal="true"');
   });
 
