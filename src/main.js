@@ -24,6 +24,8 @@ import { createCalculationSnapshot, formatAuditTrail } from "./domain/calculatio
 import { createDoseLog, validateDoseLog, normalizeDoseEntry } from "./domain/dose-log.js";
 import { generateDailySummary } from "./domain/daily-summary.js";
 import { updateNotificationUI, setupNotificationListeners } from "./ui/notification-settings.js";
+import { setupBackupPreview } from "./ui/backup-preview.js";
+import { recordBackupExport, renderBackupStatusUI } from "./ui/backup-status.js";
 
 const esc = escapeHtml;
 
@@ -94,6 +96,7 @@ async function initApp() {
   renderWeek();
   renderHistory();
   updateNotificationUI(storage.getPeptides());
+  renderBackupStatusUI();
 
   notifications.schedulePeptideReminders(storage.getPeptides());
 }
@@ -196,7 +199,10 @@ function switchTab(tabId) {
   if (tabId === "today") renderToday();
   if (tabId === "week") renderWeek();
   if (tabId === "history") renderHistory();
-  if (tabId === "settings") updateNotificationUI(storage.getPeptides());
+  if (tabId === "settings") {
+    updateNotificationUI(storage.getPeptides());
+    renderBackupStatusUI();
+  }
 }
 
 function drawRing(taken, total) {
@@ -1275,56 +1281,33 @@ function setupModalsAndButtons() {
   }
 
   const exportBtn = document.getElementById("export-btn");
-  if (exportBtn) {
-    exportBtn.addEventListener("click", () => {
-      const backupPayload = storage.exportBackup(theme.getTheme());
-      const blob = new Blob([backupPayload], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `protocolo-pep-backup-${dateKey(new Date())}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-      haptics.success();
-    });
-  }
+  const handleExport = () => {
+    const backupPayload = storage.exportBackup(theme.getTheme());
+    const blob = new Blob([backupPayload], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `protocolo-pep-backup-${dateKey(new Date())}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    recordBackupExport();
+    renderBackupStatusUI();
+    haptics.success();
+  };
 
-  const importBtn = document.getElementById("import-btn");
-  const importFile = document.getElementById("import-file");
-  if (importBtn && importFile) {
-    importBtn.addEventListener("click", () => importFile.click());
-    importFile.addEventListener("change", (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = async () => {
-        const confirmed = await showConfirmDialog({
-          title: "Restaurar Backup",
-          message: "Esta ação substituirá o seu protocolo e todos os registros atuais pelos dados contidos no arquivo de backup. Deseja continuar?",
-          confirmText: "Restaurar",
-          cancelText: "Cancelar",
-          isDanger: true
-        });
-        if (confirmed) {
-          const res = storage.importBackup(reader.result);
-          if (res.success) {
-            if (res.theme) theme.setTheme(res.theme);
-            renderToday();
-            renderWeek();
-            renderHistory();
-            notifications.schedulePeptideReminders(storage.getPeptides());
-            alert(`Backup importado com sucesso! ✓\n• Peptídeos: ${res.stats.peptideCount}\n• Dias com registros: ${res.stats.logDaysCount}\n• Total de doses: ${res.stats.totalDosesCount}`);
-            haptics.success();
-          } else {
-            alert("Erro ao importar backup: " + res.error);
-            haptics.warning();
-          }
-        }
-      };
-      reader.readAsText(file);
-      e.target.value = "";
-    });
-  }
+  if (exportBtn) exportBtn.addEventListener("click", handleExport);
+
+  setupBackupPreview({
+    storage,
+    theme,
+    notifications,
+    onStateRestored: () => {
+      renderToday();
+      renderWeek();
+      renderHistory();
+      updateNotificationUI(storage.getPeptides());
+    }
+  });
 
   const reopenOnboardingBtn = document.getElementById("reopen-onboarding-btn");
   if (reopenOnboardingBtn) {
@@ -1424,24 +1407,8 @@ function setupModalsAndButtons() {
     });
   }
 
-  const dashExportBtn = document.getElementById("dash-export-btn");
   if (dashExportBtn) {
-    dashExportBtn.addEventListener("click", () => {
-      const backupPayload = storage.exportBackup(theme.getTheme());
-      const blob = new Blob([backupPayload], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `protocolo-pep-backup-${dateKey(new Date())}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-      haptics.success();
-    });
-  }
-
-  const dashImportBtn = document.getElementById("dash-import-btn");
-  if (dashImportBtn && importFile) {
-    dashImportBtn.addEventListener("click", () => importFile.click());
+    dashExportBtn.addEventListener("click", handleExport);
   }
 
   const dashCalcBtn = document.getElementById("dash-calc-btn");
@@ -1450,27 +1417,6 @@ function setupModalsAndButtons() {
       haptics.light();
       switchTab("calc");
     });
-  }
-}
-
-function updateNotifModalUI() {
-  const cfg = notifications.getConfig();
-  const st = document.getElementById("nf-status");
-  const en = document.getElementById("nf-enable");
-  if (!st || !en) return;
-
-  if (cfg.enabled) {
-    st.className = "stat";
-    st.style.borderColor = "var(--primary)";
-    st.textContent = "Notificações Ativadas ✓";
-    en.textContent = "Desativar Lembretes";
-    en.className = "btn-subtle";
-  } else {
-    st.className = "stat off";
-    st.style.borderColor = "var(--border)";
-    st.textContent = "Notificações Desativadas";
-    en.textContent = "Ativar Lembretes";
-    en.className = "btn-cta";
   }
 }
 

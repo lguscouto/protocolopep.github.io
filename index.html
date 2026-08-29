@@ -240,6 +240,7 @@
           </button>
           <input type="file" id="import-file" accept=".json" style="display:none;" />
         </div>
+        <div id="backup-status-area"></div>
       </div>
 
       <div class="panel">
@@ -573,6 +574,23 @@
       <div class="sheet-foot" style="display:flex;gap:10px;">
         <button type="button" class="btn-subtle" id="share-copy-btn" style="flex:1;">Copiar Texto</button>
         <button type="button" class="btn-primary" id="share-native-btn" style="flex:1.5;">Compartilhar...</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Prévia de Backup e Restauração (V06) -->
+  <div class="modal" id="backup-preview-modal">
+    <div class="sheet" style="max-width:480px;">
+      <div class="sheet-head">
+        <div class="sheet-title">Restaurar Backup Local</div>
+        <button class="sheet-x" id="backup-preview-close">✕</button>
+      </div>
+      <div class="sheet-body">
+        <div id="backup-preview-content"></div>
+      </div>
+      <div class="sheet-foot" style="display:flex;gap:10px;">
+        <button type="button" class="btn-subtle" id="backup-preview-cancel" style="flex:1;">Cancelar</button>
+        <button type="button" class="btn-primary" id="backup-preview-confirm" style="flex:2;">Substituir & Restaurar</button>
       </div>
     </div>
   </div>
