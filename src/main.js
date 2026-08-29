@@ -36,6 +36,8 @@ import { setupMeasurementsUI } from "./ui/measurements.js";
 import { appLock } from "./services/app-lock.js";
 import { setupAppLockUI } from "./ui/app-lock.js";
 import { widgetService } from "./services/widget.js";
+import { healthConnect } from "./services/health-connect.js";
+import { setupHealthConnectUI } from "./ui/health-connect.js";
 
 const esc = escapeHtml;
 
@@ -62,6 +64,7 @@ let inventoryUI = null;
 let sitesUI = null;
 let measurementsUI = null;
 let appLockUI = null;
+let healthConnectUI = null;
 
 async function initApp() {
   await theme.init();
@@ -131,6 +134,9 @@ async function initApp() {
     storage,
     onMeasurementsChange: () => {
       renderHistory();
+      if (healthConnectUI && typeof healthConnectUI.triggerAutoSync === "function") {
+        healthConnectUI.triggerAutoSync();
+      }
     }
   });
   appLockUI = setupAppLockUI({
@@ -141,6 +147,18 @@ async function initApp() {
       renderHistory();
     }
   });
+  healthConnectUI = setupHealthConnectUI({
+    healthConnectService: healthConnect,
+    storage,
+    onSyncComplete: () => {
+      if (measurementsUI && typeof measurementsUI.renderList === "function") {
+        measurementsUI.renderList();
+      }
+      renderHistory();
+    },
+    showToast,
+    haptics
+  });
 
   renderToday();
   renderWeek();
@@ -149,6 +167,9 @@ async function initApp() {
   renderBackupStatusUI();
   if (appLockUI && typeof appLockUI.updateSettingsLockCard === "function") {
     appLockUI.updateSettingsLockCard();
+  }
+  if (healthConnectUI && typeof healthConnectUI.updateSettingsCard === "function") {
+    healthConnectUI.updateSettingsCard();
   }
 
   const widgetToggle = document.getElementById("widget-discrete-toggle");
@@ -313,6 +334,9 @@ function switchTab(tabId) {
     const widgetToggle = document.getElementById("widget-discrete-toggle");
     if (widgetToggle) {
       widgetToggle.checked = widgetService.isDiscreteModeEnabled();
+    }
+    if (healthConnectUI && typeof healthConnectUI.updateSettingsCard === "function") {
+      healthConnectUI.updateSettingsCard();
     }
   }
 }

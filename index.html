@@ -295,6 +295,34 @@
         </div>
       </div>
 
+      <!-- Card de Health Connect Android (V15) -->
+      <div class="panel" style="margin-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:12px;">
+          <div>
+            <div style="font-size:14px;font-weight:700;">Health Connect (Android)</div>
+            <div style="font-size:12px;color:var(--muted);" id="hc-status-desc">Sincronização de peso e medidas corporais</div>
+          </div>
+          <span class="badge-status off" id="hc-status-badge" style="background:var(--surface2);color:var(--muted);">DESATIVADO</span>
+        </div>
+        <div style="font-size:12.5px;color:var(--muted);line-height:1.5;margin-bottom:12px;">
+          Integração opcional e privada com o subsistema de saúde do Android para sincronizar registros de peso corporal.
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--surface2);border-radius:10px;margin-bottom:10px;">
+          <label for="hc-enable-toggle" style="font-size:13px;font-weight:600;color:var(--text);cursor:pointer;flex:1;">
+            🩺 Sincronizar com Health Connect
+          </label>
+          <input type="checkbox" id="hc-enable-toggle" style="width:20px;height:20px;accent-color:var(--primary);cursor:pointer;">
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button type="button" class="btn-primary" id="hc-sync-btn" style="display:none;flex:1;font-size:12.5px;padding:8px 12px;">
+            🔄 Sincronizar Agora
+          </button>
+          <button type="button" class="btn-sec" id="hc-settings-btn" style="display:none;flex:1;font-size:12.5px;padding:8px 12px;">
+            ⚙️ Configurações
+          </button>
+        </div>
+      </div>
+
       <!-- Card de Lembretes & Notificações (V05) -->
       <div class="panel" style="margin-bottom:16px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
