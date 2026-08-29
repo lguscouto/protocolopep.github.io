@@ -35,6 +35,7 @@ import { getNextSite, getLastUsedSite } from "./domain/injection-sites.js";
 import { setupMeasurementsUI } from "./ui/measurements.js";
 import { appLock } from "./services/app-lock.js";
 import { setupAppLockUI } from "./ui/app-lock.js";
+import { widgetService } from "./services/widget.js";
 
 const esc = escapeHtml;
 
@@ -45,6 +46,14 @@ function fmtBR(iso) {
 }
 
 const dateKey = dateToKey;
+
+function syncAppWidget() {
+  widgetService.syncWidget({
+    peptides: storage.getPeptides(),
+    logs: storage.getLogs(),
+    dateStr: dateKey(new Date())
+  });
+}
 
 let currentTab = "today";
 let editingPeptideId = null;
@@ -142,6 +151,17 @@ async function initApp() {
     appLockUI.updateSettingsLockCard();
   }
 
+  const widgetToggle = document.getElementById("widget-discrete-toggle");
+  if (widgetToggle) {
+    widgetToggle.checked = widgetService.isDiscreteModeEnabled();
+    widgetToggle.addEventListener("change", () => {
+      widgetService.setDiscreteModeEnabled(widgetToggle.checked);
+      haptics.selection();
+      syncAppWidget();
+    });
+  }
+
+  syncAppWidget();
   notifications.schedulePeptideReminders(storage.getPeptides());
 }
 
@@ -289,6 +309,10 @@ function switchTab(tabId) {
     }
     if (appLockUI && typeof appLockUI.updateSettingsLockCard === "function") {
       appLockUI.updateSettingsLockCard();
+    }
+    const widgetToggle = document.getElementById("widget-discrete-toggle");
+    if (widgetToggle) {
+      widgetToggle.checked = widgetService.isDiscreteModeEnabled();
     }
   }
 }
@@ -457,6 +481,8 @@ function renderToday() {
   container.querySelectorAll(".del").forEach((b) => {
     b.addEventListener("click", () => deletePeptide(b.dataset.id));
   });
+
+  syncAppWidget();
 }
 
 function toggleDose(id) {
