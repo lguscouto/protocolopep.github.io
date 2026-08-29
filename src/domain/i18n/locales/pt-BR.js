@@ -1,0 +1,147 @@
+/**
+ * Dicionário canônico de Internacionalização (i18n) — Português do Brasil (pt-BR)
+ * 
+ * Princípios de Governança (AGENTS.md):
+ * - Local-First & Offline: Dicionário embutido estaticamente sem chamadas de rede.
+ * - Não Prescrição: Textos neutros e informativos sem recomendações terapêuticas padrão.
+ */
+
+export const ptBR = {
+  common: {
+    today: "Hoje",
+    save: "Salvar",
+    cancel: "Cancelar",
+    delete: "Excluir",
+    edit: "Editar",
+    close: "Fechar",
+    confirm: "Confirmar",
+    back: "Voltar",
+    next: "Próximo",
+    finish: "Concluir",
+    loading: "Carregando...",
+    success: "Sucesso",
+    error: "Erro",
+    warning: "Aviso",
+    enabled: "ATIVADO",
+    disabled: "DESATIVADO",
+    connected: "CONECTADO",
+    active: "ATIVO",
+    inactive: "INATIVO",
+    units: "UI",
+    mcg: "mcg",
+    mg: "mg",
+    ml: "ml",
+    kg: "kg",
+    cm: "cm"
+  },
+  nav: {
+    dashboard: "Dashboard",
+    week: "Semana",
+    history: "Histórico",
+    calculator: "Calculadora",
+    settings: "Ajustes"
+  },
+  topbar: {
+    title: "Protocolo PEP",
+    notifications: "Lembretes e Notificações",
+    themeToggle: "Alternar Tema (Claro / Escuro)"
+  },
+  dashboard: {
+    bannerText: "Toda opinião importa! <b>Fale conosco ou envie sugestões</b>",
+    heading: "Seu Protocolo",
+    dosesTakenToday: "tomados hoje",
+    addPeptide: "Adicionar Peptídeo ao Protocolo",
+    quickActions: "Ações Rápidas",
+    share: "Compartilhar",
+    export: "Exportar",
+    import: "Importar",
+    calculator: "Calculadora",
+    disclaimer: "Referência pessoal e informativa. Os cálculos são estimativas matemáticas e os registros ficam salvos apenas neste dispositivo.<br>Confirme doses, diluição e segurança com um profissional de saúde.",
+    emptyProtocolTitle: "Nenhum peptídeo cadastrado",
+    emptyProtocolDesc: "Toque no botão acima para adicionar seu primeiro peptídeo e configurar horários de aplicação."
+  },
+  week: {
+    heading: "Visão Semanal",
+    subheading: "Acompanhamento e frequência das aplicações nos próximos 7 dias",
+    dosesCount: "{count} aplicação(ões) programada(s)"
+  },
+  history: {
+    heading: "Histórico de Aplicações",
+    filterAll: "Todos",
+    filterConfirmed: "Confirmados",
+    filterSkipped: "Pulados",
+    emptyTitle: "Nenhum registro encontrado",
+    emptyDesc: "As aplicações confirmadas ou registradas aparecerão aqui em ordem cronológica.",
+    exportReport: "Exportar Relatório PDF / CSV"
+  },
+  calculator: {
+    title: "Calculadora de Reconstituição",
+    subtitle: "Calcule com segurança a diluição e dosagem da seringa",
+    step1Title: "Quantidade de peptídeo no frasco",
+    step1Desc: "Conteúdo total (mg)",
+    step2Title: "Água bacteriostática adicionada",
+    step2Desc: "Volume de diluente (ml)",
+    step3Title: "Dose desejada por aplicação",
+    step3Desc: "Digite a dose prescrita",
+    dosePlaceholder: "ex: 250",
+    doseUnitMcg: "mcg",
+    doseUnitMg: "mg",
+    drawResultTitle: "UI",
+    drawResultHint: "Informe a dose pretendida acima para calcular as unidades (UI).",
+    drawResultInstruction: "Puxe até a marca de <b>{units} UI</b> na seringa de 100 UI",
+    concentration: "Concentração da solução",
+    yield: "Rendimento estimado",
+    yieldValue: "{doses} doses de {dose}"
+  },
+  settings: {
+    heading: "Ajustes & Preferências",
+    languageTitle: "Idioma do Aplicativo",
+    languageDesc: "Selecione o idioma de exibição do Protocolo PEP",
+    siteRotationTitle: "Rotação de Sítios",
+    siteRotationDesc: "Próximo na rotação: <b>{site}</b> ({count} sítios ativos)",
+    siteConfigureBtn: "Configurar",
+    securityTitle: "Segurança & Privacidade",
+    securityDesc: "Exigir biometria ou PIN do dispositivo para abrir o aplicativo.",
+    securityToggle: "Bloqueio por Biometria / PIN",
+    widgetTitle: "Widget da Tela Inicial",
+    widgetBadge: "WIDGET 3X2",
+    widgetDesc: "Adicione o widget na tela inicial do Android tocando e segurando no fundo da tela e selecionando Protocolo PEP.",
+    widgetDiscreteToggle: "Modo Discreto (ocultar nomes de peptídeos)",
+    healthConnectTitle: "Health Connect (Android)",
+    healthConnectDesc: "Sincronização de peso e medidas corporais",
+    healthConnectHelp: "Integração opcional e privada com o subsistema de saúde do Android para sincronizar registros de peso corporal.",
+    healthConnectToggle: "Sincronizar com Health Connect",
+    healthConnectSyncBtn: "Sincronizar Agora",
+    healthConnectSettingsBtn: "Configurações",
+    remindersTitle: "Lembretes & Notificações",
+    remindersStatus: "ATIVO & AGENDADO",
+    remindersDesc: "{count} lembretes agendados no sistema para os próximos 14 dias.",
+    remindersConfigureBtn: "Configurar Lembretes",
+    localFirstTitle: "Arquitetura 100% Local-First",
+    localFirstDesc: "Todos os seus dados de protocolo e histórico estão salvos diretamente na memória do seu dispositivo, funcionando offline com máxima privacidade e velocidade.",
+    exportBackupBtn: "Exportar Backup JSON",
+    importBackupBtn: "Importar Backup",
+    lastBackup: "Último backup exportado: {date}",
+    appInfo: "Protocolo PEP Android",
+    diagnosticsBtn: "Diagnósticos",
+    termsBtn: "Termos & Privacidade"
+  },
+  modals: {
+    addPeptideTitle: "Novo Peptídeo",
+    editPeptideTitle: "Editar Peptídeo",
+    nameLabel: "Nome do Peptídeo",
+    doseLabel: "Dose por Aplicação",
+    frequencyLabel: "Frequência",
+    scheduleLabel: "Horário da Aplicação",
+    confirmDeleteTitle: "Excluir Peptídeo?",
+    confirmDeleteMessage: "Esta ação não pode ser desfeita. Todos os lembretes vinculados serão removidos.",
+    confirmLogTitle: "Confirmar Aplicação",
+    confirmLogMessage: "Deseja marcar a dose de {name} ({dose}) como aplicada agora?",
+    siteSelectTitle: "Selecione o Sítio de Aplicação",
+    injectionNotePlaceholder: "Notas ou observações (opcional)"
+  },
+  notifications: {
+    doseReminderTitle: "Hora da sua aplicação — {peptide}",
+    doseReminderBody: "Dose agendada de {dose} ({units} UI). Toque para confirmar a aplicação no Protocolo PEP."
+  }
+};

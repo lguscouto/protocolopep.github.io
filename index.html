@@ -16,18 +16,18 @@
     <div class="brand">
       <img src="/icon-192.png" alt="Logo Protocolo PEP" class="logo" />
       <div>
-        <div class="t">Protocolo <span>PEP</span></div>
-        <div class="datestrip" id="datestrip">Hoje</div>
+        <div class="t" data-i18n="topbar.title">Protocolo <span>PEP</span></div>
+        <div class="datestrip" id="datestrip" data-i18n="common.today">Hoje</div>
       </div>
     </div>
     <div class="acct">
-      <button class="icon-b" id="notif-btn" title="Lembretes e Notificações" aria-label="Lembretes e Notificações">
+      <button class="icon-b" id="notif-btn" title="Lembretes e Notificações" aria-label="Lembretes e Notificações" data-i18n-title="topbar.notifications" data-i18n-aria="topbar.notifications">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
           <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
         </svg>
       </button>
-      <button class="icon-b" id="theme-btn" title="Alternar Tema (Branco / Preto)" aria-label="Alternar Tema">
+      <button class="icon-b" id="theme-btn" title="Alternar Tema (Branco / Preto)" aria-label="Alternar Tema" data-i18n-title="topbar.themeToggle" data-i18n-aria="topbar.themeToggle">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
         </svg>
@@ -43,12 +43,12 @@
       <div class="dash-banner" id="dash-banner">
         <a href="mailto:lguscouto@gmail.com?subject=Protocolo%20PEP%20%E2%80%94%20Sugest%C3%A3o%20%2F%20Feedback&body=Ol%C3%A1%2C%0A%0AGostaria%20de%20enviar%20o%20seguinte%20feedback%20%2F%20sugest%C3%A3o%20para%20o%20Protocolo%20PEP%3A%0A%0A%0A---%0AVers%C3%A3o%20do%20App%3A%201.7.0%0ADispositivo%3A%20Android" class="dash-banner-content" id="dash-banner-link" target="_blank" rel="noopener noreferrer" title="Toque para enviar sugestões ou feedback por e-mail" aria-label="Enviar sugestão ou feedback por e-mail">
           <span class="dash-banner-icon" aria-hidden="true">📢</span>
-          <span class="dash-banner-text">Toda opinião importa! <b>Fale conosco ou envie sugestões</b></span>
+          <span class="dash-banner-text" data-i18n-html="dashboard.bannerText">Toda opinião importa! <b>Fale conosco ou envie sugestões</b></span>
         </a>
         <button type="button" class="dash-banner-close" id="dash-banner-close" aria-label="Fechar banner">✕</button>
       </div>
 
-      <div class="eyebrow" id="today-heading">Seu Protocolo</div>
+      <div class="eyebrow" id="today-heading" data-i18n="dashboard.heading">Seu Protocolo</div>
       
       <!-- Hero Card: Progresso & Estatísticas -->
       <div class="dash-hero" id="dash-hero" aria-label="Progresso de doses do dia">
@@ -61,14 +61,14 @@
         </div>
         <div class="dash-hero-info">
           <div class="dash-hero-count" id="ring-n">0 / 0</div>
-          <div class="dash-hero-label">tomados hoje</div>
+          <div class="dash-hero-label" data-i18n="dashboard.dosesTakenToday">tomados hoje</div>
         </div>
       </div>
 
       <div id="today-cards" role="region" aria-live="polite"></div>
 
       <button type="button" class="add-pep" id="add-pep-btn" aria-label="Adicionar Novo Peptídeo ao Protocolo">
-        <span aria-hidden="true">+</span> Adicionar Peptídeo ao Protocolo
+        <span aria-hidden="true">+</span> <span data-i18n="dashboard.addPeptide">Adicionar Peptídeo ao Protocolo</span>
       </button>
 
       <!-- Barra de Ações Rápidas do Dashboard -->
@@ -76,25 +76,25 @@
         <div class="dash-actions-grid">
           <button type="button" class="dash-action-btn" id="dash-share-btn" aria-label="Compartilhar resumo do dia">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-            <span>Compartilhar</span>
+            <span data-i18n="dashboard.share">Compartilhar</span>
           </button>
           <button type="button" class="dash-action-btn" id="dash-export-btn" aria-label="Exportar backup dos dados">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            <span>Exportar</span>
+            <span data-i18n="dashboard.export">Exportar</span>
           </button>
           <button type="button" class="dash-action-btn" id="dash-import-btn" aria-label="Importar backup de dados">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            <span>Importar</span>
+            <span data-i18n="dashboard.import">Importar</span>
           </button>
           <button type="button" class="dash-action-btn" id="dash-calc-btn" aria-label="Abrir calculadora de reconstituição">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="16" y1="14" x2="16" y2="18"/><path d="M16 10h.01M12 10h.01M8 10h.01M12 14h.01M8 14h.01M12 18h.01M8 18h.01"/></svg>
-            <span>Calculadora</span>
+            <span data-i18n="dashboard.calculator">Calculadora</span>
           </button>
         </div>
       </div>
 
       <!-- Rodapé Informativo e Médico -->
-      <div class="dash-footer-disclaimer">
+      <div class="dash-footer-disclaimer" data-i18n-html="dashboard.disclaimer">
         Referência pessoal e informativa. Os cálculos são estimativas matemáticas e os registros ficam salvos apenas neste dispositivo.<br>
         Confirme doses, diluição e segurança com um profissional de saúde.
       </div>
@@ -102,7 +102,7 @@
 
     <!-- ABA: SEMANA -->
     <section class="view" id="view-week" role="tabpanel" aria-labelledby="tab-week">
-      <div class="eyebrow">Grade Semanal</div>
+      <div class="eyebrow" data-i18n="week.heading">Grade Semanal</div>
       <div class="panel" id="week-table-wrap" role="region" aria-label="Tabela de doses da semana"></div>
     </section>
 
@@ -229,7 +229,29 @@
 
     <!-- ABA: CONFIGURAÇÕES & BACKUP -->
     <section class="view" id="view-settings" role="tabpanel" aria-labelledby="tab-settings">
-      <div class="eyebrow">Configurações & Lembretes</div>
+      <div class="eyebrow" data-i18n="settings.heading">Ajustes & Preferências</div>
+
+      <!-- Card de Seleção de Idioma / i18n (V16) -->
+      <div class="panel" style="margin-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:12px;">
+          <div>
+            <div style="font-size:14px;font-weight:700;" data-i18n="settings.languageTitle">Idioma do Aplicativo</div>
+            <div style="font-size:12px;color:var(--muted);" data-i18n="settings.languageDesc">Selecione o idioma de exibição do Protocolo PEP</div>
+          </div>
+          <span class="badge badge-neutral" id="current-lang-badge" style="background:rgba(16,185,129,0.15);color:#10b981;">PORTUGUÊS (BRASIL)</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:8px;margin-top:10px;" role="group" aria-label="Seletor de Idioma">
+          <button type="button" class="btn-sec lang-select-btn" id="lang-btn-pt" data-lang="pt-BR" style="font-size:12.5px;padding:8px 6px;display:flex;align-items:center;justify-content:center;gap:4px;border:1.5px solid transparent;border-radius:10px;cursor:pointer;">
+            <span>🇧🇷</span> <span>Português</span>
+          </button>
+          <button type="button" class="btn-sec lang-select-btn" id="lang-btn-en" data-lang="en" style="font-size:12.5px;padding:8px 6px;display:flex;align-items:center;justify-content:center;gap:4px;border:1.5px solid transparent;border-radius:10px;cursor:pointer;">
+            <span>🇺🇸</span> <span>English</span>
+          </button>
+          <button type="button" class="btn-sec lang-select-btn" id="lang-btn-es" data-lang="es" style="font-size:12.5px;padding:8px 6px;display:flex;align-items:center;justify-content:center;gap:4px;border:1.5px solid transparent;border-radius:10px;cursor:pointer;">
+            <span>🇪🇸</span> <span>Español</span>
+          </button>
+        </div>
+      </div>
 
       <!-- Card de Inventário de Frascos (V10) -->
       <div class="panel" style="margin-bottom:16px;">
@@ -262,14 +284,14 @@
       <div class="panel" style="margin-bottom:16px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:12px;">
           <div>
-            <div style="font-size:14px;font-weight:700;">Segurança & Privacidade</div>
-            <div style="font-size:12px;color:var(--muted);" id="app-lock-status-desc">Exigir biometria ou PIN ao abrir o app</div>
+            <div style="font-size:14px;font-weight:700;" data-i18n="settings.securityTitle">Segurança & Privacidade</div>
+            <div style="font-size:12px;color:var(--muted);" id="app-lock-status-desc" data-i18n="settings.securityDesc">Exigir biometria ou PIN ao abrir o app</div>
           </div>
           <span class="badge badge-neutral" id="app-lock-status-badge">DESATIVADO</span>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--surface2);border-radius:10px;margin-top:10px;">
           <label for="app-lock-toggle" style="font-size:13px;font-weight:600;color:var(--text);cursor:pointer;flex:1;">
-            🔒 Bloqueio por Biometria / PIN
+            <span data-i18n="settings.securityToggle">🔒 Bloqueio por Biometria / PIN</span>
           </label>
           <input type="checkbox" id="app-lock-toggle" style="width:20px;height:20px;accent-color:var(--primary);cursor:pointer;">
         </div>
@@ -279,17 +301,17 @@
       <div class="panel" style="margin-bottom:16px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:12px;">
           <div>
-            <div style="font-size:14px;font-weight:700;">Widget da Tela Inicial</div>
+            <div style="font-size:14px;font-weight:700;" data-i18n="settings.widgetTitle">Widget da Tela Inicial</div>
             <div style="font-size:12px;color:var(--muted);">Acompanhamento rápido de aplicações</div>
           </div>
-          <span class="badge badge-neutral" style="background:rgba(99,102,241,0.12);color:#818cf8;">WIDGET 3x2</span>
+          <span class="badge badge-neutral" style="background:rgba(99,102,241,0.12);color:#818cf8;" data-i18n="settings.widgetBadge">WIDGET 3X2</span>
         </div>
-        <div style="font-size:12.5px;color:var(--muted);line-height:1.5;margin-bottom:12px;">
+        <div style="font-size:12.5px;color:var(--muted);line-height:1.5;margin-bottom:12px;" data-i18n="settings.widgetDesc">
           Adicione o widget na tela inicial do Android tocando e segurando no fundo da tela e selecionando <strong>Protocolo PEP</strong>.
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--surface2);border-radius:10px;">
           <label for="widget-discrete-toggle" style="font-size:13px;font-weight:600;color:var(--text);cursor:pointer;flex:1;">
-            👁️ Modo Discreto (ocultar nomes de peptídeos)
+            <span data-i18n="settings.widgetDiscreteToggle">👁️ Modo Discreto (ocultar nomes de peptídeos)</span>
           </label>
           <input type="checkbox" id="widget-discrete-toggle" style="width:20px;height:20px;accent-color:var(--primary);cursor:pointer;">
         </div>
@@ -299,25 +321,25 @@
       <div class="panel" style="margin-bottom:16px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:12px;">
           <div>
-            <div style="font-size:14px;font-weight:700;">Health Connect (Android)</div>
-            <div style="font-size:12px;color:var(--muted);" id="hc-status-desc">Sincronização de peso e medidas corporais</div>
+            <div style="font-size:14px;font-weight:700;" data-i18n="settings.healthConnectTitle">Health Connect (Android)</div>
+            <div style="font-size:12px;color:var(--muted);" id="hc-status-desc" data-i18n="settings.healthConnectDesc">Sincronização de peso e medidas corporais</div>
           </div>
           <span class="badge-status off" id="hc-status-badge" style="background:var(--surface2);color:var(--muted);">DESATIVADO</span>
         </div>
-        <div style="font-size:12.5px;color:var(--muted);line-height:1.5;margin-bottom:12px;">
+        <div style="font-size:12.5px;color:var(--muted);line-height:1.5;margin-bottom:12px;" data-i18n="settings.healthConnectHelp">
           Integração opcional e privada com o subsistema de saúde do Android para sincronizar registros de peso corporal.
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--surface2);border-radius:10px;margin-bottom:10px;">
           <label for="hc-enable-toggle" style="font-size:13px;font-weight:600;color:var(--text);cursor:pointer;flex:1;">
-            🩺 Sincronizar com Health Connect
+            <span data-i18n="settings.healthConnectToggle">🩺 Sincronizar com Health Connect</span>
           </label>
           <input type="checkbox" id="hc-enable-toggle" style="width:20px;height:20px;accent-color:var(--primary);cursor:pointer;">
         </div>
         <div style="display:flex;gap:8px;">
-          <button type="button" class="btn-primary" id="hc-sync-btn" style="display:none;flex:1;font-size:12.5px;padding:8px 12px;">
+          <button type="button" class="btn-primary" id="hc-sync-btn" style="display:none;flex:1;font-size:12.5px;padding:8px 12px;" data-i18n="settings.healthConnectSyncBtn">
             🔄 Sincronizar Agora
           </button>
-          <button type="button" class="btn-sec" id="hc-settings-btn" style="display:none;flex:1;font-size:12.5px;padding:8px 12px;">
+          <button type="button" class="btn-sec" id="hc-settings-btn" style="display:none;flex:1;font-size:12.5px;padding:8px 12px;" data-i18n="settings.healthConnectSettingsBtn">
             ⚙️ Configurações
           </button>
         </div>
@@ -326,27 +348,27 @@
       <!-- Card de Lembretes & Notificações (V05) -->
       <div class="panel" style="margin-bottom:16px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-          <div style="font-size:14px;font-weight:700;">Lembretes & Notificações</div>
+          <div style="font-size:14px;font-weight:700;" data-i18n="settings.remindersTitle">Lembretes & Notificações</div>
           <span class="badge badge-neutral" id="settings-notif-badge">Desativado</span>
         </div>
         <div style="font-size:12.5px;color:var(--muted);line-height:1.5;margin-bottom:14px;" id="settings-notif-msg">
           Configure alarmes locais para os horários das suas aplicações diárias.
         </div>
-        <button type="button" class="btn-primary" id="open-notif-modal-btn" style="width:100%;">
+        <button type="button" class="btn-primary" id="open-notif-modal-btn" style="width:100%;" data-i18n="settings.remindersConfigureBtn">
           Configurar Lembretes
         </button>
       </div>
       
       <div class="panel" style="margin-bottom:16px;">
-        <div style="font-size:14px;font-weight:700;margin-bottom:6px;">Arquitetura 100% Local-First</div>
-        <div style="font-size:12.5px;color:var(--muted);line-height:1.5;margin-bottom:14px;">
+        <div style="font-size:14px;font-weight:700;margin-bottom:6px;" data-i18n="settings.localFirstTitle">Arquitetura 100% Local-First</div>
+        <div style="font-size:12.5px;color:var(--muted);line-height:1.5;margin-bottom:14px;" data-i18n="settings.localFirstDesc">
           Todos os seus dados de protocolo e histórico estão salvos diretamente na memória do seu dispositivo, funcionando offline com máxima privacidade e velocidade.
         </div>
         <div style="display:flex;gap:10px;">
-          <button class="btn-primary" id="export-btn" style="flex:1;">
+          <button class="btn-primary" id="export-btn" style="flex:1;" data-i18n="settings.exportBackupBtn">
             Exportar Backup JSON
           </button>
-          <button class="btn-sec" id="import-btn" style="flex:1;">
+          <button class="btn-sec" id="import-btn" style="flex:1;" data-i18n="settings.importBackupBtn">
             Importar Backup
           </button>
           <input type="file" id="import-file" accept=".json" style="display:none;" />
@@ -357,14 +379,14 @@
       <div class="panel">
         <div style="display:flex;justify-content:space-between;align-items:center;">
           <div>
-            <div style="font-weight:700;font-family:var(--display);">Protocolo PEP Android</div>
+            <div style="font-weight:700;font-family:var(--display);" data-i18n="settings.appInfo">Protocolo PEP Android</div>
             <div style="font-size:12px;color:var(--muted);">Versão 1.7.0 · Local-First Edition</div>
           </div>
           <div style="display:flex;gap:6px;">
-            <button type="button" class="btn-ghost" id="open-diag-btn" style="font-size:11.5px;padding:6px 10px;" aria-label="Abrir diagnósticos do sistema">
+            <button type="button" class="btn-ghost" id="open-diag-btn" style="font-size:11.5px;padding:6px 10px;" aria-label="Abrir diagnósticos do sistema" data-i18n="settings.diagnosticsBtn">
               Diagnósticos
             </button>
-            <button type="button" class="btn-ghost" id="reopen-onboarding-btn" style="font-size:11.5px;padding:6px 10px;">
+            <button type="button" class="btn-ghost" id="reopen-onboarding-btn" style="font-size:11.5px;padding:6px 10px;" data-i18n="settings.termsBtn">
               Termos & Info
             </button>
           </div>
@@ -383,20 +405,20 @@
         <rect x="14" y="12" width="7" height="9" rx="1"/>
         <rect x="3" y="16" width="7" height="5" rx="1"/>
       </svg>
-      Dashboard
+      <span data-i18n="nav.dashboard">Dashboard</span>
     </button>
     <button data-tab="week" role="tab" id="tab-week" aria-controls="view-week" aria-selected="false" tabindex="-1">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/>
       </svg>
-      Semana
+      <span data-i18n="nav.week">Semana</span>
     </button>
     <button data-tab="history" role="tab" id="tab-history" aria-controls="view-history" aria-selected="false" tabindex="-1">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <circle cx="12" cy="12" r="10"/>
         <polyline points="12 6 12 12 16 14"/>
       </svg>
-      Histórico
+      <span data-i18n="nav.history">Histórico</span>
     </button>
     <button data-tab="calc" role="tab" id="tab-calc" aria-controls="view-calc" aria-selected="false" tabindex="-1">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -405,14 +427,14 @@
         <line x1="16" y1="14" x2="16" y2="18"/>
         <path d="M16 10h.01M12 10h.01M8 10h.01M12 14h.01M8 14h.01M12 18h.01M8 18h.01"/>
       </svg>
-      Calculadora
+      <span data-i18n="nav.calculator">Calculadora</span>
     </button>
     <button data-tab="settings" role="tab" id="tab-settings" aria-controls="view-settings" aria-selected="false" tabindex="-1">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <circle cx="12" cy="12" r="3"/>
         <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
       </svg>
-      Ajustes
+      <span data-i18n="nav.settings">Ajustes</span>
     </button>
   </nav>
 

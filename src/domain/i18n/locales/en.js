@@ -1,0 +1,147 @@
+/**
+ * Canonical Internationalization Dictionary (i18n) — English (en)
+ * 
+ * Governance Principles (AGENTS.md):
+ * - Local-First & Offline: Static dictionary bundled offline with zero network dependencies.
+ * - Non-Prescription: Neutral and informative wording without default therapeutic recommendations.
+ */
+
+export const en = {
+  common: {
+    today: "Today",
+    save: "Save",
+    cancel: "Cancel",
+    delete: "Delete",
+    edit: "Edit",
+    close: "Close",
+    confirm: "Confirm",
+    back: "Back",
+    next: "Next",
+    finish: "Done",
+    loading: "Loading...",
+    success: "Success",
+    error: "Error",
+    warning: "Warning",
+    enabled: "ENABLED",
+    disabled: "DISABLED",
+    connected: "CONNECTED",
+    active: "ACTIVE",
+    inactive: "INACTIVE",
+    units: "IU",
+    mcg: "mcg",
+    mg: "mg",
+    ml: "ml",
+    kg: "kg",
+    cm: "cm"
+  },
+  nav: {
+    dashboard: "Dashboard",
+    week: "Week",
+    history: "History",
+    calculator: "Calculator",
+    settings: "Settings"
+  },
+  topbar: {
+    title: "PEP Protocol",
+    notifications: "Reminders & Notifications",
+    themeToggle: "Toggle Theme (Light / Dark)"
+  },
+  dashboard: {
+    bannerText: "Your feedback matters! <b>Contact us or submit ideas</b>",
+    heading: "Your Protocol",
+    dosesTakenToday: "taken today",
+    addPeptide: "Add Peptide to Protocol",
+    quickActions: "Quick Actions",
+    share: "Share",
+    export: "Export",
+    import: "Import",
+    calculator: "Calculator",
+    disclaimer: "Personal reference only. Calculations are mathematical estimates and logs are saved exclusively on this device.<br>Always confirm dosages, dilution and safety with a healthcare professional.",
+    emptyProtocolTitle: "No peptides registered",
+    emptyProtocolDesc: "Tap the button above to add your first peptide and configure application schedules."
+  },
+  week: {
+    heading: "Weekly View",
+    subheading: "Tracking and application schedule for the next 7 days",
+    dosesCount: "{count} scheduled application(s)"
+  },
+  history: {
+    heading: "Application History",
+    filterAll: "All",
+    filterConfirmed: "Confirmed",
+    filterSkipped: "Skipped",
+    emptyTitle: "No records found",
+    emptyDesc: "Confirmed or registered applications will appear here in chronological order.",
+    exportReport: "Export Report PDF / CSV"
+  },
+  calculator: {
+    title: "Reconstitution Calculator",
+    subtitle: "Safely calculate dilution and syringe unit dosage",
+    step1Title: "Peptide quantity in vial",
+    step1Desc: "Total content (mg)",
+    step2Title: "Bacteriostatic water added",
+    step2Desc: "Diluent volume (ml)",
+    step3Title: "Desired dose per application",
+    step3Desc: "Enter prescribed dose",
+    dosePlaceholder: "ex: 250",
+    doseUnitMcg: "mcg",
+    doseUnitMg: "mg",
+    drawResultTitle: "IU",
+    drawResultHint: "Enter desired dose above to calculate syringe units (IU).",
+    drawResultInstruction: "Draw up to <b>{units} IU</b> mark on a 100 IU syringe",
+    concentration: "Solution concentration",
+    yield: "Estimated yield",
+    yieldValue: "{doses} doses of {dose}"
+  },
+  settings: {
+    heading: "Settings & Preferences",
+    languageTitle: "Application Language",
+    languageDesc: "Select display language for PEP Protocol",
+    siteRotationTitle: "Site Rotation",
+    siteRotationDesc: "Next in rotation: <b>{site}</b> ({count} active sites)",
+    siteConfigureBtn: "Configure",
+    securityTitle: "Security & Privacy",
+    securityDesc: "Require biometric or device PIN to open the app.",
+    securityToggle: "Biometric / PIN App Lock",
+    widgetTitle: "Home Screen Widget",
+    widgetBadge: "WIDGET 3X2",
+    widgetDesc: "Add widget to Android home screen by touching and holding an empty area and selecting PEP Protocol.",
+    widgetDiscreteToggle: "Discreet Mode (hide peptide names)",
+    healthConnectTitle: "Health Connect (Android)",
+    healthConnectDesc: "Body weight and metrics synchronization",
+    healthConnectHelp: "Optional and private integration with Android Health subsystem to sync body weight logs.",
+    healthConnectToggle: "Sync with Health Connect",
+    healthConnectSyncBtn: "Sync Now",
+    healthConnectSettingsBtn: "Settings",
+    remindersTitle: "Reminders & Notifications",
+    remindersStatus: "ACTIVE & SCHEDULED",
+    remindersDesc: "{count} reminders scheduled on system for the next 14 days.",
+    remindersConfigureBtn: "Configure Reminders",
+    localFirstTitle: "100% Local-First Architecture",
+    localFirstDesc: "All your protocol data and history are stored directly on your device memory, running offline with maximum privacy and speed.",
+    exportBackupBtn: "Export JSON Backup",
+    importBackupBtn: "Import Backup",
+    lastBackup: "Last exported backup: {date}",
+    appInfo: "PEP Protocol Android",
+    diagnosticsBtn: "Diagnostics",
+    termsBtn: "Terms & Privacy"
+  },
+  modals: {
+    addPeptideTitle: "New Peptide",
+    editPeptideTitle: "Edit Peptide",
+    nameLabel: "Peptide Name",
+    doseLabel: "Dose per Application",
+    frequencyLabel: "Frequency",
+    scheduleLabel: "Application Time",
+    confirmDeleteTitle: "Delete Peptide?",
+    confirmDeleteMessage: "This action cannot be undone. All linked reminders will be removed.",
+    confirmLogTitle: "Confirm Application",
+    confirmLogMessage: "Mark dose of {name} ({dose}) as taken now?",
+    siteSelectTitle: "Select Injection Site",
+    injectionNotePlaceholder: "Notes or observations (optional)"
+  },
+  notifications: {
+    doseReminderTitle: "Time for your application — {peptide}",
+    doseReminderBody: "Scheduled dose of {dose} ({units} IU). Tap to confirm application in PEP Protocol."
+  }
+};

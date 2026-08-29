@@ -38,13 +38,47 @@ import { setupAppLockUI } from "./ui/app-lock.js";
 import { widgetService } from "./services/widget.js";
 import { healthConnect } from "./services/health-connect.js";
 import { setupHealthConnectUI } from "./ui/health-connect.js";
+import { i18nService } from "./services/i18n.js";
+import { setupI18nUI, applyTranslations } from "./ui/i18n.js";
 
 const esc = escapeHtml;
 
 function fmtBR(iso) {
   if (!iso) return "";
-  const [y, m, d] = iso.split("-");
-  return `${d}/${m}`;
+  const parts = iso.split("-");
+  if (parts.length < 3) return iso;
+  return `${parts[2]}/${parts[1]}/${parts[0]}`;
+}
+
+function showToast(msg) {
+  if (!msg) return;
+  const existing = document.getElementById("pep-toast");
+  if (existing) existing.remove();
+  const toast = document.createElement("div");
+  toast.id = "pep-toast";
+  toast.textContent = msg;
+  toast.style.cssText = `
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--surface3);
+    color: var(--text);
+    padding: 10px 18px;
+    border-radius: 20px;
+    border: 1px solid var(--border2);
+    font-size: 13px;
+    font-weight: 600;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    z-index: 9999;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  `;
+  document.body.appendChild(toast);
+  setTimeout(() => {
+    toast.style.opacity = "0";
+    setTimeout(() => toast.remove(), 300);
+  }, 2500);
 }
 
 const dateKey = dateToKey;
@@ -65,6 +99,7 @@ let sitesUI = null;
 let measurementsUI = null;
 let appLockUI = null;
 let healthConnectUI = null;
+let i18nUI = null;
 
 async function initApp() {
   await theme.init();
@@ -159,6 +194,30 @@ async function initApp() {
     showToast,
     haptics
   });
+
+  i18nUI = setupI18nUI({
+    i18nService,
+    onLocaleChange: () => {
+      applyTranslations(document, i18nService);
+      renderToday();
+      renderWeek();
+      renderHistory();
+      if (inventoryUI && typeof inventoryUI.renderInventoryList === "function") {
+        inventoryUI.renderInventoryList();
+      }
+      if (sitesUI && typeof sitesUI.updateSummary === "function") {
+        sitesUI.updateSummary();
+      }
+      if (appLockUI && typeof appLockUI.updateSettingsLockCard === "function") {
+        appLockUI.updateSettingsLockCard();
+      }
+      if (healthConnectUI && typeof healthConnectUI.updateSettingsCard === "function") {
+        healthConnectUI.updateSettingsCard();
+      }
+    }
+  });
+
+  applyTranslations(document, i18nService);
 
   renderToday();
   renderWeek();
@@ -337,6 +396,9 @@ function switchTab(tabId) {
     }
     if (healthConnectUI && typeof healthConnectUI.updateSettingsCard === "function") {
       healthConnectUI.updateSettingsCard();
+    }
+    if (i18nUI && typeof i18nUI.updateActiveLangUI === "function") {
+      i18nUI.updateActiveLangUI(i18nService.getLocale());
     }
   }
 }
