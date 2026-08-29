@@ -258,6 +258,23 @@
         </div>
       </div>
 
+      <!-- Card de Bloqueio Biométrico / PIN (V13) -->
+      <div class="panel" style="margin-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:12px;">
+          <div>
+            <div style="font-size:14px;font-weight:700;">Segurança & Privacidade</div>
+            <div style="font-size:12px;color:var(--muted);" id="app-lock-status-desc">Exigir biometria ou PIN ao abrir o app</div>
+          </div>
+          <span class="badge badge-neutral" id="app-lock-status-badge">DESATIVADO</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--surface2);border-radius:10px;margin-top:10px;">
+          <label for="app-lock-toggle" style="font-size:13px;font-weight:600;color:var(--text);cursor:pointer;flex:1;">
+            🔒 Bloqueio por Biometria / PIN
+          </label>
+          <input type="checkbox" id="app-lock-toggle" style="width:20px;height:20px;accent-color:var(--primary);cursor:pointer;">
+        </div>
+      </div>
+
       <!-- Card de Lembretes & Notificações (V05) -->
       <div class="panel" style="margin-bottom:16px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
@@ -922,6 +939,20 @@
         </div>
       </form>
     </div>
+  </div>
+
+  <!-- Overlay: Bloqueio do App por Biometria / PIN (V13) -->
+  <div id="app-lock-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg);z-index:99999;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;" role="dialog" aria-modal="true" aria-label="Aplicativo Bloqueado">
+    <div style="width:72px;height:72px;border-radius:24px;background:rgba(99,102,241,0.12);display:flex;align-items:center;justify-content:center;margin-bottom:20px;font-size:36px;">
+      🔒
+    </div>
+    <h2 style="font-size:20px;font-weight:800;color:var(--text);margin:0 0 8px;">Protocolo PEP Bloqueado</h2>
+    <p style="font-size:13.5px;color:var(--muted);max-width:280px;line-height:1.5;margin:0 0 28px;">
+      Seus dados de protocolo estão protegidos. Confirme sua identidade para acessar.
+    </p>
+    <button type="button" class="btn-primary" id="app-lock-unlock-btn" style="max-width:260px;padding:14px 24px;font-size:14px;border-radius:12px;">
+      🔓 Desbloquear
+    </button>
   </div>
 
   <!-- Modal: Confirmação de Ação In-App -->

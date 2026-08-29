@@ -23,7 +23,8 @@
     "@capacitor/local-notifications": "^6.1.1",
     "@capacitor/preferences": "^6.0.3",
     "@capacitor/splash-screen": "^6.0.3",
-    "@capacitor/status-bar": "^6.0.2"
+    "@capacitor/status-bar": "^6.0.2",
+    "@capgo/capacitor-native-biometric": "^6.0.4"
   },
   "devDependencies": {
     "@capacitor/cli": "^6.2.0",

@@ -33,6 +33,8 @@ import { calculateRemainingDoses, getExpirationStatus } from "./domain/inventory
 import { setupInjectionSitesUI } from "./ui/injection-sites.js";
 import { getNextSite, getLastUsedSite } from "./domain/injection-sites.js";
 import { setupMeasurementsUI } from "./ui/measurements.js";
+import { appLock } from "./services/app-lock.js";
+import { setupAppLockUI } from "./ui/app-lock.js";
 
 const esc = escapeHtml;
 
@@ -50,6 +52,7 @@ let pendingCalculationSnapshot = null;
 let inventoryUI = null;
 let sitesUI = null;
 let measurementsUI = null;
+let appLockUI = null;
 
 async function initApp() {
   await theme.init();
@@ -121,12 +124,23 @@ async function initApp() {
       renderHistory();
     }
   });
+  appLockUI = setupAppLockUI({
+    appLockService: appLock,
+    onUnlock: () => {
+      renderToday();
+      renderWeek();
+      renderHistory();
+    }
+  });
 
   renderToday();
   renderWeek();
   renderHistory();
   updateNotificationUI(storage.getPeptides());
   renderBackupStatusUI();
+  if (appLockUI && typeof appLockUI.updateSettingsLockCard === "function") {
+    appLockUI.updateSettingsLockCard();
+  }
 
   notifications.schedulePeptideReminders(storage.getPeptides());
 }
@@ -272,6 +286,9 @@ function switchTab(tabId) {
     }
     if (sitesUI && typeof sitesUI.updateSummary === "function") {
       sitesUI.updateSummary();
+    }
+    if (appLockUI && typeof appLockUI.updateSettingsLockCard === "function") {
+      appLockUI.updateSettingsLockCard();
     }
   }
 }
