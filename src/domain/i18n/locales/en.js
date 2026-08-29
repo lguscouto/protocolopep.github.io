@@ -91,7 +91,10 @@ export const en = {
     drawResultInstruction: "Draw up to <b>{units} IU</b> mark on a 100 IU syringe",
     concentration: "Solution concentration",
     yield: "Estimated yield",
-    yieldValue: "{doses} doses of {dose}"
+    yieldValue: "{doses} doses of {dose}",
+    useInProtocol: "+ Use in Protocol",
+    saveVial: "Save Vial",
+    disclaimer: "Disclaimer: Strictly a personal calculation and tracking tool. Does not constitute medical advice, prescription, or clinical recommendation. Always consult your healthcare professional."
   },
   settings: {
     heading: "Settings & Preferences",
@@ -143,5 +146,32 @@ export const en = {
   notifications: {
     doseReminderTitle: "Time for your application — {peptide}",
     doseReminderBody: "Scheduled dose of {dose} ({units} IU). Tap to confirm application in PEP Protocol."
+  },
+  research: {
+    title: "Scientific Research Base",
+    subtitle: "Pharmacokinetics, mechanisms, and references from medical literature",
+    searchPlaceholder: "Search by name, synonym, or mechanism...",
+    allCategories: "All Compounds",
+    categoryTissueRepair: "Tissue Repair",
+    categoryGlp1: "GLP-1 & Incretins",
+    categoryGh: "GH Secretagogues",
+    categoryCopper: "Copper Peptides",
+    categoryMetabolic: "Metabolic & Mitochondrial",
+    categoryLongevity: "Longevity & Telomeres",
+    openInCalculator: "Calculate Reconstitution",
+    addToProtocol: "Add to Protocol",
+    halfLife: "Reported Half-Life",
+    storage: "Storage & Solvent",
+    mechanism: "Proposed Mechanism of Action",
+    safety: "Safety & Regulatory Notes",
+    scientificReferences: "Scientific References (PubMed)",
+    noResults: "No compounds found for your search query.",
+    disclaimer: "Strictly educational and scientific content. PEP Protocol does not recommend or prescribe therapeutic dosages.",
+    favoriteBtn: "Favorite Compound",
+    unfavoriteBtn: "Remove from Favorites",
+    badgeEducation: "SCIENTIFIC RESEARCH",
+    recentSearches: "Recent Searches",
+    clearRecent: "Clear",
+    openResearchBtn: "Research Base"
   }
 };

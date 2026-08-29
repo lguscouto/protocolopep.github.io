@@ -40,6 +40,8 @@ import { healthConnect } from "./services/health-connect.js";
 import { setupHealthConnectUI } from "./ui/health-connect.js";
 import { i18nService } from "./services/i18n.js";
 import { setupI18nUI, applyTranslations } from "./ui/i18n.js";
+import { researchService } from "./services/research.js";
+import { setupResearchUI } from "./ui/research.js";
 
 const esc = escapeHtml;
 
@@ -100,6 +102,7 @@ let measurementsUI = null;
 let appLockUI = null;
 let healthConnectUI = null;
 let i18nUI = null;
+let researchUI = null;
 
 async function initApp() {
   await theme.init();
@@ -218,6 +221,23 @@ async function initApp() {
   });
 
   applyTranslations(document, i18nService);
+
+  researchUI = setupResearchUI({
+    researchService,
+    onOpenCalculator: (compound) => {
+      switchTab("calc");
+      showToast(`Composto carregado: ${compound.name}`);
+    },
+    onAddToProtocol: (compound) => {
+      switchTab("today");
+      openEditModal(null, {
+        name: compound.name,
+        sub: compound.categoryLabel,
+        accent: compound.accentColor
+      });
+      showToast(`Iniciando cadastro de ${compound.name}`);
+    }
+  });
 
   renderToday();
   renderWeek();

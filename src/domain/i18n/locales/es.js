@@ -91,7 +91,10 @@ export const es = {
     drawResultInstruction: "Carga hasta la marca de <b>{units} UI</b> en una jeringa de 100 UI",
     concentration: "Concentración de la solución",
     yield: "Rendimiento estimado",
-    yieldValue: "{doses} dosis de {dose}"
+    yieldValue: "{doses} dosis de {dose}",
+    useInProtocol: "+ Usar en el Protocolo",
+    saveVial: "Guardar Vial",
+    disclaimer: "Aviso Legal: Herramienta estrictamente de cálculo y registro personal. No constituye asesoramiento, prescripción ni recomendación clínica. Consulte siempre a su profesional de la salud."
   },
   settings: {
     heading: "Ajustes & Preferencias",
@@ -143,5 +146,32 @@ export const es = {
   notifications: {
     doseReminderTitle: "Hora de tu aplicación — {peptide}",
     doseReminderBody: "Dosis programada de {dose} ({units} UI). Toca para confirmar la aplicación en Protocolo PEP."
+  },
+  research: {
+    title: "Base de Investigación Científica",
+    subtitle: "Farmacocinética, mecanismos y referencias de la literatura médica",
+    searchPlaceholder: "Buscar por nombre, sinónimo o mecanismo...",
+    allCategories: "Todos los Compuestos",
+    categoryTissueRepair: "Reparación Tisular",
+    categoryGlp1: "GLP-1 e Incretinas",
+    categoryGh: "Secretagogos de GH",
+    categoryCopper: "Péptidos de Cobre",
+    categoryMetabolic: "Metabólico y Mitocondrial",
+    categoryLongevity: "Longevidad y Telómeros",
+    openInCalculator: "Calcular Reconstitución",
+    addToProtocol: "Añadir al Protocolo",
+    halfLife: "Vida Media Reportada",
+    storage: "Conservación y Solvente",
+    mechanism: "Mecanismo de Acción Propuesto",
+    safety: "Notas de Seguridad y Evidencia",
+    scientificReferences: "Referencias Científicas (PubMed)",
+    noResults: "No se encontraron compuestos para el término buscado.",
+    disclaimer: "Contenido estrictamente educativo y científico. Protocolo PEP no recomienda ni prescribe dosis terapéuticas.",
+    favoriteBtn: "Marcar como Favorito",
+    unfavoriteBtn: "Quitar de Favoritos",
+    badgeEducation: "INVESTIGACIÓN CIENTÍFICA",
+    recentSearches: "Búsquedas Recientes",
+    clearRecent: "Limpiar",
+    openResearchBtn: "Base Científica"
   }
 };

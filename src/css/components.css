@@ -442,6 +442,50 @@ body.theme-light .dash-banner-text b {
   font-style: italic;
 }
 
+/* Research Card (V17) */
+.research-card {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  flex-shrink: 0 !important;
+  padding: 16px 16px 14px 18px !important;
+  border-radius: 16px !important;
+  margin-bottom: 12px !important;
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  position: relative !important;
+  overflow: hidden !important;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.research-card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4.5px;
+  background: var(--acc, var(--primary));
+}
+
+.research-card:hover, .research-card:focus-visible {
+  border-color: var(--primary) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.research-card .nm {
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+#compound-detail-modal {
+  z-index: 70 !important;
+}
+
 /* Card Action Controls */
 .card .ctrls {
   position: absolute;

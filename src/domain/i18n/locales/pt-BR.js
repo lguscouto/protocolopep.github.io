@@ -91,7 +91,10 @@ export const ptBR = {
     drawResultInstruction: "Puxe até a marca de <b>{units} UI</b> na seringa de 100 UI",
     concentration: "Concentração da solução",
     yield: "Rendimento estimado",
-    yieldValue: "{doses} doses de {dose}"
+    yieldValue: "{doses} doses de {dose}",
+    useInProtocol: "+ Usar no Protocolo",
+    saveVial: "Salvar Frasco",
+    disclaimer: "Aviso Legal: Ferramenta estritamente de cálculo e registro pessoal. Não constitui aconselhamento, prescrição ou recomendação clínica. Consulte sempre seu profissional de saúde."
   },
   settings: {
     heading: "Ajustes & Preferências",
@@ -143,5 +146,32 @@ export const ptBR = {
   notifications: {
     doseReminderTitle: "Hora da sua aplicação — {peptide}",
     doseReminderBody: "Dose agendada de {dose} ({units} UI). Toque para confirmar a aplicação no Protocolo PEP."
+  },
+  research: {
+    title: "Base de Pesquisa Científica",
+    subtitle: "Farmacocinética, mecanismos e referências da literatura médica",
+    searchPlaceholder: "Buscar por nome, sinônimo ou mecanismo...",
+    allCategories: "Todos os Compostos",
+    categoryTissueRepair: "Reparação Tecidual",
+    categoryGlp1: "GLP-1 & Incretinas",
+    categoryGh: "Secretagogos de GH",
+    categoryCopper: "Peptídeos de Cobre",
+    categoryMetabolic: "Metabólico & Mitocondrial",
+    categoryLongevity: "Longevidade & Telômeros",
+    openInCalculator: "Calcular Reconstituição",
+    addToProtocol: "Adicionar ao Protocolo",
+    halfLife: "Meia-Vida Relatada",
+    storage: "Conservação & Solvente",
+    mechanism: "Mecanismo de Ação Proposto",
+    safety: "Notas de Segurança & Evidência",
+    scientificReferences: "Referências Científicas (PubMed)",
+    noResults: "Nenhum composto encontrado para o termo pesquisado.",
+    disclaimer: "Conteúdo estritamente educacional e científico. O Protocolo PEP não recomenda nem prescreve dosagens terapêuticas.",
+    favoriteBtn: "Favoritar Composto",
+    unfavoriteBtn: "Remover dos Favoritos",
+    badgeEducation: "PESQUISA CIENTÍFICA",
+    recentSearches: "Buscas Recentes",
+    clearRecent: "Limpar",
+    openResearchBtn: "Base Científica"
   }
 };
