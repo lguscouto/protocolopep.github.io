@@ -108,21 +108,32 @@
 
     <!-- ABA: HISTÓRICO -->
     <section class="view" id="view-history" role="tabpanel" aria-labelledby="tab-history">
-      <div class="eyebrow-row" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px;">
+      <div class="eyebrow-row" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px;flex-wrap:wrap;">
         <div>
-          <div class="eyebrow" style="margin:0;">Histórico de Doses</div>
+          <div class="eyebrow" style="margin:0;">Histórico & Acompanhamento</div>
           <div class="hist-count" id="history-count" style="font-size:11.5px;color:var(--muted);font-weight:600;margin-top:2px;"></div>
         </div>
-        <div style="display:flex;gap:8px;">
-          <button type="button" class="btn-ghost" id="hist-report-btn" style="font-size:12px;padding:6px 10px;border:1px solid var(--border2);border-radius:8px;" aria-label="Gerar relatório de aplicações">
-            📄 Relatório
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button type="button" class="btn-primary" id="open-measurement-modal-btn" style="font-size:11.5px;padding:6px 10px;width:auto;" aria-label="Registrar peso, medidas ou sintomas">
+            + Medidas / Sintomas
           </button>
-          <button type="button" class="btn-ghost" id="hist-retro-btn" style="font-size:12px;padding:6px 10px;border:1px solid var(--border2);border-radius:8px;" aria-label="Adicionar registro de dose retroativo">
-            + Retroativo
+          <button type="button" class="btn-ghost" id="hist-retro-btn" style="font-size:11.5px;padding:6px 10px;border:1px solid var(--border2);border-radius:8px;" aria-label="Adicionar registro de dose retroativo">
+            + Dose Retroativa
+          </button>
+          <button type="button" class="btn-ghost" id="hist-report-btn" style="font-size:11.5px;padding:6px 10px;border:1px solid var(--border2);border-radius:8px;" aria-label="Gerar relatório de aplicações">
+            📄 Relatório
           </button>
         </div>
       </div>
+
+      <!-- Resumo de Tendências Autorrelatadas (V12) -->
+      <div id="measurements-trend-summary"></div>
+
+      <!-- Lista de Doses Aplicadas -->
       <div id="history-list" role="feed" aria-label="Lista de doses históricas"></div>
+
+      <!-- Lista de Medições e Sintomas (V12) -->
+      <div id="measurements-history-list"></div>
     </section>
 
     <!-- ABA: CALCULADORA -->
@@ -820,6 +831,96 @@
           Concluído
         </button>
       </div>
+    </div>
+  </div>
+
+  <!-- Modal: Registro de Medições e Sintomas (V12) -->
+  <div class="modal" id="measurement-modal" role="dialog" aria-modal="true" aria-labelledby="measurement-modal-title">
+    <div class="sheet" style="max-width:500px;">
+      <div class="sheet-head">
+        <div>
+          <div class="sheet-title" id="measurement-modal-title">Registro Corporal / Sintomas</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px;">Acompanhamento pessoal autorrelatado</div>
+        </div>
+        <button type="button" class="sheet-x" id="measurement-modal-close" aria-label="Fechar modal de medições">✕</button>
+      </div>
+      <form id="measurement-form" style="margin:0;">
+        <div class="sheet-body" style="max-height:65vh;overflow-y:auto;padding-bottom:16px;">
+          <!-- Data e Hora -->
+          <div style="display:flex;gap:10px;margin-bottom:14px;">
+            <div style="flex:1;">
+              <label for="meas-date-input" style="display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:4px;">Data</label>
+              <input type="date" id="meas-date-input" required style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--surface2);color:var(--text);font-size:13px;">
+            </div>
+            <div style="width:110px;">
+              <label for="meas-time-input" style="display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:4px;">Hora</label>
+              <input type="time" id="meas-time-input" style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--surface2);color:var(--text);font-size:13px;">
+            </div>
+          </div>
+
+          <!-- Peso Corporal -->
+          <div style="margin-bottom:14px;">
+            <label for="meas-weight-input" style="display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:4px;">Peso Corporal (kg)</label>
+            <input type="number" id="meas-weight-input" step="0.1" min="20" max="400" placeholder="Ex: 82.5 (opcional)" style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--surface2);color:var(--text);font-size:13.5px;">
+          </div>
+
+          <!-- Nível de Energia (1 a 5) -->
+          <div style="margin-bottom:14px;">
+            <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;">Nível de Energia (1 = Muito baixa, 5 = Excelente)</div>
+            <div style="display:flex;gap:8px;" role="radiogroup" aria-label="Nível de energia">
+              <button type="button" class="btn-subtle" id="meas-energy-1" style="flex:1;padding:8px 4px;font-size:13px;border-radius:8px;">1 😫</button>
+              <button type="button" class="btn-subtle" id="meas-energy-2" style="flex:1;padding:8px 4px;font-size:13px;border-radius:8px;">2 🥱</button>
+              <button type="button" class="btn-subtle" id="meas-energy-3" style="flex:1;padding:8px 4px;font-size:13px;border-radius:8px;">3 😐</button>
+              <button type="button" class="btn-subtle" id="meas-energy-4" style="flex:1;padding:8px 4px;font-size:13px;border-radius:8px;">4 ⚡</button>
+              <button type="button" class="btn-subtle" id="meas-energy-5" style="flex:1;padding:8px 4px;font-size:13px;border-radius:8px;">5 🔥</button>
+            </div>
+          </div>
+
+          <!-- Nível de Humor (1 a 5) -->
+          <div style="margin-bottom:14px;">
+            <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;">Humor / Bem-estar (1 = Ruim, 5 = Excelente)</div>
+            <div style="display:flex;gap:8px;" role="radiogroup" aria-label="Nível de humor">
+              <button type="button" class="btn-subtle" id="meas-mood-1" style="flex:1;padding:8px 4px;font-size:13px;border-radius:8px;">1 😞</button>
+              <button type="button" class="btn-subtle" id="meas-mood-2" style="flex:1;padding:8px 4px;font-size:13px;border-radius:8px;">2 😕</button>
+              <button type="button" class="btn-subtle" id="meas-mood-3" style="flex:1;padding:8px 4px;font-size:13px;border-radius:8px;">3 😐</button>
+              <button type="button" class="btn-subtle" id="meas-mood-4" style="flex:1;padding:8px 4px;font-size:13px;border-radius:8px;">4 😊</button>
+              <button type="button" class="btn-subtle" id="meas-mood-5" style="flex:1;padding:8px 4px;font-size:13px;border-radius:8px;">5 🤩</button>
+            </div>
+          </div>
+
+          <!-- Sintomas e Observações Rápidas -->
+          <div style="margin-bottom:14px;">
+            <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;">Sintomas & Efeitos Autorrelatados</div>
+            <div id="meas-symptoms-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;"></div>
+            <div style="display:flex;gap:8px;">
+              <input type="text" id="meas-custom-symptom-input" placeholder="Outro sintoma / observação..." style="flex:1;padding:8px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--surface2);color:var(--text);font-size:12.5px;" maxlength="60">
+              <button type="button" class="btn-sec" id="meas-add-symptom-btn" style="width:auto;padding:8px 14px;font-size:12px;white-space:nowrap;">
+                + Incluir
+              </button>
+            </div>
+          </div>
+
+          <!-- Observações Livres -->
+          <div style="margin-bottom:8px;">
+            <label for="meas-notes-input" style="display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:4px;">Notas Adicionais</label>
+            <textarea id="meas-notes-input" rows="2" placeholder="Ex: Treino pesado, hidratação normal, sono de 8h..." style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--surface2);color:var(--text);font-size:13px;resize:vertical;" maxlength="500"></textarea>
+          </div>
+        </div>
+
+        <div class="sheet-foot" style="display:flex;justify-content:space-between;gap:10px;">
+          <button type="button" class="btn-danger" id="measurement-delete-btn" style="display:none;width:auto;font-size:12px;padding:8px 14px;">
+            Excluir
+          </button>
+          <div style="display:flex;gap:8px;margin-left:auto;">
+            <button type="button" class="btn-subtle" onclick="document.getElementById('measurement-modal').classList.remove('on')" style="width:auto;font-size:12px;padding:8px 16px;">
+              Cancelar
+            </button>
+            <button type="submit" class="btn-primary" style="width:auto;font-size:12px;padding:8px 20px;">
+              Salvar Registro
+            </button>
+          </div>
+        </div>
+      </form>
     </div>
   </div>
 

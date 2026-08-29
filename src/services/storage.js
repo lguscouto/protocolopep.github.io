@@ -1,14 +1,16 @@
 import { DEFAULT_PROTOCOL } from "../data/default-library.js";
-import { migrateAppState, migratePeptides, migrateLogs, migrateInventory, migrateSites, CURRENT_SCHEMA_VERSION } from "../domain/migrations.js";
+import { migrateAppState, migratePeptides, migrateLogs, migrateInventory, migrateSites, migrateMeasurements, CURRENT_SCHEMA_VERSION } from "../domain/migrations.js";
 import { validateAndParseBackup, createBackupPayload } from "../domain/backup.js";
 import { debitVialDose, creditVialDose } from "../domain/inventory.js";
 import { getDefaultSites } from "../domain/injection-sites.js";
+import { createMeasurementEntry, validateMeasurementEntry } from "../domain/measurements.js";
 
 const KEYS = {
   PROTOCOL: "pep_protocol_v2",
   LOGS: "pep_logs_v2",
   INVENTORY: "pep_inventory_v2",
   SITES: "pep_sites_v2",
+  MEASUREMENTS: "pep_measurements_v2",
   SETTINGS: "pep_settings_v2",
   ROLLBACK_SNAPSHOT: "pep_rollback_snapshot",
   LEGACY_PROTO: "peptideos-protocolo-v1",
@@ -21,6 +23,7 @@ export class StorageService {
     this.logs = {};
     this.inventory = [];
     this.sites = getDefaultSites();
+    this.measurements = [];
     this.listeners = new Set();
   }
 
@@ -93,12 +96,26 @@ export class StorageService {
         this.saveSites();
       }
 
+      // 5. Carregar Medições e Sintomas (V12)
+      let storedMeasurements = localStorage.getItem(KEYS.MEASUREMENTS);
+      if (storedMeasurements) {
+        try {
+          const raw = JSON.parse(storedMeasurements);
+          this.measurements = migrateMeasurements(raw);
+        } catch (e) {
+          this.measurements = [];
+        }
+      } else {
+        this.measurements = [];
+      }
+
     } catch (err) {
       console.error("[Storage] Erro ao inicializar storage local:", err);
       this.peptides = migratePeptides(DEFAULT_PROTOCOL);
       this.logs = {};
       this.inventory = [];
       this.sites = getDefaultSites();
+      this.measurements = [];
     }
 
     this.notify();
@@ -106,7 +123,8 @@ export class StorageService {
       peptides: this.peptides,
       logs: this.logs,
       inventory: this.inventory,
-      sites: this.sites
+      sites: this.sites,
+      measurements: this.measurements
     };
   }
 
@@ -263,12 +281,80 @@ export class StorageService {
     }
   }
 
+  getMeasurements() {
+    return Array.isArray(this.measurements) ? [...this.measurements] : [];
+  }
+
+  setMeasurements(newMeasurements) {
+    const backupSnapshot = this.takeSnapshot();
+    this.measurements = migrateMeasurements(newMeasurements);
+    const res = this.saveMeasurements();
+    if (!res.success) {
+      this.restoreSnapshot(backupSnapshot);
+      return res;
+    }
+    this.notify();
+    return { success: true, measurements: this.measurements };
+  }
+
+  addMeasurement(entryData) {
+    const backupSnapshot = this.takeSnapshot();
+    const entry = createMeasurementEntry(entryData);
+    const validRes = validateMeasurementEntry(entry);
+    if (!validRes.valid) {
+      return { success: false, error: validRes.errors.join("; ") };
+    }
+
+    const current = this.getMeasurements();
+    // Se já existir registro para o mesmo ID, atualiza; senão adiciona
+    const existingIdx = current.findIndex((m) => m.id === entry.id);
+    if (existingIdx !== -1) {
+      current[existingIdx] = entry;
+    } else {
+      current.push(entry);
+    }
+
+    this.measurements = current;
+    const res = this.saveMeasurements();
+    if (!res.success) {
+      this.restoreSnapshot(backupSnapshot);
+      return res;
+    }
+    this.notify();
+    return { success: true, entry, measurements: this.measurements };
+  }
+
+  deleteMeasurement(id) {
+    const backupSnapshot = this.takeSnapshot();
+    const current = this.getMeasurements();
+    const filtered = current.filter((m) => m.id !== id);
+    this.measurements = filtered;
+    const res = this.saveMeasurements();
+    if (!res.success) {
+      this.restoreSnapshot(backupSnapshot);
+      return res;
+    }
+    this.notify();
+    return { success: true, measurements: this.measurements };
+  }
+
+  saveMeasurements() {
+    try {
+      localStorage.setItem(KEYS.MEASUREMENTS, JSON.stringify(this.measurements));
+      return { success: true };
+    } catch (e) {
+      console.error("[Storage] Erro ao salvar medições:", e);
+      return { success: false, error: e.message || "Falha ao gravar medições no armazenamento local" };
+    }
+  }
+
   takeSnapshot() {
     return {
       peptides: JSON.parse(JSON.stringify(this.peptides)),
       logs: JSON.parse(JSON.stringify(this.logs)),
       inventory: JSON.parse(JSON.stringify(this.inventory)),
-      sites: JSON.parse(JSON.stringify(this.sites))
+      sites: JSON.parse(JSON.stringify(this.sites)),
+      measurements: JSON.parse(JSON.stringify(this.measurements))
     };
   }
 
@@ -278,11 +364,13 @@ export class StorageService {
     this.logs = snapshot.logs || {};
     this.inventory = snapshot.inventory || [];
     this.sites = snapshot.sites || getDefaultSites();
+    this.measurements = snapshot.measurements || [];
     try {
       localStorage.setItem(KEYS.PROTOCOL, JSON.stringify(this.peptides));
       localStorage.setItem(KEYS.LOGS, JSON.stringify(this.logs));
       localStorage.setItem(KEYS.INVENTORY, JSON.stringify(this.inventory));
       localStorage.setItem(KEYS.SITES, JSON.stringify(this.sites));
+      localStorage.setItem(KEYS.MEASUREMENTS, JSON.stringify(this.measurements));
     } catch (e) {
       console.error("[Storage] Erro ao restaurar snapshot:", e);
     }
@@ -290,7 +378,7 @@ export class StorageService {
   }
 
   exportBackup(theme = "black") {
-    return createBackupPayload(this.peptides, this.logs, theme, this.inventory, this.sites);
+    return createBackupPayload(this.peptides, this.logs, theme, this.inventory, this.sites, this.measurements);
   }
 
   importBackup(jsonString) {
@@ -306,14 +394,16 @@ export class StorageService {
       this.logs = clean.logs;
       this.inventory = clean.inventory || [];
       this.sites = clean.sites || getDefaultSites();
+      this.measurements = clean.measurements || [];
 
       const resProto = this.saveProtocol();
       const resLogs = this.saveLogs();
       const resInv = this.saveInventory();
       const resSites = this.saveSites();
+      const resMeas = this.saveMeasurements();
 
-      if (!resProto.success || !resLogs.success || !resInv.success || !resSites.success) {
-        throw new Error(resProto.error || resLogs.error || resInv.error || resSites.error || "Falha na escrita local");
+      if (!resProto.success || !resLogs.success || !resInv.success || !resSites.success || !resMeas.success) {
+        throw new Error(resProto.error || resLogs.error || resInv.error || resSites.error || resMeas.error || "Falha na escrita local");
       }
 
       this.notify();
@@ -341,7 +431,8 @@ export class StorageService {
           peptides: this.peptides,
           logs: this.logs,
           inventory: this.inventory,
-          sites: this.sites
+          sites: this.sites,
+          measurements: this.measurements
         });
       } catch (e) {
         console.error("[Storage] Listener error:", e);

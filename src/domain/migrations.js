@@ -2,8 +2,9 @@ import { createPeptide } from "./protocol.js";
 import { normalizeDoseEntry } from "./dose-log.js";
 import { createVial } from "./inventory.js";
 import { validateSitesList, getDefaultSites } from "./injection-sites.js";
+import { createMeasurementEntry } from "./measurements.js";
 
-export const CURRENT_SCHEMA_VERSION = 3;
+export const CURRENT_SCHEMA_VERSION = 4;
 
 export function migratePeptides(rawPeptides = []) {
   if (!Array.isArray(rawPeptides)) return [];
@@ -46,17 +47,26 @@ export function migrateSites(rawSites) {
   return res.valid && res.sites.length > 0 ? res.sites : getDefaultSites();
 }
 
+export function migrateMeasurements(rawMeasurements = []) {
+  if (!Array.isArray(rawMeasurements)) return [];
+  return rawMeasurements
+    .filter((item) => item && typeof item === "object")
+    .map((item) => createMeasurementEntry(item));
+}
+
 export function migrateAppState(state = {}) {
   const version = parseInt(state.version, 10) || 1;
   const rawProtocol = state.protocol || state.peptides || [];
   const rawLogs = state.logs || {};
   const rawInventory = state.inventory || [];
   const rawSites = state.sites || state.injectionSites;
+  const rawMeasurements = state.measurements || state.bodyMeasurements || [];
 
   const migratedProtocol = migratePeptides(rawProtocol);
   const migratedLogs = migrateLogs(rawLogs);
   const migratedInventory = migrateInventory(rawInventory);
   const migratedSites = migrateSites(rawSites);
+  const migratedMeasurements = migrateMeasurements(rawMeasurements);
 
   return {
     version: CURRENT_SCHEMA_VERSION,
@@ -65,6 +75,7 @@ export function migrateAppState(state = {}) {
     logs: migratedLogs,
     inventory: migratedInventory,
     sites: migratedSites,
+    measurements: migratedMeasurements,
     theme: state.theme === "white" || state.theme === "light" ? "white" : "black"
   };
 }

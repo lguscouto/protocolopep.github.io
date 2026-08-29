@@ -32,6 +32,7 @@ import { setupInventoryUI } from "./ui/inventory.js";
 import { calculateRemainingDoses, getExpirationStatus } from "./domain/inventory.js";
 import { setupInjectionSitesUI } from "./ui/injection-sites.js";
 import { getNextSite, getLastUsedSite } from "./domain/injection-sites.js";
+import { setupMeasurementsUI } from "./ui/measurements.js";
 
 const esc = escapeHtml;
 
@@ -48,6 +49,7 @@ let editingPeptideId = null;
 let pendingCalculationSnapshot = null;
 let inventoryUI = null;
 let sitesUI = null;
+let measurementsUI = null;
 
 async function initApp() {
   await theme.init();
@@ -111,6 +113,12 @@ async function initApp() {
     onSitesChange: () => {
       renderToday();
       renderWeek();
+    }
+  });
+  measurementsUI = setupMeasurementsUI({
+    storage,
+    onMeasurementsChange: () => {
+      renderHistory();
     }
   });
 
@@ -963,9 +971,14 @@ function renderHistory() {
   if (countEl) countEl.textContent = `${totalDoses} doses registradas`;
 
   if (totalDoses === 0) {
-    container.innerHTML = `<div class="empty-note">Nenhum registro de dose ainda.<br>Marque suas aplicações no <b>Dashboard</b>, <b>Semana</b> ou toque em <b>+ Retroativo</b>.</div>`;
+    container.innerHTML = `<div class="empty-note">Nenhum registro de dose ainda.<br>Marque suas aplicações no <b>Dashboard</b>, <b>Semana</b> ou toque em <b>+ Dose Retroativa</b>.</div>`;
   } else {
     container.innerHTML = html;
+  }
+
+  if (measurementsUI && typeof measurementsUI.renderTrendSummary === "function") {
+    measurementsUI.renderTrendSummary();
+    measurementsUI.renderMeasurementsHistory();
   }
 
   container.querySelectorAll(".hist-rm").forEach((btn) => {
