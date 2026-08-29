@@ -26,6 +26,7 @@ import { generateDailySummary } from "./domain/daily-summary.js";
 import { updateNotificationUI, setupNotificationListeners } from "./ui/notification-settings.js";
 import { setupBackupPreview } from "./ui/backup-preview.js";
 import { recordBackupExport, renderBackupStatusUI } from "./ui/backup-status.js";
+import { setupReportModal } from "./ui/report-preview.js";
 
 const esc = escapeHtml;
 
@@ -1343,6 +1344,8 @@ function setupModalsAndButtons() {
       updateNotificationUI(storage.getPeptides());
     }
   });
+
+  setupReportModal(storage);
 
   const reopenOnboardingBtn = document.getElementById("reopen-onboarding-btn");
   if (reopenOnboardingBtn) {
