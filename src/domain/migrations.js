@@ -1,7 +1,8 @@
 import { createPeptide } from "./protocol.js";
 import { normalizeDoseEntry } from "./dose-log.js";
+import { createVial } from "./inventory.js";
 
-export const CURRENT_SCHEMA_VERSION = 2;
+export const CURRENT_SCHEMA_VERSION = 3;
 
 export function migratePeptides(rawPeptides = []) {
   if (!Array.isArray(rawPeptides)) return [];
@@ -33,19 +34,27 @@ export function migrateLogs(rawLogs = {}) {
   return cleaned;
 }
 
+export function migrateInventory(rawInventory = []) {
+  if (!Array.isArray(rawInventory)) return [];
+  return rawInventory.map((item) => createVial(item));
+}
+
 export function migrateAppState(state = {}) {
   const version = parseInt(state.version, 10) || 1;
   const rawProtocol = state.protocol || state.peptides || [];
   const rawLogs = state.logs || {};
+  const rawInventory = state.inventory || [];
 
   const migratedProtocol = migratePeptides(rawProtocol);
   const migratedLogs = migrateLogs(rawLogs);
+  const migratedInventory = migrateInventory(rawInventory);
 
   return {
     version: CURRENT_SCHEMA_VERSION,
     exportedAt: state.exportedAt || new Date().toISOString(),
     protocol: migratedProtocol,
     logs: migratedLogs,
+    inventory: migratedInventory,
     theme: state.theme === "white" || state.theme === "light" ? "white" : "black"
   };
 }

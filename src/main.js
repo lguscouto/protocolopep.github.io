@@ -28,6 +28,8 @@ import { setupBackupPreview } from "./ui/backup-preview.js";
 import { recordBackupExport, renderBackupStatusUI } from "./ui/backup-status.js";
 import { setupReportModal } from "./ui/report-preview.js";
 import { setupDiagnosticsModal } from "./ui/diagnostics.js";
+import { setupInventoryUI } from "./ui/inventory.js";
+import { calculateRemainingDoses, getExpirationStatus } from "./domain/inventory.js";
 
 const esc = escapeHtml;
 
@@ -93,6 +95,13 @@ async function initApp() {
   setupModalsAndButtons();
   setupNotificationListeners(storage);
   setupCalculator();
+  inventoryUI = setupInventoryUI({
+    storage,
+    onInventoryChange: () => {
+      renderToday();
+      renderWeek();
+    }
+  });
 
   renderToday();
   renderWeek();
@@ -239,6 +248,9 @@ function switchTab(tabId) {
   if (tabId === "settings") {
     updateNotificationUI(storage.getPeptides());
     renderBackupStatusUI();
+    if (inventoryUI && typeof inventoryUI.renderInventoryList === "function") {
+      inventoryUI.renderInventoryList();
+    }
   }
 }
 
@@ -332,6 +344,15 @@ function renderToday() {
         </div>`;
     }
 
+    const activeVial = storage.findVialForPeptide(p.id, p.name);
+    let vialBadgeHTML = "";
+    if (activeVial) {
+      const remDoses = calculateRemainingDoses(activeVial, p.dose);
+      const exp = getExpirationStatus(activeVial);
+      const expAlert = exp.status === "expired" ? " ⚠️ Vencido" : exp.status === "expiring_soon" ? " ⏳ Vence em breve" : "";
+      vialBadgeHTML = `<span class="chip-acc" style="background:rgba(14,133,128,0.12);color:var(--accent);font-size:11px;font-weight:700;" title="Saldo: ${activeVial.remainingMcg} mcg">🧪 ~${remDoses} doses${expAlert}</span>`;
+    }
+
     card.innerHTML = `
       <div class="info">
         <div class="nm"><span class="dot"></span>${esc(p.name)}${moon}</div>
@@ -340,6 +361,7 @@ function renderToday() {
           <span class="ui">${esc(String(p.ui))} UI</span>
           <span class="freq">· ${esc(p.freq || "")}</span>
           <span class="chip-acc">${esc(p.dose || "")}/${esc(p.per || "dia")}</span>
+          ${vialBadgeHTML}
         </div>
         ${(p.start || p.note || p.time || p.calculationSnapshot) ? `
           <div class="note-line">
@@ -396,12 +418,14 @@ function toggleDose(id) {
   if (!p) return;
 
   const nowTime = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  const isUndoing = dosesTaken(rec, id) > 0;
 
-  if (dosesTaken(rec, id) > 0) {
+  let createdLog = null;
+  if (isUndoing) {
     delete rec[id];
     haptics.light();
   } else {
-    const doseLog = createDoseLog({
+    createdLog = createDoseLog({
       peptideId: p.id,
       scheduledDate: todayK,
       time: nowTime,
@@ -409,7 +433,7 @@ function toggleDose(id) {
       ui: p.ui,
       retroactive: false
     });
-    rec[id] = [doseLog];
+    rec[id] = [createdLog];
     haptics.success();
   }
 
@@ -424,6 +448,17 @@ function toggleDose(id) {
     alert("Erro ao gravar aplicação: " + (res.error || "Armazenamento local indisponível"));
     return;
   }
+
+  // Movimentação no inventário após persistência confirmada
+  const activeVial = storage.findVialForPeptide(p.id, p.name);
+  if (activeVial) {
+    if (isUndoing) {
+      storage.creditDoseToVial(activeVial.id, { doseStr: p.dose, note: `Estorno de aplicação (${p.name})` });
+    } else {
+      storage.debitDoseFromVial(activeVial.id, { doseStr: p.dose, doseLogId: createdLog?.id, note: p.name });
+    }
+  }
+
   renderToday();
   renderWeek();
   renderHistory();
@@ -468,6 +503,13 @@ function addSingleDose(id) {
     alert("Erro ao gravar dose: " + (res.error || "Armazenamento indisponível"));
     return;
   }
+
+  // Débito no inventário após persistência confirmada
+  const activeVial = storage.findVialForPeptide(p.id, p.name);
+  if (activeVial) {
+    storage.debitDoseFromVial(activeVial.id, { doseStr: p.dose, doseLogId: doseLog.id, note: p.name });
+  }
+
   haptics.medium();
   renderToday();
   renderWeek();
@@ -496,6 +538,17 @@ function undoSingleDose(id) {
     alert("Erro ao remover dose: " + (res.error || "Armazenamento indisponível"));
     return;
   }
+
+  // Estorno no inventário
+  const peptides = storage.getPeptides();
+  const p = peptides.find((x) => x.id === id);
+  if (p) {
+    const activeVial = storage.findVialForPeptide(p.id, p.name);
+    if (activeVial) {
+      storage.creditDoseToVial(activeVial.id, { doseStr: p.dose, note: `Estorno de dose (${p.name})` });
+    }
+  }
+
   haptics.light();
   renderToday();
   renderWeek();
@@ -904,6 +957,17 @@ function deleteHistoryEntry(dKey, pId, idx) {
     alert("Erro ao remover registro: " + (res.error || "Armazenamento indisponível"));
     return;
   }
+
+  // Estorno no inventário após exclusão confirmada
+  const peptides = storage.getPeptides();
+  const p = peptides.find((x) => x.id === pId);
+  if (p) {
+    const activeVial = storage.findVialForPeptide(p.id, p.name);
+    if (activeVial) {
+      storage.creditDoseToVial(activeVial.id, { doseStr: p.dose, note: `Estorno por exclusão (${p.name})` });
+    }
+  }
+
   haptics.light();
   renderToday();
   renderWeek();
@@ -1013,12 +1077,15 @@ function setupCalculator() {
     const concentrationMgMl = (vialMg / diluentMl).toFixed(2);
     if (resConc) resConc.textContent = `${concentrationMgMl} mg/mL`;
 
+    const saveVialBtn = document.getElementById("calc-save-vial-btn");
+
     if (isNaN(desiredDoseVal) || desiredDoseVal <= 0) {
       if (resBig) resBig.textContent = "--";
       if (resSub) resSub.innerHTML = `Informe a dose pretendida acima para calcular as unidades (UI).`;
       if (resDoses) resDoses.textContent = "--";
       if (auditCard) auditCard.style.display = "none";
       if (useBtn) useBtn.disabled = true;
+      if (saveVialBtn) saveVialBtn.disabled = true;
       currentCalculationSnapshot = null;
       renderSyringe(0);
       return;
@@ -1038,6 +1105,7 @@ function setupCalculator() {
       if (resDoses) resDoses.textContent = "--";
       if (auditCard) auditCard.style.display = "none";
       if (useBtn) useBtn.disabled = true;
+      if (saveVialBtn) saveVialBtn.disabled = true;
       currentCalculationSnapshot = null;
       renderSyringe(0);
       return;
@@ -1056,6 +1124,7 @@ function setupCalculator() {
     }
 
     if (useBtn) useBtn.disabled = false;
+    if (saveVialBtn) saveVialBtn.disabled = false;
 
     renderSyringe(result.unitsUI);
   }

@@ -6,13 +6,14 @@ import { migrateAppState, CURRENT_SCHEMA_VERSION } from "./migrations.js";
 
 export const MAX_BACKUP_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 
-export function createBackupPayload(protocol = [], logs = {}, theme = "black") {
+export function createBackupPayload(protocol = [], logs = {}, theme = "black", inventory = []) {
   const payload = {
     app: "protocolo-pep",
     version: CURRENT_SCHEMA_VERSION,
     exportedAt: new Date().toISOString(),
     protocol: Array.isArray(protocol) ? protocol : [],
     logs: logs && typeof logs === "object" ? logs : {},
+    inventory: Array.isArray(inventory) ? inventory : [],
     theme: theme === "white" ? "white" : "black"
   };
 
@@ -54,6 +55,7 @@ export function validateAndParseBackup(jsonString) {
   // Calcular estatísticas para prévia
   const peptideCount = cleanState.protocol.length;
   const logDaysCount = Object.keys(cleanState.logs).length;
+  const vialsCount = Array.isArray(cleanState.inventory) ? cleanState.inventory.length : 0;
   let totalDosesCount = 0;
 
   Object.values(cleanState.logs).forEach((day) => {
@@ -73,6 +75,7 @@ export function validateAndParseBackup(jsonString) {
       peptideCount,
       logDaysCount,
       totalDosesCount,
+      vialsCount,
       theme: cleanState.theme,
       exportedAt: cleanState.exportedAt
     }
