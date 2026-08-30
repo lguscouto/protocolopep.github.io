@@ -14,11 +14,11 @@ android/.idea/
 android/*.iml
 android/app/*.iml
 
-# Screenshots / Temp artifacts
-android_screenshot*.png
-*.log
-*.apk
+# Test results
+test-results/
+playwright-report/
 
 # OS files
 .DS_Store
 Thumbs.db
+

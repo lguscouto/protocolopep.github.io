@@ -21,13 +21,19 @@ jobs:
           cache: "npm"
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Run unit tests
         run: npm test
 
       - name: Build Web Production Bundle
         run: npm run build
+
+      - name: Install Playwright Browsers
+        run: npx playwright install chromium --with-deps
+
+      - name: Run E2E Tests
+        run: npm run test:e2e
 
   android-build:
     name: Android Build & Native Tests
@@ -45,7 +51,7 @@ jobs:
 
       - name: Install dependencies & build web
         run: |
-          npm install
+          npm ci
           npm run build
 
       - name: Setup Java JDK 17
