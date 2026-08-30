@@ -871,22 +871,23 @@ function renderWeek() {
   }
 
   let tableHtml = `
-    <table class="week-table">
-      <thead>
-        <tr>
-          <th style="text-align:left;padding-left:8px;">Peptídeo</th>
-          ${weekDays.map((d, i) => `
-            <th class="${i === currentDow ? "today" : ""}">
-              <span class="dw">${DAY_W[i]}</span>
-              <span class="dn">${d.getDate()}</span>
-            </th>
-          `).join("")}
-        </tr>
-      </thead>
-      <tbody>`;
+    <div class="week-scroll">
+      <table class="week-table">
+        <thead>
+          <tr>
+            <th style="text-align:left;padding-left:8px;">Peptídeo</th>
+            ${weekDays.map((d, i) => `
+              <th class="${i === currentDow ? "today" : ""}">
+                <span class="dw">${DAY_W[i]}</span>
+                <span class="dn">${d.getDate()}</span>
+              </th>
+            `).join("")}
+          </tr>
+        </thead>
+        <tbody>`;
 
   if (peptides.length === 0) {
-    tableHtml += `<tr><td colspan="8" class="empty-note">Nenhum peptídeo cadastrado.</td></tr>`;
+    tableHtml += `<tr><td colspan="8" class="empty-note">Nenhum peptídeo cadastrado no protocolo.</td></tr>`;
   } else {
     peptides.forEach((p) => {
       tableHtml += `
@@ -899,7 +900,7 @@ function renderWeek() {
             const taken = dosesTaken(rec, p.id) > 0;
 
             if (!isScheduled && !taken) {
-              return `<td class="${dK === dateKey(now) ? "col-today" : ""}"><span class="cell na">·</span></td>`;
+              return `<td class="${dK === dateKey(now) ? "col-today" : ""}"><span class="cell na" aria-label="Não programado">·</span></td>`;
             }
 
             return `
@@ -907,6 +908,9 @@ function renderWeek() {
                 <span class="cell tap ${taken ? "" : "empty"}"
                       data-pep="${sanitizeId(p.id)}"
                       data-date="${sanitizeId(dK)}"
+                      role="button"
+                      tabindex="0"
+                      aria-label="${esc(p.name)} em ${fmtBR(dK)}: ${taken ? 'Dose aplicada' : 'Dose pendente'}"
                       style="${taken ? `background:${sanitizeColor(p.accent, "var(--primary)")}` : ""}">
                   ${taken ? "✓" : ""}
                 </span>
@@ -916,7 +920,27 @@ function renderWeek() {
     });
   }
 
-  tableHtml += `</tbody></table>`;
+  tableHtml += `</tbody></table></div>`;
+
+  if (peptides.length > 0) {
+    tableHtml += `
+      <div class="week-legend" aria-label="Legenda da grade semanal">
+        <div class="week-legend-item">
+          <span class="cell" style="background:var(--primary);width:20px;height:20px;font-size:10px;">✓</span>
+          <span>Aplicado</span>
+        </div>
+        <div class="week-legend-item">
+          <span class="cell empty" style="border:1px dashed var(--border2);width:20px;height:20px;"></span>
+          <span>Pendente</span>
+        </div>
+        <div class="week-legend-item">
+          <span class="cell na" style="width:20px;height:20px;">·</span>
+          <span>Não programado</span>
+        </div>
+      </div>
+    `;
+  }
+
   container.innerHTML = tableHtml;
 
   container.querySelectorAll(".pep[data-id]").forEach((cell) => {
@@ -1389,6 +1413,8 @@ function setupCalculator() {
     const resSub = document.getElementById("calc-res-sub");
     const resConc = document.getElementById("calc-res-conc");
     const resDoses = document.getElementById("calc-res-doses");
+    const summaryCard = document.getElementById("calc-inputs-summary");
+    const summaryValues = document.getElementById("calc-summary-values");
 
     const concentrationMgMl = (vialMg / diluentMl).toFixed(2);
     if (resConc) resConc.textContent = `${concentrationMgMl} mg/mL`;
@@ -1400,6 +1426,7 @@ function setupCalculator() {
       if (resSub) resSub.innerHTML = `Informe a dose pretendida acima para calcular as unidades (UI).`;
       if (resDoses) resDoses.textContent = "--";
       if (auditCard) auditCard.style.display = "none";
+      if (summaryCard) summaryCard.style.display = "none";
       if (useBtn) useBtn.disabled = true;
       if (saveVialBtn) saveVialBtn.disabled = true;
       currentCalculationSnapshot = null;
@@ -1417,9 +1444,10 @@ function setupCalculator() {
 
     if (!result.valid) {
       if (resBig) resBig.textContent = "--";
-      if (resSub) resSub.innerHTML = `<span style="color:var(--danger)">${esc(result.error)}</span>`;
+      if (resSub) resSub.innerHTML = `<span style="color:var(--danger)">⚠️ ${esc(result.error)}</span>`;
       if (resDoses) resDoses.textContent = "--";
       if (auditCard) auditCard.style.display = "none";
+      if (summaryCard) summaryCard.style.display = "none";
       if (useBtn) useBtn.disabled = true;
       if (saveVialBtn) saveVialBtn.disabled = true;
       currentCalculationSnapshot = null;
@@ -1430,6 +1458,15 @@ function setupCalculator() {
     if (resBig) resBig.textContent = result.unitsUI;
     if (resSub) resSub.innerHTML = `Aspire até <b>${result.unitsUI} UI</b> na seringa de insulina U-100 (${result.volumeMl} mL)`;
     if (resDoses) resDoses.textContent = `${result.dosesPerVial} doses`;
+
+    if (summaryCard && summaryValues) {
+      summaryCard.style.display = "block";
+      summaryValues.innerHTML = `
+        <span><b>Frasco:</b> ${vialMg} mg</span>
+        <span><b>Diluente:</b> ${diluentMl} mL</span>
+        <span><b>Dose pretendida:</b> ${desiredDoseVal} ${doseUnit}</span>
+      `;
+    }
 
     currentCalculationSnapshot = createCalculationSnapshot(result);
 
@@ -1453,11 +1490,11 @@ function setupCalculator() {
     const fillWidth = (clampedUi / 100) * 240;
 
     cont.innerHTML = `
-      <svg viewBox="0 0 320 60" style="width:100%;max-width:340px;height:auto;">
+      <svg viewBox="0 0 320 60" style="width:100%;max-width:340px;height:auto;" aria-hidden="true">
         <rect x="30" y="15" width="250" height="30" rx="4" fill="var(--surface3)" stroke="var(--border2)" stroke-width="1.5"/>
         <rect x="30" y="16" width="${fillWidth}" height="28" fill="var(--primary)" opacity="0.6"/>
         <line x1="8" y1="30" x2="30" y2="30" stroke="var(--muted2)" stroke-width="2"/>
-        ${[10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map((tick) => {
+        ${[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map((tick) => {
           const x = 30 + (tick / 100) * 240;
           return `
             <line x1="${x}" y1="15" x2="${x}" y2="${tick % 20 === 0 ? "27" : "22"}" stroke="var(--text)" stroke-width="1" opacity="0.7"/>

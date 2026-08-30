@@ -144,6 +144,79 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
 
     runtime.assertCleanRuntime();
   });
+
+  test("calculadora calcula unidades U-100 e exibe bloco de conferencia dos dados", async ({ page }) => {
+    const runtime = trackPageRuntime(page);
+    await seedStorage(page, { skipOnboarding: true, peptides: [] });
+
+    await page.goto("/");
+    await page.waitForLoadState("domcontentloaded");
+
+    // Navegar para a Calculadora
+    const calcTab = page.locator("#tab-calc, [data-tab='tab-calc']");
+    await calcTab.first().click();
+
+    // Preencher dose de 250 mcg (padrão 5mg / 2ml = 2.5 mg/ml -> 250 mcg = 0.25 mg -> 0.1 ml -> 10 UI)
+    const doseInput = page.locator("#calc-dose-input");
+    await doseInput.fill("250");
+
+    // Verificar resultado
+    const resBig = page.locator("#calc-res-big");
+    await expect(resBig).toHaveText("10");
+
+    // Bloco de conferência deve estar visível
+    const summaryCard = page.locator("#calc-inputs-summary");
+    await expect(summaryCard).toBeVisible();
+    await expect(summaryCard).toContainText("Frasco: 5 mg");
+    await expect(summaryCard).toContainText("Diluente: 2 mL");
+    await expect(summaryCard).toContainText("Dose pretendida: 250 mcg");
+
+    // Botões de ação devem estar habilitados
+    const useBtn = page.locator("#calc-use-btn");
+    await expect(useBtn).toBeEnabled();
+
+    runtime.assertCleanRuntime();
+  });
+
+  test("semana renderiza tabela dentro de wrapper de rolagem com legenda e coluna fixa", async ({ page }) => {
+    const runtime = trackPageRuntime(page);
+    const mockPeptides = [
+      {
+        id: "pep-week",
+        name: "Composto Teste Semana",
+        dose: "250 mcg",
+        ui: 10,
+        perDay: 1,
+        days: [1, 3, 5]
+      }
+    ];
+
+    await seedStorage(page, { skipOnboarding: true, peptides: mockPeptides });
+
+    await page.goto("/");
+    await page.waitForLoadState("domcontentloaded");
+
+    // Navegar para a Semana
+    const weekTab = page.locator("#tab-week, [data-tab='tab-week']");
+    await weekTab.first().click();
+
+    // Wrapper de scroll deve existir
+    const scrollWrap = page.locator(".week-scroll");
+    await expect(scrollWrap).toBeVisible();
+
+    // Tabela e legenda devem estar presentes
+    const table = page.locator("table.week-table");
+    await expect(table).toBeVisible();
+
+    const legend = page.locator(".week-legend");
+    await expect(legend).toBeVisible();
+    await expect(legend).toContainText("Aplicado");
+    await expect(legend).toContainText("Pendente");
+    await expect(legend).toContainText("Não programado");
+
+    runtime.assertCleanRuntime();
+  });
 });
+
 
 

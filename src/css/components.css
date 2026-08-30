@@ -840,20 +840,35 @@ body.theme-light .dosebox-t {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
 }
 
-table {
+.week-scroll {
   width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 12px;
+}
+
+table.week-table {
+  width: 100%;
+  min-width: 380px;
   border-collapse: collapse;
 }
 
 th, td {
   text-align: center;
-  padding: 9px 1px;
+  padding: 8px 2px;
 }
 
 thead th {
   color: var(--muted2);
   font-weight: 600;
   font-size: 11px;
+}
+
+thead th:first-child {
+  position: sticky;
+  left: 0;
+  background: var(--surface);
+  z-index: 3;
 }
 
 thead th .dn {
@@ -876,15 +891,21 @@ td.pep {
   font-weight: 600;
   font-size: 12.5px;
   padding-left: 8px;
+  padding-right: 8px;
   white-space: nowrap;
+  position: sticky;
+  left: 0;
+  background: var(--surface);
+  z-index: 2;
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.04);
 }
 
 .cell {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
+  min-width: 34px;
+  min-height: 34px;
   border-radius: 8px;
   font-size: 12px;
   font-weight: 800;
@@ -907,6 +928,8 @@ body.theme-light .cell {
 
 .cell.tap {
   cursor: pointer;
+  min-width: 44px;
+  min-height: 44px;
   transition: transform 0.12s ease;
 }
 
@@ -916,6 +939,23 @@ body.theme-light .cell {
 
 .cell.empty.tap {
   border: 1px dashed var(--border2);
+}
+
+.week-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.week-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .btn-retro {

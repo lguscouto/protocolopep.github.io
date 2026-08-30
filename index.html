@@ -197,15 +197,24 @@
 
       <!-- Resultado e Seringa -->
       <div class="result">
+        <div style="font-size:11.5px;color:var(--muted-2);margin-bottom:8px;text-align:center;" aria-hidden="true">
+          ⚡ Resultado atualizado automaticamente
+        </div>
         <div class="res-main">
           <span class="big" id="calc-res-big">--</span>
           <span class="unit">UI</span>
         </div>
-        <div class="res-sub" id="calc-res-sub">Informe a dose pretendida acima para calcular.</div>
+        <div class="res-sub" id="calc-res-sub" aria-live="polite">Informe a dose pretendida acima para calcular.</div>
 
-        <div class="syringe" id="calc-syringe"></div>
+        <div class="syringe" id="calc-syringe" role="img" aria-label="Visualização gráfica da seringa U-100"></div>
 
-        <div class="grid2">
+        <!-- Resumo das Entradas para Dupla Conferência -->
+        <div class="calc-inputs-summary" id="calc-inputs-summary" style="display:none;margin-top:12px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:10px 14px;font-size:12.5px;">
+          <div style="font-weight:700;color:var(--text);margin-bottom:4px;">📋 Confira os dados usados:</div>
+          <div style="color:var(--muted);display:flex;flex-wrap:wrap;gap:12px;" id="calc-summary-values">--</div>
+        </div>
+
+        <div class="grid2" style="margin-top:12px;">
           <div class="stat">
             <div class="v" id="calc-res-conc">--</div>
             <div class="k">Concentração da solução</div>
