@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
   t,
   resolveNestedKey,
@@ -165,6 +165,11 @@ describe("I18nService (Serviço de Internacionalização)", () => {
         store[k] = String(v);
       })
     };
+    vi.stubGlobal("navigator", { languages: ["pt-BR", "pt"] });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it("inicializa com locale salvo ou padrão", () => {
