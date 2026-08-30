@@ -216,7 +216,39 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
 
     runtime.assertCleanRuntime();
   });
+
+  test("ajustes organiza opcoes em 4 grupos estruturados e permite troca de idioma", async ({ page }) => {
+    const runtime = trackPageRuntime(page);
+    await seedStorage(page, { skipOnboarding: true, peptides: [] });
+
+    await page.goto("/");
+    await page.waitForLoadState("domcontentloaded");
+
+    // Navegar para Ajustes
+    const settingsTab = page.locator("#tab-settings, [data-tab='tab-settings']");
+    await settingsTab.first().click();
+
+    // Deve conter os 4 grupos de ajustes
+    const groups = page.locator("#view-settings .settings-group");
+    await expect(groups).toHaveCount(4);
+
+    await expect(page.locator("#settings-group-appearance")).toContainText("Aparência");
+    await expect(page.locator("#settings-group-security")).toContainText("Segurança");
+    await expect(page.locator("#settings-group-data")).toContainText("Dados");
+    await expect(page.locator("#settings-group-about")).toContainText("Sobre");
+
+    // Trocar idioma para English
+    const enBtn = page.locator("#lang-btn-en");
+    await enBtn.click();
+
+    // Validar atualização do badge ou texto
+    const badge = page.locator("#current-lang-badge");
+    await expect(badge).toContainText("ENGLISH");
+
+    runtime.assertCleanRuntime();
+  });
 });
+
 
 
 
