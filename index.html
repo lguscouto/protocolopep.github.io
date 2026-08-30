@@ -8,6 +8,9 @@
   <title>Protocolo PEP</title>
 </head>
 <body class="theme-dark">
+  <!-- Anunciador de Tela para Acessibilidade (WCAG 2.1 AA) -->
+  <div id="a11y-announcer" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+
   <!-- Fundo Animado de Moléculas -->
   <div class="bg-mol" id="bg-molecules" aria-hidden="true"></div>
 
@@ -61,7 +64,7 @@
         </div>
         <div class="dash-hero-info">
           <div class="dash-hero-count" id="ring-n">0 / 0</div>
-          <div class="dash-hero-label" data-i18n="dashboard.dosesTakenToday">tomados hoje</div>
+          <div class="dash-hero-label" data-i18n="dashboard.dosesTakenToday">aplicados hoje</div>
         </div>
       </div>
 
@@ -175,7 +178,7 @@
       <div class="step">
         <div class="step-h">
           <span class="step-n">3</span>
-          <div class="lab">Dose desejada por aplicação <small>Digite a dose prescrita</small></div>
+          <div class="lab">Dose desejada por aplicação <small>Informe a dose pretendida</small></div>
         </div>
         <div style="display:flex;gap:8px;">
           <input type="number" class="num" id="calc-dose-input" placeholder="ex: 250" step="any" />
@@ -261,6 +264,23 @@
         </div>
       </div>
 
+      <!-- Card de Acessibilidade & Alto Contraste (V18) -->
+      <div class="panel" style="margin-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:12px;">
+          <div>
+            <div style="font-size:14px;font-weight:700;" data-i18n="settings.accessibilityTitle">Acessibilidade & Visão</div>
+            <div style="font-size:12px;color:var(--muted);" data-i18n="settings.accessibilityDesc">Otimizações para alto contraste e navegação assistiva</div>
+          </div>
+          <span class="badge badge-neutral" style="background:rgba(56,189,248,0.15);color:var(--primary);" data-i18n="settings.wcagBadge">WCAG 2.1 AA</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--surface2);border-radius:10px;">
+          <label for="high-contrast-toggle" style="font-size:13px;font-weight:600;color:var(--text);cursor:pointer;flex:1;">
+            <span data-i18n="settings.highContrastToggle">👁️ Modo de Alto Contraste</span>
+          </label>
+          <input type="checkbox" id="high-contrast-toggle" style="width:20px;height:20px;accent-color:var(--primary);cursor:pointer;" aria-checked="false">
+        </div>
+      </div>
+
       <!-- Card de Inventário de Frascos (V10) -->
       <div class="panel" style="margin-bottom:16px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:12px;">
@@ -275,11 +295,11 @@
         <div id="inventory-list"></div>
       </div>
 
-      <!-- Card de Rotação de Sítios de Aplicação (V11) -->
+      <!-- Card de Locais de Aplicação (V11) -->
       <div class="panel" style="margin-bottom:16px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:12px;">
           <div>
-            <div style="font-size:14px;font-weight:700;">Rotação de Sítios</div>
+            <div style="font-size:14px;font-weight:700;" data-i18n="settings.siteRotationTitle">Locais de Aplicação</div>
             <div style="font-size:12px;color:var(--muted);" id="sites-summary-text">Sequência de locais para alternância</div>
           </div>
           <button type="button" class="btn-primary" id="open-sites-settings-btn" style="width:auto;font-size:11.5px;padding:6px 12px;white-space:nowrap;flex-shrink:0;">
@@ -395,7 +415,7 @@
               Diagnósticos
             </button>
             <button type="button" class="btn-ghost" id="reopen-onboarding-btn" style="font-size:11.5px;padding:6px 10px;" data-i18n="settings.termsBtn">
-              Termos & Info
+              Termos & Privacidade
             </button>
           </div>
         </div>

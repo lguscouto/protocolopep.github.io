@@ -43,7 +43,7 @@ export function setupBackupPreview({
 
       if (file.size > MAX_BACKUP_SIZE_BYTES) {
         haptics.warning();
-        alert(`O arquivo selecionado (${(file.size / (1024 * 1024)).toFixed(1)} MB) ultrapassa o limite máximo permitido de 5 MB.`);
+        alert(`O arquivo selecionado (${(file.size / (1024 * 1024)).toFixed(1)} MB) é maior que o limite máximo de 5 MB.`);
         return;
       }
 

@@ -1323,14 +1323,17 @@ input:focus, textarea:focus {
   background: var(--surface3);
   border: none;
   color: var(--muted);
-  width: 32px;
-  height: 32px;
-  border-radius: 10px;
-  font-size: 14px;
+  width: 40px;
+  height: 40px;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 12px;
+  font-size: 16px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  touch-action: manipulation;
 }
 
 .sheet-body {

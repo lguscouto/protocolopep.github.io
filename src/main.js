@@ -42,6 +42,11 @@ import { i18nService } from "./services/i18n.js";
 import { setupI18nUI, applyTranslations } from "./ui/i18n.js";
 import { researchService } from "./services/research.js";
 import { setupResearchUI } from "./ui/research.js";
+import { AccessibilityService } from "./services/accessibility.js";
+import { setupAccessibilityUI } from "./ui/accessibility.js";
+
+export const accessibilityService = new AccessibilityService();
+let accessibilityUI = null;
 
 const esc = escapeHtml;
 
@@ -239,6 +244,14 @@ async function initApp() {
     }
   });
 
+  accessibilityUI = setupAccessibilityUI({
+    accessibilityService,
+    haptics,
+    onCloseTopModal: () => {
+      closeAllModals();
+    }
+  });
+
   renderToday();
   renderWeek();
   renderHistory();
@@ -395,6 +408,15 @@ function switchTab(tabId) {
     btn.setAttribute("tabindex", isSelected ? "0" : "-1");
   });
 
+  const tabLabels = {
+    today: "Dashboard de Aplicações",
+    week: "Visão Semanal",
+    history: "Histórico de Aplicações",
+    calc: "Calculadora de Reconstituição",
+    settings: "Ajustes e Preferências"
+  };
+  accessibilityService.announce(`Aba ${tabLabels[tabId] || tabId} ativa.`);
+
   if (tabId === "today") renderToday();
   if (tabId === "week") renderWeek();
   if (tabId === "history") renderHistory();
@@ -488,7 +510,7 @@ function renderToday() {
     if (perDay <= 1) {
       ctrlHTML = `
         <button class="take ${done ? "done" : ""}" data-id="${sanitizeId(p.id)}">
-          <span>${done ? "✓ Tomado" : "Tomei"}</span>
+          <span>${done ? i18nService.t("common.applied") : i18nService.t("common.apply")}</span>
           ${done && lastTime ? `<span class="at">${esc(lastTime)}</span>` : ""}
         </button>`;
     } else {
@@ -634,6 +656,12 @@ function toggleDose(id) {
   if (!res.success) {
     alert("Erro ao gravar aplicação: " + (res.error || "Armazenamento local indisponível"));
     return;
+  }
+
+  if (isUndoing) {
+    accessibilityService.announce(`Aplicação de ${p.name} desmarcada.`);
+  } else {
+    accessibilityService.announce(`Aplicação de ${p.name} confirmada.`);
   }
 
   // Movimentação no inventário após persistência confirmada
@@ -839,7 +867,7 @@ async function toggleDateLog(id, dKey) {
   const todayK = dateKey(new Date());
 
   if (dKey > todayK) {
-    alert("Não é permitido registrar aplicações em datas futuras.");
+    alert("Não é possível registrar aplicações em datas futuras.");
     return;
   }
 
@@ -859,7 +887,7 @@ async function toggleDateLog(id, dKey) {
 
       const res = storage.setLogs(logs);
       if (!res.success) {
-        alert("Erro ao remover registro: " + (res.error || "Armazenamento indisponível"));
+        alert("Não foi possível remover o registro: " + (res.error || "armazenamento indisponível"));
         return;
       }
       haptics.light();
@@ -881,7 +909,7 @@ function openRetroLogModal(prefillDate = null, prefillPepId = null) {
 
   const peptides = storage.getPeptides();
   if (peptides.length === 0) {
-    alert("Adicione pelo menos um peptídeo ao seu protocolo antes de registrar aplicações.");
+    alert("Cadastre ao menos um peptídeo no seu protocolo antes de registrar uma aplicação.");
     return;
   }
 
@@ -957,18 +985,18 @@ function saveRetroLog() {
   const noteVal = noteInput ? noteInput.value.trim() : "";
 
   if (!pepId) {
-    alert("Selecione um peptídeo.");
+    alert("Selecione um peptídeo da lista.");
     return;
   }
 
   if (!dKey) {
-    alert("Selecione a data da aplicação.");
+    alert("Informe a data da aplicação.");
     return;
   }
 
   const todayKey = dateKey(new Date());
   if (dKey > todayKey) {
-    alert("Não é permitido registrar aplicações em datas futuras.");
+    alert("Não é possível registrar aplicações em datas futuras.");
     return;
   }
 
@@ -1006,7 +1034,7 @@ function saveRetroLog() {
 
   const res = storage.setLogs(logs);
   if (!res.success) {
-    alert("Erro ao gravar aplicação: " + (res.error || "Armazenamento indisponível"));
+    alert("Não foi possível salvar a aplicação: " + (res.error || "armazenamento indisponível"));
     return;
   }
 
@@ -1324,7 +1352,7 @@ function setupCalculator() {
     }
 
     if (resBig) resBig.textContent = result.unitsUI;
-    if (resSub) resSub.innerHTML = `Puxar <b>${result.unitsUI} UI</b> na seringa de insulina U-100 (${result.volumeMl} mL)`;
+    if (resSub) resSub.innerHTML = `Aspire até <b>${result.unitsUI} UI</b> na seringa de insulina U-100 (${result.volumeMl} mL)`;
     if (resDoses) resDoses.textContent = `${result.dosesPerVial} doses`;
 
     currentCalculationSnapshot = createCalculationSnapshot(result);
@@ -1434,9 +1462,15 @@ function setupCalculator() {
 }
 
 function closeAllModals() {
-  document.querySelectorAll(".modal").forEach((m) => m.classList.remove("on"));
+  document.querySelectorAll(".modal").forEach((m) => {
+    m.classList.remove("on");
+    m.setAttribute("aria-hidden", "true");
+  });
   const retroOverlay = document.getElementById("retro-overlay");
   if (retroOverlay) retroOverlay.style.display = "none";
+  if (accessibilityService) {
+    accessibilityService.restoreFocus();
+  }
 }
 
 function setupModalsAndButtons() {
@@ -1694,10 +1728,10 @@ function setupModalsAndButtons() {
           document.body.removeChild(textarea);
         }
         haptics.success();
-        alert("Resumo copiado para a área de transferência! ✓");
+        alert("Resumo copiado com sucesso para a área de transferência! ✓");
       } catch (err) {
         console.error("Falha ao copiar:", err);
-        alert("Não foi possível copiar automaticamente.");
+        alert("Não foi possível copiar automaticamente para a área de transferência.");
       }
     });
   }
@@ -1726,7 +1760,7 @@ function setupModalsAndButtons() {
           haptics.success();
           alert("Compartilhamento nativo indisponível. Resumo copiado para a área de transferência! ✓");
         } catch (err) {
-          alert("Compartilhamento não suportado.");
+          alert("Compartilhamento não suportado neste aparelho.");
         }
       }
     });
@@ -1974,12 +2008,16 @@ function openEditModal(pepId, prefillData = null) {
   }
 
   modal.classList.add("on");
+  modal.setAttribute("aria-hidden", "false");
+  if (accessibilityService) {
+    accessibilityService.trapFocus(modal);
+  }
 }
 
 function saveEditedPeptide() {
   const name = document.getElementById("edit-name").value.trim();
   if (!name) {
-    alert("Digite o nome do peptídeo.");
+    alert("Informe o nome do peptídeo.");
     return;
   }
 
@@ -2004,7 +2042,7 @@ function saveEditedPeptide() {
 
   if (selectedFreqType === "especificos") {
     if (selectedDays.length === 0) {
-      alert("Selecione pelo menos um dia da semana.");
+      alert("Selecione ao menos um dia da semana.");
       return;
     }
     days = [...selectedDays].sort((a, b) => a - b);
@@ -2056,6 +2094,10 @@ function saveEditedPeptide() {
     return;
   }
 
+  if (accessibilityService) {
+    accessibilityService.announce(`Peptídeo ${name} salvo com sucesso.`);
+  }
+
   renderToday();
   renderWeek();
   renderHistory();
@@ -2063,7 +2105,13 @@ function saveEditedPeptide() {
   notifications.schedulePeptideReminders(peptides);
 
   const modal = document.getElementById("edit-modal");
-  if (modal) modal.classList.remove("on");
+  if (modal) {
+    modal.classList.remove("on");
+    modal.setAttribute("aria-hidden", "true");
+  }
+  if (accessibilityService) {
+    accessibilityService.restoreFocus();
+  }
   switchTab("today");
   haptics.success();
 }

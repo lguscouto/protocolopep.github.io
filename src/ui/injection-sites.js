@@ -30,12 +30,12 @@ export function setupInjectionSitesUI({ storage, onSitesChange = () => {} }) {
     if (!summaryEl) return;
     const sites = storage.getSites();
     if (!sites || sites.length === 0) {
-      summaryEl.textContent = "Nenhum sítio configurado na rotação.";
+      summaryEl.textContent = "Nenhum local configurado na rotação.";
       return;
     }
     const lastUsed = getLastUsedSite(storage.getLogs());
     const nextSite = getNextSite(sites, lastUsed ? lastUsed.site : null);
-    summaryEl.innerHTML = `Próximo na rotação: <strong>${escapeHtml(nextSite || sites[0])}</strong> (${sites.length} sítios ativos)`;
+    summaryEl.innerHTML = `Próximo na sua rotação: <strong>${escapeHtml(nextSite || sites[0])}</strong> (${sites.length} locais ativos)`;
   }
 
   function renderSitesList() {
@@ -45,7 +45,7 @@ export function setupInjectionSitesUI({ storage, onSitesChange = () => {} }) {
     if (!sites || sites.length === 0) {
       listEl.innerHTML = `
         <div style="padding:16px;text-align:center;color:var(--muted);font-size:13px;">
-          Nenhum sítio na sua lista de rotação. Adicione um abaixo ou restaure o padrão.
+          Nenhum local na sua lista de rotação. Adicione um abaixo ou restaure o padrão.
         </div>`;
       updateSummary();
       return;
@@ -122,13 +122,13 @@ export function setupInjectionSitesUI({ storage, onSitesChange = () => {} }) {
     const rawVal = addInput.value;
     const formatted = formatSiteLabel(rawVal);
     if (!formatted) {
-      alert("Informe um nome válido para o sítio.");
+      alert("Informe um nome válido para o local.");
       return;
     }
 
     const sites = storage.getSites();
     if (sites.some((s) => s.toLowerCase() === formatted.toLowerCase())) {
-      alert(`O sítio "${formatted}" já está na rotação.`);
+      alert(`O local "${formatted}" já está na rotação.`);
       return;
     }
 
@@ -140,7 +140,7 @@ export function setupInjectionSitesUI({ storage, onSitesChange = () => {} }) {
       renderSitesList();
       onSitesChange();
     } else {
-      alert("Erro ao salvar sítio: " + (res.error || "Falha no armazenamento"));
+      alert("Erro ao salvar local: " + (res.error || "Falha no armazenamento"));
     }
   }
 

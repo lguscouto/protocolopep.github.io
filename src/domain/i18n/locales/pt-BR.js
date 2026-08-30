@@ -19,6 +19,8 @@ export const ptBR = {
     next: "Próximo",
     finish: "Concluir",
     loading: "Carregando...",
+    apply: "Aplicar",
+    applied: "✓ Aplicado",
     success: "Sucesso",
     error: "Erro",
     warning: "Aviso",
@@ -49,7 +51,7 @@ export const ptBR = {
   dashboard: {
     bannerText: "Toda opinião importa! <b>Fale conosco ou envie sugestões</b>",
     heading: "Seu Protocolo",
-    dosesTakenToday: "tomados hoje",
+    dosesTakenToday: "aplicados hoje",
     addPeptide: "Adicionar Peptídeo ao Protocolo",
     quickActions: "Ações Rápidas",
     share: "Compartilhar",
@@ -69,7 +71,7 @@ export const ptBR = {
     heading: "Histórico de Aplicações",
     filterAll: "Todos",
     filterConfirmed: "Confirmados",
-    filterSkipped: "Pulados",
+    filterSkipped: "Não aplicados",
     emptyTitle: "Nenhum registro encontrado",
     emptyDesc: "As aplicações confirmadas ou registradas aparecerão aqui em ordem cronológica.",
     exportReport: "Exportar Relatório PDF / CSV"
@@ -82,13 +84,13 @@ export const ptBR = {
     step2Title: "Água bacteriostática adicionada",
     step2Desc: "Volume de diluente (ml)",
     step3Title: "Dose desejada por aplicação",
-    step3Desc: "Digite a dose prescrita",
+    step3Desc: "Informe a dose pretendida",
     dosePlaceholder: "ex: 250",
     doseUnitMcg: "mcg",
     doseUnitMg: "mg",
     drawResultTitle: "UI",
     drawResultHint: "Informe a dose pretendida acima para calcular as unidades (UI).",
-    drawResultInstruction: "Puxe até a marca de <b>{units} UI</b> na seringa de 100 UI",
+    drawResultInstruction: "Aspire até a marca de <b>{units} UI</b> na seringa de 100 UI",
     concentration: "Concentração da solução",
     yield: "Rendimento estimado",
     yieldValue: "{doses} doses de {dose}",
@@ -100,8 +102,12 @@ export const ptBR = {
     heading: "Ajustes & Preferências",
     languageTitle: "Idioma do Aplicativo",
     languageDesc: "Selecione o idioma de exibição do Protocolo PEP",
-    siteRotationTitle: "Rotação de Sítios",
-    siteRotationDesc: "Próximo na rotação: <b>{site}</b> ({count} sítios ativos)",
+    accessibilityTitle: "Acessibilidade & Visão",
+    accessibilityDesc: "Otimizações para alto contraste e navegação assistiva",
+    wcagBadge: "WCAG 2.1 AA",
+    highContrastToggle: "👁️ Modo de Alto Contraste",
+    siteRotationTitle: "Locais de Aplicação",
+    siteRotationDesc: "Próximo na sua rotação: <b>{site}</b> ({count} locais ativos)",
     siteConfigureBtn: "Configurar",
     securityTitle: "Segurança & Privacidade",
     securityDesc: "Exigir biometria ou PIN do dispositivo para abrir o aplicativo.",
@@ -140,7 +146,7 @@ export const ptBR = {
     confirmDeleteMessage: "Esta ação não pode ser desfeita. Todos os lembretes vinculados serão removidos.",
     confirmLogTitle: "Confirmar Aplicação",
     confirmLogMessage: "Deseja marcar a dose de {name} ({dose}) como aplicada agora?",
-    siteSelectTitle: "Selecione o Sítio de Aplicação",
+    siteSelectTitle: "Selecione o Local de Aplicação",
     injectionNotePlaceholder: "Notas ou observações (opcional)"
   },
   notifications: {
@@ -172,6 +178,6 @@ export const ptBR = {
     badgeEducation: "PESQUISA CIENTÍFICA",
     recentSearches: "Buscas Recentes",
     clearRecent: "Limpar",
-    openResearchBtn: "Base Científica"
+    openResearchBtn: "Base de Pesquisa Científica"
   }
 };
