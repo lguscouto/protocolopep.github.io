@@ -4,6 +4,8 @@
 
 import { dateToKey } from "./schedule.js";
 
+export const DOSE_STATUSES = ["applied", "skipped", "missed"];
+
 export function createDoseLog(data = {}) {
   const todayKey = dateToKey(new Date());
   const scheduledDate = data.scheduledDate || todayKey;
@@ -27,6 +29,8 @@ export function createDoseLog(data = {}) {
   }
 
   const time = data.time || (takenAt ? new Date(takenAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "12:00");
+  const rawStatus = data.status || "applied";
+  const status = DOSE_STATUSES.includes(rawStatus) ? rawStatus : "applied";
 
   return {
     id: data.id && typeof data.id === "string" && data.id.startsWith("log_")
@@ -36,6 +40,8 @@ export function createDoseLog(data = {}) {
     scheduledDate,
     takenAt,
     time,
+    status,
+    statusReason: data.statusReason ? String(data.statusReason).trim() : "",
     dose: data.dose ? String(data.dose).trim() : "",
     ui: Number.isFinite(Number(data.ui)) ? Number(data.ui) : 0,
     note: data.note ? String(data.note).trim() : "",
@@ -57,6 +63,10 @@ export function validateDoseLog(log) {
 
   if (!log.scheduledDate || !/^\d{4}-\d{2}-\d{2}$/.test(log.scheduledDate)) {
     return { valid: false, error: "scheduledDate inválida (deve ser formato YYYY-MM-DD)." };
+  }
+
+  if (log.status && !DOSE_STATUSES.includes(log.status)) {
+    return { valid: false, error: `status de dose inválido. Deve ser um de: ${DOSE_STATUSES.join(", ")}` };
   }
 
   const todayKey = dateToKey(new Date());

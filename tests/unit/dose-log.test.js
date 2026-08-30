@@ -75,4 +75,33 @@ describe("Dose Log Domain (V03)", () => {
 
     expect(log1.id).not.toBe(log2.id);
   });
+
+  it("suporta status de dose (applied, skipped, missed) e statusReason", () => {
+    const logSkipped = createDoseLog({
+      peptideId: "pep_1",
+      status: "skipped",
+      statusReason: "Pausa programada"
+    });
+    expect(logSkipped.status).toBe("skipped");
+    expect(logSkipped.statusReason).toBe("Pausa programada");
+
+    const logMissed = createDoseLog({
+      peptideId: "pep_2",
+      status: "missed",
+      statusReason: "Esquecimento involuntário"
+    });
+    expect(logMissed.status).toBe("missed");
+    expect(logMissed.statusReason).toBe("Esquecimento involuntário");
+  });
+
+  it("rejeita status de dose inválido na validação", () => {
+    const invalidLog = {
+      peptideId: "pep_1",
+      scheduledDate: "2026-08-28",
+      status: "invalid_status"
+    };
+    const res = validateDoseLog(invalidLog);
+    expect(res.valid).toBe(false);
+    expect(res.error).toContain("status de dose inválido");
+  });
 });
