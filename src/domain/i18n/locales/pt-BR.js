@@ -21,6 +21,7 @@ export const ptBR = {
     loading: "Carregando...",
     apply: "Aplicar",
     applied: "✓ Aplicado",
+    pending: "Pendente",
     success: "Sucesso",
     error: "Erro",
     warning: "Aviso",

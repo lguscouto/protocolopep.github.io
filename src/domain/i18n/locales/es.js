@@ -21,6 +21,7 @@ export const es = {
     loading: "Cargando...",
     apply: "Aplicar",
     applied: "✓ Aplicado",
+    pending: "Pendiente",
     success: "Éxito",
     error: "Error",
     warning: "Aviso",
