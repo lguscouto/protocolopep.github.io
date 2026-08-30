@@ -1664,8 +1664,8 @@ function setupModalsAndButtons() {
   setupReportModal(storage);
   setupDiagnosticsModal({
     storage,
-    getNotificationsActive: () => notifications.isEnabled(),
-    appVersion: "1.7.0"
+    getNotificationsActive: () => (window.pepNotifications ? window.pepNotifications.hasActiveReminders() : false),
+    appVersion: "1.9.0"
   });
 
   const reopenOnboardingBtn = document.getElementById("reopen-onboarding-btn");

@@ -1,6 +1,6 @@
 # 🧪 Protocolo PEP · App Android (Local-First)
 
-![Version](https://img.shields.io/badge/version-1.7.0-2CC5C0)
+![Version](https://img.shields.io/badge/version-1.9.0-2CC5C0)
 ![Android](https://img.shields.io/badge/Android-8.0%2B-green)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![CI](https://github.com/lguscouto/protocolopep.github.io/actions/workflows/ci.yml/badge.svg)
@@ -9,7 +9,35 @@ Aplicativo Android nativo para acompanhamento de protocolos de peptídeos, cálc
 
 ---
 
-## 🚀 Novidades da Versão 1.7.0
+## 🚀 Novidades da Versão 1.9.0
+
+- **Refinamento Completo para Português Brasileiro (PT-BR) Natural & Não Prescritivo:**
+  - Terminologia correta para compostos injetáveis no Dashboard: *"0 / 2 aplicados hoje"*.
+  - Ação direta e moderna no card de peptídeos com alternância de estado: botão **`Aplicar`** ➔ **`✓ Aplicado`**.
+  - Instrução precisa de manuseio na Calculadora de Reconstituição: *"Aspire até a marca de X UI na seringa de 100 UI"*.
+  - Linguagem estritamente não prescritiva em conformidade com as diretrizes de governança médica (`AGENTS.md`): *"Informe a dose pretendida"*.
+  - Gerenciamento simplificado de **`Locais de Aplicação`** com alternância sequencial inteligente e histórico.
+- **Acessibilidade Contínua — WCAG 2.1 AA:**
+  - **Modo de Alto Contraste AAA (> 7:1):** Novo seletor no painel de Ajustes para legibilidade sob alta luminosidade.
+  - **Focus Trap Acessível:** Navegação com leitor de tela / teclado isolada com foco seguro no modal ativo e fechamento instantâneo via tecla Escape ou botão Voltar do Android.
+  - **Anunciador TalkBack (`aria-live="polite"`):** Feedback falado em segundo plano para confirmações de doses e ações críticas.
+  - **Redução de Movimento:** Respeito integral à preferência de acessibilidade do sistema (`prefers-reduced-motion: reduce`).
+- **Base de Pesquisa Científica & Farmacocinética Offline:**
+  - Catálogo integrado com 12 compostos clássicos (*BPC-157, TB-500, Semaglutida, Tirzepatida, GHK-Cu, CJC-1295, Ipamorelina, Tesamorelin, Epitalon, etc.*).
+  - Consulta rápida de meias-vidas relatadas, conservação, solventes, mecanismos propostos e referências do PubMed.
+  - Integração com um toque para carregar parâmetros na Calculadora ou adicionar ao Protocolo.
+- **Internacionalização Multi-idioma Offline (i18n):**
+  - Suporte completo a **Português (Brasil)**, **English** e **Español** com alternância instantânea em Ajustes.
+- **Segurança Biométrica / PIN & Widget Android:**
+  - Bloqueio por biometria / PIN nativo ao retornar ao aplicativo.
+  - Widget nativo 3x2 para tela inicial com atualização em tempo real e modo discreto de privacidade.
+- **Inventário de Frascos & Acompanhamento de Medidas:**
+  - Saldo automático em mcg e rendimento restante de doses por frasco reconstituído.
+  - Registro de peso corporal e medidas com suporte à integração Health Connect.
+
+---
+
+## 🚀 Novidades Anteriores (Versão 1.7.0)
 
 - **Barra de Pesquisa em Tempo Real de Peptídeos:** Novo campo de busca instantânea (`🔍 Buscar peptídeo ou categoria...`) no modal de criação de protocolo, permitindo encontrar rapidamente compostos por nome (ex: *BPC*, *Tirzepatida*, *Epitalon*) ou por classe terapêutica/categoria (ex: *GLP-1*, *reparo*, *sono*, *mitocondrial*).
 - **Lista Vertical Minimalista & Fluida:** Substituição dos chips horizontais por uma lista vertical limpa com rolagem suave, exibindo nome em destaque e categoria discreta à direita.
