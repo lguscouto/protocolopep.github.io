@@ -4,6 +4,7 @@ import "./css/animated-bg.css";
 import "./css/components.css";
 
 import { storage } from "./services/storage.js";
+import { commitAction } from "./services/committed-action.js";
 import { theme } from "./services/theme.js";
 import { haptics } from "./services/haptics.js";
 import { notifications } from "./services/notifications.js";
@@ -627,7 +628,6 @@ function toggleDose(id) {
   let createdLog = null;
   if (isUndoing) {
     delete rec[id];
-    haptics.light();
   } else {
     const configuredSites = storage.getSites();
     const lastUsed = getLastUsedSite(logs, p.id);
@@ -643,7 +643,6 @@ function toggleDose(id) {
       retroactive: false
     });
     rec[id] = [createdLog];
-    haptics.success();
   }
 
   if (Object.keys(rec).length === 0) {
@@ -652,31 +651,36 @@ function toggleDose(id) {
     logs[todayK] = rec;
   }
 
-  const res = storage.setLogs(logs);
+  const res = commitAction({
+    persist: () => storage.setLogs(logs),
+    onSuccess: () => {
+      if (isUndoing) {
+        haptics.light();
+        accessibilityService.announce(`Aplicação de ${p.name} desmarcada.`);
+      } else {
+        haptics.success();
+        accessibilityService.announce(`Aplicação de ${p.name} confirmada.`);
+      }
+
+      // Movimentação no inventário após persistência confirmada
+      const activeVial = storage.findVialForPeptide(p.id, p.name);
+      if (activeVial) {
+        if (isUndoing) {
+          storage.creditDoseToVial(activeVial.id, { doseStr: p.dose, note: `Estorno de aplicação (${p.name})` });
+        } else {
+          storage.debitDoseFromVial(activeVial.id, { doseStr: p.dose, doseLogId: createdLog?.id, note: p.name });
+        }
+      }
+
+      renderToday();
+      renderWeek();
+      renderHistory();
+    }
+  });
+
   if (!res.success) {
     alert("Erro ao gravar aplicação: " + (res.error || "Armazenamento local indisponível"));
-    return;
   }
-
-  if (isUndoing) {
-    accessibilityService.announce(`Aplicação de ${p.name} desmarcada.`);
-  } else {
-    accessibilityService.announce(`Aplicação de ${p.name} confirmada.`);
-  }
-
-  // Movimentação no inventário após persistência confirmada
-  const activeVial = storage.findVialForPeptide(p.id, p.name);
-  if (activeVial) {
-    if (isUndoing) {
-      storage.creditDoseToVial(activeVial.id, { doseStr: p.dose, note: `Estorno de aplicação (${p.name})` });
-    } else {
-      storage.debitDoseFromVial(activeVial.id, { doseStr: p.dose, doseLogId: createdLog?.id, note: p.name });
-    }
-  }
-
-  renderToday();
-  renderWeek();
-  renderHistory();
 }
 
 function addSingleDose(id) {
@@ -718,22 +722,25 @@ function addSingleDose(id) {
   rec[id] = arr;
   logs[todayK] = rec;
 
-  const res = storage.setLogs(logs);
+  const res = commitAction({
+    persist: () => storage.setLogs(logs),
+    onSuccess: () => {
+      // Débito no inventário após persistência confirmada
+      const activeVial = storage.findVialForPeptide(p.id, p.name);
+      if (activeVial) {
+        storage.debitDoseFromVial(activeVial.id, { doseStr: p.dose, doseLogId: doseLog.id, note: p.name });
+      }
+
+      haptics.medium();
+      renderToday();
+      renderWeek();
+      renderHistory();
+    }
+  });
+
   if (!res.success) {
     alert("Erro ao gravar dose: " + (res.error || "Armazenamento indisponível"));
-    return;
   }
-
-  // Débito no inventário após persistência confirmada
-  const activeVial = storage.findVialForPeptide(p.id, p.name);
-  if (activeVial) {
-    storage.debitDoseFromVial(activeVial.id, { doseStr: p.dose, doseLogId: doseLog.id, note: p.name });
-  }
-
-  haptics.medium();
-  renderToday();
-  renderWeek();
-  renderHistory();
 }
 
 function undoSingleDose(id) {
@@ -753,26 +760,29 @@ function undoSingleDose(id) {
   if (Object.keys(rec).length === 0) delete logs[todayK];
   else logs[todayK] = rec;
 
-  const res = storage.setLogs(logs);
+  const res = commitAction({
+    persist: () => storage.setLogs(logs),
+    onSuccess: () => {
+      // Estorno no inventário
+      const peptides = storage.getPeptides();
+      const p = peptides.find((x) => x.id === id);
+      if (p) {
+        const activeVial = storage.findVialForPeptide(p.id, p.name);
+        if (activeVial) {
+          storage.creditDoseToVial(activeVial.id, { doseStr: p.dose, note: `Estorno de dose (${p.name})` });
+        }
+      }
+
+      haptics.light();
+      renderToday();
+      renderWeek();
+      renderHistory();
+    }
+  });
+
   if (!res.success) {
     alert("Erro ao remover dose: " + (res.error || "Armazenamento indisponível"));
-    return;
   }
-
-  // Estorno no inventário
-  const peptides = storage.getPeptides();
-  const p = peptides.find((x) => x.id === id);
-  if (p) {
-    const activeVial = storage.findVialForPeptide(p.id, p.name);
-    if (activeVial) {
-      storage.creditDoseToVial(activeVial.id, { doseStr: p.dose, note: `Estorno de dose (${p.name})` });
-    }
-  }
-
-  haptics.light();
-  renderToday();
-  renderWeek();
-  renderHistory();
 }
 
 function renderWeek() {
