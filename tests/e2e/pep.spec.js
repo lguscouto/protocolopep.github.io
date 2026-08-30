@@ -64,5 +64,86 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
 
     runtime.assertCleanRuntime();
   });
+
+  test("dashboard vazio exibe boas-vindas e oculta anel de progresso", async ({ page }) => {
+    const runtime = trackPageRuntime(page);
+    await seedStorage(page, { skipOnboarding: true, peptides: [] });
+
+    await page.goto("/");
+    await page.waitForLoadState("domcontentloaded");
+
+    // Deve exibir card de boas-vindas
+    const emptyTitle = page.locator(".dash-empty-title");
+    await expect(emptyTitle).toBeVisible();
+    await expect(emptyTitle).toContainText("Seu protocolo começa aqui");
+
+    // O anel de progresso hero deve estar oculto
+    const hero = page.locator("#dash-hero");
+    await expect(hero).toBeHidden();
+
+    // Clicar em criar protocolo abre o modal
+    const createBtn = page.locator('[data-action="create-protocol"]');
+    await createBtn.click();
+
+    const editModal = page.locator("#edit-modal");
+    await expect(editModal).toHaveClass(/on/);
+
+    runtime.assertCleanRuntime();
+  });
+
+  test("dashboard com protocolo exibe cards da rotina de hoje e secao de proximos", async ({ page }) => {
+    const runtime = trackPageRuntime(page);
+    const mockPeptides = [
+      {
+        id: "pep-alfa",
+        name: "Composto Alfa",
+        sub: "reparo sintético",
+        dose: "250 mcg",
+        ui: 10,
+        perDay: 1,
+        time: "08:00",
+        color: "#30D5C8",
+        days: null
+      },
+      {
+        id: "pep-beta",
+        name: "Composto Beta",
+        sub: "energia celular",
+        dose: "500 mcg",
+        ui: 20,
+        perDay: 1,
+        time: "20:00",
+        color: "#F5B75B",
+        days: null
+      }
+    ];
+
+    await seedStorage(page, { skipOnboarding: true, peptides: mockPeptides });
+
+    await page.goto("/");
+    await page.waitForLoadState("domcontentloaded");
+
+    // O card hero de progresso deve estar visível
+    const hero = page.locator("#dash-hero");
+    await expect(hero).toBeVisible();
+
+    // Deve renderizar os 2 cards
+    const cards = page.locator("#today-cards article.card");
+    await expect(cards).toHaveCount(2);
+
+    // Deve renderizar a seção de próximos
+    const upcomingSection = page.locator(".upcoming-section");
+    await expect(upcomingSection).toBeVisible();
+
+    // Confirmar a primeira dose
+    const takeBtn = cards.first().locator("button.take");
+    await takeBtn.click();
+
+    // Card deve estar com status de aplicado
+    await expect(cards.first()).toHaveClass(/done/);
+
+    runtime.assertCleanRuntime();
+  });
 });
+
 

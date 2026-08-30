@@ -104,3 +104,44 @@ export function occurrencesForRange(peptide, startDate, endDate) {
 
   return dates;
 }
+
+export function getUpcomingOccurrences(peptides = [], fromDate = new Date(), limit = 3, horizonDays = 14) {
+  if (!Array.isArray(peptides) || peptides.length === 0 || limit <= 0) return [];
+
+  const start = typeof fromDate === "string" ? keyToDate(fromDate) : new Date(fromDate);
+  start.setHours(0, 0, 0, 0);
+
+  const results = [];
+  const current = new Date(start);
+
+  for (let day = 0; day <= horizonDays; day++) {
+    const d = new Date(current);
+    d.setDate(d.getDate() + day);
+    const dKey = dateToKey(d);
+
+    for (const p of peptides) {
+      if (isScheduledOnDate(p, d)) {
+        results.push({
+          dateKey: dKey,
+          date: d,
+          peptideId: p.id,
+          name: p.name,
+          dose: p.dose || "",
+          ui: p.ui || 0,
+          time: p.time || "08:00",
+          color: p.color || "var(--primary)"
+        });
+      }
+    }
+  }
+
+  results.sort((a, b) => {
+    if (a.dateKey !== b.dateKey) {
+      return a.dateKey.localeCompare(b.dateKey);
+    }
+    return (a.time || "").localeCompare(b.time || "");
+  });
+
+  return results.slice(0, limit);
+}
+

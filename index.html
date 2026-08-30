@@ -51,7 +51,9 @@
         <button type="button" class="dash-banner-close" id="dash-banner-close" aria-label="Fechar banner">✕</button>
       </div>
 
-      <div class="eyebrow" id="today-heading" data-i18n="dashboard.heading">Seu Protocolo</div>
+      <div class="page-title-wrap" style="margin-bottom: 14px;">
+        <h2 class="page-title" id="today-heading" data-i18n="dashboard.heading">Hoje</h2>
+      </div>
       
       <!-- Hero Card: Progresso & Estatísticas -->
       <div class="dash-hero" id="dash-hero" aria-label="Progresso de doses do dia">
@@ -109,25 +111,27 @@
 
     <!-- ABA: SEMANA -->
     <section class="view" id="view-week" role="tabpanel" aria-labelledby="tab-week">
-      <div class="eyebrow" data-i18n="week.heading">Grade Semanal</div>
+      <div class="page-title-wrap" style="margin-bottom: 14px;">
+        <h2 class="page-title" data-i18n="week.heading">Semana</h2>
+      </div>
       <div class="panel" id="week-table-wrap" role="region" aria-label="Tabela de doses da semana"></div>
     </section>
 
     <!-- ABA: HISTÓRICO -->
     <section class="view" id="view-history" role="tabpanel" aria-labelledby="tab-history">
-      <div class="eyebrow-row" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px;flex-wrap:wrap;">
+      <div class="eyebrow-row" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:8px;flex-wrap:wrap;">
         <div>
-          <div class="eyebrow" style="margin:0;">Histórico & Acompanhamento</div>
-          <div class="hist-count" id="history-count" style="font-size:11.5px;color:var(--muted);font-weight:600;margin-top:2px;"></div>
+          <h2 class="page-title" style="margin:0;" data-i18n="history.heading">Histórico</h2>
+          <div class="hist-count" id="history-count" style="font-size:12.5px;color:var(--muted);font-weight:600;margin-top:2px;"></div>
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;">
-          <button type="button" class="btn-primary" id="open-measurement-modal-btn" style="font-size:11.5px;padding:6px 10px;width:auto;" aria-label="Registrar peso, medidas ou sintomas">
+          <button type="button" class="btn-primary" id="open-measurement-modal-btn" style="font-size:12px;padding:8px 12px;min-height:var(--tap-min);width:auto;" aria-label="Registrar peso, medidas ou sintomas">
             + Medidas / Sintomas
           </button>
-          <button type="button" class="btn-ghost" id="hist-retro-btn" style="font-size:11.5px;padding:6px 10px;border:1px solid var(--border2);border-radius:8px;" aria-label="Adicionar registro de dose retroativo">
+          <button type="button" class="btn-ghost" id="hist-retro-btn" style="font-size:12px;padding:8px 12px;min-height:var(--tap-min);border:1px solid var(--border2);border-radius:8px;" aria-label="Adicionar registro de dose retroativo">
             + Dose Retroativa
           </button>
-          <button type="button" class="btn-ghost" id="hist-report-btn" style="font-size:11.5px;padding:6px 10px;border:1px solid var(--border2);border-radius:8px;" aria-label="Gerar relatório de aplicações">
+          <button type="button" class="btn-ghost" id="hist-report-btn" style="font-size:12px;padding:8px 12px;min-height:var(--tap-min);border:1px solid var(--border2);border-radius:8px;" aria-label="Gerar relatório de aplicações">
             📄 Relatório
           </button>
         </div>
@@ -145,7 +149,9 @@
 
     <!-- ABA: CALCULADORA -->
     <section class="view" id="view-calc" role="tabpanel" aria-labelledby="tab-calc">
-      <div class="eyebrow">Calculadora de Reconstituição</div>
+      <div class="page-title-wrap" style="margin-bottom: 14px;">
+        <h2 class="page-title" data-i18n="calculator.heading">Calculadora</h2>
+      </div>
       
       <div class="step">
         <div class="step-h">
@@ -240,7 +246,9 @@
 
     <!-- ABA: CONFIGURAÇÕES & BACKUP -->
     <section class="view" id="view-settings" role="tabpanel" aria-labelledby="tab-settings">
-      <div class="eyebrow" data-i18n="settings.heading">Ajustes & Preferências</div>
+      <div class="page-title-wrap" style="margin-bottom: 14px;">
+        <h2 class="page-title" data-i18n="settings.heading">Ajustes</h2>
+      </div>
 
       <!-- Card de Seleção de Idioma / i18n (V16) -->
       <div class="panel" style="margin-bottom:16px;">

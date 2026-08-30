@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isScheduledOnDate, getScheduledPeptides, calculateDayProgress, occurrencesForRange, daysBetween } from "../../src/domain/schedule.js";
+import { isScheduledOnDate, getScheduledPeptides, calculateDayProgress, occurrencesForRange, daysBetween, getUpcomingOccurrences } from "../../src/domain/schedule.js";
 
 describe("Schedule Domain", () => {
   it("calcula dias entre datas corretamente", () => {
@@ -75,5 +75,22 @@ describe("Schedule Domain", () => {
     // 2026-08-24 (Seg) até 2026-08-31 (Seg): deve conter 24(Seg), 28(Sex), 31(Seg)
     const occs = occurrencesForRange(pep, "2026-08-24", "2026-08-31");
     expect(occs).toHaveLength(3);
+  });
+
+  it("calcula próximas ocorrências (getUpcomingOccurrences) ordenadas por data e hora", () => {
+    const peptides = [
+      { id: "bpc", name: "BPC-157", days: null, time: "08:00", dose: "250 mcg", ui: 10 },
+      { id: "tb", name: "TB-500", days: [1, 4], time: "20:00", dose: "500 mcg", ui: 20 }
+    ];
+
+    // 2026-08-30 é Domingo (0)
+    const upcoming = getUpcomingOccurrences(peptides, "2026-08-30", 3);
+    expect(upcoming).toHaveLength(3);
+    expect(upcoming[0].name).toBe("BPC-157");
+    expect(upcoming[0].dateKey).toBe("2026-08-30");
+    expect(upcoming[1].dateKey).toBe("2026-08-31"); // Segunda: BPC-157 08:00
+    expect(upcoming[1].name).toBe("BPC-157");
+    expect(upcoming[2].dateKey).toBe("2026-08-31"); // Segunda: TB-500 20:00
+    expect(upcoming[2].name).toBe("TB-500");
   });
 });

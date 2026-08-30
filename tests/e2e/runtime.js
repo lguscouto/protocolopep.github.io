@@ -50,10 +50,10 @@ export async function seedStorage(page, { skipOnboarding = true, peptides = [], 
       localStorage.setItem("pep_onboarding_version", "1");
     }
     if (peptides && peptides.length > 0) {
-      localStorage.setItem("pep_protocol_peptides", JSON.stringify(peptides));
+      localStorage.setItem("pep_protocol_v2", JSON.stringify(peptides));
     }
     if (logs && Object.keys(logs).length > 0) {
-      localStorage.setItem("pep_protocol_logs", JSON.stringify(logs));
+      localStorage.setItem("pep_logs_v2", JSON.stringify(logs));
     }
   }, { skipOnboarding, peptides, logs });
 }

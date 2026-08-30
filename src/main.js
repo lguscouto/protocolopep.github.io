@@ -17,8 +17,10 @@ import {
   daysBetween,
   isScheduledOnDate,
   getScheduledPeptides,
-  calculateDayProgress
+  calculateDayProgress,
+  getUpcomingOccurrences
 } from "./domain/schedule.js";
+import { createDoseCardViewModel, renderEmptyDashboardHTML, renderUpcomingHTML } from "./ui/dashboard.js";
 import { createPeptide, validatePeptide } from "./domain/protocol.js";
 import { escapeHtml, sanitizeColor, sanitizeId } from "./ui/dom.js";
 import { shouldShowOnboarding, showOnboarding } from "./ui/onboarding.js";
@@ -482,111 +484,174 @@ function renderToday() {
   const todayK = dateKey(now);
   const rec = logs[todayK] || {};
   const container = document.getElementById("today-cards");
-  if (!container) return;
+  const heroEl = document.getElementById("dash-hero");
+  const addPepBtn = document.getElementById("add-pep-btn");
+  const actionsWrap = document.querySelector(".dash-actions-wrap");
 
+  if (!container) return;
   container.innerHTML = "";
 
-  // Filtrar apenas compostos agendados para o dia de hoje
-  const scheduledToday = getScheduledPeptides(peptides, now);
-
   if (peptides.length === 0) {
-    container.innerHTML = `<div class="empty-note">Nenhum peptídeo no seu protocolo ainda.<br>Toque no botão abaixo para adicionar.</div>`;
-  } else if (scheduledToday.length === 0) {
-    container.innerHTML = `<div class="empty-note">Nenhuma dose programada para hoje.<br>Acompanhe sua grade na aba <b>Semana</b>.</div>`;
+    if (heroEl) heroEl.style.display = "none";
+    if (addPepBtn) addPepBtn.style.display = "none";
+    if (actionsWrap) actionsWrap.style.display = "none";
+
+    container.innerHTML = renderEmptyDashboardHTML();
+
+    const emptyAddBtn = container.querySelector('[data-action="create-protocol"]');
+    if (emptyAddBtn) {
+      emptyAddBtn.addEventListener("click", () => openEditModal());
+    }
+
+    const emptyCalcBtn = container.querySelector('[data-action="open-calc"]');
+    if (emptyCalcBtn) {
+      emptyCalcBtn.addEventListener("click", () => switchTab("calc"));
+    }
+
+    drawRing(0, 0);
+    syncAppWidget();
+    return;
   }
 
-  scheduledToday.forEach((p) => {
-    const perDay = p.perDay || 1;
-    const tomadas = dosesTaken(rec, p.id);
-    const done = tomadas >= perDay;
+  // Com protocolos cadastrados
+  if (heroEl) heroEl.style.display = "";
+  if (addPepBtn) addPepBtn.style.display = "";
+  if (actionsWrap) actionsWrap.style.display = "";
 
-    const horarios = doseTimes(rec, p.id);
-    const lastTime = horarios.length ? horarios[horarios.length - 1] : "";
-    const moon = p.moon ? " 🌙" : "";
+  const scheduledToday = getScheduledPeptides(peptides, now);
 
-    const card = document.createElement("div");
-    card.className = `card ${done ? "done" : ""}`;
-    card.style.setProperty("--acc", sanitizeColor(p.accent, "var(--primary)"));
+  if (scheduledToday.length === 0) {
+    const emptyDayCard = document.createElement("div");
+    emptyDayCard.className = "dash-empty-card";
+    emptyDayCard.style.padding = "24px 20px";
+    emptyDayCard.innerHTML = `
+      <div style="font-size: 28px; margin-bottom: 8px;">🌴</div>
+      <div style="font-weight: 700; font-size: 16px; margin-bottom: 4px;">Sem aplicações programadas para hoje</div>
+      <div style="font-size: 13px; color: var(--muted);">Acompanhe os próximos dias na aba <b>Semana</b> ou registre uma dose retroativa no Histórico.</div>
+    `;
+    container.appendChild(emptyDayCard);
+  } else {
+    scheduledToday.forEach((p) => {
+      const perDay = p.perDay || 1;
+      const tomadas = dosesTaken(rec, p.id);
+      const done = tomadas >= perDay;
 
-    let ctrlHTML;
-    if (perDay <= 1) {
-      ctrlHTML = `
-        <button class="take ${done ? "done" : ""}" data-id="${sanitizeId(p.id)}">
-          <span>${done ? i18nService.t("common.applied") : i18nService.t("common.apply")}</span>
-          ${done && lastTime ? `<span class="at">${esc(lastTime)}</span>` : ""}
-        </button>`;
-    } else {
-      let boxes = "";
-      for (let i = 0; i < perDay; i++) {
-        const marcada = i < tomadas;
-        const hora = marcada && horarios[i] ? horarios[i] : "";
-        boxes += `
-          <div class="dosebox ${marcada ? "on" : ""}">
-            <span class="dosebox-ico">${marcada ? "✓" : i + 1}</span>
-            ${hora ? `<span class="dosebox-t">${esc(hora)}</span>` : ""}
-          </div>`;
-      }
-      ctrlHTML = `
-        <div class="doses" data-id="${sanitizeId(p.id)}">
-          <div class="doses-count">${tomadas} de ${perDay}</div>
-          <div class="doses-boxes">${boxes}</div>
-          <div class="doses-btns">
-            <button class="dose-add" data-id="${sanitizeId(p.id)}" ${tomadas >= perDay ? "disabled" : ""}>+ dose</button>
-            ${tomadas > 0 ? `<button class="dose-undo" data-id="${sanitizeId(p.id)}">desfazer</button>` : ""}
-          </div>
-        </div>`;
-    }
-
-    const activeVial = storage.findVialForPeptide(p.id, p.name);
-    let vialBadgeHTML = "";
-    if (activeVial) {
-      const remDoses = calculateRemainingDoses(activeVial, p.dose);
-      const exp = getExpirationStatus(activeVial);
-      const expAlert = exp.status === "expired" ? " ⚠️ Vencido" : exp.status === "expiring_soon" ? " ⏳ Vence em breve" : "";
-      vialBadgeHTML = `<span class="chip-acc" style="background:rgba(14,133,128,0.12);color:var(--accent);font-size:11px;font-weight:700;" title="Saldo: ${activeVial.remainingMcg} mcg">🧪 ~${remDoses} doses${expAlert}</span>`;
-    }
-
-    const configuredSites = storage.getSites();
-    let siteBadgeHTML = "";
-    if (configuredSites && configuredSites.length > 0) {
+      const configuredSites = storage.getSites();
       const lastUsed = getLastUsedSite(storage.getLogs(), p.id);
       const nextSite = getNextSite(configuredSites, lastUsed ? lastUsed.site : null);
-      if (nextSite) {
-        siteBadgeHTML = `<span class="chip-acc" style="background:rgba(99,102,241,0.12);color:var(--primary);font-size:11px;font-weight:700;" title="Próximo sítio na sua rotação">📍 ${esc(nextSite)}</span>`;
+
+      const activeVial = storage.findVialForPeptide(p.id, p.name);
+      let vialStatus = null;
+      if (activeVial) {
+        const remDoses = calculateRemainingDoses(activeVial, p.dose);
+        const exp = getExpirationStatus(activeVial);
+        vialStatus = { remainingDoses: remDoses, expStatus: exp.status };
       }
-    }
 
-    card.innerHTML = `
-      <div class="info">
-        <div class="nm"><span class="dot"></span>${esc(p.name)}${moon}</div>
-        <div class="sub">${esc(p.sub || "")}</div>
-        <div class="meta">
-          <span class="ui">${esc(String(p.ui))} UI</span>
-          <span class="freq">· ${esc(p.freq || "")}</span>
-          <span class="chip-acc">${esc(p.dose || "")}/${esc(p.per || "dia")}</span>
-          ${vialBadgeHTML}
-          ${siteBadgeHTML}
+      const vm = createDoseCardViewModel({
+        peptide: p,
+        takenCount: tomadas,
+        nextSite,
+        vialStatus
+      });
+
+      const horarios = doseTimes(rec, p.id);
+      const lastTime = horarios.length ? horarios[horarios.length - 1] : "";
+      const moon = p.moon ? " 🌙" : "";
+
+      const card = document.createElement("article");
+      card.className = `card ${vm.isCompleted ? "done" : ""}`;
+      card.style.setProperty("--acc", sanitizeColor(p.accent, "var(--primary)"));
+
+      let ctrlHTML;
+      if (perDay <= 1) {
+        ctrlHTML = `
+          <button type="button" class="take ${vm.isCompleted ? "done" : ""}" data-id="${sanitizeId(p.id)}" aria-label="${vm.isCompleted ? 'Desmarcar dose de ' + esc(p.name) : 'Confirmar dose de ' + esc(p.name)}">
+            <span>${vm.isCompleted ? i18nService.t("common.applied") : i18nService.t("common.apply")}</span>
+            ${vm.isCompleted && lastTime ? `<span class="at">${esc(lastTime)}</span>` : ""}
+          </button>`;
+      } else {
+        let boxes = "";
+        for (let i = 0; i < perDay; i++) {
+          const marcada = i < tomadas;
+          const hora = marcada && horarios[i] ? horarios[i] : "";
+          boxes += `
+            <div class="dosebox ${marcada ? "on" : ""}">
+              <span class="dosebox-ico">${marcada ? "✓" : i + 1}</span>
+              ${hora ? `<span class="dosebox-t">${esc(hora)}</span>` : ""}
+            </div>`;
+        }
+        ctrlHTML = `
+          <div class="doses" data-id="${sanitizeId(p.id)}">
+            <div class="doses-count">${tomadas} de ${perDay}</div>
+            <div class="doses-boxes">${boxes}</div>
+            <div class="doses-btns">
+              <button type="button" class="dose-add" data-id="${sanitizeId(p.id)}" ${tomadas >= perDay ? "disabled" : ""}>+ dose</button>
+              ${tomadas > 0 ? `<button type="button" class="dose-undo" data-id="${sanitizeId(p.id)}">desfazer</button>` : ""}
+            </div>
+          </div>`;
+      }
+
+      let vialBadgeHTML = "";
+      if (vm.vialStatus) {
+        const expAlert = vm.vialStatus.expStatus === "expired" ? " ⚠️ Vencido" : vm.vialStatus.expStatus === "expiring_soon" ? " ⏳ Vence em breve" : "";
+        vialBadgeHTML = `<span class="chip-acc" style="background:rgba(14,133,128,0.12);color:var(--accent);font-size:11px;font-weight:700;" title="Saldo no frasco ativo">🧪 ~${vm.vialStatus.remainingDoses} doses${expAlert}</span>`;
+      }
+
+      let siteBadgeHTML = "";
+      if (vm.nextSite) {
+        siteBadgeHTML = `<span class="chip-acc" style="background:rgba(99,102,241,0.12);color:var(--primary);font-size:11px;font-weight:700;" title="Próximo sítio na sua rotação">📍 ${esc(vm.nextSite)}</span>`;
+      }
+
+      const statusBadgeHTML = vm.isCompleted
+        ? `<span class="chip-acc" style="background:rgba(53,208,159,0.15);color:var(--success);font-weight:700;">✓ ${i18nService.t("common.applied")}</span>`
+        : `<span class="chip-acc" style="background:rgba(245,183,91,0.15);color:var(--warning);font-weight:700;">⏳ ${i18nService.t("common.pending") || "Pendente"}</span>`;
+
+      card.innerHTML = `
+        <div class="info">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">
+            <div class="nm"><span class="dot"></span>${esc(p.name)}${moon}</div>
+            ${statusBadgeHTML}
+          </div>
+          <div class="sub">${esc(p.sub || "")}</div>
+          <div class="meta">
+            <span class="ui">${esc(String(p.ui))} UI</span>
+            <span class="freq">· ${esc(p.freq || "")}</span>
+            <span class="chip-acc">${esc(p.dose || "")}/${esc(p.per || "dia")}</span>
+            ${vialBadgeHTML}
+            ${siteBadgeHTML}
+          </div>
+          ${(p.start || p.note || p.time || p.calculationSnapshot) ? `
+            <div class="note-line">
+              ${p.time ? `<span class="note-start">⏰ ${esc(p.time)}</span>` : ""}
+              ${p.start ? `<span class="note-start">início ${fmtBR(p.start)}</span>` : ""}
+              ${p.calculationSnapshot ? `<span class="note-calc" title="${esc(p.calculationSnapshot.formula || '')}">🔬 ${esc(String(p.calculationSnapshot.vialMg))}mg/${esc(String(p.calculationSnapshot.waterMl))}mL</span>` : ""}
+              ${p.note ? `<span class="note-txt">${esc(p.note)}</span>` : ""}
+            </div>` : ""}
         </div>
-        ${(p.start || p.note || p.time || p.calculationSnapshot) ? `
-          <div class="note-line">
-            ${p.time ? `<span class="note-start">⏰ ${esc(p.time)}</span>` : ""}
-            ${p.start ? `<span class="note-start">início ${fmtBR(p.start)}</span>` : ""}
-            ${p.calculationSnapshot ? `<span class="note-calc" title="${esc(p.calculationSnapshot.formula || '')}">🔬 ${esc(String(p.calculationSnapshot.vialMg))}mg/${esc(String(p.calculationSnapshot.waterMl))}mL</span>` : ""}
-            ${p.note ? `<span class="note-txt">${esc(p.note)}</span>` : ""}
-          </div>` : ""}
-      </div>
-      <div class="ctrls">
-        <button class="gear" data-id="${sanitizeId(p.id)}" title="Editar">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-        </button>
-        <button class="del" data-id="${sanitizeId(p.id)}" title="Remover">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/></svg>
-        </button>
-      </div>
-      ${ctrlHTML}`;
+        <div class="ctrls">
+          <button type="button" class="gear" data-id="${sanitizeId(p.id)}" title="Editar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </button>
+          <button type="button" class="del" data-id="${sanitizeId(p.id)}" title="Remover">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/></svg>
+          </button>
+        </div>
+        ${ctrlHTML}`;
 
-    container.appendChild(card);
-  });
+      container.appendChild(card);
+    });
+  }
+
+  // Próximas ocorrências (a partir de amanhã)
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const upcoming = getUpcomingOccurrences(peptides, tomorrow, 3);
+  if (upcoming.length > 0) {
+    const upcomingWrap = document.createElement("div");
+    upcomingWrap.innerHTML = renderUpcomingHTML(upcoming);
+    container.appendChild(upcomingWrap);
+  }
 
   // Cálculo canônico do anel diário
   const dayProgress = calculateDayProgress(peptides, logs, now);
