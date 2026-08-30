@@ -33,4 +33,36 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
 
     runtime.assertCleanRuntime();
   });
+
+  test("alvos de toque atendem às dimensões mínimas de 44x44px e 48px na navegação", async ({ page }) => {
+    const runtime = trackPageRuntime(page);
+    await seedStorage(page, { skipOnboarding: true, peptides: [] });
+
+    await page.goto("/");
+    await page.waitForLoadState("domcontentloaded");
+
+    // Topbar buttons
+    const notifBtn = page.locator("#notif-btn");
+    const notifBox = await notifBtn.boundingBox();
+    expect(notifBox?.width).toBeGreaterThanOrEqual(44);
+    expect(notifBox?.height).toBeGreaterThanOrEqual(44);
+
+    const themeBtn = page.locator("#theme-btn");
+    const themeBox = await themeBtn.boundingBox();
+    expect(themeBox?.width).toBeGreaterThanOrEqual(44);
+    expect(themeBox?.height).toBeGreaterThanOrEqual(44);
+
+    // Nav buttons
+    const navButtons = page.locator(".nav button");
+    const count = await navButtons.count();
+    expect(count).toBe(5);
+    for (let i = 0; i < count; i++) {
+      const box = await navButtons.nth(i).boundingBox();
+      expect(box?.height).toBeGreaterThanOrEqual(48);
+      expect(box?.width).toBeGreaterThanOrEqual(44);
+    }
+
+    runtime.assertCleanRuntime();
+  });
 });
+

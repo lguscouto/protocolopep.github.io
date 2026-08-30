@@ -101,8 +101,8 @@ export function setupResearchUI({
         <div class="info" style="flex:1;min-width:0;width:100%;">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;">
             <div class="nm" style="color:var(--text);font-size:16px;font-weight:700;"><span class="dot"></span>${esc(c.name)}</div>
-            <button type="button" class="icon-b fav-btn" data-id="${sanitizeId(c.id)}" title="${isFav ? 'Remover favorito' : 'Favoritar'}" style="width:28px;height:28px;padding:4px;flex-shrink:0;color:${isFav ? '#f59e0b' : 'var(--muted)'};">
-              <svg viewBox="0 0 24 24" fill="${isFav ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;">
+            <button type="button" class="icon-b fav-btn" data-id="${sanitizeId(c.id)}" title="${isFav ? 'Remover favorito' : 'Favoritar'}" style="width:44px;height:44px;min-width:var(--tap-min);min-height:var(--tap-min);padding:6px;flex-shrink:0;color:${isFav ? '#f59e0b' : 'var(--muted)'};">
+              <svg viewBox="0 0 24 24" fill="${isFav ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;">
                 <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
               </svg>
             </button>

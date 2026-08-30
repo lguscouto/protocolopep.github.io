@@ -1,5 +1,6 @@
 import "./css/variables.css";
 import "./css/base.css";
+import "./css/primitives.css";
 import "./css/animated-bg.css";
 import "./css/components.css";
 
