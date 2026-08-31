@@ -200,6 +200,25 @@ export class NotificationService {
     }
   }
 
+  async cancelScheduleForPeptide(peptideId) {
+    if (!peptideId) return;
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const pending = await LocalNotifications.getPending();
+        if (pending && pending.notifications && pending.notifications.length > 0) {
+          const toCancel = pending.notifications.filter(
+            (n) => n.extra && n.extra.peptideId === peptideId
+          );
+          if (toCancel.length > 0) {
+            await LocalNotifications.cancel({ notifications: toCancel });
+          }
+        }
+      } catch (e) {
+        console.warn("[Notif] Erro ao cancelar lembretes do peptídeo:", e);
+      }
+    }
+  }
+
   async schedulePeptideReminders(peptides = []) {
     // 1. Sempre cancelar lembretes anteriores
     await this.cancelAllPepReminders();
@@ -247,7 +266,8 @@ export class NotificationService {
                   channelId: NOTIF_CHANNEL_ID,
                   schedule: { at: schedDate, allowWhileIdle: true },
                   smallIcon: "ic_stat_pep",
-                  iconColor: "#2CC5C0"
+                  iconColor: "#2CC5C0",
+                  extra: { peptideId: p.id }
                 });
               }
             }

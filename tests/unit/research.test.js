@@ -27,6 +27,7 @@ describe("Research Domain & Logic (V17)", () => {
   it("normaliza termos de busca removendo acentos e maiúsculas", () => {
     expect(normalizeSearchTerm("Péptido")).toBe("peptido");
     expect(normalizeSearchTerm("  SEMÁGLUTIDA  ")).toBe("semaglutida");
+    expect(normalizeSearchTerm("BPC-157\x00\x1F")).toBe("bpc-157"); // Caracteres de controle removidos
     expect(normalizeSearchTerm(null)).toBe("");
     expect(normalizeSearchTerm(123)).toBe("");
   });

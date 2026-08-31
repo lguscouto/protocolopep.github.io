@@ -14,8 +14,14 @@ describe("Notifications Service", () => {
   });
 
   it("salva configurações no storage", () => {
-    notifService.saveConfig({ enabled: true, sound: false, summary: "08:00" });
+    notifService.saveConfig({ enabled: true, sound: false, summary: "08:00", discreteMode: true });
     expect(notifService.getConfig().enabled).toBe(true);
     expect(notifService.getConfig().sound).toBe(false);
+    expect(notifService.getConfig().discreteMode).toBe(true);
+  });
+
+  it("permite cancelamento direcionado por ID de peptídeo", async () => {
+    expect(typeof notifService.cancelScheduleForPeptide).toBe("function");
+    await expect(notifService.cancelScheduleForPeptide("pep-123")).resolves.not.toThrow();
   });
 });

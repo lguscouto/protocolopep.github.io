@@ -16,9 +16,11 @@ import { RESEARCH_DATABASE } from "./database.js";
 export function normalizeSearchTerm(str) {
   if (!str || typeof str !== "string") return "";
   return str
+    .slice(0, 100)
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[\x00-\x1F\x7F]/g, "")
     .trim();
 }
 
