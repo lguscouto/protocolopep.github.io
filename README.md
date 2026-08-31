@@ -1,6 +1,6 @@
 # 🧪 Protocolo PEP · App Android (Local-First)
 
-![Version](https://img.shields.io/badge/version-2.1.0-2CC5C0)
+![Version](https://img.shields.io/badge/version-2.2.0-2CC5C0)
 ![Android](https://img.shields.io/badge/Android-8.0%2B-green)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![CI](https://github.com/lguscouto/protocolopep.github.io/actions/workflows/ci.yml/badge.svg)
@@ -9,7 +9,35 @@ Aplicativo Android nativo para acompanhamento de protocolos de peptídeos, cálc
 
 ---
 
-## 🚀 Novidades da Versão 2.1.0 (Data da Primeira Dose & Preenchimento Retroativo)
+## 🚀 Novidades da Versão 2.2.0 (Health Connect API 36, Integridade Total e Proteção de Dados)
+
+- **Sincronização Health Connect Resiliente & Timezone-Aware:**
+  - Conversão pura de timestamps locais (`localDateTimeToIso` e `isoToLocalDateTime`), eliminando saltos de data próximo à meia-noite em fusos como UTC-3.
+  - Desduplicação estrita via `clientRecordId` em `Metadata` no plugin nativo Kotlin e motor de fusão local idempotente.
+  - Verificação de status real via `PermissionController` nativo e detecção automática de alterações por conteúdo (`haveMeasurementsChanged`).
+- **Android SDK 36 & Conformidade com Google Play:**
+  - Atualização completa de `compileSdkVersion` e `targetSdkVersion` para API 36 com bibliotecas AndroidX atualizadas.
+  - Remoção da permissão restrita `USE_EXACT_ALARM` em favor do agendamento padrão em conformidade com as diretrizes do Google Play.
+- **Integridade Bidirecional Dose ↔ Movimento ↔ Frasco:**
+  - O ID do log de dose (`doseLogId`) é pré-alocado e registrado no ledger de estoque antes da confirmação, garantindo rastreabilidade perfeita e estornos auditáveis.
+- **Débito de Doses em UI (Unidades Internacionais) com Reconstituição:**
+  - Conversão matemática pura ($100\text{ UI} = 1\text{ mL}$) baseada na concentração do frasco ativo com bloqueio contra deduções arbitrárias sem concentração.
+- **Proteção Estrutural de Frascos & Soft-Delete:**
+  - Frascos com histórico de movimentação têm dados estruturais (massa mg e diluente mL) travados contra alteração acidental (`PROTECTED_HISTORICAL_VIAL`).
+  - Frascos com movimentações recebem descarte/arquivamento seguro (`archiveVial`), preservando o histórico de aplicações passadas sem exclusão física destrutiva.
+- **Validadores Estritos de Data/Hora & Robustez no Backup:**
+  - Validação uniforme com `isValidTime` e `isValidDateKey` (calendário gregoriano real com anos bissextos).
+  - Medição em bytes UTF-8 reais com `TextEncoder` e tratamento defensivo (fail-closed) sem quebra de estado em importações JSON corrompidas.
+- **Widget Inteligente & Resumo Diário Aperfeiçoado:**
+  - O widget nativo 3x2 avança progressivamente para o próximo horário diário (`08:00` → `14:00` → `20:00` → `Tudo concluído`).
+  - O resumo diário separa doses previstas de registros extras sem exibir anomalias como "3 de 1".
+- **Cancelamento Seletivo de Lembretes & Sanitização de Busca:**
+  - Cancelamento direcionado de notificações por peptídeo (`cancelScheduleForPeptide`) e sanitização de caracteres de controle na biblioteca científica.
+- **Qualidade & Testes Automatizados:**
+  - **215 testes unitários** no Vitest passando com 100% de sucesso.
+  - **24 testes E2E** no Playwright cobrindo todos os fluxos críticos.
+
+---
 
 - **Seleção da Data da Primeira Dose / Início do Protocolo:**
   - Novo campo de seleção de data de início (`Data da Primeira Dose / Início`) disponível diretamente nos fluxos de cadastro e edição de peptídeos.
@@ -228,7 +256,7 @@ pep-protocol/
 │   ├── data/                    # Catálogo nominal de referência
 │   └── css/                     # Estilos modulares e responsivos
 ├── tests/
-│   ├── unit/                    # 188 testes unitários com Vitest
+│   ├── unit/                    # 215 testes unitários com Vitest
 │   └── e2e/                     # 24 testes E2E com Playwright
 ├── docs/
 │   ├── PRODUCT.md               # Contrato do produto e público-alvo
