@@ -10,8 +10,8 @@ O **Protocolo PEP** foi concebido e estruturado sob os princípios **Local-First
 
 ## 2. Coleta e Tratamento de Dados
 - **Zero Coleta em Servidores Remotos:** O Protocolo PEP **não** transmite, armazena ou processa seus dados pessoais em servidores em nuvem, bancos de dados externos ou APIs remotas de terceiros.
-- **Armazenamento 100% Local:** Todos os dados (protocolos cadastrados, histórico de doses, controle de estoque de frascos, mapa de sítios de injeção, medições de peso/sintomas e preferências de interface) residem exclusivamente no armazenamento protegido e isolado da aplicação no seu dispositivo (`localStorage` encapsulado e sandbox de dados do Android).
-- **Sem Rastreamento, Telemetria ou Anúncios:** A aplicação é totalmente livre de identificadores de publicidade (Ad-ID), SDKs de telemetria invasiva ou anúncios.
+- **Armazenamento Local:** Os dados principais do Protocolo PEP (protocolos cadastrados, histórico de doses, controle de estoque de frascos, mapa de sítios de injeção, medições de peso/sintomas e preferências de interface) permanecem no armazenamento local protegido e isolado da aplicação no seu dispositivo (`localStorage` encapsulado e sandbox de dados do Android). Quando o usuário habilita expressamente o Health Connect, medições de peso autorizadas também podem ser lidas e/ou gravadas no repositório Health Connect do Android.
+- **Sem Rastreamento, Telemetria ou Anúncios:** A aplicação é totalmente livre de identificadores de publicidade (Ad-ID), SDKs de telemetria invasiva ou anúncios comerciais.
 
 ---
 

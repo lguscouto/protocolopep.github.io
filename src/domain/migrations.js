@@ -55,28 +55,68 @@ export function migrateMeasurements(rawMeasurements = []) {
     .map((item) => createMeasurementEntry(item));
 }
 
-export function migrateAppState(state = {}) {
-  const version = parseInt(state.version, 10) || 1;
+export function migrateV1ToV2(state = {}) {
   const rawProtocol = state.protocol || state.peptides || [];
+  return {
+    ...state,
+    version: 2,
+    protocol: migratePeptides(rawProtocol)
+  };
+}
+
+export function migrateV2ToV3(state = {}) {
   const rawLogs = state.logs || {};
+  return {
+    ...state,
+    version: 3,
+    logs: migrateLogs(rawLogs)
+  };
+}
+
+export function migrateV3ToV4(state = {}) {
   const rawInventory = state.inventory || [];
   const rawSites = state.sites || state.injectionSites;
   const rawMeasurements = state.measurements || state.bodyMeasurements || [];
+  return {
+    ...state,
+    version: 4,
+    inventory: migrateInventory(rawInventory),
+    sites: migrateSites(rawSites),
+    measurements: migrateMeasurements(rawMeasurements)
+  };
+}
 
-  const migratedProtocol = migratePeptides(rawProtocol);
-  const migratedLogs = migrateLogs(rawLogs);
-  const migratedInventory = migrateInventory(rawInventory);
-  const migratedSites = migrateSites(rawSites);
-  const migratedMeasurements = migrateMeasurements(rawMeasurements);
+export function migrateAppState(state = {}) {
+  if (!state || typeof state !== "object") {
+    state = {};
+  }
+  const version = parseInt(state.version, 10) || 1;
+  let current = { ...state };
+
+  if (version < 2) {
+    current = migrateV1ToV2(current);
+  }
+  if (version < 3) {
+    current = migrateV2ToV3(current);
+  }
+  if (version < 4) {
+    current = migrateV3ToV4(current);
+  }
+
+  const rawProtocol = current.protocol || current.peptides || [];
+  const rawLogs = current.logs || {};
+  const rawInventory = current.inventory || [];
+  const rawSites = current.sites || current.injectionSites;
+  const rawMeasurements = current.measurements || current.bodyMeasurements || [];
 
   return {
     version: CURRENT_SCHEMA_VERSION,
-    exportedAt: state.exportedAt || new Date().toISOString(),
-    protocol: migratedProtocol,
-    logs: migratedLogs,
-    inventory: migratedInventory,
-    sites: migratedSites,
-    measurements: migratedMeasurements,
-    theme: state.theme === "white" || state.theme === "light" ? "white" : "black"
+    exportedAt: current.exportedAt || new Date().toISOString(),
+    protocol: migratePeptides(rawProtocol),
+    logs: migrateLogs(rawLogs),
+    inventory: migrateInventory(rawInventory),
+    sites: migrateSites(rawSites),
+    measurements: migrateMeasurements(rawMeasurements),
+    theme: current.theme === "white" || current.theme === "light" ? "white" : "black"
   };
 }
