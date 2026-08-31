@@ -24,7 +24,8 @@ export function registerDoseState({
   note,
   status = "applied",
   statusReason = "",
-  retroactive = false
+  retroactive = false,
+  allowHistoryOnlyWithoutStock = false
 }) {
   const targetDate = scheduledDate || dateToKey(new Date());
   const peptide = (peptides || []).find((p) => p.id === peptideId);
@@ -59,9 +60,19 @@ export function registerDoseState({
 
   // 2. Se houver frasco ativo, tentar debitar
   if (targetVial) {
+    const isUiDose = uiVal > 0 || (typeof doseStr === "string" && /\bui\b/i.test(doseStr));
     const effectiveDoseInput = doseStr || (uiVal > 0 ? `${uiVal} UI` : "");
     const amountToDebit = extractDoseInMcg(effectiveDoseInput, targetVial);
-    if (amountToDebit > 0) {
+
+    if (isUiDose && (!targetVial.concentrationMcgPerMl || targetVial.concentrationMcgPerMl <= 0)) {
+      if (!allowHistoryOnlyWithoutStock) {
+        return {
+          success: false,
+          error: "VIAL_MISSING_CONCENTRATION",
+          message: `O frasco ativo de ${targetVial.peptideName || peptideName} não possui concentração definida para converter UI em mcg. Reconstitua o frasco ou confirme para registrar apenas no histórico.`
+        };
+      }
+    } else if (amountToDebit > 0) {
       // Rejeitar se saldo for insuficiente (P1 - Sec 12)
       if (amountToDebit > Number(targetVial.remainingMcg)) {
         return {

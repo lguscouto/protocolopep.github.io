@@ -684,7 +684,7 @@ function renderToday() {
   syncAppWidget();
 }
 
-function toggleDose(id) {
+async function toggleDose(id) {
   const peptides = storage.getPeptides();
   const logs = storage.getLogs();
   const todayK = dateKey(new Date());
@@ -705,13 +705,34 @@ function toggleDose(id) {
     const configuredSites = storage.getSites();
     const lastUsed = getLastUsedSite(logs, p.id);
     const currentSite = getNextSite(configuredSites, lastUsed ? lastUsed.site : null) || "";
-    const res = doseService.registerDose({
+    let res = doseService.registerDose({
       peptideId: p.id,
       scheduledDate: todayK,
       dose: p.dose,
       ui: p.ui,
       site: currentSite
     });
+
+    if (!res.success && res.error === "VIAL_MISSING_CONCENTRATION") {
+      const confirmHistOnly = await showConfirmDialog({
+        title: "Concentração Não Definida",
+        message: `${res.message || "O frasco não possui concentração definida."}\n\nDeseja registrar a aplicação apenas no histórico sem debitar do estoque?`,
+        confirmText: "Registrar no Histórico",
+        cancelText: "Cancelar",
+        isDanger: false
+      });
+      if (confirmHistOnly) {
+        res = doseService.registerDose({
+          peptideId: p.id,
+          scheduledDate: todayK,
+          dose: p.dose,
+          ui: p.ui,
+          site: currentSite,
+          allowHistoryOnlyWithoutStock: true
+        });
+      }
+    }
+
     if (!res.success) {
       alert("Erro ao gravar aplicação: " + (res.message || res.error));
       return;
@@ -725,7 +746,7 @@ function toggleDose(id) {
   renderHistory();
 }
 
-function addSingleDose(id) {
+async function addSingleDose(id) {
   const peptides = storage.getPeptides();
   const logs = storage.getLogs();
   const todayK = dateKey(new Date());
@@ -741,13 +762,33 @@ function addSingleDose(id) {
   const lastUsed = getLastUsedSite(logs, p.id);
   const currentSite = getNextSite(configuredSites, lastUsed ? lastUsed.site : null) || "";
 
-  const res = doseService.registerDose({
+  let res = doseService.registerDose({
     peptideId: p.id,
     scheduledDate: todayK,
     dose: p.dose,
     ui: p.ui,
     site: currentSite
   });
+
+  if (!res.success && res.error === "VIAL_MISSING_CONCENTRATION") {
+    const confirmHistOnly = await showConfirmDialog({
+      title: "Concentração Não Definida",
+      message: `${res.message || "O frasco não possui concentração definida."}\n\nDeseja registrar a dose apenas no histórico sem debitar do estoque?`,
+      confirmText: "Registrar no Histórico",
+      cancelText: "Cancelar",
+      isDanger: false
+    });
+    if (confirmHistOnly) {
+      res = doseService.registerDose({
+        peptideId: p.id,
+        scheduledDate: todayK,
+        dose: p.dose,
+        ui: p.ui,
+        site: currentSite,
+        allowHistoryOnlyWithoutStock: true
+      });
+    }
+  }
 
   if (!res.success) {
     alert("Erro ao gravar dose: " + (res.message || res.error));

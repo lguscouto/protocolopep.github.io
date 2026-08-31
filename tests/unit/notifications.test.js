@@ -28,5 +28,16 @@ describe("Notifications Service", () => {
   it("dispara notificação instantânea de teste com payload correto", async () => {
     const res = await notifService.sendInstantNotification("Título Teste", "Corpo Teste");
     expect(res).toBeDefined();
+    expect(res.success).toBe(true);
+  });
+
+  it("verifica permissão e chamada de exact alarm em runtime", async () => {
+    const checkRes = await notifService.checkExactAlarmPermission();
+    expect(checkRes).toBeDefined();
+    expect(checkRes.granted).toBe(true);
+
+    const reqRes = await notifService.requestExactAlarmPermission();
+    expect(reqRes).toBeDefined();
+    expect(reqRes.granted).toBe(true);
   });
 });

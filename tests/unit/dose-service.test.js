@@ -283,4 +283,50 @@ describe("DoseService & Integridade Dose ↔ Inventário (P0 / P1)", () => {
     expect(originalLogs["2026-08-30"]["pep-1"].length).toBe(1);
     expect(originalLogs["2026-08-30"]["pep-1"][0].id).toBe("log-1");
   });
+
+  it("deve bloquear débito e retornar VIAL_MISSING_CONCENTRATION para dose em UI se o frasco ativo não possuir concentração (P1 - Item 14)", () => {
+    // Frasco ativo com concentração zerada (sem diluente configurado)
+    const vial = {
+      id: "vial-unreconstituted",
+      peptideId: "pep-1",
+      peptideName: "Semaglutida",
+      totalMg: 5,
+      waterMl: 0,
+      concentrationMcgPerMl: 0,
+      remainingMcg: 5000,
+      status: "active",
+      movements: []
+    };
+
+    mockStorage.setPeptides([{ id: "pep-1", name: "Semaglutida", dose: "", ui: 15 }]);
+    mockStorage.setInventory([vial]);
+
+    // Tentativa padrão sem confirmação de histórico exclusivo
+    const res = doseService.registerDose({
+      peptideId: "pep-1",
+      scheduledDate: "2026-08-30",
+      ui: 15
+    });
+
+    expect(res.success).toBe(false);
+    expect(res.error).toBe("VIAL_MISSING_CONCENTRATION");
+
+    // Inventário e logs permanecem inalterados
+    expect(mockStorage.getInventory()[0].remainingMcg).toBe(5000);
+    expect(mockStorage.getLogs()["2026-08-30"]).toBeUndefined();
+
+    // Com allowHistoryOnlyWithoutStock = true, permite salvar apenas no histórico
+    const resHistoryOnly = doseService.registerDose({
+      peptideId: "pep-1",
+      scheduledDate: "2026-08-30",
+      ui: 15,
+      allowHistoryOnlyWithoutStock: true
+    });
+
+    expect(resHistoryOnly.success).toBe(true);
+    expect(resHistoryOnly.doseLog.vialId).toBeNull();
+    expect(resHistoryOnly.debitedMcg).toBe(0);
+    expect(mockStorage.getInventory()[0].remainingMcg).toBe(5000);
+    expect(mockStorage.getLogs()["2026-08-30"]["pep-1"]).toHaveLength(1);
+  });
 });

@@ -6,6 +6,7 @@ import { formatNotificationContent, getNotificationVisualState } from "../domain
 
 const NOTIF_CFG_KEY = "pep_notif_config";
 export const NOTIF_CHANNEL_ID = "pep_lembretes";
+export const NOTIF_CHANNEL_SILENT_ID = "pep_lembretes_silenciosos";
 
 export class NotificationService {
   constructor() {
@@ -31,10 +32,18 @@ export class NotificationService {
         await LocalNotifications.createChannel({
           id: NOTIF_CHANNEL_ID,
           name: "Lembretes de Peptídeos",
-          description: "Notificações para horários de doses do seu protocolo",
-          importance: 5,
+          description: "Notificações com som e vibração para horários de doses do seu protocolo",
+          importance: 4,
           visibility: 1,
           vibration: true
+        });
+        await LocalNotifications.createChannel({
+          id: NOTIF_CHANNEL_SILENT_ID,
+          name: "Lembretes Silenciosos",
+          description: "Notificações discretas sem som ou vibração para horários de doses",
+          importance: 2,
+          visibility: 1,
+          vibration: false
         });
       } catch (e) {
         console.warn("[Notif] Channel creation error:", e);
@@ -55,6 +64,42 @@ export class NotificationService {
     try {
       localStorage.setItem(NOTIF_CFG_KEY, JSON.stringify(this.cfg));
     } catch (e) {}
+  }
+
+  async checkExactAlarmPermission() {
+    if (Capacitor.isNativePlatform()) {
+      try {
+        if (typeof LocalNotifications.checkExactNotificationSetting === "function") {
+          const res = await LocalNotifications.checkExactNotificationSetting();
+          return {
+            granted: res && res.exact_alarm === "granted",
+            status: (res && res.exact_alarm) || "prompt"
+          };
+        }
+        return { granted: true, status: "granted" };
+      } catch (e) {
+        console.warn("[Notif] Erro ao verificar permissão de exact alarm:", e);
+        return { granted: true, status: "granted" };
+      }
+    }
+    return { granted: true, status: "granted" };
+  }
+
+  async requestExactAlarmPermission() {
+    if (Capacitor.isNativePlatform()) {
+      try {
+        if (typeof LocalNotifications.changeExactNotificationSetting === "function") {
+          const res = await LocalNotifications.changeExactNotificationSetting();
+          return {
+            granted: res && res.exact_alarm === "granted",
+            status: (res && res.exact_alarm) || "prompt"
+          };
+        }
+      } catch (e) {
+        console.warn("[Notif] Erro ao abrir configurações de exact alarm:", e);
+      }
+    }
+    return { granted: true, status: "granted" };
   }
 
   async checkPermission() {
@@ -157,6 +202,7 @@ export class NotificationService {
   }
 
   async sendInstantNotification(title, body) {
+    const activeChannelId = this.cfg.sound ? NOTIF_CHANNEL_ID : NOTIF_CHANNEL_SILENT_ID;
     if (Capacitor.isNativePlatform()) {
       try {
         await LocalNotifications.schedule({
@@ -165,7 +211,7 @@ export class NotificationService {
               id: Math.floor(Math.random() * 100000),
               title: title,
               body: body,
-              channelId: NOTIF_CHANNEL_ID,
+              channelId: activeChannelId,
               smallIcon: "ic_stat_pep",
               iconColor: "#2CC5C0"
             }
@@ -234,6 +280,7 @@ export class NotificationService {
 
     if (Capacitor.isNativePlatform()) {
       try {
+        const activeChannelId = this.cfg.sound ? NOTIF_CHANNEL_ID : NOTIF_CHANNEL_SILENT_ID;
         const notifications = [];
         let notifId = 1000;
         const now = new Date();
@@ -267,7 +314,7 @@ export class NotificationService {
                   id: notifId++,
                   title: formatted.title,
                   body: formatted.body,
-                  channelId: NOTIF_CHANNEL_ID,
+                  channelId: activeChannelId,
                   schedule: { at: schedDate, allowWhileIdle: true },
                   smallIcon: "ic_stat_pep",
                   iconColor: "#2CC5C0",
@@ -292,7 +339,7 @@ export class NotificationService {
                   id: notifId++,
                   title: "Protocolo PEP · Resumo Diário",
                   body: "Verifique suas doses de peptídeos programadas para hoje.",
-                  channelId: NOTIF_CHANNEL_ID,
+                  channelId: activeChannelId,
                   schedule: { at: sumDate, allowWhileIdle: true },
                   smallIcon: "ic_stat_pep",
                   iconColor: "#2CC5C0"
@@ -304,7 +351,7 @@ export class NotificationService {
 
         if (notifications.length > 0) {
           await LocalNotifications.schedule({ notifications });
-          console.log(`[Notif] ${notifications.length} lembretes nativos agendados.`);
+          console.log(`[Notif] ${notifications.length} lembretes nativos agendados no canal ${activeChannelId}.`);
         }
 
         return { scheduledCount: notifications.length };

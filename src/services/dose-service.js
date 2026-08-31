@@ -28,7 +28,8 @@ export class DoseService {
     note,
     status = "applied",
     statusReason = "",
-    retroactive = false
+    retroactive = false,
+    allowHistoryOnlyWithoutStock = false
   }) {
     const logs = this.storage.getLogs();
     const inventory = this.storage.getInventory();
@@ -47,7 +48,8 @@ export class DoseService {
       note,
       status,
       statusReason,
-      retroactive
+      retroactive,
+      allowHistoryOnlyWithoutStock
     });
 
     if (!result.success) {

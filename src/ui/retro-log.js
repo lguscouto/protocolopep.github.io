@@ -105,7 +105,7 @@ export function saveRetroLog({ doseService, dateKey, haptics, renderAll }) {
     return;
   }
 
-  const res = doseService.registerDose({
+  let res = doseService.registerDose({
     peptideId: pepId,
     scheduledDate: dKey,
     time: timeVal,
@@ -115,6 +115,23 @@ export function saveRetroLog({ doseService, dateKey, haptics, renderAll }) {
     site: siteVal,
     retroactive: dKey < todayKey
   });
+
+  if (!res.success && res.error === "VIAL_MISSING_CONCENTRATION") {
+    const confirmHistOnly = window.confirm(`${res.message || "O frasco não possui concentração definida."}\n\nDeseja salvar a aplicação apenas no histórico sem debitar estoque?`);
+    if (confirmHistOnly) {
+      res = doseService.registerDose({
+        peptideId: pepId,
+        scheduledDate: dKey,
+        time: timeVal,
+        dose: doseVal,
+        ui: uiVal,
+        note: noteVal,
+        site: siteVal,
+        retroactive: dKey < todayKey,
+        allowHistoryOnlyWithoutStock: true
+      });
+    }
+  }
 
   if (!res.success) {
     alert("Não foi possível salvar a aplicação: " + (res.message || res.error || "armazenamento indisponível"));
