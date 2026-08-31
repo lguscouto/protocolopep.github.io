@@ -24,4 +24,9 @@ describe("Notifications Service", () => {
     expect(typeof notifService.cancelScheduleForPeptide).toBe("function");
     await expect(notifService.cancelScheduleForPeptide("pep-123")).resolves.not.toThrow();
   });
+
+  it("dispara notificação instantânea de teste com payload correto", async () => {
+    const res = await notifService.sendInstantNotification("Título Teste", "Corpo Teste");
+    expect(res).toBeDefined();
+  });
 });

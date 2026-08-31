@@ -1,11 +1,4 @@
-/**
- * Módulo de Domínio: Health Connect (V15)
- *
- * Princípios de Governança (AGENTS.md):
- * - Local-First & Offline First: Sem dependências externas de rede ou APIs de terceiros.
- * - Mapeamento Puro e Auditável: Funções puras para conversão bidirecional entre o modelo de medições do PEP e os registros do Health Connect.
- * - Resiliência e Fail-Closed: Distinção estrita entre ausente (null) e zero (0), sem mutações de estado e com mesclagem idempotente.
- */
+import { isValidDateKey, isValidTime } from "./schedule.js";
 
 /**
  * Status possíveis da integração com o Health Connect.
@@ -58,33 +51,68 @@ export function getHealthConnectStatusLabel(status) {
 
 /**
  * Converte data e hora locais (YYYY-MM-DD, HH:mm) em timestamp ISO Instant real.
+ * Valida estritamente os componentes de data e hora contra calendário gregoriano real.
+ * 
  * @param {string} dateStr - Formato YYYY-MM-DD
  * @param {string} timeStr - Formato HH:mm
- * @returns {string} Timestamp ISO 8601 UTC
+ * @returns {string|null} Timestamp ISO 8601 UTC ou null se inválido
  */
-export function localDateTimeToIso(dateStr, timeStr) {
-  const partsDate = (dateStr || "").split("-").map(Number);
-  const partsTime = (timeStr || "08:00").split(":").map(Number);
+export function localDateTimeToIso(dateStr, timeStr = "08:00") {
+  if (!isValidDateKey(dateStr) || !isValidTime(timeStr)) {
+    return null;
+  }
 
-  const year = partsDate[0] || new Date().getFullYear();
-  const month = (partsDate[1] || 1) - 1;
-  const day = partsDate[2] || 1;
-  const hour = partsTime[0] || 0;
-  const minute = partsTime[1] || 0;
+  const [year, month, day] = dateStr.split("-").map(Number);
+  const [hour, minute] = timeStr.split(":").map(Number);
 
-  const dt = new Date(year, month, day, hour, minute, 0, 0);
+  const dt = new Date(year, month - 1, day, hour, minute, 0, 0);
+  if (Number.isNaN(dt.getTime())) return null;
+
   return dt.toISOString();
 }
 
 /**
- * Converte timestamp ISO Instant em componentes de data (YYYY-MM-DD) e hora (HH:mm) no fuso local do dispositivo.
+ * Converte timestamp ISO Instant em componentes de data (YYYY-MM-DD) e hora (HH:mm).
+ * Se zoneOffset histórico for fornecido (ex: "-03:00", "+01:00", "Z"), preserva o horário local original.
+ *
  * @param {string} isoString
+ * @param {string} [zoneOffset]
  * @returns {{ date: string, time: string } | null}
  */
-export function isoToLocalDateTime(isoString) {
+export function isoToLocalDateTime(isoString, zoneOffset = null) {
   if (!isoString || typeof isoString !== "string") return null;
   const dt = new Date(isoString);
   if (Number.isNaN(dt.getTime())) return null;
+
+  if (zoneOffset && typeof zoneOffset === "string" && /^([+-]\d{2}:\d{2}|Z)$/.test(zoneOffset)) {
+    if (zoneOffset === "Z") {
+      const year = dt.getUTCFullYear();
+      const month = String(dt.getUTCMonth() + 1).padStart(2, "0");
+      const day = String(dt.getUTCDate()).padStart(2, "0");
+      const hours = String(dt.getUTCHours()).padStart(2, "0");
+      const minutes = String(dt.getUTCMinutes()).padStart(2, "0");
+      return {
+        date: `${year}-${month}-${day}`,
+        time: `${hours}:${minutes}`
+      };
+    }
+
+    const sign = zoneOffset[0] === "-" ? -1 : 1;
+    const [offH, offM] = zoneOffset.slice(1).split(":").map(Number);
+    const offsetMs = sign * ((offH * 60) + offM) * 60 * 1000;
+    const targetDt = new Date(dt.getTime() + offsetMs);
+
+    const year = targetDt.getUTCFullYear();
+    const month = String(targetDt.getUTCMonth() + 1).padStart(2, "0");
+    const day = String(targetDt.getUTCDate()).padStart(2, "0");
+    const hours = String(targetDt.getUTCHours()).padStart(2, "0");
+    const minutes = String(targetDt.getUTCMinutes()).padStart(2, "0");
+
+    return {
+      date: `${year}-${month}-${day}`,
+      time: `${hours}:${minutes}`
+    };
+  }
 
   const year = dt.getFullYear();
   const month = String(dt.getMonth() + 1).padStart(2, "0");
@@ -100,14 +128,20 @@ export function isoToLocalDateTime(isoString) {
 
 /**
  * Converte uma medição interna do Protocolo PEP para o formato de registro de peso do Health Connect.
+ * Registros de origem externa ou sem peso válido NÃO são exportados (prevenção de Sync Echo).
  *
  * @param {Object} measurement - Entrada de medição do PEP
- * @returns {{ timestamp: string, time: string, weightKg: number, clientRecordId: string, metadataId: string } | null}
+ * @returns {{ timestamp: string, time: string, weightKg: number, clientRecordId: string, clientRecordVersion: number, metadataId: string } | null}
  */
 export function mapMeasurementToHealthRecord(measurement) {
   if (!measurement || typeof measurement !== "object") return null;
 
-  const { weightKg, date, time, id } = measurement;
+  // Prevenção de Sync Echo: jamais exportar registros originados externamente no Health Connect
+  if (measurement.source === "health_connect" || measurement.ownership === "external") {
+    return null;
+  }
+
+  const { weightKg, date, time, id, syncVersion, clientRecordVersion } = measurement;
   if (weightKg === null || weightKg === undefined || weightKg === "") return null;
 
   const weightNum = typeof weightKg === "number" ? weightKg : parseFloat(String(weightKg).replace(",", "."));
@@ -115,28 +149,34 @@ export function mapMeasurementToHealthRecord(measurement) {
     return null;
   }
 
-  const cleanDate = date && /^\d{4}-\d{2}-\d{2}$/.test(String(date))
-    ? String(date)
-    : new Date().toISOString().slice(0, 10);
+  if (!date || !isValidDateKey(String(date))) {
+    return null;
+  }
 
-  const cleanTime = time && /^\d{2}:\d{2}$/.test(String(time))
-    ? String(time)
-    : "08:00";
+  if (time && !isValidTime(String(time))) {
+    return null;
+  }
 
-  const isoTime = localDateTimeToIso(cleanDate, cleanTime);
-  const recordId = id ? String(id) : `m_${cleanDate}_${cleanTime.replace(":", "")}`;
+  const cleanTime = time && isValidTime(String(time)) ? String(time) : "08:00";
+  const isoTime = localDateTimeToIso(String(date), cleanTime);
+  if (!isoTime) return null;
+
+  const recordId = id ? String(id) : `m_${date}_${cleanTime.replace(":", "")}`;
+  const version = Math.max(1, parseInt(clientRecordVersion || syncVersion, 10) || 1);
 
   return {
     timestamp: isoTime,
     time: isoTime,
     weightKg: Math.round(weightNum * 100) / 100,
     clientRecordId: recordId,
+    clientRecordVersion: version,
     metadataId: recordId
   };
 }
 
 /**
  * Converte um registro vindo do Health Connect para o formato de medição interna do Protocolo PEP.
+ * Preserva identidade, dataOrigin, zoneOffset e versionamento nativo.
  *
  * @param {Object} record - Registro do Health Connect
  * @returns {Object|null}
@@ -157,26 +197,35 @@ export function mapHealthRecordToMeasurement(record) {
 
   const timeSource = record.timestamp || record.time;
   if (timeSource && typeof timeSource === "string") {
-    const localComponents = isoToLocalDateTime(timeSource);
-    if (localComponents) {
+    const localComponents = isoToLocalDateTime(timeSource, record.zoneOffset);
+    if (localComponents && isValidDateKey(localComponents.date) && isValidTime(localComponents.time)) {
       dateStr = localComponents.date;
       timeStr = localComponents.time;
     }
   }
 
-  if (!dateStr && record.date && /^\d{4}-\d{2}-\d{2}$/.test(record.date)) {
+  if (!dateStr && record.date && isValidDateKey(record.date)) {
     dateStr = record.date;
-    if (record.time && /^\d{2}:\d{2}$/.test(record.time)) {
+    if (record.time && isValidTime(record.time)) {
       timeStr = record.time;
+    } else if (record.localTime && isValidTime(record.localTime)) {
+      timeStr = record.localTime;
     }
   }
 
-  if (!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-    const now = new Date();
-    dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  if (!dateStr || !isValidDateKey(dateStr)) {
+    return null; // Rejeição estrita de registros sem data válida
   }
 
-  const resolvedId = record.clientRecordId || record.metadataId || record.id || `hc_${dateStr}_${timeStr.replace(":", "")}`;
+  const hcRecId = record.healthConnectRecordId || record.metadataId || record.id || "";
+  const clientRecId = record.clientRecordId || "";
+  const originPkg = record.dataOrigin || "";
+  const isPepOrigin = originPkg === "com.protocolopep.app" || (clientRecId && !clientRecId.startsWith("hc_"));
+
+  // Chave composta para registros externos evitando colisões de IDs idênticos entre apps distintos
+  const resolvedId = isPepOrigin && clientRecId
+    ? clientRecId
+    : (hcRecId ? `hc_${originPkg || "ext"}_${hcRecId}` : `hc_${dateStr}_${timeStr.replace(":", "")}`);
 
   return {
     id: resolvedId,
@@ -188,13 +237,19 @@ export function mapHealthRecordToMeasurement(record) {
     symptoms: [],
     notes: "Importado via Health Connect",
     source: "health_connect",
+    ownership: isPepOrigin ? "pep" : "external",
+    dataOrigin: originPkg || "unknown",
+    healthConnectRecordId: hcRecId,
+    clientRecordId: clientRecId,
+    clientRecordVersion: parseInt(record.clientRecordVersion, 10) || 1,
+    zoneOffset: record.zoneOffset || null,
     createdAt: timeSource || new Date().toISOString()
   };
 }
 
 /**
  * Mescla medições locais existentes com medições importadas do Health Connect.
- * Garante idempotência: se já existe um registro para a mesma data com peso, preserva notas/sintomas locais.
+ * Garante idempotência estrita: preserva anotações/sintomas do usuário e atualiza pesos com segurança.
  *
  * @param {Object[]} localMeasurements - Medições armazenadas localmente
  * @param {Object[]} importedRecords - Registros recebidos do Health Connect
@@ -228,11 +283,15 @@ export function mergeHealthMeasurements(localMeasurements = [], importedRecords 
 
     if (matchedId) {
       const existing = resultMap.get(matchedId);
+      // Se a medição local veio do Health Connect ou não tinha peso definido, atualiza o peso
       if (existing.weightKg === null || existing.weightKg === undefined || existing.source === "health_connect") {
         resultMap.set(matchedId, {
           ...existing,
           weightKg: parsed.weightKg,
-          source: existing.source || "health_connect"
+          source: existing.source || "health_connect",
+          healthConnectRecordId: parsed.healthConnectRecordId || existing.healthConnectRecordId,
+          dataOrigin: parsed.dataOrigin || existing.dataOrigin,
+          zoneOffset: parsed.zoneOffset || existing.zoneOffset
         });
       }
     } else {
@@ -273,6 +332,8 @@ export function haveMeasurementsChanged(oldList = [], newList = []) {
     if (a.moodLevel !== b.moodLevel) return true;
     if (a.notes !== b.notes) return true;
     if (a.source !== b.source) return true;
+    if (a.ownership !== b.ownership) return true;
+    if (a.syncVersion !== b.syncVersion) return true;
     const symA = Array.isArray(a.symptoms) ? a.symptoms.join("|") : "";
     const symB = Array.isArray(b.symptoms) ? b.symptoms.join("|") : "";
     if (symA !== symB) return true;

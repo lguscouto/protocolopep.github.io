@@ -5,21 +5,24 @@ import {
   mapHealthRecordToMeasurement,
   mergeHealthMeasurements
 } from "../domain/health-connect.js";
+import { storage as defaultStorage } from "./storage.js";
 
 const PepHealthConnect = registerPlugin("PepHealthConnect", {
   web: () => ({
     checkAvailability: async () => ({ available: true, status: HEALTH_CONNECT_STATUS.AVAILABLE, message: "Health Connect ativo." }),
     checkPermissions: async () => ({ granted: true, status: HEALTH_CONNECT_STATUS.CONNECTED }),
     requestPermissions: async () => ({ granted: true, status: HEALTH_CONNECT_STATUS.CONNECTED }),
-    readRecords: async () => ({ records: [] }),
+    readRecords: async () => ({ success: true, records: [] }),
     writeRecords: async () => ({ success: true, count: 0 }),
+    deleteRecords: async () => ({ success: true, deletedCount: 0 }),
     openSettings: async () => {}
   })
 });
+
 const HC_ENABLED_KEY = "pep_health_connect_enabled";
 
 export class HealthConnectService {
-  constructor(storage = typeof window !== "undefined" && window.localStorage ? window.localStorage : null) {
+  constructor(storage = defaultStorage) {
     this.storage = storage;
   }
 
@@ -36,8 +39,13 @@ export class HealthConnectService {
 
   isEnabled() {
     try {
-      const s = this.storage || (typeof window !== "undefined" ? window.localStorage : null);
-      return s ? s.getItem(HC_ENABLED_KEY) === "true" : false;
+      if (this.storage && typeof this.storage.getItem === "function") {
+        return this.storage.getItem(HC_ENABLED_KEY) === "true";
+      }
+      if (typeof localStorage !== "undefined") {
+        return localStorage.getItem(HC_ENABLED_KEY) === "true";
+      }
+      return false;
     } catch {
       return false;
     }
@@ -45,9 +53,10 @@ export class HealthConnectService {
 
   setEnabled(enabled) {
     try {
-      const s = this.storage || (typeof window !== "undefined" ? window.localStorage : null);
-      if (s) {
-        s.setItem(HC_ENABLED_KEY, enabled ? "true" : "false");
+      if (this.storage && typeof this.storage.setItem === "function") {
+        this.storage.setItem(HC_ENABLED_KEY, enabled ? "true" : "false");
+      } else if (typeof localStorage !== "undefined") {
+        localStorage.setItem(HC_ENABLED_KEY, enabled ? "true" : "false");
       }
       return true;
     } catch {
@@ -121,9 +130,27 @@ export class HealthConnectService {
     }
 
     try {
-      // 1. Exportar medições locais que tenham peso
+      // 1. Processar e sincronizar exclusões com tombstones locais
+      let deletedCount = 0;
+      const tombstones = this.storage && typeof this.storage.getTombstones === "function"
+        ? this.storage.getTombstones()
+        : [];
+
+      if (tombstones.length > 0) {
+        const clientRecordIds = tombstones.map((t) => t.clientRecordId || t.id).filter(Boolean);
+        if (clientRecordIds.length > 0) {
+          await PepHealthConnect.deleteRecords({ clientRecordIds });
+          deletedCount = clientRecordIds.length;
+          if (this.storage && typeof this.storage.clearTombstones === "function") {
+            this.storage.clearTombstones(tombstones.map((t) => t.id));
+          }
+        }
+      }
+
+      // 2. Exportar medições do PEP (ignora registros de origem externa para prevenir Sync Echo)
       const exportRecords = [];
       for (const m of localMeasurements) {
+        if (!m || m.source === "health_connect" || m.ownership === "external") continue;
         const r = mapMeasurementToHealthRecord(m);
         if (r) exportRecords.push(r);
       }
@@ -132,12 +159,17 @@ export class HealthConnectService {
         await PepHealthConnect.writeRecords({ records: exportRecords });
       }
 
-      // 2. Importar registros dos últimos 90 dias do Health Connect
+      // 3. Importar registros dos últimos 90 dias do Health Connect
       const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
       const readRes = await PepHealthConnect.readRecords({
         startTime: ninetyDaysAgo,
         endTime: new Date().toISOString()
       });
+
+      // Fail-closed: se a leitura falhar ou retornar erro, não mascara como lista vazia
+      if (!readRes || readRes.success === false || readRes.error) {
+        throw new Error(readRes?.error || readRes?.message || "HEALTH_CONNECT_READ_FAILED");
+      }
 
       const imported = Array.isArray(readRes.records) ? readRes.records : [];
       const merged = mergeHealthMeasurements(localMeasurements, imported);
@@ -146,6 +178,7 @@ export class HealthConnectService {
         success: true,
         exportedCount: exportRecords.length,
         importedCount: imported.length,
+        deletedCount,
         measurements: merged
       };
     } catch (e) {
@@ -159,4 +192,4 @@ export class HealthConnectService {
   }
 }
 
-export const healthConnect = new HealthConnectService();
+export const healthConnect = new HealthConnectService(defaultStorage);

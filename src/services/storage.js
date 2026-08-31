@@ -11,6 +11,7 @@ const KEYS = {
   INVENTORY: "pep_inventory_v2",
   SITES: "pep_sites_v2",
   MEASUREMENTS: "pep_measurements_v2",
+  TOMBSTONES: "pep_hc_tombstones_v2",
   SETTINGS: "pep_settings_v2",
   ROLLBACK_SNAPSHOT: "pep_rollback_snapshot",
   LEGACY_PROTO: "peptideos-protocolo-v1",
@@ -36,6 +37,7 @@ export class StorageService {
     this.inventory = [];
     this.sites = getDefaultSites();
     this.measurements = [];
+    this.tombstones = [];
     this.listeners = new Set();
   }
 
@@ -121,6 +123,19 @@ export class StorageService {
         this.measurements = [];
       }
 
+      // 6. Carregar Tombstones do Health Connect
+      let storedTombstones = localStorage.getItem(KEYS.TOMBSTONES);
+      if (storedTombstones) {
+        try {
+          const raw = JSON.parse(storedTombstones);
+          this.tombstones = Array.isArray(raw) ? raw : [];
+        } catch (e) {
+          this.tombstones = [];
+        }
+      } else {
+        this.tombstones = [];
+      }
+
     } catch (err) {
       console.error("[Storage] Erro ao inicializar storage local:", err);
       this.peptides = migratePeptides(DEFAULT_PROTOCOL);
@@ -128,6 +143,7 @@ export class StorageService {
       this.inventory = [];
       this.sites = getDefaultSites();
       this.measurements = [];
+      this.tombstones = [];
     }
 
     this.notify();
@@ -311,15 +327,32 @@ export class StorageService {
 
   addMeasurement(entryData) {
     const backupSnapshot = this.takeSnapshot();
-    const entry = createMeasurementEntry(entryData);
+    const current = this.getMeasurements();
+    const existingIdx = entryData && entryData.id ? current.findIndex((m) => m.id === entryData.id) : -1;
+    const existing = existingIdx !== -1 ? current[existingIdx] : null;
+
+    let syncVersion = 1;
+    if (existing) {
+      // Se dados foram alterados, incrementa a versão para atualização no Health Connect
+      const hasChanged = existing.weightKg !== entryData.weightKg || existing.date !== entryData.date || existing.time !== entryData.time;
+      syncVersion = hasChanged ? (existing.syncVersion || 1) + 1 : (existing.syncVersion || 1);
+    }
+
+    const payload = {
+      ...entryData,
+      syncVersion,
+      clientRecordVersion: syncVersion,
+      source: existing ? (existing.source || entryData.source || "local") : (entryData.source || "local"),
+      ownership: existing ? (existing.ownership || entryData.ownership || "pep") : (entryData.ownership || "pep"),
+      healthConnectRecordId: existing ? (existing.healthConnectRecordId || entryData.healthConnectRecordId) : entryData.healthConnectRecordId
+    };
+
+    const entry = createMeasurementEntry(payload);
     const validRes = validateMeasurementEntry(entry);
     if (!validRes.valid) {
       return { success: false, error: validRes.errors.join("; ") };
     }
 
-    const current = this.getMeasurements();
-    // Se já existir registro para o mesmo ID, atualiza; senão adiciona
-    const existingIdx = current.findIndex((m) => m.id === entry.id);
     if (existingIdx !== -1) {
       current[existingIdx] = entry;
     } else {
@@ -339,6 +372,18 @@ export class StorageService {
   deleteMeasurement(id) {
     const backupSnapshot = this.takeSnapshot();
     const current = this.getMeasurements();
+    const target = current.find((m) => m.id === id);
+
+    // Se for medição do PEP com peso que possa estar no Health Connect, registra tombstone
+    if (target && target.ownership === "pep" && target.weightKg !== null) {
+      this.addTombstone({
+        id: target.id,
+        clientRecordId: target.clientRecordId || target.id,
+        healthConnectRecordId: target.healthConnectRecordId || null,
+        deletedAt: new Date().toISOString()
+      });
+    }
+
     const filtered = current.filter((m) => m.id !== id);
     this.measurements = filtered;
     const res = this.saveMeasurements();
@@ -348,6 +393,37 @@ export class StorageService {
     }
     this.notify();
     return { success: true, measurements: this.measurements };
+  }
+
+  getTombstones() {
+    return Array.isArray(this.tombstones) ? deepClone(this.tombstones) : [];
+  }
+
+  addTombstone(tombstone) {
+    if (!tombstone || !tombstone.id) return;
+    const current = this.getTombstones();
+    if (!current.some((t) => t.id === tombstone.id)) {
+      current.push(tombstone);
+      this.tombstones = current;
+      this.saveTombstones();
+    }
+  }
+
+  clearTombstones(idsToClear = []) {
+    if (!Array.isArray(idsToClear) || idsToClear.length === 0) return;
+    const set = new Set(idsToClear);
+    this.tombstones = this.tombstones.filter((t) => !set.has(t.id) && !set.has(t.clientRecordId));
+    this.saveTombstones();
+  }
+
+  saveTombstones() {
+    try {
+      localStorage.setItem(KEYS.TOMBSTONES, JSON.stringify(this.tombstones));
+      return { success: true };
+    } catch (e) {
+      console.error("[Storage] Erro ao salvar tombstones:", e);
+      return { success: false, error: e.message };
+    }
   }
 
   saveMeasurements() {
@@ -366,7 +442,8 @@ export class StorageService {
       logs: deepClone(this.logs),
       inventory: deepClone(this.inventory),
       sites: deepClone(this.sites),
-      measurements: deepClone(this.measurements)
+      measurements: deepClone(this.measurements),
+      tombstones: deepClone(this.tombstones)
     };
   }
 
@@ -377,12 +454,14 @@ export class StorageService {
     this.inventory = snapshot.inventory || [];
     this.sites = snapshot.sites || getDefaultSites();
     this.measurements = snapshot.measurements || [];
+    this.tombstones = snapshot.tombstones || [];
     try {
       localStorage.setItem(KEYS.PROTOCOL, JSON.stringify(this.peptides));
       localStorage.setItem(KEYS.LOGS, JSON.stringify(this.logs));
       localStorage.setItem(KEYS.INVENTORY, JSON.stringify(this.inventory));
       localStorage.setItem(KEYS.SITES, JSON.stringify(this.sites));
       localStorage.setItem(KEYS.MEASUREMENTS, JSON.stringify(this.measurements));
+      localStorage.setItem(KEYS.TOMBSTONES, JSON.stringify(this.tombstones));
     } catch (e) {
       console.error("[Storage] Erro ao restaurar snapshot:", e);
     }
@@ -437,15 +516,16 @@ export class StorageService {
   }
 
   notify() {
+    const payload = {
+      peptides: deepClone(this.peptides),
+      logs: deepClone(this.logs),
+      inventory: deepClone(this.inventory),
+      sites: deepClone(this.sites),
+      measurements: deepClone(this.measurements)
+    };
     for (const listener of this.listeners) {
       try {
-        listener({
-          peptides: this.peptides,
-          logs: this.logs,
-          inventory: this.inventory,
-          sites: this.sites,
-          measurements: this.measurements
-        });
+        listener(payload);
       } catch (e) {
         console.error("[Storage] Listener error:", e);
       }

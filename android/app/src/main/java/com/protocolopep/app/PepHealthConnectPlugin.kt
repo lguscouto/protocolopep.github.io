@@ -240,21 +240,28 @@ class PepHealthConnectPlugin : Plugin() {
                         Instant.parse(obj.getString("time"))
                     } else if (dateStr.isNotEmpty()) {
                         val safeTime = if (timeStr.length == 5) "$timeStr:00" else timeStr
-                        // Converte a partir de componentes locais do dispositivo
                         val zdt = ZonedDateTime.parse("${dateStr}T${safeTime}", DateTimeFormatter.ISO_LOCAL_DATE_TIME.withZone(localZone))
                         zdt.toInstant()
                     } else {
-                        Instant.now()
+                        throw IllegalArgumentException("Data ou timestamp ausente no registro.")
                     }
                 } catch (e: Exception) {
-                    Instant.now()
+                    throw IllegalArgumentException("Timestamp inválido para o registro '${obj.optString("clientRecordId", "")}': ${e.message}")
                 }
 
                 val clientRecordId = obj.optString("clientRecordId", obj.optString("metadataId", obj.optString("id", "")))
+                val clientRecordVersion = if (obj.has("clientRecordVersion")) {
+                    obj.optLong("clientRecordVersion", 1L)
+                } else if (obj.has("syncVersion")) {
+                    obj.optLong("syncVersion", 1L)
+                } else {
+                    1L
+                }
+
                 val zoneOffset = localZone.rules.getOffset(instant)
 
                 val metadata = if (clientRecordId.isNotEmpty()) {
-                    Metadata(clientRecordId = clientRecordId)
+                    Metadata(clientRecordId = clientRecordId, clientRecordVersion = clientRecordVersion)
                 } else {
                     Metadata()
                 }
@@ -289,6 +296,9 @@ class PepHealthConnectPlugin : Plugin() {
         val client = getHealthClient()
         if (client == null) {
             val ret = JSObject().apply {
+                put("success", false)
+                put("error", "HEALTH_CONNECT_UNAVAILABLE")
+                put("message", "Health Connect indisponível no dispositivo.")
                 put("records", JSArray())
             }
             call.resolve(ret)
@@ -299,17 +309,15 @@ class PepHealthConnectPlugin : Plugin() {
             val startTimeStr = call.getString("startTime")
             val endTimeStr = call.getString("endTime")
 
-            val startInstant = try {
-                if (!startTimeStr.isNullOrEmpty()) Instant.parse(startTimeStr)
-                else Instant.now().minusSeconds(90L * 24 * 3600)
-            } catch (e: Exception) {
+            val startInstant = if (!startTimeStr.isNullOrEmpty()) {
+                Instant.parse(startTimeStr)
+            } else {
                 Instant.now().minusSeconds(90L * 24 * 3600)
             }
 
-            val endInstant = try {
-                if (!endTimeStr.isNullOrEmpty()) Instant.parse(endTimeStr)
-                else Instant.now()
-            } catch (e: Exception) {
+            val endInstant = if (!endTimeStr.isNullOrEmpty()) {
+                Instant.parse(endTimeStr)
+            } else {
                 Instant.now()
             }
 
@@ -331,12 +339,20 @@ class PepHealthConnectPlugin : Plugin() {
                     val timeStr = zdt.format(DateTimeFormatter.ofPattern("HH:mm"))
                     val timestampStr = record.time.toString()
 
-                    val clientRecId = record.metadata.clientRecordId ?: record.metadata.id
+                    val clientRecId = record.metadata.clientRecordId ?: ""
+                    val recId = record.metadata.id
+                    val originPkg = record.metadata.dataOrigin.packageName
+                    val recVersion = record.metadata.clientRecordVersion
+                    val zoneOffsetStr = record.zoneOffset?.toString() ?: ""
 
                     val item = JSONObject().apply {
-                        put("id", record.metadata.id)
+                        put("id", recId)
+                        put("healthConnectRecordId", recId)
                         put("clientRecordId", clientRecId)
-                        put("metadataId", record.metadata.id)
+                        put("clientRecordVersion", recVersion)
+                        put("dataOrigin", originPkg)
+                        put("zoneOffset", zoneOffsetStr)
+                        put("metadataId", recId)
                         put("timestamp", timestampStr)
                         put("time", timestampStr)
                         put("date", dateStr)
@@ -345,6 +361,7 @@ class PepHealthConnectPlugin : Plugin() {
                         put("weightKg", weightKg)
                         put("unit", "kg")
                         put("source", "health_connect")
+                        put("ownership", if (originPkg == "com.protocolopep.app" || clientRecId.isNotEmpty()) "pep" else "external")
                     }
                     resultList.add(item)
                 }
@@ -354,14 +371,69 @@ class PepHealthConnectPlugin : Plugin() {
             resultList.forEach { jsArray.put(it) }
 
             val ret = JSObject().apply {
+                put("success", true)
                 put("records", jsArray)
             }
             call.resolve(ret)
         } catch (e: Exception) {
             val ret = JSObject().apply {
+                put("success", false)
+                put("error", "HEALTH_CONNECT_READ_FAILED")
+                put("message", e.message ?: "Erro desconhecido na leitura de registros do Health Connect.")
                 put("records", JSArray())
             }
             call.resolve(ret)
+        }
+    }
+
+    @PluginMethod
+    fun deleteRecords(call: PluginCall) {
+        val client = getHealthClient()
+        if (client == null) {
+            call.reject("Health Connect indisponível para exclusão.")
+            return
+        }
+
+        try {
+            val recordIds = call.getArray("recordIds") ?: JSArray()
+            val clientRecordIds = call.getArray("clientRecordIds") ?: JSArray()
+
+            val idList = mutableListOf<String>()
+            for (i in 0 until recordIds.length()) {
+                val id = recordIds.optString(i, "")
+                if (id.isNotEmpty()) idList.add(id)
+            }
+
+            val clientRecIdList = mutableListOf<String>()
+            for (i in 0 until clientRecordIds.length()) {
+                val id = clientRecordIds.optString(i, "")
+                if (id.isNotEmpty()) clientRecIdList.add(id)
+            }
+
+            if (idList.isEmpty() && clientRecIdList.isEmpty()) {
+                val ret = JSObject().apply {
+                    put("success", true)
+                    put("deletedCount", 0)
+                }
+                call.resolve(ret)
+                return
+            }
+
+            runBlocking(Dispatchers.IO) {
+                client.deleteRecords(
+                    recordType = WeightRecord::class,
+                    recordIdsList = idList,
+                    clientRecordIdsList = clientRecIdList
+                )
+            }
+
+            val ret = JSObject().apply {
+                put("success", true)
+                put("deletedCount", idList.size + clientRecIdList.size)
+            }
+            call.resolve(ret)
+        } catch (e: Exception) {
+            call.reject("Erro ao deletar registros no Health Connect: ${e.message}")
         }
     }
 }

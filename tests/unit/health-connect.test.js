@@ -301,9 +301,122 @@ describe("Health Connect Domain", () => {
 
       // Ativado -> executa sync
       service.setEnabled(true);
-      const syncEnabled = await service.syncMeasurements([{ id: "m_1", date: "2026-08-29", time: "08:00", weightKg: 80 }]);
+      const syncEnabled = await service.syncMeasurements([{ id: "m_1", date: "2026-08-29", time: "08:00", weightKg: 80, source: "local", ownership: "pep" }]);
       expect(syncEnabled.success).toBe(true);
       expect(syncEnabled.exportedCount).toBe(1);
+    });
+
+    it("prevenção de Sync Echo: não reexporta medições de origem externa do Health Connect", async () => {
+      const mockStorage = {
+        store: {},
+        getItem(k) { return this.store[k] || null; },
+        setItem(k, v) { this.store[k] = String(v); }
+      };
+
+      const service = new HealthConnectService(mockStorage);
+      service.setEnabled(true);
+
+      const localListWithExternal = [
+        { id: "m_pep_1", date: "2026-08-29", time: "08:00", weightKg: 82.5, source: "local", ownership: "pep" },
+        { id: "hc_ext_999", date: "2026-08-28", time: "08:00", weightKg: 83.0, source: "health_connect", ownership: "external" }
+      ];
+
+      const syncRes = await service.syncMeasurements(localListWithExternal);
+      expect(syncRes.success).toBe(true);
+      // Apenas o registro do PEP deve ser exportado; o externo é ignorado
+      expect(syncRes.exportedCount).toBe(1);
+    });
+
+    it("processa tombstones de exclusão durante a sincronização", async () => {
+      const mockStorage = {
+        tombstones: [{ id: "m_deleted_1", clientRecordId: "m_deleted_1" }],
+        store: {},
+        getItem(k) { return this.store[k] || null; },
+        setItem(k, v) { this.store[k] = String(v); },
+        getTombstones() { return [...this.tombstones]; },
+        clearTombstones(ids) {
+          this.tombstones = this.tombstones.filter((t) => !ids.includes(t.id));
+        }
+      };
+
+      const service = new HealthConnectService(mockStorage);
+      service.setEnabled(true);
+
+      const syncRes = await service.syncMeasurements([]);
+      expect(syncRes.success).toBe(true);
+      expect(syncRes.deletedCount).toBe(1);
+      expect(mockStorage.tombstones.length).toBe(0);
+    });
+  });
+
+  describe("Validação Estrita de Timestamps e Datas (Fail-Closed)", () => {
+    it("rejeita datas inexistentes como 2026-99-99 ou 2026-02-29 em ano não bissexto", () => {
+      expect(localDateTimeToIso("2026-99-99", "08:00")).toBeNull();
+      expect(localDateTimeToIso("2026-02-29", "08:00")).toBeNull();
+      expect(localDateTimeToIso("2026-04-31", "08:00")).toBeNull();
+      expect(localDateTimeToIso("2024-02-29", "08:00")).not.toBeNull(); // 2024 é bissexto
+    });
+
+    it("rejeita horários inválidos como 24:00 ou 99:99", () => {
+      expect(localDateTimeToIso("2026-08-29", "24:00")).toBeNull();
+      expect(localDateTimeToIso("2026-08-29", "99:99")).toBeNull();
+      expect(localDateTimeToIso("2026-08-29", "12:60")).toBeNull();
+    });
+
+    it("mapMeasurementToHealthRecord rejeita datas ou horários inválidos", () => {
+      const invalidDateMeas = { id: "m_inv_1", date: "2026-99-99", time: "08:00", weightKg: 80 };
+      expect(mapMeasurementToHealthRecord(invalidDateMeas)).toBeNull();
+
+      const invalidTimeMeas = { id: "m_inv_2", date: "2026-08-29", time: "24:00", weightKg: 80 };
+      expect(mapMeasurementToHealthRecord(invalidTimeMeas)).toBeNull();
+    });
+  });
+
+  describe("Identidade Completa e Preservação de ZoneOffset", () => {
+    it("preserva zoneOffset histórico em registros lidos", () => {
+      const hcRecord = {
+        id: "hc_record_rio",
+        timestamp: "2026-08-29T11:00:00.000Z",
+        zoneOffset: "-03:00",
+        weightKg: 81.5,
+        dataOrigin: "com.other.app"
+      };
+
+      const meas = mapHealthRecordToMeasurement(hcRecord);
+      expect(meas).not.toBeNull();
+      expect(meas.time).toBe("08:00"); // 11:00 UTC - 3h = 08:00
+      expect(meas.zoneOffset).toBe("-03:00");
+      expect(meas.dataOrigin).toBe("com.other.app");
+      expect(meas.ownership).toBe("external");
+      expect(meas.id).toBe("hc_com.other.app_hc_record_rio");
+    });
+
+    it("evita colisão de IDs idênticos vindos de dataOrigins diferentes", () => {
+      const recA = { id: "rec_1", timestamp: "2026-08-29T12:00:00.000Z", weightKg: 80, dataOrigin: "com.app.a" };
+      const recB = { id: "rec_1", timestamp: "2026-08-29T12:00:00.000Z", weightKg: 82, dataOrigin: "com.app.b" };
+
+      const measA = mapHealthRecordToMeasurement(recA);
+      const measB = mapHealthRecordToMeasurement(recB);
+
+      expect(measA.id).not.toBe(measB.id);
+      expect(measA.id).toBe("hc_com.app.a_rec_1");
+      expect(measB.id).toBe("hc_com.app.b_rec_1");
+    });
+
+    it("inclui clientRecordVersion ao mapear medição do PEP para Health Connect", () => {
+      const meas = {
+        id: "m_versioned_1",
+        date: "2026-08-29",
+        time: "08:00",
+        weightKg: 83.5,
+        syncVersion: 3,
+        source: "local",
+        ownership: "pep"
+      };
+
+      const record = mapMeasurementToHealthRecord(meas);
+      expect(record).not.toBeNull();
+      expect(record.clientRecordVersion).toBe(3);
     });
   });
 });

@@ -172,8 +172,10 @@ export class NotificationService {
           ]
         });
         if (this.cfg.sound) haptics.light();
+        return { success: true, native: true };
       } catch (err) {
         console.warn("[Notif] Send instant error:", err);
+        return { success: false, error: err.message };
       }
     } else {
       if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
@@ -182,7 +184,9 @@ export class NotificationService {
           this.beep();
           haptics.light();
         }
+        return { success: true, web: true };
       }
+      return { success: true, fallback: true };
     }
   }
 

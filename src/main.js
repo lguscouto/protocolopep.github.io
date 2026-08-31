@@ -1502,38 +1502,6 @@ function setupModalsAndButtons() {
     });
   }
 
-  const nfEnable = document.getElementById("nf-enable");
-  if (nfEnable) {
-    nfEnable.addEventListener("click", async () => {
-      const cfg = notifications.getConfig();
-      if (!cfg.enabled) {
-        const granted = await notifications.requestPermission();
-        if (granted) {
-          notifications.saveConfig({ enabled: true });
-          notifications.schedulePeptideReminders(storage.getPeptides());
-          haptics.success();
-        } else {
-          alert("Permissão de notificação não concedida nas configurações do dispositivo.");
-        }
-      } else {
-        notifications.saveConfig({ enabled: false });
-        await notifications.cancelAllPepReminders();
-        haptics.light();
-      }
-      updateNotifModalUI();
-    });
-  }
-
-  const nfTest = document.getElementById("nf-test");
-  if (nfTest) {
-    nfTest.addEventListener("click", async () => {
-      await notifications.sendInstantNotification(
-        "Protocolo PEP · Notificação de Teste",
-        "Seus lembretes de peptídeos estão funcionando perfeitamente! 💉"
-      );
-    });
-  }
-
   const libSearchInput = document.getElementById("lib-search-input");
   if (libSearchInput) {
     libSearchInput.addEventListener("input", (e) => {

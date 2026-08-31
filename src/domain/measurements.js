@@ -8,6 +8,8 @@
  * - Funções puras, imutáveis e auditáveis.
  */
 
+import { isValidDateKey, isValidTime } from "./schedule.js";
+
 export const DEFAULT_SYMPTOM_SUGGESTIONS = Object.freeze([
   "Disposição elevada",
   "Fadiga",
@@ -39,10 +41,16 @@ export function formatSymptomLabel(symptom) {
  * @param {string} params.date - Data no formato YYYY-MM-DD
  * @param {string} [params.time] - Horário no formato HH:mm
  * @param {number|null} [params.weightKg] - Peso em kg (ex: 82.5) ou null se não informado
- * @param {number|null} [params.energyLevel] - Nível de energia de 1 (Muito baixa) a 5 (Excelente) ou null
- * @param {number|null} [params.moodLevel] - Nível de humor de 1 (Muito ruim) a 5 (Excelente) ou null
+ * @param {number|null} [params.energyLevel] - Nível de energia de 1 a 5 ou null
+ * @param {number|null} [params.moodLevel] - Nível de humor de 1 a 5 ou null
  * @param {string[]} [params.symptoms] - Lista de sintomas autorrelatados
  * @param {string} [params.notes] - Observações adicionais do usuário
+ * @param {string} [params.source] - "local" | "health_connect"
+ * @param {string} [params.ownership] - "pep" | "external"
+ * @param {number} [params.syncVersion] - Versão incremental monotônica
+ * @param {string|null} [params.healthConnectRecordId]
+ * @param {string|null} [params.dataOrigin]
+ * @param {string|null} [params.zoneOffset]
  * @param {string} [params.createdAt] - Timestamp ISO de criação
  * @returns {Object}
  */
@@ -55,6 +63,13 @@ export function createMeasurementEntry({
   moodLevel = null,
   symptoms = [],
   notes = "",
+  source = "local",
+  ownership = "pep",
+  syncVersion = 1,
+  clientRecordVersion = 1,
+  healthConnectRecordId = null,
+  dataOrigin = null,
+  zoneOffset = null,
   createdAt = null
 }) {
   let parsedWeight = null;
@@ -86,16 +101,26 @@ export function createMeasurementEntry({
     : [];
 
   const uniqueSymptoms = [...new Set(cleanedSymptoms)];
+  const cleanDate = date && isValidDateKey(String(date)) ? String(date) : new Date().toISOString().slice(0, 10);
+  const cleanTime = time && isValidTime(String(time)) ? String(time) : "08:00";
+  const version = Math.max(1, parseInt(syncVersion || clientRecordVersion, 10) || 1);
 
   return {
     id: id || `m_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-    date: date ? String(date).slice(0, 10) : new Date().toISOString().slice(0, 10),
-    time: time ? String(time).slice(0, 5) : "08:00",
+    date: cleanDate,
+    time: cleanTime,
     weightKg: parsedWeight,
     energyLevel: parsedEnergy,
     moodLevel: parsedMood,
     symptoms: uniqueSymptoms,
     notes: notes ? String(notes).trim().slice(0, 500) : "",
+    source: source || "local",
+    ownership: ownership || (source === "health_connect" ? "external" : "pep"),
+    syncVersion: version,
+    clientRecordVersion: version,
+    healthConnectRecordId: healthConnectRecordId || null,
+    dataOrigin: dataOrigin || (source === "local" ? "com.protocolopep.app" : null),
+    zoneOffset: zoneOffset || null,
     createdAt: createdAt || new Date().toISOString()
   };
 }
@@ -112,8 +137,12 @@ export function validateMeasurementEntry(entry) {
     return { valid: false, errors: ["Registro de medição inválido."] };
   }
 
-  if (!entry.date || !/^\d{4}-\d{2}-\d{2}$/.test(entry.date)) {
-    errors.push("A data deve estar no formato AAAA-MM-DD.");
+  if (!entry.date || !isValidDateKey(String(entry.date))) {
+    errors.push("A data informada é inválida ou inexistente no calendário gregoriano.");
+  }
+
+  if (entry.time && !isValidTime(String(entry.time))) {
+    errors.push("O horário informado deve estar no formato HH:mm válido.");
   }
 
   if (entry.weightKg !== null && entry.weightKg !== undefined) {

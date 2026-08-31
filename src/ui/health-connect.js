@@ -154,7 +154,6 @@ export function setupHealthConnectUI({
 
   if (toggle) {
     toggle.addEventListener("change", handleToggleChange);
-    toggle.addEventListener("input", handleToggleChange);
   }
 
   if (syncBtn) {
