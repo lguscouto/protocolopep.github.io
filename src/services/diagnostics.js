@@ -50,7 +50,7 @@ export function sanitizeTechnicalReport(rawReport) {
 
 export function generateDiagnosticReport({
   storage = null,
-  appVersion = "1.9.9",
+  appVersion = "2.0.0",
   notificationsActive = false
 } = {}) {
   let peptidesCount = 0;

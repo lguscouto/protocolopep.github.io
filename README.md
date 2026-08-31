@@ -1,11 +1,45 @@
 # 🧪 Protocolo PEP · App Android (Local-First)
 
-![Version](https://img.shields.io/badge/version-1.9.9-2CC5C0)
+![Version](https://img.shields.io/badge/version-2.0.0-2CC5C0)
 ![Android](https://img.shields.io/badge/Android-8.0%2B-green)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![CI](https://github.com/lguscouto/protocolopep.github.io/actions/workflows/ci.yml/badge.svg)
 
 Aplicativo Android nativo para acompanhamento de protocolos de peptídeos, cálculo de reconstituição e registro diário de doses, construído com arquitetura **100% Local-First**, segurança matemática auditável e suporte aos **temas Branco e Preto OLED**.
+
+---
+
+## 🚀 Novidades da Versão 2.0.0 (Health Connect Real & Integridade Total)
+
+- **Integração Real com o AndroidX Health Connect SDK:**
+  - Migração completa do plugin nativo para Kotlin (`PepHealthConnectPlugin.kt`) utilizando a biblioteca oficial `androidx.health.connect:connect-client:1.1.0-alpha07`.
+  - Verificação de status em tempo real (`HealthConnectClient.getSdkStatus()`) e solicitação de permissões reais de leitura e escrita de registros de peso (`WeightRecord`).
+  - Sincronização bidirecional de peso corporal com balanças inteligentes e aplicativos de saúde (Google Fit, Samsung Health, etc.).
+  - Declaração de `activity-alias` de privacidade (`ViewPermissionUsageActivity`) e rationale de permissões em conformidade com as diretrizes da Google Play Store.
+- **Integridade Atômica Dose ↔ Inventário (`DoseService`):**
+  - Camada de serviço atômica unificada (`src/domain/dose-service.js` e `src/services/dose-service.js`) gerenciando registros de doses e movimentações de estoque.
+  - Vínculo estrito de `vialId` e `inventoryMovementId` em cada aplicação.
+  - Validação estrita de saldo de frasco: bloqueio e feedback explícito `INSUFFICIENT_BALANCE` sem criar logs órfãos.
+  - Estorno inteligente de doses desfeitas restaurando o saldo exatamente no frasco original, reabrindo frascos com status `finished` para `active`.
+  - Exclusão de doses retroativas que não debitaram estoque não geram créditos indevidos.
+- **Storage Seguro & Rollback Imutável:**
+  - Todos os getters (`getPeptides`, `getLogs`, `getInventory`, `getSites`, `getMeasurements`) em `src/services/storage.js` retornam clones profundos imutáveis (`deepClone()`), impedindo que mutações acidentais corrompam os snapshots de rollback.
+- **Blindagem contra Vulnerabilidades de Segurança:**
+  - **Anti-XSS:** Sanitização estrita com `escapeHTML()` em todas as interpolações do relatório impresso via iframe.
+  - **CSV Formula Injection:** Mitigação de injeção de comandos em planilhas (`=`, `+`, `-`, `@`, `\t`) prefixando células com `'` em `src/domain/report.js`.
+- **Rigor Matemático & Validações Temporais:**
+  - Helpers puros de validação `isValidTime` (`HH:MM`) e `isValidDateKey` (`YYYY-MM-DD`) com checagem de anos bissextos e limites de calendário.
+  - Cálculo de intervalos entre datas (`daysBetween`) normalizado em timestamps UTC, imune a variações de 23h/25h de Horário de Verão (DST).
+  - Validação explícita de unidades (`mg`, `mcg`) na calculadora de reconstituição.
+  - Cálculo de meta e progresso diário no Dashboard e no Widget nativo respeitando doses múltiplas (`perDay`).
+- **Resiliência de Backup & Migrações:**
+  - Rejeição segura de arquivos de backup gerados por versões de schema futuras (`version > CURRENT_SCHEMA_VERSION`).
+  - Migrações automáticas garantindo integridade de estruturas em importações legadas.
+- **Acessibilidade Aprimorada (WCAG 2.1 AA):**
+  - Diálogos de confirmação (`showConfirmDialog`) com foco inicial no botão Cancelar (prevenindo ações destrutivas acidentais), focus trap interno e suporte ao fechamento com tecla `Escape`.
+- **Qualidade & Testes Automatizados:**
+  - **188 testes unitários** no Vitest passando com 100% de sucesso.
+  - **24 testes E2E** no Playwright cobrindo todos os fluxos críticos e alvos de toque em múltiplos viewports móveis.
 
 ---
 
@@ -158,25 +192,34 @@ pep-protocol/
 │   ├── domain/                  # Lógica pura e auditável (sem dependência do DOM)
 │   │   ├── calculator.js        # Reconstituição, conversão e limites
 │   │   ├── schedule.js          # Motor de agendamento e ocorrências
+│   │   ├── dose-service.js      # Transições puras de doses e inventário
+│   │   ├── inventory.js         # Ledger e saldos de frascos
+│   │   ├── health-connect.js    # Mapeamento e fusão de dados de saúde
 │   │   ├── protocol.js          # Entidades e sanitização
 │   │   ├── backup.js            # Validação e serialização segura
 │   │   └── migrations.js        # Migrações de dados idempotentes
 │   ├── services/
-│   │   ├── storage.js           # Persistência observável com rollback
+│   │   ├── storage.js           # Persistência observável com rollback e deepClone
+│   │   ├── dose-service.js      # Serviço transacional atômico de doses
+│   │   ├── health-connect.js    # Integração com o plugin Health Connect
 │   │   ├── notifications.js     # Alarmes e notificações locais
 │   │   ├── theme.js             # Gerenciamento de temas e status bar
 │   │   ├── haptics.js           # Feedback tátil nativo
 │   │   └── app-bridge.js        # Botão voltar e ciclo de vida
 │   ├── ui/
-│   │   └── dom.js               # Construtor seguro e sanitização anti-XSS
+│   │   ├── dom.js               # Construtor seguro e sanitização anti-XSS
+│   │   ├── retro-log.js         # Modal e fluxo de registro retroativo
+│   │   ├── health-connect.js    # Painel de sincronização de saúde
+│   │   └── diagnostics.js       # Diagnósticos técnicos desidentificados
 │   ├── data/                    # Catálogo nominal de referência
 │   └── css/                     # Estilos modulares e responsivos
 ├── tests/
-│   └── unit/                    # Suíte completa de testes com Vitest
+│   ├── unit/                    # 188 testes unitários com Vitest
+│   └── e2e/                     # 24 testes E2E com Playwright
 ├── docs/
 │   ├── PRODUCT.md               # Contrato do produto e público-alvo
 │   └── PRIVACY.md               # Política de privacidade Local-First
-├── android/                     # Projeto nativo Android (Gradle)
+├── android/                     # Projeto nativo Android (Gradle, Kotlin & Capacitor)
 └── .github/workflows/           # CI automatizado com GitHub Actions
 ```
 
@@ -194,17 +237,22 @@ npm install
 npm test
 ```
 
-### 3. Compilar Web & Sincronizar com Android
+### 3. Executar Testes E2E (Playwright)
+```bash
+npm run test:e2e
+```
+
+### 4. Compilar Web & Sincronizar com Android
 ```bash
 npm run cap:sync
 ```
 
-### 4. Compilar APK Debug Android
+### 5. Compilar APK Release Android
 ```bash
 npm run android:build
 ```
 O APK gerado estará em:
-`android/app/build/outputs/apk/debug/app-debug.apk`
+`android/app/build/outputs/apk/release/app-release-unsigned.apk` (ou em `debug/app-debug.apk`)
 
 ---
 
