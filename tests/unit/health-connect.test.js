@@ -2,9 +2,12 @@ import { describe, it, expect } from "vitest";
 import {
   HEALTH_CONNECT_STATUS,
   getHealthConnectStatusLabel,
+  localDateTimeToIso,
+  isoToLocalDateTime,
   mapMeasurementToHealthRecord,
   mapHealthRecordToMeasurement,
-  mergeHealthMeasurements
+  mergeHealthMeasurements,
+  haveMeasurementsChanged
 } from "../../src/domain/health-connect.js";
 import { HealthConnectService } from "../../src/services/health-connect.js";
 
@@ -13,16 +16,58 @@ describe("Health Connect Domain", () => {
     it("retorna rótulos em português para todos os estados", () => {
       expect(getHealthConnectStatusLabel(HEALTH_CONNECT_STATUS.CONNECTED)).toBe("Conectado");
       expect(getHealthConnectStatusLabel(HEALTH_CONNECT_STATUS.AVAILABLE)).toBe("Disponível");
+      expect(getHealthConnectStatusLabel(HEALTH_CONNECT_STATUS.NOT_AUTHORIZED)).toBe("Permissão Necessária");
       expect(getHealthConnectStatusLabel(HEALTH_CONNECT_STATUS.PERMISSION_REQUIRED)).toBe("Permissão Necessária");
+      expect(getHealthConnectStatusLabel(HEALTH_CONNECT_STATUS.PARTIALLY_AUTHORIZED)).toBe("Permissão Parcial");
+      expect(getHealthConnectStatusLabel(HEALTH_CONNECT_STATUS.UPDATE_REQUIRED)).toBe("Atualização Necessária");
+      expect(getHealthConnectStatusLabel(HEALTH_CONNECT_STATUS.UNAVAILABLE)).toBe("App Não Instalado");
       expect(getHealthConnectStatusLabel(HEALTH_CONNECT_STATUS.NOT_INSTALLED)).toBe("App Não Instalado");
       expect(getHealthConnectStatusLabel(HEALTH_CONNECT_STATUS.NOT_SUPPORTED)).toBe("Não Suportado no Dispositivo");
+      expect(getHealthConnectStatusLabel(HEALTH_CONNECT_STATUS.ERROR)).toBe("Erro de Conexão");
       expect(getHealthConnectStatusLabel(HEALTH_CONNECT_STATUS.DISABLED)).toBe("Desativado");
       expect(getHealthConnectStatusLabel("UNKNOWN")).toBe("Desativado");
     });
   });
 
+  describe("localDateTimeToIso e isoToLocalDateTime", () => {
+    it("converte data e hora local para ISO e reverte mantendo integridade", () => {
+      const date = "2026-08-29";
+      const time = "08:30";
+      const iso = localDateTimeToIso(date, time);
+      expect(typeof iso).toBe("string");
+      expect(iso).toContain("T");
+
+      const reversed = isoToLocalDateTime(iso);
+      expect(reversed).not.toBeNull();
+      expect(reversed.date).toBe(date);
+      expect(reversed.time).toBe(time);
+    });
+
+    it("preserva data e hora em registros próximos à meia-noite", () => {
+      const nearMidnightStart = "2026-08-29";
+      const timeStart = "00:05";
+      const isoStart = localDateTimeToIso(nearMidnightStart, timeStart);
+      const resStart = isoToLocalDateTime(isoStart);
+      expect(resStart.date).toBe(nearMidnightStart);
+      expect(resStart.time).toBe(timeStart);
+
+      const nearMidnightEnd = "2026-08-29";
+      const timeEnd = "23:55";
+      const isoEnd = localDateTimeToIso(nearMidnightEnd, timeEnd);
+      const resEnd = isoToLocalDateTime(isoEnd);
+      expect(resEnd.date).toBe(nearMidnightEnd);
+      expect(resEnd.time).toBe(timeEnd);
+    });
+
+    it("retorna null para strings ISO inválidas", () => {
+      expect(isoToLocalDateTime("")).toBeNull();
+      expect(isoToLocalDateTime(null)).toBeNull();
+      expect(isoToLocalDateTime("invalid-date")).toBeNull();
+    });
+  });
+
   describe("mapMeasurementToHealthRecord", () => {
-    it("converte medição válida com peso para registro Health Connect", () => {
+    it("converte medição válida com peso para registro Health Connect com clientRecordId", () => {
       const measurement = {
         id: "m_123",
         date: "2026-08-29",
@@ -34,7 +79,8 @@ describe("Health Connect Domain", () => {
       const record = mapMeasurementToHealthRecord(measurement);
       expect(record).not.toBeNull();
       expect(record.weightKg).toBe(84.5);
-      expect(record.time).toBe("2026-08-29T08:30:00.000Z");
+      expect(record.timestamp).toBeDefined();
+      expect(record.clientRecordId).toBe("m_123");
       expect(record.metadataId).toBe("m_123");
     });
 
@@ -63,19 +109,36 @@ describe("Health Connect Domain", () => {
   });
 
   describe("mapHealthRecordToMeasurement", () => {
-    it("converte registro do Health Connect para medição interna do PEP", () => {
+    it("converte registro do Health Connect para medição interna preservando clientRecordId e data local", () => {
       const hcRecord = {
-        id: "hc_record_1",
-        time: "2026-08-29T08:30:00.000Z",
+        id: "hc_raw_id_999",
+        clientRecordId: "m_local_123",
+        timestamp: localDateTimeToIso("2026-08-29", "08:30"),
         weightKg: 83.2
       };
 
       const measurement = mapHealthRecordToMeasurement(hcRecord);
       expect(measurement).not.toBeNull();
+      expect(measurement.id).toBe("m_local_123");
       expect(measurement.date).toBe("2026-08-29");
+      expect(measurement.time).toBe("08:30");
       expect(measurement.weightKg).toBe(83.2);
       expect(measurement.source).toBe("health_connect");
-      expect(measurement.notes).toContain("Health Connect");
+    });
+
+    it("converte registro com date e localTime diretamente", () => {
+      const hcRecord = {
+        id: "hc_item_1",
+        date: "2026-08-29",
+        time: "14:15",
+        weightKg: 81.0
+      };
+
+      const measurement = mapHealthRecordToMeasurement(hcRecord);
+      expect(measurement).not.toBeNull();
+      expect(measurement.date).toBe("2026-08-29");
+      expect(measurement.time).toBe("14:15");
+      expect(measurement.weightKg).toBe(81.0);
     });
 
     it("retorna null para registros inválidos ou sem peso", () => {
@@ -102,20 +165,20 @@ describe("Health Connect Domain", () => {
 
       const imported = [
         {
-          id: "m_local_1",
-          time: "2026-08-28T08:00:00.000Z",
+          id: "hc_1",
+          clientRecordId: "m_local_1",
+          timestamp: localDateTimeToIso("2026-08-28", "08:00"),
           weightKg: 84.2
         },
         {
           id: "hc_new_2",
-          time: "2026-08-29T08:00:00.000Z",
+          timestamp: localDateTimeToIso("2026-08-29", "08:00"),
           weightKg: 83.8
         }
       ];
 
       const merged = mergeHealthMeasurements(local, imported);
       expect(merged.length).toBe(2);
-      // Ordenação decrescente: o dia 29 vem primeiro
       expect(merged[0].date).toBe("2026-08-29");
       expect(merged[0].weightKg).toBe(83.8);
 
@@ -124,20 +187,67 @@ describe("Health Connect Domain", () => {
       expect(merged[1].notes).toBe("Nota pessoal");
     });
 
-    it("adiciona novos registros se não houver conflito de data/horário", () => {
-      const local = [];
-      const imported = [
-        {
-          id: "hc_1",
-          time: "2026-08-27T08:00:00.000Z",
-          weightKg: 82.5
-        }
+    it("é idempotente em 1x, 2x e 10x sincronizações sucessivas", () => {
+      let state = [
+        { id: "m_initial", date: "2026-08-25", time: "07:30", weightKg: 85.0 }
       ];
 
-      const merged = mergeHealthMeasurements(local, imported);
-      expect(merged.length).toBe(1);
-      expect(merged[0].weightKg).toBe(82.5);
-      expect(merged[0].date).toBe("2026-08-27");
+      const importedBatch = [
+        { id: "hc_1", clientRecordId: "m_initial", timestamp: localDateTimeToIso("2026-08-25", "07:30"), weightKg: 85.0 },
+        { id: "hc_2", timestamp: localDateTimeToIso("2026-08-26", "08:00"), weightKg: 84.5 },
+        { id: "hc_3", timestamp: localDateTimeToIso("2026-08-27", "08:15"), weightKg: 84.2 }
+      ];
+
+      // 1x sync
+      state = mergeHealthMeasurements(state, importedBatch);
+      expect(state.length).toBe(3);
+
+      // 2x sync
+      state = mergeHealthMeasurements(state, importedBatch);
+      expect(state.length).toBe(3);
+
+      // 10x sync
+      for (let i = 0; i < 8; i++) {
+        state = mergeHealthMeasurements(state, importedBatch);
+      }
+      expect(state.length).toBe(3);
+    });
+  });
+
+  describe("haveMeasurementsChanged", () => {
+    it("retorna false para listas idênticas", () => {
+      const listA = [
+        { id: "1", date: "2026-08-29", time: "08:00", weightKg: 83.5, symptoms: ["Fadiga"], notes: "ok" }
+      ];
+      const listB = [
+        { id: "1", date: "2026-08-29", time: "08:00", weightKg: 83.5, symptoms: ["Fadiga"], notes: "ok" }
+      ];
+      expect(haveMeasurementsChanged(listA, listB)).toBe(false);
+    });
+
+    it("detecta alteração de peso mantendo a mesma quantidade de registros (caso 1 -> 1)", () => {
+      const before = [
+        { id: "1", date: "2026-08-29", time: "08:00", weightKg: 83.5, symptoms: [], notes: "" }
+      ];
+      const after = [
+        { id: "1", date: "2026-08-29", time: "08:00", weightKg: 83.2, symptoms: [], notes: "" }
+      ];
+      expect(haveMeasurementsChanged(before, after)).toBe(true);
+    });
+
+    it("detecta alteração de data ou horário", () => {
+      const listA = [{ id: "1", date: "2026-08-29", time: "08:00", weightKg: 83.5 }];
+      const listB = [{ id: "1", date: "2026-08-29", time: "08:30", weightKg: 83.5 }];
+      expect(haveMeasurementsChanged(listA, listB)).toBe(true);
+    });
+
+    it("detecta alteração no tamanho das listas", () => {
+      const listA = [{ id: "1", date: "2026-08-29", time: "08:00", weightKg: 83.5 }];
+      const listB = [
+        { id: "1", date: "2026-08-29", time: "08:00", weightKg: 83.5 },
+        { id: "2", date: "2026-08-30", time: "08:00", weightKg: 83.0 }
+      ];
+      expect(haveMeasurementsChanged(listA, listB)).toBe(true);
     });
   });
 
@@ -180,6 +290,10 @@ describe("Health Connect Domain", () => {
 
       const perm = await service.requestPermissions();
       expect(perm.granted).toBe(true);
+
+      const checkPerm = await service.checkPermissions();
+      expect(checkPerm.granted).toBe(true);
+      expect(checkPerm.status).toBe(HEALTH_CONNECT_STATUS.CONNECTED);
 
       // Desativado -> retorna success false
       const syncDisabled = await service.syncMeasurements([{ weightKg: 80 }]);

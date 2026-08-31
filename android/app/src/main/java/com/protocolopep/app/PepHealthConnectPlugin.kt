@@ -20,7 +20,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 import java.time.Instant
-import java.time.ZoneOffset
+import java.time.ZoneId
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 
 @CapacitorPlugin(name = "PepHealthConnect")
 class PepHealthConnectPlugin : Plugin() {
@@ -53,7 +55,7 @@ class PepHealthConnectPlugin : Plugin() {
 
         if (ctx == null) {
             ret.put("available", false)
-            ret.put("status", "NOT_SUPPORTED")
+            ret.put("status", "UNAVAILABLE")
             ret.put("message", "Contexto Android indisponível.")
             call.resolve(ret)
             return
@@ -74,15 +76,54 @@ class PepHealthConnectPlugin : Plugin() {
                 }
                 else -> {
                     ret.put("available", false)
-                    ret.put("status", "NOT_SUPPORTED")
+                    ret.put("status", "UNAVAILABLE")
                     ret.put("message", "Health Connect não está disponível neste dispositivo.")
                 }
             }
             call.resolve(ret)
         } catch (e: Exception) {
             ret.put("available", false)
-            ret.put("status", "NOT_SUPPORTED")
+            ret.put("status", "UNAVAILABLE")
             ret.put("message", "Erro ao verificar Health Connect: ${e.message}")
+            call.resolve(ret)
+        }
+    }
+
+    @PluginMethod
+    override fun checkPermissions(call: PluginCall) {
+        val client = getHealthClient()
+        val ret = JSObject()
+
+        if (client == null) {
+            ret.put("granted", false)
+            ret.put("status", "UNAVAILABLE")
+            ret.put("reason", "Health Connect indisponível.")
+            call.resolve(ret)
+            return
+        }
+
+        try {
+            runBlocking(Dispatchers.IO) {
+                val granted = client.permissionController.getGrantedPermissions()
+                val hasAll = REQUIRED_PERMISSIONS.all { it in granted }
+                val hasAny = REQUIRED_PERMISSIONS.any { it in granted }
+
+                if (hasAll) {
+                    ret.put("granted", true)
+                    ret.put("status", "CONNECTED")
+                } else if (hasAny) {
+                    ret.put("granted", false)
+                    ret.put("status", "PARTIALLY_AUTHORIZED")
+                } else {
+                    ret.put("granted", false)
+                    ret.put("status", "NOT_AUTHORIZED")
+                }
+                call.resolve(ret)
+            }
+        } catch (e: Exception) {
+            ret.put("granted", false)
+            ret.put("status", "ERROR")
+            ret.put("reason", "Erro ao consultar permissões: ${e.message}")
             call.resolve(ret)
         }
     }
@@ -94,7 +135,7 @@ class PepHealthConnectPlugin : Plugin() {
 
         if (client == null) {
             ret.put("granted", false)
-            ret.put("status", "NOT_SUPPORTED")
+            ret.put("status", "UNAVAILABLE")
             ret.put("reason", "Health Connect indisponível.")
             call.resolve(ret)
             return
@@ -110,10 +151,10 @@ class PepHealthConnectPlugin : Plugin() {
                     ret.put("status", "CONNECTED")
                     call.resolve(ret)
                 } else {
-                    // Abre a tela de permissões do Health Connect
+                    // Abre a tela de configurações/permissões do Health Connect
                     openSettingsInternal()
                     ret.put("granted", false)
-                    ret.put("status", "PERMISSION_REQUIRED")
+                    ret.put("status", "NOT_AUTHORIZED")
                     ret.put("reason", "Permissões pendentes no Health Connect.")
                     call.resolve(ret)
                 }
@@ -182,6 +223,7 @@ class PepHealthConnectPlugin : Plugin() {
         try {
             val recordsArray = call.getArray("records") ?: JSArray()
             val recordsToInsert = mutableListOf<WeightRecord>()
+            val localZone = ZoneId.systemDefault()
 
             for (i in 0 until recordsArray.length()) {
                 val obj = recordsArray.getJSONObject(i) ?: continue
@@ -192,11 +234,15 @@ class PepHealthConnectPlugin : Plugin() {
                 val timeStr = obj.optString("time", "12:00")
                 
                 val instant = try {
-                    if (obj.has("timestamp")) {
+                    if (obj.has("timestamp") && obj.getString("timestamp").isNotEmpty()) {
                         Instant.parse(obj.getString("timestamp"))
+                    } else if (obj.has("time") && obj.getString("time").contains("T")) {
+                        Instant.parse(obj.getString("time"))
                     } else if (dateStr.isNotEmpty()) {
                         val safeTime = if (timeStr.length == 5) "$timeStr:00" else timeStr
-                        Instant.parse("${dateStr}T${safeTime}Z")
+                        // Converte a partir de componentes locais do dispositivo
+                        val zdt = ZonedDateTime.parse("${dateStr}T${safeTime}", DateTimeFormatter.ISO_LOCAL_DATE_TIME.withZone(localZone))
+                        zdt.toInstant()
                     } else {
                         Instant.now()
                     }
@@ -204,11 +250,20 @@ class PepHealthConnectPlugin : Plugin() {
                     Instant.now()
                 }
 
+                val clientRecordId = obj.optString("clientRecordId", obj.optString("metadataId", obj.optString("id", "")))
+                val zoneOffset = localZone.rules.getOffset(instant)
+
+                val metadata = if (clientRecordId.isNotEmpty()) {
+                    Metadata(clientRecordId = clientRecordId)
+                } else {
+                    Metadata()
+                }
+
                 val weightRecord = WeightRecord(
                     weight = Mass.kilograms(weightKg),
                     time = instant,
-                    zoneOffset = ZoneOffset.UTC,
-                    metadata = Metadata()
+                    zoneOffset = zoneOffset,
+                    metadata = metadata
                 )
                 recordsToInsert.add(weightRecord)
             }
@@ -259,6 +314,7 @@ class PepHealthConnectPlugin : Plugin() {
             }
 
             val resultList = mutableListOf<JSONObject>()
+            val localZone = ZoneId.systemDefault()
 
             runBlocking(Dispatchers.IO) {
                 val response = client.readRecords(
@@ -270,16 +326,21 @@ class PepHealthConnectPlugin : Plugin() {
 
                 for (record in response.records) {
                     val weightKg = record.weight.inKilograms
-                    val isoStr = record.time.toString()
-                    val parts = isoStr.split("T")
-                    val dateStr = parts.getOrNull(0) ?: ""
-                    val timeRaw = parts.getOrNull(1)?.replace("Z", "") ?: "12:00"
-                    val timeStr = if (timeRaw.length >= 5) timeRaw.substring(0, 5) else timeRaw
+                    val zdt = record.time.atZone(localZone)
+                    val dateStr = zdt.format(DateTimeFormatter.ISO_LOCAL_DATE)
+                    val timeStr = zdt.format(DateTimeFormatter.ofPattern("HH:mm"))
+                    val timestampStr = record.time.toString()
+
+                    val clientRecId = record.metadata.clientRecordId ?: record.metadata.id
 
                     val item = JSONObject().apply {
                         put("id", record.metadata.id)
+                        put("clientRecordId", clientRecId)
+                        put("metadataId", record.metadata.id)
+                        put("timestamp", timestampStr)
+                        put("time", timestampStr)
                         put("date", dateStr)
-                        put("time", timeStr)
+                        put("localTime", timeStr)
                         put("weight", weightKg)
                         put("weightKg", weightKg)
                         put("unit", "kg")

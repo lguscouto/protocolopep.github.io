@@ -264,3 +264,35 @@ export function filterMeasurements(entries, { startDate = null, endDate = null, 
     return true;
   });
 }
+
+/**
+ * Verifica se duas listas de medições possuem diferenças em seus campos ou registros.
+ * @param {Object[]} oldList
+ * @param {Object[]} newList
+ * @returns {boolean}
+ */
+export function haveMeasurementsChanged(oldList = [], newList = []) {
+  if (!Array.isArray(oldList) || !Array.isArray(newList)) {
+    return oldList !== newList;
+  }
+  if (oldList.length !== newList.length) {
+    return true;
+  }
+  for (let i = 0; i < oldList.length; i++) {
+    const a = oldList[i];
+    const b = newList[i];
+    if (!a || !b) return true;
+    if (a.id !== b.id) return true;
+    if (a.date !== b.date) return true;
+    if (a.time !== b.time) return true;
+    if (a.weightKg !== b.weightKg) return true;
+    if (a.energyLevel !== b.energyLevel) return true;
+    if (a.moodLevel !== b.moodLevel) return true;
+    if (a.notes !== b.notes) return true;
+    if (a.source !== b.source) return true;
+    const symA = Array.isArray(a.symptoms) ? a.symptoms.join("|") : "";
+    const symB = Array.isArray(b.symptoms) ? b.symptoms.join("|") : "";
+    if (symA !== symB) return true;
+  }
+  return false;
+}

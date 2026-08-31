@@ -4,6 +4,7 @@ import {
   validateMeasurementEntry,
   calculateMeasurementStats,
   filterMeasurements,
+  haveMeasurementsChanged,
   formatSymptomLabel,
   DEFAULT_SYMPTOM_SUGGESTIONS
 } from "../../src/domain/measurements.js";
@@ -102,5 +103,17 @@ describe("Measurements Domain (V12)", () => {
 
     const filteredSymptom = filterMeasurements(entries, { symptom: "Fadiga" });
     expect(filteredSymptom).toHaveLength(2);
+  });
+
+  it("detecta alterações profundas com haveMeasurementsChanged", () => {
+    const a = [createMeasurementEntry({ date: "2026-08-29", weightKg: 80.0 })];
+    const b = [createMeasurementEntry({ date: "2026-08-29", weightKg: 80.0 })];
+    expect(haveMeasurementsChanged(a, b)).toBe(true); // IDs diferentes
+
+    const item = createMeasurementEntry({ id: "m1", date: "2026-08-29", weightKg: 80.0 });
+    expect(haveMeasurementsChanged([item], [item])).toBe(false);
+
+    const itemEdited = { ...item, weightKg: 79.5 };
+    expect(haveMeasurementsChanged([item], [itemEdited])).toBe(true);
   });
 });

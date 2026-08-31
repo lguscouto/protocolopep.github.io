@@ -11,12 +11,18 @@
  * Status possíveis da integração com o Health Connect.
  */
 export const HEALTH_CONNECT_STATUS = Object.freeze({
-  AVAILABLE: "AVAILABLE",
-  NOT_INSTALLED: "NOT_INSTALLED",
-  NOT_SUPPORTED: "NOT_SUPPORTED",
   CONNECTED: "CONNECTED",
+  AVAILABLE: "AVAILABLE",
+  NOT_AUTHORIZED: "NOT_AUTHORIZED",
+  PARTIALLY_AUTHORIZED: "PARTIALLY_AUTHORIZED",
+  UPDATE_REQUIRED: "UPDATE_REQUIRED",
+  UNAVAILABLE: "UNAVAILABLE",
+  ERROR: "ERROR",
+  DISABLED: "DISABLED",
+  // Aliases retrocompatíveis
   PERMISSION_REQUIRED: "PERMISSION_REQUIRED",
-  DISABLED: "DISABLED"
+  NOT_INSTALLED: "NOT_INSTALLED",
+  NOT_SUPPORTED: "NOT_SUPPORTED"
 });
 
 /**
@@ -30,12 +36,20 @@ export function getHealthConnectStatusLabel(status) {
       return "Conectado";
     case HEALTH_CONNECT_STATUS.AVAILABLE:
       return "Disponível";
+    case HEALTH_CONNECT_STATUS.NOT_AUTHORIZED:
     case HEALTH_CONNECT_STATUS.PERMISSION_REQUIRED:
       return "Permissão Necessária";
+    case HEALTH_CONNECT_STATUS.PARTIALLY_AUTHORIZED:
+      return "Permissão Parcial";
+    case HEALTH_CONNECT_STATUS.UPDATE_REQUIRED:
+      return "Atualização Necessária";
+    case HEALTH_CONNECT_STATUS.UNAVAILABLE:
     case HEALTH_CONNECT_STATUS.NOT_INSTALLED:
       return "App Não Instalado";
     case HEALTH_CONNECT_STATUS.NOT_SUPPORTED:
       return "Não Suportado no Dispositivo";
+    case HEALTH_CONNECT_STATUS.ERROR:
+      return "Erro de Conexão";
     case HEALTH_CONNECT_STATUS.DISABLED:
     default:
       return "Desativado";
@@ -43,10 +57,52 @@ export function getHealthConnectStatusLabel(status) {
 }
 
 /**
+ * Converte data e hora locais (YYYY-MM-DD, HH:mm) em timestamp ISO Instant real.
+ * @param {string} dateStr - Formato YYYY-MM-DD
+ * @param {string} timeStr - Formato HH:mm
+ * @returns {string} Timestamp ISO 8601 UTC
+ */
+export function localDateTimeToIso(dateStr, timeStr) {
+  const partsDate = (dateStr || "").split("-").map(Number);
+  const partsTime = (timeStr || "08:00").split(":").map(Number);
+
+  const year = partsDate[0] || new Date().getFullYear();
+  const month = (partsDate[1] || 1) - 1;
+  const day = partsDate[2] || 1;
+  const hour = partsTime[0] || 0;
+  const minute = partsTime[1] || 0;
+
+  const dt = new Date(year, month, day, hour, minute, 0, 0);
+  return dt.toISOString();
+}
+
+/**
+ * Converte timestamp ISO Instant em componentes de data (YYYY-MM-DD) e hora (HH:mm) no fuso local do dispositivo.
+ * @param {string} isoString
+ * @returns {{ date: string, time: string } | null}
+ */
+export function isoToLocalDateTime(isoString) {
+  if (!isoString || typeof isoString !== "string") return null;
+  const dt = new Date(isoString);
+  if (Number.isNaN(dt.getTime())) return null;
+
+  const year = dt.getFullYear();
+  const month = String(dt.getMonth() + 1).padStart(2, "0");
+  const day = String(dt.getDate()).padStart(2, "0");
+  const hours = String(dt.getHours()).padStart(2, "0");
+  const minutes = String(dt.getMinutes()).padStart(2, "0");
+
+  return {
+    date: `${year}-${month}-${day}`,
+    time: `${hours}:${minutes}`
+  };
+}
+
+/**
  * Converte uma medição interna do Protocolo PEP para o formato de registro de peso do Health Connect.
  *
  * @param {Object} measurement - Entrada de medição do PEP
- * @returns {{ time: string, weightKg: number, metadataId: string } | null}
+ * @returns {{ timestamp: string, time: string, weightKg: number, clientRecordId: string, metadataId: string } | null}
  */
 export function mapMeasurementToHealthRecord(measurement) {
   if (!measurement || typeof measurement !== "object") return null;
@@ -67,12 +123,15 @@ export function mapMeasurementToHealthRecord(measurement) {
     ? String(time)
     : "08:00";
 
-  const isoTime = `${cleanDate}T${cleanTime}:00.000Z`;
+  const isoTime = localDateTimeToIso(cleanDate, cleanTime);
+  const recordId = id ? String(id) : `m_${cleanDate}_${cleanTime.replace(":", "")}`;
 
   return {
+    timestamp: isoTime,
     time: isoTime,
     weightKg: Math.round(weightNum * 100) / 100,
-    metadataId: id ? String(id) : `m_${cleanDate}_${cleanTime.replace(":", "")}`
+    clientRecordId: recordId,
+    metadataId: recordId
   };
 }
 
@@ -96,24 +155,31 @@ export function mapHealthRecordToMeasurement(record) {
   let dateStr = "";
   let timeStr = "08:00";
 
-  if (record.time && typeof record.time === "string") {
-    try {
-      const dt = new Date(record.time);
-      if (!Number.isNaN(dt.getTime())) {
-        dateStr = dt.toISOString().slice(0, 10);
-        timeStr = dt.toTimeString().slice(0, 5);
-      }
-    } catch {
-      dateStr = record.time.slice(0, 10);
+  const timeSource = record.timestamp || record.time;
+  if (timeSource && typeof timeSource === "string") {
+    const localComponents = isoToLocalDateTime(timeSource);
+    if (localComponents) {
+      dateStr = localComponents.date;
+      timeStr = localComponents.time;
+    }
+  }
+
+  if (!dateStr && record.date && /^\d{4}-\d{2}-\d{2}$/.test(record.date)) {
+    dateStr = record.date;
+    if (record.time && /^\d{2}:\d{2}$/.test(record.time)) {
+      timeStr = record.time;
     }
   }
 
   if (!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-    dateStr = new Date().toISOString().slice(0, 10);
+    const now = new Date();
+    dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   }
 
+  const resolvedId = record.clientRecordId || record.metadataId || record.id || `hc_${dateStr}_${timeStr.replace(":", "")}`;
+
   return {
-    id: record.metadataId || record.id || `hc_${dateStr}_${timeStr.replace(":", "")}`,
+    id: resolvedId,
     date: dateStr,
     time: timeStr,
     weightKg: Math.round(weightNum * 100) / 100,
@@ -122,7 +188,7 @@ export function mapHealthRecordToMeasurement(record) {
     symptoms: [],
     notes: "Importado via Health Connect",
     source: "health_connect",
-    createdAt: record.time || new Date().toISOString()
+    createdAt: timeSource || new Date().toISOString()
   };
 }
 
@@ -152,7 +218,9 @@ export function mergeHealthMeasurements(localMeasurements = [], importedRecords 
 
     let matchedId = null;
     for (const [id, localEntry] of resultMap.entries()) {
-      if (id === parsed.id || (localEntry.date === parsed.date && localEntry.time === parsed.time)) {
+      const matchById = id === parsed.id || (raw.clientRecordId && id === raw.clientRecordId);
+      const matchByDateTime = localEntry.date === parsed.date && localEntry.time === parsed.time;
+      if (matchById || matchByDateTime) {
         matchedId = id;
         break;
       }
@@ -163,7 +231,8 @@ export function mergeHealthMeasurements(localMeasurements = [], importedRecords 
       if (existing.weightKg === null || existing.weightKg === undefined || existing.source === "health_connect") {
         resultMap.set(matchedId, {
           ...existing,
-          weightKg: parsed.weightKg
+          weightKg: parsed.weightKg,
+          source: existing.source || "health_connect"
         });
       }
     } else {
@@ -176,4 +245,37 @@ export function mergeHealthMeasurements(localMeasurements = [], importedRecords 
     const dtB = `${b.date || ""} ${b.time || ""}`;
     return dtB.localeCompare(dtA);
   });
+}
+
+/**
+ * Verifica de forma auditável e profunda se duas listas de medições possuem diferenças de conteúdo.
+ *
+ * @param {Object[]} oldList
+ * @param {Object[]} newList
+ * @returns {boolean} True se houver alterações de conteúdo ou tamanho
+ */
+export function haveMeasurementsChanged(oldList = [], newList = []) {
+  if (!Array.isArray(oldList) || !Array.isArray(newList)) {
+    return oldList !== newList;
+  }
+  if (oldList.length !== newList.length) {
+    return true;
+  }
+  for (let i = 0; i < oldList.length; i++) {
+    const a = oldList[i];
+    const b = newList[i];
+    if (!a || !b) return true;
+    if (a.id !== b.id) return true;
+    if (a.date !== b.date) return true;
+    if (a.time !== b.time) return true;
+    if (a.weightKg !== b.weightKg) return true;
+    if (a.energyLevel !== b.energyLevel) return true;
+    if (a.moodLevel !== b.moodLevel) return true;
+    if (a.notes !== b.notes) return true;
+    if (a.source !== b.source) return true;
+    const symA = Array.isArray(a.symptoms) ? a.symptoms.join("|") : "";
+    const symB = Array.isArray(b.symptoms) ? b.symptoms.join("|") : "";
+    if (symA !== symB) return true;
+  }
+  return false;
 }

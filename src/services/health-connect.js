@@ -8,10 +8,11 @@ import {
 
 const PepHealthConnect = registerPlugin("PepHealthConnect", {
   web: () => ({
-    checkAvailability: async () => ({ available: true, status: "AVAILABLE", message: "Health Connect ativo." }),
-    requestPermissions: async () => ({ granted: true, status: "CONNECTED" }),
+    checkAvailability: async () => ({ available: true, status: HEALTH_CONNECT_STATUS.AVAILABLE, message: "Health Connect ativo." }),
+    checkPermissions: async () => ({ granted: true, status: HEALTH_CONNECT_STATUS.CONNECTED }),
+    requestPermissions: async () => ({ granted: true, status: HEALTH_CONNECT_STATUS.CONNECTED }),
     readRecords: async () => ({ records: [] }),
-    writeRecords: async () => ({ success: true }),
+    writeRecords: async () => ({ success: true, count: 0 }),
     openSettings: async () => {}
   })
 });
@@ -57,31 +58,51 @@ export class HealthConnectService {
   async checkAvailability() {
     try {
       const res = await PepHealthConnect.checkAvailability();
+      const status = (res && res.status) || (res && res.available ? HEALTH_CONNECT_STATUS.AVAILABLE : HEALTH_CONNECT_STATUS.UNAVAILABLE);
       return {
         available: res && res.available === true,
-        status: (res && res.status) || HEALTH_CONNECT_STATUS.AVAILABLE,
+        status,
         message: (res && res.message) || ""
       };
     } catch (e) {
       console.warn("[HealthConnect] Falha ao verificar disponibilidade:", e);
       return {
         available: false,
-        status: HEALTH_CONNECT_STATUS.NOT_SUPPORTED,
+        status: HEALTH_CONNECT_STATUS.UNAVAILABLE,
         message: e.message || "Erro ao consultar Health Connect."
       };
+    }
+  }
+
+  async checkPermissions() {
+    try {
+      if (typeof PepHealthConnect.checkPermissions === "function") {
+        const res = await PepHealthConnect.checkPermissions();
+        return {
+          granted: res && res.granted === true,
+          status: (res && res.status) || (res && res.granted ? HEALTH_CONNECT_STATUS.CONNECTED : HEALTH_CONNECT_STATUS.NOT_AUTHORIZED)
+        };
+      }
+      return this.requestPermissions();
+    } catch (e) {
+      console.warn("[HealthConnect] Erro ao checar permissões:", e);
+      return { granted: false, status: HEALTH_CONNECT_STATUS.ERROR, reason: e.message };
     }
   }
 
   async requestPermissions() {
     try {
       const res = await PepHealthConnect.requestPermissions();
+      const granted = res && res.granted === true;
+      const status = (res && res.status) || (granted ? HEALTH_CONNECT_STATUS.CONNECTED : HEALTH_CONNECT_STATUS.NOT_AUTHORIZED);
       return {
-        granted: res && res.granted === true,
-        status: res && res.granted ? HEALTH_CONNECT_STATUS.CONNECTED : HEALTH_CONNECT_STATUS.PERMISSION_REQUIRED
+        granted,
+        status,
+        reason: (res && res.reason) || ""
       };
     } catch (e) {
       console.warn("[HealthConnect] Erro ao solicitar permissões:", e);
-      return { granted: false, reason: e.message || "Permissão negada ou cancelada." };
+      return { granted: false, status: HEALTH_CONNECT_STATUS.ERROR, reason: e.message || "Permissão negada ou cancelada." };
     }
   }
 

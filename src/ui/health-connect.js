@@ -1,6 +1,7 @@
 import {
   HEALTH_CONNECT_STATUS,
-  getHealthConnectStatusLabel
+  getHealthConnectStatusLabel,
+  haveMeasurementsChanged
 } from "../domain/health-connect.js";
 
 /**
@@ -47,6 +48,17 @@ export function setupHealthConnectUI({
     const avail = await healthConnectService.checkAvailability();
     if (!avail.available) {
       statusBadge.textContent = getHealthConnectStatusLabel(avail.status).toUpperCase();
+      statusBadge.className = "badge-status off";
+      statusBadge.style.background = "rgba(245,158,11,0.15)";
+      statusBadge.style.color = "#f59e0b";
+      if (syncBtn) syncBtn.style.display = "none";
+      if (settingsBtn) settingsBtn.style.display = "inline-flex";
+      return;
+    }
+
+    const perm = await healthConnectService.checkPermissions();
+    if (!perm.granted) {
+      statusBadge.textContent = getHealthConnectStatusLabel(perm.status).toUpperCase();
       statusBadge.className = "badge-status off";
       statusBadge.style.background = "rgba(245,158,11,0.15)";
       statusBadge.style.color = "#f59e0b";
@@ -106,8 +118,8 @@ export function setupHealthConnectUI({
     const currentMeasurements = storage.getMeasurements();
     const result = await healthConnectService.syncMeasurements(currentMeasurements);
 
-    if (result.success) {
-      if (result.measurements && result.measurements.length !== currentMeasurements.length) {
+    if (result.success && result.measurements) {
+      if (haveMeasurementsChanged(currentMeasurements, result.measurements)) {
         storage.setMeasurements(result.measurements);
         onSyncComplete(result.measurements);
       }
@@ -126,8 +138,11 @@ export function setupHealthConnectUI({
 
     if (result.success) {
       if (result.measurements) {
-        storage.setMeasurements(result.measurements);
-        onSyncComplete(result.measurements);
+        const hasChanged = haveMeasurementsChanged(currentMeasurements, result.measurements);
+        if (hasChanged) {
+          storage.setMeasurements(result.measurements);
+          onSyncComplete(result.measurements);
+        }
       }
       haptics.success();
       showToast(`Sincronizado: ${result.exportedCount} enviados, ${result.importedCount} importados.`);
