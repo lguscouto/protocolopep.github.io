@@ -1,11 +1,25 @@
 # 🧪 Protocolo PEP · App Android (Local-First)
 
-![Version](https://img.shields.io/badge/version-2.0.0-2CC5C0)
+![Version](https://img.shields.io/badge/version-2.1.0-2CC5C0)
 ![Android](https://img.shields.io/badge/Android-8.0%2B-green)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![CI](https://github.com/lguscouto/protocolopep.github.io/actions/workflows/ci.yml/badge.svg)
 
 Aplicativo Android nativo para acompanhamento de protocolos de peptídeos, cálculo de reconstituição e registro diário de doses, construído com arquitetura **100% Local-First**, segurança matemática auditável e suporte aos **temas Branco e Preto OLED**.
+
+---
+
+## 🚀 Novidades da Versão 2.1.0 (Data da Primeira Dose & Preenchimento Retroativo)
+
+- **Seleção da Data da Primeira Dose / Início do Protocolo:**
+  - Novo campo de seleção de data de início (`Data da Primeira Dose / Início`) disponível diretamente nos fluxos de cadastro e edição de peptídeos.
+- **Preenchimento Retroativo Automático & Idempotente:**
+  - Ao selecionar uma data anterior a hoje, o sistema calcula cronologicamente todas as doses programadas desde a data inicial até o dia anterior a hoje (`startDate <= date < today`).
+  - Container de prévia em tempo real com checkbox marcado por padrão: exibe exatamente a quantidade de aplicações estimadas no período.
+  - **Dose de Hoje Preservada:** Se hoje for dia de aplicação no cronograma, a dose permanece pendente no Dashboard para acompanhamento diário.
+  - **Idempotência & Estoque Seguro:** Não duplica registros caso a data já contenha aplicação e preserva o inventário de frascos atuais intacto.
+- **Suíte de Testes Automatizada:**
+  - **197 testes unitários** no Vitest passando com 100% de sucesso (incluindo testes de frequências semanais, diárias, cíclicas e múltiplas doses por dia).
 
 ---
 
