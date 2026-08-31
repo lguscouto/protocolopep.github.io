@@ -25,7 +25,13 @@ export function generateDailySummary(
   const dayLogs = logs && logs[tKey] ? logs[tKey] : {};
 
   let summary = `🧪 Protocolo PEP — Resumo Diário (${dateFormatted})\n`;
-  summary += `Progresso: ${progress.totalTaken} de ${progress.totalDue} doses registradas (${progress.percentage}%)\n\n`;
+  const dueLabel = progress.totalDue === 1 ? "dose prevista" : "doses previstas";
+  let progLine = `Progresso: ${progress.scheduledTaken} de ${progress.totalDue} ${dueLabel} concluídas (${progress.percentage}%)`;
+  if (progress.extraTaken > 0) {
+    const extraLabel = progress.extraTaken === 1 ? "registro extra" : "registros extras";
+    progLine += ` (+ ${progress.extraTaken} ${extraLabel})`;
+  }
+  summary += `${progLine}\n\n`;
 
   if (scheduled.length === 0) {
     summary += `Nenhuma dose agendada para este dia.\n`;
@@ -42,7 +48,9 @@ export function generateDailySummary(
       const due = Math.max(1, parseInt(p.perDay, 10) || 1);
       const isDone = takenCount >= due;
       const statusIcon = isDone ? "✓" : "○";
-      const statusText = isDone ? "Concluído" : `${takenCount}/${due}`;
+      const statusText = takenCount > due
+        ? `Concluído (${due}/${due} + ${takenCount - due} extra)`
+        : (isDone ? "Concluído" : `${takenCount}/${due}`);
 
       const nameLabel = includeNames ? (p.name || `Peptídeo ${idx + 1}`) : `Item ${idx + 1}`;
       let doseInfo = "";

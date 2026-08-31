@@ -21,6 +21,19 @@ describe("Protocol Domain", () => {
     expect(validateTimes(["08:00", "20:00"])).toEqual(["08:00", "20:00"]);
     expect(validateTimes([], "09:30")).toEqual(["09:30"]);
     expect(validateTimes(["invalid", "07:00"])).toEqual(["07:00"]);
+    // Rejeição estrita de horários inválidos (P1 - Sec 15)
+    expect(validateTimes(["99:99", "24:00", "08:00"])).toEqual(["08:00"]);
+  });
+
+  it("valida e sanitiza data de início (start) no formato gregoriano válido", () => {
+    const pepBissexto = createPeptide({ name: "BPC-157", start: "2024-02-29" });
+    expect(pepBissexto.start).toBe("2024-02-29");
+
+    const pepNaoBissexto = createPeptide({ name: "BPC-157", start: "2026-02-29" });
+    expect(pepNaoBissexto.start).toBeNull();
+
+    const pepDataInvalida = createPeptide({ name: "BPC-157", start: "2026-99-99" });
+    expect(pepDataInvalida.start).toBeNull();
   });
 
   it("cria peptídeo sanitizado com valores seguros", () => {

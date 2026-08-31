@@ -27,7 +27,11 @@ export function validateAndParseBackup(jsonString) {
     return { valid: false, error: "Arquivo de backup vazio ou inválido." };
   }
 
-  if (jsonString.length > MAX_BACKUP_SIZE_BYTES) {
+  const byteLength = typeof TextEncoder !== "undefined"
+    ? new TextEncoder().encode(jsonString).length
+    : (typeof Buffer !== "undefined" ? Buffer.byteLength(jsonString, "utf8") : jsonString.length);
+
+  if (byteLength > MAX_BACKUP_SIZE_BYTES) {
     return { valid: false, error: "Arquivo de backup excede o tamanho máximo permitido (5 MB)." };
   }
 
@@ -51,8 +55,20 @@ export function validateAndParseBackup(jsonString) {
     };
   }
 
-  // Executar migração e sanitização completa de domínio
-  const cleanState = migrateAppState(parsed);
+  // Executar migração e sanitização completa de domínio em bloco seguro fail-closed
+  let cleanState;
+  try {
+    cleanState = migrateAppState(parsed);
+  } catch (err) {
+    return {
+      valid: false,
+      error: `Erro ao processar dados do backup: ${err?.message || "Estrutura semântica inválida."}`
+    };
+  }
+
+  if (!cleanState || !Array.isArray(cleanState.protocol) || !cleanState.logs) {
+    return { valid: false, error: "Estrutura de dados resultante do backup é inválida." };
+  }
 
   // Calcular estatísticas para prévia
   const peptideCount = cleanState.protocol.length;

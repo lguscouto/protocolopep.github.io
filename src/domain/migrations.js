@@ -3,6 +3,7 @@ import { normalizeDoseEntry } from "./dose-log.js";
 import { createVial } from "./inventory.js";
 import { validateSitesList, getDefaultSites } from "./injection-sites.js";
 import { createMeasurementEntry } from "./measurements.js";
+import { isValidDateKey } from "./schedule.js";
 
 export const CURRENT_SCHEMA_VERSION = 4;
 
@@ -17,7 +18,7 @@ export function migrateLogs(rawLogs = {}) {
 
   Object.entries(rawLogs).forEach(([dateKey, rec]) => {
     // Validar dateKey YYYY-MM-DD
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) return;
+    if (!isValidDateKey(dateKey)) return;
     if (!rec || typeof rec !== "object" || Array.isArray(rec)) return;
 
     cleaned[dateKey] = {};

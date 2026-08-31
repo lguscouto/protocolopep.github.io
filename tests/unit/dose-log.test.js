@@ -104,4 +104,27 @@ describe("Dose Log Domain (V03)", () => {
     expect(res.valid).toBe(false);
     expect(res.error).toContain("status de dose inválido");
   });
+
+  it("rejeita datas não gregorianas (2026-02-29) e horários inválidos na validação de log de dose (P1 - Sec 15)", () => {
+    const logDataInvalida = {
+      peptideId: "pep_1",
+      scheduledDate: "2026-02-29",
+      time: "08:00"
+    };
+    expect(validateDoseLog(logDataInvalida).valid).toBe(false);
+
+    const logHoraInvalida = {
+      peptideId: "pep_1",
+      scheduledDate: "2026-08-28",
+      time: "99:99"
+    };
+    expect(validateDoseLog(logHoraInvalida).valid).toBe(false);
+
+    const logHora24 = {
+      peptideId: "pep_1",
+      scheduledDate: "2026-08-28",
+      time: "24:00"
+    };
+    expect(validateDoseLog(logHora24).valid).toBe(false);
+  });
 });

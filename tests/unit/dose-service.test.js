@@ -53,10 +53,44 @@ describe("DoseService & Integridade Dose ↔ Inventário (P0 / P1)", () => {
     const updatedInv = mockStorage.getInventory();
     expect(updatedInv[0].remainingMcg).toBe(4750);
     expect(updatedInv[0].movements.length).toBe(2);
+    // Verificação da integridade bidirecional (P1 - Sec 11)
+    expect(updatedInv[0].movements[1].doseLogId).toBe(res.doseLog.id);
+    expect(updatedInv[0].movements[1].id).toBe(res.doseLog.inventoryMovementId);
 
     const logs = mockStorage.getLogs();
     expect(logs["2026-08-30"]["pep-1"].length).toBe(1);
     expect(logs["2026-08-30"]["pep-1"][0].vialId).toBe("vial-1");
+  });
+
+  it("deve debitar estoque corretamente a partir de dose definida em UI quando houver frasco com concentração (P1 - Sec 12)", () => {
+    const vial = createVial({
+      id: "vial-ui",
+      peptideId: "pep-ui",
+      peptideName: "Retatrutida",
+      totalMg: 10,
+      waterMl: 2, // Concentração: 5000 mcg/ml
+      remainingMcg: 10000,
+      status: "active"
+    });
+
+    const peptides = [{ id: "pep-ui", name: "Retatrutida", dose: "", ui: 10 }]; // 10 UI = 0.1 mL * 5000 = 500 mcg
+    mockStorage.setPeptides(peptides);
+    mockStorage.setInventory([vial]);
+
+    const res = doseService.registerDose({
+      peptideId: "pep-ui",
+      scheduledDate: "2026-08-30",
+      ui: 10
+    });
+
+    expect(res.success).toBe(true);
+    expect(res.debitedMcg).toBe(500);
+    expect(res.doseLog.vialId).toBe("vial-ui");
+    expect(res.doseLog.inventoryMovementId).toBeTruthy();
+
+    const inv = mockStorage.getInventory();
+    expect(inv[0].remainingMcg).toBe(9500);
+    expect(inv[0].movements[1].doseLogId).toBe(res.doseLog.id);
   });
 
   it("deve rejeitar registro se saldo for insuficiente e não gerar log órfão (P1 - Sec 12)", () => {

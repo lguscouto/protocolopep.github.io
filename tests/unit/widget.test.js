@@ -115,4 +115,46 @@ describe("Widget Domain Logic (V14)", () => {
     expect(res3.progressPct).toBe(100);
     expect(res3.statusText).toContain("Tudo concluído");
   });
+
+  it("avança o próximo horário real (nextDoseTime) conforme cada aplicação é registrada (P1 - Sec 17)", () => {
+    const peptide = {
+      id: "pep-multi",
+      name: "BPC-157",
+      perDay: 3,
+      times: ["08:00", "14:00", "20:00"]
+    };
+
+    // 0 doses tomadas -> 08:00
+    const res0 = calculateWidgetSummary({
+      peptides: [peptide],
+      logs: {},
+      targetDate: "2026-08-29"
+    });
+    expect(res0.nextDoseTime).toBe("08:00");
+
+    // 1 dose tomada -> 14:00
+    const res1 = calculateWidgetSummary({
+      peptides: [peptide],
+      logs: { "2026-08-29": { "pep-multi": [{ time: "08:00" }] } },
+      targetDate: "2026-08-29"
+    });
+    expect(res1.nextDoseTime).toBe("14:00");
+
+    // 2 doses tomadas -> 20:00
+    const res2 = calculateWidgetSummary({
+      peptides: [peptide],
+      logs: { "2026-08-29": { "pep-multi": [{ time: "08:00" }, { time: "14:00" }] } },
+      targetDate: "2026-08-29"
+    });
+    expect(res2.nextDoseTime).toBe("20:00");
+
+    // 3 doses tomadas -> Tudo concluído
+    const res3 = calculateWidgetSummary({
+      peptides: [peptide],
+      logs: { "2026-08-29": { "pep-multi": [{ time: "08:00" }, { time: "14:00" }, { time: "20:00" }] } },
+      targetDate: "2026-08-29"
+    });
+    expect(res3.progressPct).toBe(100);
+    expect(res3.statusText).toContain("Tudo concluído");
+  });
 });

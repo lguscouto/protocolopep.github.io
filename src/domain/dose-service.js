@@ -55,10 +55,12 @@ export function registerDoseState({
   let debitedVial = null;
   let debitMovementId = null;
   let debitedMcg = 0;
+  const generatedLogId = `log_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
 
   // 2. Se houver frasco ativo, tentar debitar
   if (targetVial) {
-    const amountToDebit = extractDoseInMcg(doseStr);
+    const effectiveDoseInput = doseStr || (uiVal > 0 ? `${uiVal} UI` : "");
+    const amountToDebit = extractDoseInMcg(effectiveDoseInput, targetVial);
     if (amountToDebit > 0) {
       // Rejeitar se saldo for insuficiente (P1 - Sec 12)
       if (amountToDebit > Number(targetVial.remainingMcg)) {
@@ -71,7 +73,8 @@ export function registerDoseState({
 
       const debitResult = debitVialDose(targetVial, {
         doseMcg: amountToDebit,
-        doseStr,
+        doseStr: effectiveDoseInput,
+        doseLogId: generatedLogId,
         date: targetDate,
         note: peptideName || `Dose de ${amountToDebit} mcg`
       });
@@ -90,6 +93,7 @@ export function registerDoseState({
 
   // 3. Criar log de dose com vinculação ao frasco e movimento
   const doseLog = createDoseLog({
+    id: generatedLogId,
     peptideId,
     scheduledDate: targetDate,
     time: time || (targetDate === dateToKey(new Date()) ? new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "12:00"),
@@ -199,11 +203,12 @@ export function undoDoseState({
     const vialIndex = updatedInventory.findIndex((v) => v.id === removedLog.vialId);
     if (vialIndex !== -1) {
       const origVial = updatedInventory[vialIndex];
-      const amountToCredit = extractDoseInMcg(removedLog.dose);
+      const effectiveDoseInput = removedLog.dose || (removedLog.ui ? `${removedLog.ui} UI` : "");
+      const amountToCredit = extractDoseInMcg(effectiveDoseInput, origVial);
       if (amountToCredit > 0) {
         const creditRes = creditVialDose(origVial, {
           doseMcg: amountToCredit,
-          doseStr: removedLog.dose,
+          doseStr: effectiveDoseInput,
           doseLogId: removedLog.id,
           date: targetDate,
           note: `Estorno de aplicação (${removedLog.id})`

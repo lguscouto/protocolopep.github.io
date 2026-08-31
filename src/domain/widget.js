@@ -22,10 +22,10 @@ export function calculateWidgetSummary({
   const scheduled = getScheduledPeptides(peptides, dateObj);
   let totalCount = 0;
   let takenCount = 0;
-  const pendingPeptides = [];
+  const pendingSlots = [];
 
   scheduled.forEach((p) => {
-    const due = Math.max(1, parseInt(p.perDay, 10) || 1);
+    const due = Math.max(1, parseInt(p.perDay, 10) || (Array.isArray(p.times) ? p.times.length : 1));
     totalCount += due;
 
     const val = dayLogs[p.id];
@@ -39,7 +39,20 @@ export function calculateWidgetSummary({
     takenCount += takenForPeptide;
 
     if (recorded < due) {
-      pendingPeptides.push(p);
+      let times = Array.isArray(p.times) && p.times.length > 0
+        ? [...p.times].filter((t) => typeof t === "string" && t.trim()).sort()
+        : (p.time ? [p.time] : ["08:00"]);
+
+      while (times.length < due) {
+        times.push(times[times.length - 1] || "08:00");
+      }
+
+      const nextSlotTime = times[recorded] || times[0] || "08:00";
+      pendingSlots.push({
+        peptide: p,
+        time: nextSlotTime,
+        slotIndex: recorded
+      });
     }
   });
 
@@ -71,8 +84,10 @@ export function calculateWidgetSummary({
     };
   }
 
-  const nextP = pendingPeptides[0];
-  const rawTime = (nextP && nextP.time) ? String(nextP.time).trim() : "";
+  pendingSlots.sort((a, b) => (a.time || "").localeCompare(b.time || ""));
+  const nextSlot = pendingSlots[0];
+  const nextP = nextSlot ? nextSlot.peptide : null;
+  const rawTime = nextSlot ? String(nextSlot.time).trim() : "";
   const nextDoseTime = rawTime || "Pendente";
   const peptideLabel = discreteMode ? "Aplicação Agendada" : (nextP && nextP.name ? nextP.name : "Aplicação");
   const nextDosePeptide = peptideLabel;

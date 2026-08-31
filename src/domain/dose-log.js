@@ -2,13 +2,13 @@
  * Domínio de Log e Rastreabilidade de Doses / Aplicações (V03)
  */
 
-import { dateToKey } from "./schedule.js";
+import { dateToKey, isValidTime, isValidDateKey } from "./schedule.js";
 
 export const DOSE_STATUSES = ["applied", "skipped", "missed"];
 
 export function createDoseLog(data = {}) {
   const todayKey = dateToKey(new Date());
-  const scheduledDate = data.scheduledDate || todayKey;
+  const scheduledDate = data.scheduledDate && isValidDateKey(data.scheduledDate) ? data.scheduledDate : todayKey;
 
   // Se a data agendada for anterior a hoje, ou data.retroactive for true, marca explicitamente como retroativo
   const isPastDate = scheduledDate < todayKey;
@@ -19,7 +19,7 @@ export function createDoseLog(data = {}) {
   if (!takenAt) {
     if (isRetroactive && scheduledDate) {
       // Se for retroativo e não informou takenAt completo, compõe a data com o horário
-      const timeStr = data.time || "12:00";
+      const timeStr = isValidTime(data.time) ? data.time : "12:00";
       const [hh, mm] = timeStr.split(":").map(Number);
       const safeH = Number.isInteger(hh) ? hh : 12;
       const safeM = Number.isInteger(mm) ? mm : 0;
@@ -30,7 +30,7 @@ export function createDoseLog(data = {}) {
     }
   }
 
-  const time = data.time || (takenAt ? new Date(takenAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "12:00");
+  const time = isValidTime(data.time) ? data.time : (takenAt ? new Date(takenAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "12:00");
   const rawStatus = data.status || "applied";
   const status = DOSE_STATUSES.includes(rawStatus) ? rawStatus : "applied";
 
@@ -65,8 +65,12 @@ export function validateDoseLog(log) {
     return { valid: false, error: "peptideId é obrigatório no log de dose." };
   }
 
-  if (!log.scheduledDate || !/^\d{4}-\d{2}-\d{2}$/.test(log.scheduledDate)) {
-    return { valid: false, error: "scheduledDate inválida (deve ser formato YYYY-MM-DD)." };
+  if (!log.scheduledDate || !isValidDateKey(log.scheduledDate)) {
+    return { valid: false, error: "scheduledDate inválida (deve ser formato YYYY-MM-DD com data de calendário válida)." };
+  }
+
+  if (log.time && !isValidTime(log.time)) {
+    return { valid: false, error: "time inválido (deve ser formato HH:mm válido entre 00:00 e 23:59)." };
   }
 
   if (log.status && !DOSE_STATUSES.includes(log.status)) {

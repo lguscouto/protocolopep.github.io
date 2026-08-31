@@ -2,6 +2,8 @@
  * Domínio do Protocolo e Entidade de Peptídeo
  */
 
+import { isValidTime, isValidDateKey } from "./schedule.js";
+
 export const HEX_COLOR_REGEX = /^#[0-9A-Fa-f]{6}$/;
 
 export function sanitizeString(str, maxLen = 120) {
@@ -29,9 +31,9 @@ export function validateDays(days) {
 export function validateTimes(times, legacyTime = "") {
   let list = [];
   if (Array.isArray(times) && times.length > 0) {
-    list = times.filter((t) => typeof t === "string" && /^\d{2}:\d{2}$/.test(t.trim()));
+    list = times.filter((t) => typeof t === "string" && isValidTime(t.trim()));
   }
-  if (list.length === 0 && typeof legacyTime === "string" && /^\d{2}:\d{2}$/.test(legacyTime.trim())) {
+  if (list.length === 0 && typeof legacyTime === "string" && isValidTime(legacyTime.trim())) {
     list = [legacyTime.trim()];
   }
   return [...new Set(list)].sort();
@@ -51,10 +53,10 @@ export function createPeptide(data = {}) {
   const interval = data.interval && Number.isInteger(parseInt(data.interval, 10)) && parseInt(data.interval, 10) > 1
     ? parseInt(data.interval, 10)
     : null;
-  const start = data.start && /^\d{4}-\d{2}-\d{2}$/.test(data.start) ? data.start : null;
+  const start = data.start && isValidDateKey(data.start) ? data.start : null;
 
   const times = validateTimes(data.times, data.time);
-  const time = times.length > 0 ? times[0] : (data.time || "");
+  const time = times.length > 0 ? times[0] : (isValidTime(data.time) ? data.time : "");
 
   // Rótulo amigável calculado se não fornecido
   let freq = sanitizeString(data.freq || "", 60);

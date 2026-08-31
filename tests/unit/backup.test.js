@@ -73,4 +73,27 @@ describe("Backup Domain", () => {
     expect(result.data.sites.length).toBeGreaterThan(0); // Locais padrão
     expect(result.data.measurements).toEqual([]);
   });
+
+  it("trata dados semanticamente inválidos (ex: datas inválidas como 2026-02-29) de forma fail-closed sem lançar exceções não tratadas (P1 - Sec 16)", () => {
+    const invalidDatesJson = JSON.stringify({
+      version: 4,
+      protocol: [{ name: "BPC-157", start: "2026-02-29", times: ["99:99", "24:00"] }],
+      logs: {
+        "2026-02-29": {
+          "pep-1": [{ time: "99:99" }]
+        },
+        "invalid-date": {
+          "pep-1": [{ time: "12:00" }]
+        }
+      }
+    });
+
+    // Não pode disparar RangeError ou quebrar
+    const result = validateAndParseBackup(invalidDatesJson);
+    expect(result.valid).toBe(true);
+    // Datas inválidas são descartadas na migração limpa
+    expect(result.data.logs["2026-02-29"]).toBeUndefined();
+    expect(result.data.logs["invalid-date"]).toBeUndefined();
+    expect(result.data.protocol[0].start).toBeNull();
+  });
 });

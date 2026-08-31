@@ -6,7 +6,11 @@ import {
   createVial,
   validateVial,
   calculateRemainingDoses,
-  getExpirationStatus
+  getExpirationStatus,
+  hasVialHistory,
+  updateVial,
+  canDeleteVialPhysically,
+  archiveVial
 } from "../domain/inventory.js";
 import { haptics } from "../services/haptics.js";
 
@@ -49,17 +53,28 @@ export function setupInventoryUI({ storage, onInventoryChange }) {
     const notesInput = document.getElementById("vial-notes-input");
 
     const todayStr = new Date().toISOString().slice(0, 10);
+    const hasHistory = vial ? hasVialHistory(vial, storage.getLogs()) : false;
 
     if (nameInput) nameInput.value = vial ? vial.peptideName : (prefill.name || "");
     if (lotInput) lotInput.value = vial ? vial.lotNumber || "" : (prefill.lot || "");
-    if (mgInput) mgInput.value = vial ? vial.totalMg : (prefill.mg || "");
-    if (waterInput) waterInput.value = vial ? vial.waterMl : (prefill.waterMl || "");
-    if (reconDateInput) reconDateInput.value = vial ? vial.reconstitutionDate : (prefill.reconstitutionDate || todayStr);
+    if (mgInput) {
+      mgInput.value = vial ? vial.totalMg : (prefill.mg || "");
+      mgInput.disabled = hasHistory;
+    }
+    if (waterInput) {
+      waterInput.value = vial ? vial.waterMl : (prefill.waterMl || "");
+      waterInput.disabled = hasHistory;
+    }
+    if (reconDateInput) {
+      reconDateInput.value = vial ? vial.reconstitutionDate : (prefill.reconstitutionDate || todayStr);
+      reconDateInput.disabled = hasHistory;
+    }
     if (expiryDateInput) expiryDateInput.value = vial ? vial.expirationDate || "" : (prefill.expirationDate || "");
     if (notesInput) notesInput.value = vial ? vial.notes || "" : "";
 
     if (vialDeleteBtn) {
       vialDeleteBtn.style.display = vial ? "inline-flex" : "none";
+      vialDeleteBtn.textContent = hasHistory ? "Descartar / Arquivar" : "Excluir Frasco";
     }
 
     if (vialModal) {
@@ -255,17 +270,40 @@ export function setupInventoryUI({ storage, onInventoryChange }) {
   if (vialDeleteBtn) {
     vialDeleteBtn.addEventListener("click", () => {
       if (!editingVialId) return;
-      if (confirm("Tem certeza que deseja excluir este frasco do inventário?")) {
-        const inventory = storage.getInventory().filter((v) => v.id !== editingVialId);
-        const res = storage.setInventory(inventory);
-        if (!res.success) {
-          alert("Erro ao excluir frasco: " + res.error);
-          return;
+      const currentInv = storage.getInventory();
+      const vial = currentInv.find((v) => v.id === editingVialId);
+      if (!vial) return;
+
+      const canDelete = canDeleteVialPhysically(vial, storage.getLogs());
+
+      if (canDelete) {
+        if (confirm("Tem certeza que deseja excluir este frasco do inventário?")) {
+          const newInventory = currentInv.filter((v) => v.id !== editingVialId);
+          const res = storage.setInventory(newInventory);
+          if (!res.success) {
+            alert("Erro ao excluir frasco: " + res.error);
+            return;
+          }
+          haptics.warning();
+          closeVialModal();
+          renderInventoryList();
+          if (typeof onInventoryChange === "function") onInventoryChange();
         }
-        haptics.warning();
-        closeVialModal();
-        renderInventoryList();
-        if (typeof onInventoryChange === "function") onInventoryChange();
+      } else {
+        if (confirm("Este frasco possui histórico de aplicações registradas e não pode ser excluído fisicamente para manter a integridade dos seus dados.\n\nDeseja arquivar/descartar este frasco?")) {
+          const archived = archiveVial(vial, "discarded");
+          const idx = currentInv.findIndex((v) => v.id === editingVialId);
+          currentInv[idx] = archived;
+          const res = storage.setInventory(currentInv);
+          if (!res.success) {
+            alert("Erro ao arquivar frasco: " + res.error);
+            return;
+          }
+          haptics.warning();
+          closeVialModal();
+          renderInventoryList();
+          if (typeof onInventoryChange === "function") onInventoryChange();
+        }
       }
     });
   }
@@ -287,23 +325,24 @@ export function setupInventoryUI({ storage, onInventoryChange }) {
         const idx = inventory.findIndex((v) => v.id === editingVialId);
         if (idx !== -1) {
           const prev = inventory[idx];
-          const updated = {
-            ...prev,
-            peptideName: name,
-            lotNumber: lot,
-            totalMg: mg,
-            waterMl: waterMl,
-            concentrationMcgPerMl: waterMl > 0 ? Math.round((mg * 1000) / waterMl * 100) / 100 : 0,
-            reconstitutionDate: reconDate,
-            expirationDate: expiryDate,
-            notes: notes
-          };
-          const val = validateVial(updated);
-          if (!val.valid) {
-            alert(val.errors.join("\n"));
+          const updateRes = updateVial(
+            prev,
+            {
+              peptideName: name,
+              lotNumber: lot,
+              totalMg: mg,
+              waterMl: waterMl,
+              reconstitutionDate: reconDate,
+              expirationDate: expiryDate,
+              notes: notes
+            },
+            storage.getLogs()
+          );
+          if (!updateRes.success) {
+            alert(updateRes.message || updateRes.error);
             return;
           }
-          inventory[idx] = updated;
+          inventory[idx] = updateRes.vial;
         }
       } else {
         const newVial = createVial({

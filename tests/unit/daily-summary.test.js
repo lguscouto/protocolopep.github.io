@@ -19,11 +19,31 @@ describe("Daily Summary Domain (V04)", () => {
 
     expect(summary).not.toContain("undefined%");
     expect(summary).toContain("50%");
-    expect(summary).toContain("1 de 2 doses registradas");
+    expect(summary).toContain("1 de 2 doses previstas concluídas");
     expect(summary).toContain("✓ BPC-157");
     expect(summary).toContain("250 mcg · 10 UI");
     expect(summary).toContain("○ TB-500");
     expect(summary).toContain("não clínico");
+  });
+
+  it("não deve exibir '3 de 1' quando houver doses extras (P1 - Sec 18)", () => {
+    const singlePeptide = [
+      { id: "p1", name: "BPC-157", dose: "250 mcg", perDay: 1, days: [0, 1, 2, 3, 4, 5, 6] }
+    ];
+
+    const logsWithExtras = {
+      "2026-08-29": {
+        p1: [{ time: "08:00" }, { time: "14:00" }, { time: "20:00" }] // 3 doses para 1 prevista
+      }
+    };
+
+    const targetDate = new Date("2026-08-29T12:00:00");
+    const summary = generateDailySummary(singlePeptide, logsWithExtras, targetDate);
+
+    expect(summary).not.toContain("3 de 1");
+    expect(summary).toContain("1 de 1 dose prevista concluída");
+    expect(summary).toContain("+ 2 registros extras");
+    expect(summary).toContain("100%");
   });
 
   it("deve respeitar a opção de ocultar dosagens para privacidade", () => {

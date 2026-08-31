@@ -117,6 +117,63 @@ describe("Inventory Domain & Logic (V10)", () => {
     expect(calculateRemainingDoses(vial, "0 mcg")).toBe(0);
   });
 
+  it("converte dose em UI para mcg quando frasco com concentração conhecida for fornecido", () => {
+    const vial = createVial({
+      peptideName: "BPC-157",
+      totalMg: 5,
+      waterMl: 2 // 2500 mcg/ml
+    });
+
+    // Seringa U-100: 10 UI = 0.1 ml -> 0.1 * 2500 = 250 mcg
+    expect(extractDoseInMcg("10 UI", vial)).toBe(250);
+    expect(extractDoseInMcg("10ui", vial)).toBe(250);
+    expect(extractDoseInMcg("5 UI", vial)).toBe(125);
+    // Sem frasco ou sem concentração, retorna 0 para não assumir valores arbitrários
+    expect(extractDoseInMcg("10 UI", null)).toBe(0);
+    expect(extractDoseInMcg("10 UI", { concentrationMcgPerMl: 0 })).toBe(0);
+  });
+
+  it("protege frascos com histórico contra alteração estrutural de mg e mL (P1 - Sec 13)", async () => {
+    const { hasVialHistory, updateVial, canDeleteVialPhysically, archiveVial } = await import("../../src/domain/inventory.js");
+
+    const vial = createVial({
+      id: "vial-hist",
+      peptideName: "BPC-157",
+      totalMg: 5,
+      waterMl: 2
+    });
+
+    // 1. Antes de qualquer dose, pode atualizar livremente
+    expect(hasVialHistory(vial)).toBe(false);
+    expect(canDeleteVialPhysically(vial)).toBe(true);
+
+    const update1 = updateVial(vial, { totalMg: 10, waterMl: 2 });
+    expect(update1.success).toBe(true);
+    expect(update1.vial.totalMg).toBe(10);
+    expect(update1.vial.concentrationMcgPerMl).toBe(5000);
+
+    // 2. Após registrar uma dose
+    const debited = debitVialDose(update1.vial, { doseMcg: 250 });
+    expect(hasVialHistory(debited.vial)).toBe(true);
+    expect(canDeleteVialPhysically(debited.vial)).toBe(false);
+
+    // 3. Tentar mudar mg ou mL em frasco com histórico deve falhar
+    const failUpdate = updateVial(debited.vial, { totalMg: 20 });
+    expect(failUpdate.success).toBe(false);
+    expect(failUpdate.error).toBe("PROTECTED_HISTORICAL_VIAL");
+
+    // 4. Mas editar campos descritivos deve ser permitido
+    const okUpdate = updateVial(debited.vial, { lotNumber: "LOTE-2026-X", notes: "Guardado no freezer" });
+    expect(okUpdate.success).toBe(true);
+    expect(okUpdate.vial.lotNumber).toBe("LOTE-2026-X");
+    expect(okUpdate.vial.notes).toBe("Guardado no freezer");
+
+    // 5. Arquivar / descartar (soft-delete)
+    const archived = archiveVial(debited.vial, "discarded");
+    expect(archived.status).toBe("discarded");
+    expect(archived.archivedAt).toBeTruthy();
+  });
+
   it("avalia status de validade e alertas de vencimento próximo", () => {
     const today = new Date(2026, 7, 29); // 29 de Agosto de 2026
 
