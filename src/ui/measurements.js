@@ -17,6 +17,7 @@ import {
 } from "../domain/measurements.js";
 import { escapeHtml, sanitizeId } from "./dom.js";
 import { haptics } from "../services/haptics.js";
+import { dialogService } from "../services/dialog.js";
 
 const esc = escapeHtml;
 
@@ -361,15 +362,23 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
 
   // Delete / Ocultar measurement handler
   if (deleteBtn) {
-    deleteBtn.addEventListener("click", () => {
+    deleteBtn.addEventListener("click", async () => {
       if (!editingEntryId) return;
       const target = storage.getMeasurements().find((m) => m.id === editingEntryId);
       const isExternal = Boolean(target && target.ownership === "external");
+      const confirmTitle = isExternal ? "Ocultar Medição Externa" : "Excluir Medição";
       const confirmMsg = isExternal
         ? "Este registro foi importado do Health Connect. Deseja ocultá-lo da visualização do Protocolo PEP? (O registro original continuará preservado no Health Connect)"
         : "Deseja realmente excluir este registro corporal / sintomas?";
 
-      if (confirm(confirmMsg)) {
+      const confirmed = await dialogService.confirm({
+        title: confirmTitle,
+        message: confirmMsg,
+        confirmText: isExternal ? "Ocultar" : "Excluir",
+        isDanger: true
+      });
+
+      if (confirmed) {
         const res = storage.deleteMeasurement(editingEntryId);
         if (res.success) {
           haptics.warning();
@@ -378,7 +387,11 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
           renderMeasurementsHistory();
           onMeasurementsChange();
         } else {
-          alert("Erro ao excluir: " + (res.error || "Falha local"));
+          dialogService.alert({
+            title: "Erro",
+            message: "Erro ao excluir: " + (res.error || "Falha local"),
+            isDanger: true
+          });
         }
       }
     });
@@ -386,7 +399,7 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
 
   // Form submit
   if (form) {
-    form.addEventListener("submit", (e) => {
+    form.addEventListener("submit", async (e) => {
       e.preventDefault();
 
       const existing = editingEntryId ? storage.getMeasurements().find((m) => m.id === editingEntryId) : null;
@@ -411,7 +424,11 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
 
       const res = storage.addMeasurement(entryPayload);
       if (!res.success) {
-        alert("Erro ao salvar medição: " + (res.error || "Dados inválidos"));
+        dialogService.alert({
+          title: "Dados Inválidos",
+          message: "Erro ao salvar medição: " + (res.error || "Dados inválidos"),
+          isDanger: true
+        });
         return;
       }
 

@@ -13,6 +13,7 @@ import {
   archiveVial
 } from "../domain/inventory.js";
 import { haptics } from "../services/haptics.js";
+import { dialogService } from "../services/dialog.js";
 
 export function setupInventoryUI({ storage, onInventoryChange }) {
   const vialModal = document.getElementById("vial-modal");
@@ -268,7 +269,7 @@ export function setupInventoryUI({ storage, onInventoryChange }) {
   }
 
   if (vialDeleteBtn) {
-    vialDeleteBtn.addEventListener("click", () => {
+    vialDeleteBtn.addEventListener("click", async () => {
       if (!editingVialId) return;
       const currentInv = storage.getInventory();
       const vial = currentInv.find((v) => v.id === editingVialId);
@@ -277,11 +278,21 @@ export function setupInventoryUI({ storage, onInventoryChange }) {
       const canDelete = canDeleteVialPhysically(vial, storage.getLogs());
 
       if (canDelete) {
-        if (confirm("Tem certeza que deseja excluir este frasco do inventário?")) {
+        const confirmed = await dialogService.confirm({
+          title: "Excluir Frasco",
+          message: "Tem certeza que deseja excluir este frasco do inventário?",
+          confirmText: "Excluir",
+          isDanger: true
+        });
+        if (confirmed) {
           const newInventory = currentInv.filter((v) => v.id !== editingVialId);
           const res = storage.setInventory(newInventory);
           if (!res.success) {
-            alert("Erro ao excluir frasco: " + res.error);
+            dialogService.alert({
+              title: "Erro",
+              message: "Erro ao excluir frasco: " + res.error,
+              isDanger: true
+            });
             return;
           }
           haptics.warning();
@@ -290,13 +301,23 @@ export function setupInventoryUI({ storage, onInventoryChange }) {
           if (typeof onInventoryChange === "function") onInventoryChange();
         }
       } else {
-        if (confirm("Este frasco possui histórico de aplicações registradas e não pode ser excluído fisicamente para manter a integridade dos seus dados.\n\nDeseja arquivar/descartar este frasco?")) {
+        const confirmed = await dialogService.confirm({
+          title: "Arquivar Frasco",
+          message: "Este frasco possui histórico de aplicações registradas e não pode ser excluído fisicamente para manter a integridade dos seus dados.\n\nDeseja arquivar/descartar este frasco?",
+          confirmText: "Arquivar/Descartar",
+          isDanger: true
+        });
+        if (confirmed) {
           const archived = archiveVial(vial, "discarded");
           const idx = currentInv.findIndex((v) => v.id === editingVialId);
           currentInv[idx] = archived;
           const res = storage.setInventory(currentInv);
           if (!res.success) {
-            alert("Erro ao arquivar frasco: " + res.error);
+            dialogService.alert({
+              title: "Erro",
+              message: "Erro ao arquivar frasco: " + res.error,
+              isDanger: true
+            });
             return;
           }
           haptics.warning();
@@ -339,7 +360,11 @@ export function setupInventoryUI({ storage, onInventoryChange }) {
             storage.getLogs()
           );
           if (!updateRes.success) {
-            alert(updateRes.message || updateRes.error);
+            dialogService.alert({
+              title: "Aviso de Inventário",
+              message: updateRes.message || updateRes.error,
+              isDanger: true
+            });
             return;
           }
           inventory[idx] = updateRes.vial;
@@ -356,7 +381,11 @@ export function setupInventoryUI({ storage, onInventoryChange }) {
         });
         const val = validateVial(newVial);
         if (!val.valid) {
-          alert(val.errors.join("\n"));
+          dialogService.alert({
+            title: "Dados Inválidos",
+            message: val.errors.join("\n"),
+            isDanger: true
+          });
           return;
         }
         inventory.push(newVial);
@@ -364,7 +393,11 @@ export function setupInventoryUI({ storage, onInventoryChange }) {
 
       const res = storage.setInventory(inventory);
       if (!res.success) {
-        alert("Erro ao salvar frasco: " + res.error);
+        dialogService.alert({
+          title: "Erro de Armazenamento",
+          message: "Erro ao salvar frasco: " + res.error,
+          isDanger: true
+        });
         return;
       }
 

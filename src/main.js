@@ -43,6 +43,8 @@ import { setupAppLockUI } from "./ui/app-lock.js";
 import { widgetService } from "./services/widget.js";
 import { healthConnect } from "./services/health-connect.js";
 import { setupHealthConnectUI } from "./ui/health-connect.js";
+import { setupCalculatorUI } from "./ui/calculator.js";
+import { dialogService } from "./services/dialog.js";
 import { i18nService } from "./services/i18n.js";
 import { setupI18nUI, applyTranslations } from "./ui/i18n.js";
 import { researchService } from "./services/research.js";
@@ -239,7 +241,11 @@ async function initApp() {
     researchService,
     onOpenCalculator: (compound) => {
       switchTab("calc");
-      showToast(`Composto carregado: ${compound.name}`);
+      showToast(`Calculadora aberta: ${compound.name}`);
+      const doseInput = document.getElementById("calc-dose-input");
+      if (doseInput) {
+        setTimeout(() => doseInput.focus(), 150);
+      }
     },
     onAddToProtocol: (compound) => {
       switchTab("today");
@@ -987,8 +993,8 @@ function openRetroLogModal(prefillDate = null, prefillPepId = null) {
   openRetroModal(prefillDate, prefillPepId, { storage, dateKey });
 }
 
-function saveRetroLog() {
-  saveRetro({
+async function saveRetroLog() {
+  await saveRetro({
     doseService,
     dateKey,
     haptics,
@@ -1156,87 +1162,8 @@ function deleteHistoryEntry(dKey, pId, idx) {
   renderHistory();
 }
 
-function showConfirmDialog({ title = "Confirmar", message = "", confirmText = "Confirmar", cancelText = "Cancelar", isDanger = true }) {
-  return new Promise((resolve) => {
-    const modal = document.getElementById("confirm-modal");
-    const titleEl = document.getElementById("confirm-title");
-    const msgEl = document.getElementById("confirm-message");
-    const okBtn = document.getElementById("confirm-ok");
-    const cancelBtn = document.getElementById("confirm-cancel");
-    const closeBtn = document.getElementById("confirm-close");
-
-    if (!modal) {
-      const res = window.confirm(message);
-      return resolve(res);
-    }
-
-    const previousActive = document.activeElement;
-
-    if (titleEl) titleEl.textContent = title;
-    if (msgEl) msgEl.textContent = message;
-    if (okBtn) {
-      okBtn.textContent = confirmText;
-      okBtn.className = isDanger ? "btn-danger" : "btn-primary";
-    }
-    if (cancelBtn) cancelBtn.textContent = cancelText;
-
-    const cleanup = () => {
-      modal.classList.remove("on");
-      modal.setAttribute("aria-hidden", "true");
-      okBtn?.removeEventListener("click", onOk);
-      cancelBtn?.removeEventListener("click", onCancel);
-      closeBtn?.removeEventListener("click", onCancel);
-      window.removeEventListener("keydown", onKeyDown);
-      if (previousActive && typeof previousActive.focus === "function") {
-        previousActive.focus();
-      }
-    };
-
-    const onOk = () => {
-      cleanup();
-      resolve(true);
-    };
-
-    const onCancel = () => {
-      cleanup();
-      resolve(false);
-    };
-
-    const onKeyDown = (e) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        onCancel();
-      } else if (e.key === "Tab") {
-        const focusable = [cancelBtn, okBtn, closeBtn].filter(Boolean);
-        if (focusable.length === 0) return;
-        const first = focusable[0];
-        const last = focusable[focusable.length - 1];
-        if (e.shiftKey && document.activeElement === first) {
-          e.preventDefault();
-          last.focus();
-        } else if (!e.shiftKey && document.activeElement === last) {
-          e.preventDefault();
-          first.focus();
-        }
-      }
-    };
-
-    okBtn?.addEventListener("click", onOk);
-    cancelBtn?.addEventListener("click", onCancel);
-    closeBtn?.addEventListener("click", onCancel);
-    window.addEventListener("keydown", onKeyDown);
-
-    modal.classList.add("on");
-    modal.setAttribute("aria-hidden", "false");
-    haptics.warning();
-
-    // Foco inicial seguro no botão de cancelar para evitar exclusões acidentais
-    if (cancelBtn) {
-      cancelBtn.focus();
-    } else if (okBtn) {
-      okBtn.focus();
-    }
-  });
+function showConfirmDialog({ title = "Confirmar", message = "", confirmText = "Confirmar", cancelText = "Cancelar", isDanger = true } = {}) {
+  return dialogService.confirm({ title, message, confirmText, cancelText, isDanger });
 }
 
 async function deletePeptide(id) {
@@ -1257,7 +1184,11 @@ async function deletePeptide(id) {
   const updated = peptides.filter((x) => x.id !== id);
   const res = storage.setPeptides(updated);
   if (!res.success) {
-    alert("Erro ao remover peptídeo: " + (res.error || "Armazenamento indisponível"));
+    dialogService.alert({
+      title: "Erro",
+      message: "Erro ao remover peptídeo: " + (res.error || "Armazenamento indisponível"),
+      isDanger: true
+    });
     return;
   }
 
@@ -1270,185 +1201,16 @@ async function deletePeptide(id) {
 }
 
 function setupCalculator() {
-  let vialMg = 5;
-  let diluentMl = 2;
-  let desiredDoseVal = NaN;
-  let doseUnit = "mcg";
-  let currentCalculationSnapshot = null;
-
-  const mgChips = document.querySelectorAll("#calc-mg-chips .chip");
-  const mlChips = document.querySelectorAll("#calc-ml-chips .chip");
-  const doseInput = document.getElementById("calc-dose-input");
-  const unitBtns = document.querySelectorAll("#calc-unit-toggle button");
-  const auditCard = document.getElementById("calc-audit-card");
-  const auditFormula = document.getElementById("calc-audit-formula");
-  const auditTrail = document.getElementById("calc-audit-trail");
-  const useBtn = document.getElementById("calc-use-btn");
-
-  function recalculate() {
-    const resBig = document.getElementById("calc-res-big");
-    const resSub = document.getElementById("calc-res-sub");
-    const resConc = document.getElementById("calc-res-conc");
-    const resDoses = document.getElementById("calc-res-doses");
-    const summaryCard = document.getElementById("calc-inputs-summary");
-    const summaryValues = document.getElementById("calc-summary-values");
-
-    const concentrationMgMl = (vialMg / diluentMl).toFixed(2);
-    if (resConc) resConc.textContent = `${concentrationMgMl} mg/mL`;
-
-    const saveVialBtn = document.getElementById("calc-save-vial-btn");
-
-    if (isNaN(desiredDoseVal) || desiredDoseVal <= 0) {
-      if (resBig) resBig.textContent = "--";
-      if (resSub) resSub.innerHTML = `Informe a dose pretendida acima para calcular as unidades (UI).`;
-      if (resDoses) resDoses.textContent = "--";
-      if (auditCard) auditCard.style.display = "none";
-      if (summaryCard) summaryCard.style.display = "none";
-      if (useBtn) useBtn.disabled = true;
-      if (saveVialBtn) saveVialBtn.disabled = true;
-      currentCalculationSnapshot = null;
-      renderSyringe(0);
-      return;
-    }
-
-    const result = calculateReconstitution({
-      vialMg,
-      waterMl: diluentMl,
-      doseVal: desiredDoseVal,
-      doseUnit,
-      syringeMaxUI: 100
-    });
-
-    if (!result.valid) {
-      if (resBig) resBig.textContent = "--";
-      if (resSub) resSub.innerHTML = `<span style="color:var(--danger)">⚠️ ${esc(result.error)}</span>`;
-      if (resDoses) resDoses.textContent = "--";
-      if (auditCard) auditCard.style.display = "none";
-      if (summaryCard) summaryCard.style.display = "none";
-      if (useBtn) useBtn.disabled = true;
-      if (saveVialBtn) saveVialBtn.disabled = true;
-      currentCalculationSnapshot = null;
-      renderSyringe(0);
-      return;
-    }
-
-    if (resBig) resBig.textContent = result.unitsUI;
-    if (resSub) resSub.innerHTML = `Aspire até <b>${result.unitsUI} UI</b> na seringa de insulina U-100 (${result.volumeMl} mL)`;
-    if (resDoses) resDoses.textContent = `${result.dosesPerVial} doses`;
-
-    if (summaryCard && summaryValues) {
-      summaryCard.style.display = "block";
-      summaryValues.innerHTML = `
-        <span><b>Frasco:</b> ${vialMg} mg</span>
-        <span><b>Diluente:</b> ${diluentMl} mL</span>
-        <span><b>Dose pretendida:</b> ${desiredDoseVal} ${doseUnit}</span>
-      `;
-    }
-
-    currentCalculationSnapshot = createCalculationSnapshot(result);
-
-    if (auditCard) {
-      auditCard.style.display = "flex";
-      if (auditFormula) auditFormula.textContent = result.formula;
-      if (auditTrail) auditTrail.textContent = formatAuditTrail(currentCalculationSnapshot);
-    }
-
-    if (useBtn) useBtn.disabled = false;
-    if (saveVialBtn) saveVialBtn.disabled = false;
-
-    renderSyringe(result.unitsUI);
-  }
-
-  function renderSyringe(ui) {
-    const cont = document.getElementById("calc-syringe");
-    if (!cont) return;
-
-    const clampedUi = Math.min(100, Math.max(0, ui));
-    const fillWidth = (clampedUi / 100) * 240;
-
-    cont.innerHTML = `
-      <svg viewBox="0 0 320 60" style="width:100%;max-width:340px;height:auto;" aria-hidden="true">
-        <rect x="30" y="15" width="250" height="30" rx="4" fill="var(--surface3)" stroke="var(--border2)" stroke-width="1.5"/>
-        <rect x="30" y="16" width="${fillWidth}" height="28" fill="var(--primary)" opacity="0.6"/>
-        <line x1="8" y1="30" x2="30" y2="30" stroke="var(--muted2)" stroke-width="2"/>
-        ${[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map((tick) => {
-          const x = 30 + (tick / 100) * 240;
-          return `
-            <line x1="${x}" y1="15" x2="${x}" y2="${tick % 20 === 0 ? "27" : "22"}" stroke="var(--text)" stroke-width="1" opacity="0.7"/>
-            ${tick % 20 === 0 ? `<text x="${x}" y="38" font-size="8" font-family="var(--display)" fill="var(--muted)" text-anchor="middle">${tick}</text>` : ""}
-          `;
-        }).join("")}
-        <line x1="${30 + fillWidth}" y1="10" x2="${30 + fillWidth}" y2="50" stroke="var(--danger)" stroke-width="3"/>
-      </svg>`;
-  }
-
-  mgChips.forEach((c) => {
-    c.addEventListener("click", () => {
-      mgChips.forEach((x) => x.classList.remove("sel"));
-      c.classList.add("sel");
-      vialMg = Number(c.dataset.v);
-      haptics.light();
-      recalculate();
-    });
-  });
-
-  mlChips.forEach((c) => {
-    c.addEventListener("click", () => {
-      mlChips.forEach((x) => x.classList.remove("sel"));
-      c.classList.add("sel");
-      diluentMl = Number(c.dataset.v);
-      haptics.light();
-      recalculate();
-    });
-  });
-
-  if (doseInput) {
-    doseInput.addEventListener("input", (e) => {
-      const raw = e.target.value.trim();
-      const val = parseFloat(raw);
-      desiredDoseVal = raw !== "" && !isNaN(val) ? val : NaN;
-      recalculate();
-    });
-  }
-
-  unitBtns.forEach((b) => {
-    b.addEventListener("click", () => {
-      const oldUnit = doseUnit;
-      const newUnit = b.dataset.u;
-      if (oldUnit === newUnit) return;
-
-      unitBtns.forEach((x) => x.classList.remove("on"));
-      b.classList.add("on");
-      doseUnit = newUnit;
-
-      if (doseInput && doseInput.value) {
-        const converted = convertDoseValue(doseInput.value, oldUnit, newUnit);
-        doseInput.value = converted;
-        desiredDoseVal = parseFloat(converted) || 0;
-      }
-
-      if (doseInput) {
-        doseInput.placeholder = doseUnit === "mcg" ? "ex: 250" : "ex: 2.5";
-      }
-
-      haptics.light();
-      recalculate();
-    });
-  });
-
-  if (useBtn) {
-    useBtn.addEventListener("click", () => {
-      if (!currentCalculationSnapshot) return;
-      haptics.medium();
+  setupCalculatorUI({
+    haptics,
+    onUseCalculation: ({ dose, ui, calculationSnapshot }) => {
       openEditModal(null, {
-        dose: `${desiredDoseVal} ${doseUnit}`,
-        ui: currentCalculationSnapshot.unitsUI,
-        calculationSnapshot: currentCalculationSnapshot
+        dose,
+        ui,
+        calculationSnapshot
       });
-    });
-  }
-
-  recalculate();
+    }
+  });
 }
 
 function closeAllModals() {

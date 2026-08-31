@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
 import { trackPageRuntime, seedStorage } from "./runtime.js";
 
 test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
@@ -270,7 +271,47 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
 
     runtime.assertCleanRuntime();
   });
+
+  // ─── P2 (CODEX v2.5.0 Item 20): Acessibilidade Automatizada com Axe ───
+
+  test("avalia acessibilidade WCAG 2.1 AA com Axe no Dashboard", async ({ page }) => {
+    const runtime = trackPageRuntime(page);
+    await seedStorage(page, { skipOnboarding: true, peptides: [] });
+
+    await page.goto("/");
+    await page.waitForLoadState("domcontentloaded");
+
+    const accessibilityScanResults = await new AxeBuilder({ page })
+      .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+      .disableRules(["color-contrast"])
+      .analyze();
+
+    expect(accessibilityScanResults.violations).toEqual([]);
+    runtime.assertCleanRuntime();
+  });
+
+  test("avalia acessibilidade WCAG 2.1 AA com Axe na Calculadora", async ({ page }) => {
+    const runtime = trackPageRuntime(page);
+    await seedStorage(page, { skipOnboarding: true, peptides: [] });
+
+    await page.goto("/");
+    await page.waitForLoadState("domcontentloaded");
+
+    const calcTab = page.locator('[data-tab="tab-calc"], #tab-calc');
+    if (await calcTab.count() > 0) {
+      await calcTab.first().click();
+    }
+
+    const accessibilityScanResults = await new AxeBuilder({ page })
+      .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+      .disableRules(["color-contrast"])
+      .analyze();
+
+    expect(accessibilityScanResults.violations).toEqual([]);
+    runtime.assertCleanRuntime();
+  });
 });
+
 
 
 

@@ -5,6 +5,7 @@
 import { notifications } from "../services/notifications.js";
 import { haptics } from "../services/haptics.js";
 import { accessibilityService } from "../services/accessibility.js";
+import { dialogService } from "../services/dialog.js";
 import { escapeHtml } from "./dom.js";
 
 const esc = escapeHtml;
@@ -141,7 +142,11 @@ export function setupNotificationListeners(storage) {
             haptics.warning();
             notifications.saveConfig({ enabled: false });
             await updateNotificationUI(storage.getPeptides());
-            alert("Permissão de notificação não autorizada pelo sistema Android. Para ativar, permita as notificações nas Configurações do aparelho.");
+            dialogService.alert({
+              title: "Permissão Necessária",
+              message: "Permissão de notificação não autorizada pelo sistema Android. Para ativar, permita as notificações nas Configurações do aparelho.",
+              isDanger: true
+            });
             return;
           }
         }
@@ -149,9 +154,13 @@ export function setupNotificationListeners(storage) {
         // P1 Item 11: Verificar Exact Alarm no Android (API 31+) e solicitar autorização se negado
         const exactAlarmRes = await notifications.checkExactAlarmPermission();
         if (!exactAlarmRes.granted && exactAlarmRes.status === "denied") {
-          const userWants = window.confirm(
-            "Para que os lembretes toquem no minuto exato no Android, o Protocolo PEP precisa de permissão para 'Alarmes e Lembretes'. Deseja abrir as configurações do sistema para autorizar?"
-          );
+          const userWants = await dialogService.confirm({
+            title: "Alarmes e Lembretes Exatos",
+            message: "Para que os lembretes toquem no minuto exato no Android, o Protocolo PEP precisa de permissão para 'Alarmes e Lembretes'. Deseja abrir as configurações do sistema para autorizar?",
+            confirmText: "Abrir Configurações",
+            cancelText: "Agora Não",
+            isDanger: false
+          });
           if (userWants) {
             await notifications.requestExactAlarmPermission();
           } else {
@@ -185,7 +194,10 @@ export function setupNotificationListeners(storage) {
       const res = await notifications.schedulePeptideReminders(storage.getPeptides());
       await updateNotificationUI(storage.getPeptides());
       haptics.success();
-      alert(`Lembretes reagendados com sucesso! (${res.scheduledCount} agendados para 14 dias)`);
+      dialogService.alert({
+        title: "Lembretes Reagendados",
+        message: `Lembretes reagendados com sucesso! (${res.scheduledCount} agendados para 14 dias)`
+      });
     });
   }
 }

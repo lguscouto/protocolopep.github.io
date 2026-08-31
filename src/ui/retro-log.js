@@ -4,6 +4,7 @@
 
 import { escapeHtml } from "./dom.js";
 import { getNextSite, getLastUsedSite } from "../domain/injection-sites.js";
+import { dialogService } from "../services/dialog.js";
 
 const esc = escapeHtml;
 
@@ -13,7 +14,10 @@ export function openRetroLogModal(prefillDate = null, prefillPepId = null, { sto
 
   const peptides = storage.getPeptides();
   if (peptides.length === 0) {
-    alert("Cadastre ao menos um peptídeo no seu protocolo antes de registrar uma aplicação.");
+    dialogService.alert({
+      title: "Protocolo Vazio",
+      message: "Cadastre ao menos um peptídeo no seu protocolo antes de registrar uma aplicação."
+    });
     return;
   }
 
@@ -72,7 +76,7 @@ export function openRetroLogModal(prefillDate = null, prefillPepId = null, { sto
   modal.setAttribute("aria-hidden", "false");
 }
 
-export function saveRetroLog({ doseService, dateKey, haptics, renderAll }) {
+export async function saveRetroLog({ doseService, dateKey, haptics, renderAll }) {
   const pepSelect = document.getElementById("retro-pep-select");
   const siteSelect = document.getElementById("retro-site-select");
   const dateInput = document.getElementById("retro-date-input");
@@ -90,18 +94,27 @@ export function saveRetroLog({ doseService, dateKey, haptics, renderAll }) {
   const noteVal = noteInput ? noteInput.value.trim() : "";
 
   if (!pepId) {
-    alert("Selecione um peptídeo da lista.");
+    dialogService.alert({
+      title: "Campo Obrigatório",
+      message: "Selecione um peptídeo da lista."
+    });
     return;
   }
 
   if (!dKey) {
-    alert("Informe a data da aplicação.");
+    dialogService.alert({
+      title: "Campo Obrigatório",
+      message: "Informe a data da aplicação."
+    });
     return;
   }
 
   const todayKey = dateKey(new Date());
   if (dKey > todayKey) {
-    alert("Não é possível registrar aplicações em datas futuras.");
+    dialogService.alert({
+      title: "Data Inválida",
+      message: "Não é possível registrar aplicações em datas futuras."
+    });
     return;
   }
 
@@ -117,7 +130,13 @@ export function saveRetroLog({ doseService, dateKey, haptics, renderAll }) {
   });
 
   if (!res.success && res.error === "VIAL_MISSING_CONCENTRATION") {
-    const confirmHistOnly = window.confirm(`${res.message || "O frasco não possui concentração definida."}\n\nDeseja salvar a aplicação apenas no histórico sem debitar estoque?`);
+    const confirmHistOnly = await dialogService.confirm({
+      title: "Concentração Indefinida",
+      message: `${res.message || "O frasco não possui concentração definida."}\n\nDeseja salvar a aplicação apenas no histórico sem debitar estoque?`,
+      confirmText: "Salvar no Histórico",
+      cancelText: "Cancelar",
+      isDanger: false
+    });
     if (confirmHistOnly) {
       res = doseService.registerDose({
         peptideId: pepId,
@@ -134,7 +153,11 @@ export function saveRetroLog({ doseService, dateKey, haptics, renderAll }) {
   }
 
   if (!res.success) {
-    alert("Não foi possível salvar a aplicação: " + (res.message || res.error || "armazenamento indisponível"));
+    dialogService.alert({
+      title: "Erro",
+      message: "Não foi possível salvar a aplicação: " + (res.message || res.error || "armazenamento indisponível"),
+      isDanger: true
+    });
     return;
   }
 
