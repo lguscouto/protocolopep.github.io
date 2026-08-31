@@ -344,33 +344,64 @@ export class StorageService {
 
       const hasChanged = prevW !== nextW || prevDate !== nextDate || prevTime !== nextTime;
       syncVersion = hasChanged ? (existing.syncVersion || 1) + 1 : (existing.syncVersion || 1);
+
+      // P0 (CODEX v2.5.0): timestamp é calculado de date+time, nunca de createdAt.
+      // Se date ou time mudaram → passar timestamp=null para createMeasurementEntry recalcular de date+time.
+      // Se não mudaram → preservar o instante histórico original.
+      const dateChanged = prevDate !== nextDate;
+      const timeChanged = prevTime !== nextTime;
+      const preservedTimestamp = (dateChanged || timeChanged) ? null : (existing.timestamp || null);
+
+      const payload = {
+        ...entryData,
+        syncVersion,
+        clientRecordVersion: syncVersion,
+        clientRecordId: existing.clientRecordId || entryData.clientRecordId || null,
+        source: existing.source || entryData.source || "local",
+        ownership: existing.ownership || entryData.ownership || "pep",
+        healthConnectRecordId: existing.healthConnectRecordId || entryData.healthConnectRecordId,
+        dataOrigin: existing.dataOrigin || entryData.dataOrigin,
+        zoneOffset: existing.zoneOffset || entryData.zoneOffset,
+        // Campos temporais (P0): createdAt imutável, updatedAt sempre agora, timestamp condicional
+        timestamp: preservedTimestamp,
+        createdAt: existing.createdAt || entryData.createdAt || null,
+        updatedAt: new Date().toISOString()
+      };
+
+      const entry = createMeasurementEntry(payload);
+      const validRes = validateMeasurementEntry(entry);
+      if (!validRes.valid) {
+        return { success: false, error: validRes.errors.join("; ") };
+      }
+      current[existingIdx] = entry;
+      this.measurements = current;
+      const res = this.saveMeasurements();
+      if (!res.success) {
+        this.restoreSnapshot(backupSnapshot);
+        return res;
+      }
+      this.notify();
+      return { success: true, entry, measurements: this.measurements };
     }
 
-    const payload = {
+    // Novo registro: timestamp/createdAt/updatedAt serão calculados em createMeasurementEntry
+    const newPayload = {
       ...entryData,
       syncVersion,
       clientRecordVersion: syncVersion,
-      clientRecordId: existing ? (existing.clientRecordId || entryData.clientRecordId || null) : (entryData.clientRecordId || null),
-      source: existing ? (existing.source || entryData.source || "local") : (entryData.source || "local"),
-      ownership: existing ? (existing.ownership || entryData.ownership || "pep") : (entryData.ownership || "pep"),
-      healthConnectRecordId: existing ? (existing.healthConnectRecordId || entryData.healthConnectRecordId) : entryData.healthConnectRecordId,
-      dataOrigin: existing ? (existing.dataOrigin || entryData.dataOrigin) : entryData.dataOrigin,
-      zoneOffset: existing ? (existing.zoneOffset || entryData.zoneOffset) : entryData.zoneOffset,
-      createdAt: existing ? (existing.createdAt || entryData.createdAt) : entryData.createdAt
+      // Para novos registros oriundos do Health Connect, preservar o timestamp recebido
+      timestamp: entryData.timestamp || null,
+      createdAt: null,   // createMeasurementEntry inicializa como now
+      updatedAt: null    // createMeasurementEntry inicializa como now
     };
 
-    const entry = createMeasurementEntry(payload);
+    const entry = createMeasurementEntry(newPayload);
     const validRes = validateMeasurementEntry(entry);
     if (!validRes.valid) {
       return { success: false, error: validRes.errors.join("; ") };
     }
 
-    if (existingIdx !== -1) {
-      current[existingIdx] = entry;
-    } else {
-      current.push(entry);
-    }
-
+    current.push(entry);
     this.measurements = current;
     const res = this.saveMeasurements();
     if (!res.success) {

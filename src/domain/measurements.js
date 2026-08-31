@@ -51,6 +51,11 @@ export function formatSymptomLabel(symptom) {
 /**
  * Cria um objeto padronizado de registro de medição / sintomas autorrelatados.
  *
+ * Semântica dos campos temporais (P0 CODEX v2.5.0):
+ * - `timestamp`  = instante real da medição (recalculado quando date/time mudam)
+ * - `createdAt`  = quando o registro foi criado no PEP (imutável após criação)
+ * - `updatedAt`  = última alteração local (atualizado a cada edição)
+ *
  * @param {Object} params
  * @param {string} [params.id]
  * @param {string} params.date - Data no formato YYYY-MM-DD
@@ -67,7 +72,9 @@ export function formatSymptomLabel(symptom) {
  * @param {string|null} [params.healthConnectRecordId]
  * @param {string|null} [params.dataOrigin]
  * @param {string|null} [params.zoneOffset]
- * @param {string} [params.createdAt] - Timestamp ISO de criação
+ * @param {string|null} [params.timestamp] - Instante real da medição (ISO UTC). Se null, calculado de date+time.
+ * @param {string|null} [params.createdAt] - Quando o registro foi criado no PEP (imutável). Se null, calculado como now.
+ * @param {string|null} [params.updatedAt] - Última alteração local. Se null, herda createdAt.
  * @returns {Object}
  */
 export function createMeasurementEntry({
@@ -87,7 +94,9 @@ export function createMeasurementEntry({
   healthConnectRecordId = null,
   dataOrigin = null,
   zoneOffset = null,
-  createdAt = null
+  timestamp = null,
+  createdAt = null,
+  updatedAt = null
 }) {
   let parsedWeight = null;
   if (weightKg !== null && weightKg !== undefined && weightKg !== "") {
@@ -126,7 +135,16 @@ export function createMeasurementEntry({
     ? zoneOffset
     : (source === "local" ? getCurrentZoneOffset() : null);
 
-  const cleanTimestamp = createdAt || localDateTimeToIso(cleanDate, cleanTime) || new Date().toISOString();
+  // P0 (CODEX v2.5.0): timestamp é fonte de verdade do instante da medição.
+  // Nunca derivado de createdAt — sempre calculado de date+time ou preservado explicitamente.
+  const cleanTimestamp = timestamp || localDateTimeToIso(cleanDate, cleanTime) || new Date().toISOString();
+
+  // createdAt: imutável após criação. Se não passado, inicializa com cleanTimestamp (novo registro).
+  const cleanCreatedAt = createdAt || cleanTimestamp;
+
+  // updatedAt: reflete a última modificação local. Herda cleanCreatedAt se não passado
+  // (registros legados sem updatedAt recebem createdAt como valor inicial na migração V4→V5).
+  const cleanUpdatedAt = updatedAt || cleanCreatedAt;
 
   return {
     id: id || `m_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
@@ -146,7 +164,8 @@ export function createMeasurementEntry({
     dataOrigin: dataOrigin || (source === "local" ? "com.protocolopep.app" : null),
     zoneOffset: cleanZoneOffset,
     timestamp: cleanTimestamp,
-    createdAt: createdAt || cleanTimestamp
+    createdAt: cleanCreatedAt,
+    updatedAt: cleanUpdatedAt
   };
 }
 

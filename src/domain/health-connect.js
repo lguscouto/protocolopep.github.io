@@ -270,7 +270,12 @@ export function mapHealthRecordToMeasurement(record) {
     clientRecordId: clientRecId,
     clientRecordVersion: parseInt(record.clientRecordVersion, 10) || 1,
     zoneOffset: record.zoneOffset || null,
-    createdAt: timeSource || new Date().toISOString()
+    // P0 (CODEX v2.5.0): timestamp = instante histórico do Health Connect
+    timestamp: timeSource || new Date().toISOString(),
+    // createdAt = quando foi originalmente registrado (instante do HC)
+    createdAt: timeSource || new Date().toISOString(),
+    // updatedAt = quando foi importado para o PEP (agora)
+    updatedAt: new Date().toISOString()
   };
 }
 
@@ -330,6 +335,7 @@ export function mergeHealthMeasurements(localMeasurements = [], importedRecords 
 
     if (matchedId) {
       const existing = resultMap.get(matchedId);
+      const now = new Date().toISOString();
       // Se a medição local veio do Health Connect ou não tinha peso definido, atualiza o peso e metadados
       if (existing.weightKg === null || existing.weightKg === undefined || existing.source === "health_connect") {
         resultMap.set(matchedId, {
@@ -339,14 +345,20 @@ export function mergeHealthMeasurements(localMeasurements = [], importedRecords 
           healthConnectRecordId: parsed.healthConnectRecordId || existing.healthConnectRecordId,
           dataOrigin: parsed.dataOrigin || existing.dataOrigin,
           zoneOffset: parsed.zoneOffset || existing.zoneOffset,
-          clientRecordVersion: parsed.clientRecordVersion || existing.clientRecordVersion
+          clientRecordVersion: parsed.clientRecordVersion || existing.clientRecordVersion,
+          // P0: preservar createdAt original; atualizar updatedAt na reimportação
+          createdAt: existing.createdAt || parsed.createdAt || now,
+          updatedAt: now
         });
       } else {
         // Se a medição local é original do PEP, apenas vincula os identificadores remotos sem sobrepor dados
         resultMap.set(matchedId, {
           ...existing,
           healthConnectRecordId: parsed.healthConnectRecordId || existing.healthConnectRecordId,
-          zoneOffset: parsed.zoneOffset || existing.zoneOffset
+          zoneOffset: parsed.zoneOffset || existing.zoneOffset,
+          // P0: preservar createdAt original; updatedAt apenas se não existia
+          createdAt: existing.createdAt || parsed.createdAt || now,
+          updatedAt: existing.updatedAt || now
         });
       }
     } else {

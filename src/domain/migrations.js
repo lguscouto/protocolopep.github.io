@@ -5,7 +5,7 @@ import { validateSitesList, getDefaultSites } from "./injection-sites.js";
 import { createMeasurementEntry } from "./measurements.js";
 import { isValidDateKey } from "./schedule.js";
 
-export const CURRENT_SCHEMA_VERSION = 4;
+export const CURRENT_SCHEMA_VERSION = 5;
 
 export function migratePeptides(rawPeptides = []) {
   if (!Array.isArray(rawPeptides)) return [];
@@ -86,6 +86,31 @@ export function migrateV3ToV4(state = {}) {
   };
 }
 
+/**
+ * V4 → V5: Adiciona campo `updatedAt` em medições legadas que não possuem o campo.
+ * O valor inicial de `updatedAt` é herdado de `createdAt` (ou `timestamp` como fallback),
+ * representando que o registro não foi editado desde a criação.
+ * (P0 CODEX v2.5.0 — separação semântica de timestamp/createdAt/updatedAt)
+ */
+export function migrateV4ToV5(state = {}) {
+  const rawMeasurements = state.measurements || [];
+  const measurements = Array.isArray(rawMeasurements)
+    ? rawMeasurements.map((m) => {
+        if (!m || typeof m !== "object") return m;
+        if (m.updatedAt) return m; // já possui o campo — não alterar
+        return {
+          ...m,
+          updatedAt: m.createdAt || m.timestamp || new Date().toISOString()
+        };
+      })
+    : [];
+  return {
+    ...state,
+    version: 5,
+    measurements
+  };
+}
+
 export function migrateAppState(state = {}) {
   if (!state || typeof state !== "object") {
     state = {};
@@ -101,6 +126,9 @@ export function migrateAppState(state = {}) {
   }
   if (version < 4) {
     current = migrateV3ToV4(current);
+  }
+  if (version < 5) {
+    current = migrateV4ToV5(current);
   }
 
   const rawProtocol = current.protocol || current.peptides || [];

@@ -6,6 +6,7 @@ import {
   migrateV1ToV2,
   migrateV2ToV3,
   migrateV3ToV4,
+  migrateV4ToV5,
   CURRENT_SCHEMA_VERSION
 } from "../../src/domain/migrations.js";
 
@@ -64,4 +65,63 @@ describe("Migrations Domain", () => {
     expect(Array.isArray(v4.sites)).toBe(true);
     expect(Array.isArray(v4.measurements)).toBe(true);
   });
+
+  // ─── P0 (CODEX v2.5.0): migrateV4ToV5 — backfill de updatedAt ───
+
+  it("migrateV4ToV5: adiciona updatedAt em medições legadas sem o campo", () => {
+    const v4State = {
+      version: 4,
+      measurements: [
+        // Legado sem updatedAt
+        { id: "m_1", date: "2026-08-01", weightKg: 80.0, createdAt: "2026-08-01T12:00:00.000Z", timestamp: "2026-08-01T12:00:00.000Z" },
+        // Com createdAt mas sem updatedAt
+        { id: "m_2", date: "2026-08-10", weightKg: 79.0, createdAt: "2026-08-10T09:00:00.000Z" },
+        // Já possui updatedAt — não deve ser alterado
+        { id: "m_3", date: "2026-08-20", weightKg: 78.5, createdAt: "2026-08-20T10:00:00.000Z", updatedAt: "2026-08-25T14:00:00.000Z" }
+      ]
+    };
+
+    const v5 = migrateV4ToV5(v4State);
+    expect(v5.version).toBe(5);
+
+    // m_1: updatedAt herdado de createdAt
+    expect(v5.measurements[0].updatedAt).toBe("2026-08-01T12:00:00.000Z");
+    // m_2: updatedAt herdado de createdAt
+    expect(v5.measurements[1].updatedAt).toBe("2026-08-10T09:00:00.000Z");
+    // m_3: updatedAt original preservado sem alteração
+    expect(v5.measurements[2].updatedAt).toBe("2026-08-25T14:00:00.000Z");
+  });
+
+  it("migrateV4ToV5: idempotente — não altera updatedAt existente na segunda execução", () => {
+    const state = {
+      version: 4,
+      measurements: [
+        { id: "m_1", date: "2026-08-01", weightKg: 80.0, createdAt: "2026-08-01T12:00:00.000Z", updatedAt: "2026-08-10T08:00:00.000Z" }
+      ]
+    };
+    const v5 = migrateV4ToV5(state);
+    const v5again = migrateV4ToV5({ ...v5, version: 4 }); // forçar re-execução
+    expect(v5again.measurements[0].updatedAt).toBe("2026-08-10T08:00:00.000Z");
+  });
+
+  it("CURRENT_SCHEMA_VERSION é 5", () => {
+    expect(CURRENT_SCHEMA_VERSION).toBe(5);
+  });
+
+  it("migrateAppState inclui V5 no pipeline completo", () => {
+    const v1State = {
+      version: 1,
+      protocol: [],
+      measurements: [
+        { id: "m_legado", date: "2026-08-01", weightKg: 80.0, createdAt: "2026-08-01T12:00:00.000Z", timestamp: "2026-08-01T12:00:00.000Z" }
+      ]
+    };
+    const result = migrateAppState(v1State);
+    expect(result.version).toBe(5);
+    // Medição legada deve ter updatedAt após migração completa
+    const m = result.measurements.find(x => x.date === "2026-08-01");
+    expect(m).toBeDefined();
+    expect(m.updatedAt).toBeDefined();
+  });
 });
+

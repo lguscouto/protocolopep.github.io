@@ -132,4 +132,102 @@ describe("Measurements Domain (V12)", () => {
     const itemEdited = { ...item, weightKg: 79.5 };
     expect(haveMeasurementsChanged([item], [itemEdited])).toBe(true);
   });
+
+  // ─── P0 (CODEX v2.5.0): Separação semântica de timestamp / createdAt / updatedAt ───
+
+  describe("P0 — timestamp / createdAt / updatedAt (CODEX v2.5.0)", () => {
+    it("novo registro: timestamp calculado de date+time, createdAt = updatedAt = timestamp", () => {
+      const entry = createMeasurementEntry({ date: "2026-08-29", time: "08:00", weightKg: 82.5 });
+      expect(entry.timestamp).toBeDefined();
+      expect(entry.createdAt).toBeDefined();
+      expect(entry.updatedAt).toBeDefined();
+      expect(entry.createdAt).toBe(entry.timestamp);
+      expect(entry.updatedAt).toBe(entry.createdAt);
+    });
+
+    it("timestamp explícito é preservado e não derivado de createdAt", () => {
+      const explicitTimestamp = "2026-08-29T11:00:00.000Z";
+      const entry = createMeasurementEntry({
+        date: "2026-08-29", time: "08:00", weightKg: 82.5,
+        timestamp: explicitTimestamp,
+        createdAt: "2099-01-01T00:00:00.000Z"
+      });
+      expect(entry.timestamp).toBe(explicitTimestamp);
+      expect(entry.createdAt).toBe("2099-01-01T00:00:00.000Z");
+    });
+
+    it("editar data recalcula timestamp (cenário canônico CODEX)", () => {
+      const originalTimestamp = "2026-08-29T11:00:00.000Z";
+      const originalCreatedAt = "2026-08-29T11:00:00.000Z";
+      const edited = createMeasurementEntry({
+        id: "m_test_1", date: "2026-08-30", time: "10:00", weightKg: 82.5,
+        zoneOffset: "-03:00",
+        timestamp: null,
+        createdAt: originalCreatedAt,
+        updatedAt: new Date().toISOString()
+      });
+      expect(edited.timestamp).not.toBe(originalTimestamp);
+      expect(edited.createdAt).toBe(originalCreatedAt);
+      expect(edited.timestamp).toContain("2026-08-30");
+    });
+
+    it("editar apenas peso preserva timestamp histórico", () => {
+      const originalTimestamp = "2026-08-29T11:00:00.000Z";
+      const originalCreatedAt = "2026-08-29T11:00:00.000Z";
+      const edited = createMeasurementEntry({
+        id: "m_test_2", date: "2026-08-29", time: "08:00", weightKg: 83.0,
+        zoneOffset: "-03:00",
+        timestamp: originalTimestamp,
+        createdAt: originalCreatedAt,
+        updatedAt: new Date().toISOString()
+      });
+      expect(edited.timestamp).toBe(originalTimestamp);
+      expect(edited.createdAt).toBe(originalCreatedAt);
+      expect(edited.weightKg).toBe(83.0);
+    });
+
+    it("createdAt nunca muda após múltiplas edições", () => {
+      const originalCreatedAt = "2026-08-01T12:00:00.000Z";
+      const edit1 = createMeasurementEntry({ id: "m_i", date: "2026-08-02", time: "09:00", weightKg: 80.0, createdAt: originalCreatedAt, updatedAt: "2026-08-02T12:00:00.000Z" });
+      const edit2 = createMeasurementEntry({ id: "m_i", date: "2026-08-05", time: "11:00", weightKg: 79.5, createdAt: originalCreatedAt, updatedAt: "2026-08-05T14:00:00.000Z" });
+      const edit3 = createMeasurementEntry({ id: "m_i", date: "2026-08-10", time: "08:30", weightKg: 78.8, createdAt: originalCreatedAt, updatedAt: "2026-08-10T11:30:00.000Z" });
+      expect(edit1.createdAt).toBe(originalCreatedAt);
+      expect(edit2.createdAt).toBe(originalCreatedAt);
+      expect(edit3.createdAt).toBe(originalCreatedAt);
+    });
+
+    it("updatedAt avança a cada edição e é maior que o anterior", () => {
+      const createdAt = "2026-08-01T12:00:00.000Z";
+      const updatedAt1 = "2026-08-05T10:00:00.000Z";
+      const updatedAt2 = "2026-08-20T15:30:00.000Z";
+      const original = createMeasurementEntry({ id: "m_u", date: "2026-08-01", time: "09:00", weightKg: 80.0, createdAt, updatedAt: null });
+      expect(original.updatedAt).toBe(createdAt);
+      const edit1 = createMeasurementEntry({ id: "m_u", date: "2026-08-01", time: "09:00", weightKg: 80.5, createdAt, updatedAt: updatedAt1 });
+      const edit2 = createMeasurementEntry({ id: "m_u", date: "2026-08-01", time: "09:00", weightKg: 81.0, createdAt, updatedAt: updatedAt2 });
+      expect(edit1.updatedAt).toBe(updatedAt1);
+      expect(edit2.updatedAt).toBe(updatedAt2);
+      expect(edit2.updatedAt > edit1.updatedAt).toBe(true);
+    });
+
+    it("editar hora recalcula timestamp para novo instante", () => {
+      const originalCreatedAt = "2026-08-15T12:00:00.000Z";
+      const edited = createMeasurementEntry({
+        id: "m_time_test", date: "2026-08-15", time: "18:00", weightKg: 82.0,
+        zoneOffset: "-03:00", timestamp: null, createdAt: originalCreatedAt
+      });
+      expect(edited.timestamp).toContain("2026-08-15");
+      expect(edited.createdAt).toBe(originalCreatedAt);
+      expect(edited.timestamp).not.toBe(originalCreatedAt);
+    });
+
+    it("backup preserva os três campos temporais sem alteração", () => {
+      const ts = "2026-08-10T14:00:00.000Z";
+      const ca = "2026-08-10T14:00:00.000Z";
+      const ua = "2026-08-25T09:30:00.000Z";
+      const entry = createMeasurementEntry({ id: "m_bk", date: "2026-08-10", time: "11:00", weightKg: 80.0, timestamp: ts, createdAt: ca, updatedAt: ua });
+      expect(entry.timestamp).toBe(ts);
+      expect(entry.createdAt).toBe(ca);
+      expect(entry.updatedAt).toBe(ua);
+    });
+  });
 });

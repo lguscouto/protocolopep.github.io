@@ -161,4 +161,118 @@ describe("Storage Service", () => {
     // Medições externas removidas da visualização local nunca geram tombstone no Health Connect
     expect(storageInstance.getTombstones()).toHaveLength(0);
   });
+
+  // ─── P0 (CODEX v2.5.0): Campos temporais no upsert de medições ───
+
+  describe("P0 — addMeasurement: timestamp/createdAt/updatedAt no upsert", () => {
+    it("novo registro possui timestamp, createdAt e updatedAt definidos e iguais", () => {
+      storageInstance.init();
+      const res = storageInstance.addMeasurement({
+        id: "m_new_1",
+        date: "2026-08-29",
+        time: "09:00",
+        weightKg: 82.0
+      });
+      expect(res.success).toBe(true);
+      expect(res.entry.timestamp).toBeDefined();
+      expect(res.entry.createdAt).toBeDefined();
+      expect(res.entry.updatedAt).toBeDefined();
+      expect(res.entry.createdAt).toBe(res.entry.timestamp);
+      expect(res.entry.updatedAt).toBe(res.entry.createdAt);
+    });
+
+    it("createdAt é preservado (imutável) após edição de peso", () => {
+      storageInstance.init();
+      const initial = storageInstance.addMeasurement({
+        id: "m_edit_peso",
+        date: "2026-08-29",
+        time: "09:00",
+        weightKg: 82.0
+      });
+      const originalCreatedAt = initial.entry.createdAt;
+      const originalTimestamp = initial.entry.timestamp;
+
+      const edited = storageInstance.addMeasurement({
+        id: "m_edit_peso",
+        date: "2026-08-29",
+        time: "09:00",
+        weightKg: 83.5 // apenas peso mudou
+      });
+
+      expect(edited.success).toBe(true);
+      expect(edited.entry.createdAt).toBe(originalCreatedAt);
+      // Timestamp preservado pois date/time não mudaram
+      expect(edited.entry.timestamp).toBe(originalTimestamp);
+    });
+
+    it("updatedAt é atualizado na edição de peso (deve ser >= createdAt)", () => {
+      storageInstance.init();
+      const initial = storageInstance.addMeasurement({
+        id: "m_upd_peso",
+        date: "2026-08-29",
+        time: "09:00",
+        weightKg: 82.0
+      });
+
+      const edited = storageInstance.addMeasurement({
+        id: "m_upd_peso",
+        date: "2026-08-29",
+        time: "09:00",
+        weightKg: 84.0
+      });
+
+      expect(edited.success).toBe(true);
+      expect(edited.entry.updatedAt >= initial.entry.createdAt).toBe(true);
+    });
+
+    it("timestamp é recalculado quando date muda", () => {
+      storageInstance.init();
+      const initial = storageInstance.addMeasurement({
+        id: "m_edit_date",
+        date: "2026-08-29",
+        time: "09:00",
+        weightKg: 82.0
+      });
+      const originalTimestamp = initial.entry.timestamp;
+      const originalCreatedAt = initial.entry.createdAt;
+
+      const edited = storageInstance.addMeasurement({
+        id: "m_edit_date",
+        date: "2026-08-30", // data mudou
+        time: "09:00",
+        weightKg: 82.0
+      });
+
+      expect(edited.success).toBe(true);
+      // Timestamp deve refletir a nova data
+      expect(edited.entry.timestamp).not.toBe(originalTimestamp);
+      expect(edited.entry.timestamp).toContain("2026-08-30");
+      // createdAt permanece imutável
+      expect(edited.entry.createdAt).toBe(originalCreatedAt);
+    });
+
+    it("timestamp é recalculado quando time muda", () => {
+      storageInstance.init();
+      const initial = storageInstance.addMeasurement({
+        id: "m_edit_time",
+        date: "2026-08-29",
+        time: "08:00",
+        weightKg: 82.0
+      });
+      const originalTimestamp = initial.entry.timestamp;
+      const originalCreatedAt = initial.entry.createdAt;
+
+      const edited = storageInstance.addMeasurement({
+        id: "m_edit_time",
+        date: "2026-08-29",
+        time: "20:00", // horário mudou
+        weightKg: 82.0
+      });
+
+      expect(edited.success).toBe(true);
+      expect(edited.entry.timestamp).not.toBe(originalTimestamp);
+      expect(edited.entry.createdAt).toBe(originalCreatedAt);
+    });
+  });
 });
+
