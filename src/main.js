@@ -1650,7 +1650,7 @@ function setupModalsAndButtons() {
   setupDiagnosticsModal({
     storage,
     getNotificationsActive: () => (window.pepNotifications ? window.pepNotifications.hasActiveReminders() : false),
-    appVersion: "2.2.0"
+    appVersion: "2.3.0"
   });
 
   const reopenOnboardingBtn = document.getElementById("reopen-onboarding-btn");
