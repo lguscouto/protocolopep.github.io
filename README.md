@@ -1,11 +1,34 @@
 # 🧪 Protocolo PEP · App Android (Local-First)
 
-![Version](https://img.shields.io/badge/version-2.5.0-2CC5C0)
+![Version](https://img.shields.io/badge/version-2.6.0-2CC5C0)
 ![Android](https://img.shields.io/badge/Android-8.0%2B-green)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![CI](https://github.com/lguscouto/protocolopep.github.io/actions/workflows/ci.yml/badge.svg)
 
 Aplicativo Android nativo para acompanhamento de protocolos de peptídeos, cálculo de reconstituição e registro diário de doses, construído com arquitetura **100% Local-First**, segurança matemática auditável e suporte aos **temas Branco e Preto OLED**.
+
+---
+
+## 🚀 Novidades da Versão 2.6.0 (DialogService Acessível, Modularização da Calculadora, Ownership Estrito e Auditoria WCAG 2.1 AA)
+
+- **Centralização de Diálogos & Acessibilidade (`DialogService`):**
+  - Implementação do `DialogService` centralizado (`src/services/dialog.js`) com `confirm()` e `alert()` assíncronos.
+  - Eliminação completa de chamadas síncronas bloqueantes `alert()` e `confirm()` nativas em todo o código.
+  - Suporte completo a navegação por teclado com focus trap (`Tab`/`Shift+Tab`), cancelamento e fechamento via tecla `Escape`, retorno de foco ao elemento disparador e haptics integrados.
+- **Separação Semântica de Timestamps & Migração V4→V5 (P0):**
+  - Desacoplamento estrito de `timestamp` (instante do fato clínico) e `createdAt` (instante de criação do registro no banco local), além da inclusão de `updatedAt`.
+  - Pipeline sequencial de migrações automáticas `migrateV4ToV5` com backfill seguro.
+- **Sincronização Estrita Health Connect & Proteção de Registros Externos (P1):**
+  - Decisões de exportação e emissão de tombstones baseadas exclusivamente no campo `ownership === "pep"`.
+  - Janela de sincronização de leitura calibrada para 30 dias no JavaScript e Kotlin (`PepHealthConnectPlugin.kt`).
+  - Proteção de dados importados do Health Connect: campos corporais externos em modo somente leitura e ação de exclusão convertida para ocultação local ("Ocultar no PEP") com persistência em `hiddenMeasurementIds`.
+  - Fluxo de autorização de `SCHEDULE_EXACT_ALARM` no Android com prompt acessível.
+- **Modularização da Calculadora de Reconstituição (P2):**
+  - Desacoplamento da interface da calculadora em módulo autônomo `src/ui/calculator.js`.
+  - Transição refinada da Base de Pesquisa Científica para a Calculadora com toast descritivo e auto-foco na dose pretendida.
+- **Auditoria de Acessibilidade Automatizada com Axe no Playwright (P2):**
+  - Validação contínua WCAG 2.1 AA em suites E2E com `@axe-core/playwright` em múltiplos viewports Android.
+  - Conformidade estrita de atributos e roles ARIA (`role="region"`).
 
 ---
 
