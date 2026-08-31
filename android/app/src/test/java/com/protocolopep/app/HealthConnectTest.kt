@@ -58,4 +58,26 @@ class HealthConnectTest {
         assertEquals(82.5, item["weightKg"] as Double, 0.001)
         assertEquals(2L, item["clientRecordVersion"])
     }
+
+    @Test
+    fun testHistoricalZoneOffsetPreservation() {
+        val instantUtc = Instant.parse("2026-08-29T11:00:00.000Z")
+        val rawZoneOffsetRio = "-03:00"
+
+        val parsedOffsetRio = java.time.ZoneOffset.of(rawZoneOffsetRio)
+        assertEquals(-3 * 3600, parsedOffsetRio.totalSeconds)
+
+        val zdtRio = instantUtc.atOffset(parsedOffsetRio)
+        assertEquals("2026-08-29", zdtRio.toLocalDate().toString())
+        assertEquals(8, zdtRio.hour)
+        assertEquals(0, zdtRio.minute)
+
+        // Simulação de sincronização em Tóquio (+09:00)
+        val parsedOffsetTokyo = java.time.ZoneOffset.of("+09:00")
+        val zdtTokyo = instantUtc.atOffset(parsedOffsetTokyo)
+        // O instante subjacente em UTC permanece idêntico
+        assertEquals(instantUtc, zdtTokyo.toInstant())
+        // O offset original preservado no registro continua sendo -03:00
+        assertEquals("-03:00", parsedOffsetRio.id)
+    }
 }

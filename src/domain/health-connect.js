@@ -127,11 +127,25 @@ export function isoToLocalDateTime(isoString, zoneOffset = null) {
 }
 
 /**
+ * Valida se uma string é um timestamp ISO 8601 válido e parseável.
+ *
+ * @param {string} str
+ * @returns {boolean}
+ */
+export function isValidIsoTimestamp(str) {
+  if (typeof str !== "string" || !str.trim()) return false;
+  const d = new Date(str);
+  if (Number.isNaN(d.getTime())) return false;
+  return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})$/.test(str);
+}
+
+/**
  * Converte uma medição interna do Protocolo PEP para o formato de registro de peso do Health Connect.
  * Registros de origem externa ou sem peso válido NÃO são exportados (prevenção de Sync Echo).
+ * Preserva o instante temporal exato (timestamp) e o zoneOffset histórico sem recalcular por fuso atual.
  *
  * @param {Object} measurement - Entrada de medição do PEP
- * @returns {{ timestamp: string, time: string, weightKg: number, clientRecordId: string, clientRecordVersion: number, metadataId: string } | null}
+ * @returns {{ timestamp: string, time: string, zoneOffset: string|null, weightKg: number, clientRecordId: string, clientRecordVersion: number, metadataId: string } | null}
  */
 export function mapMeasurementToHealthRecord(measurement) {
   if (!measurement || typeof measurement !== "object") return null;
@@ -141,7 +155,7 @@ export function mapMeasurementToHealthRecord(measurement) {
     return null;
   }
 
-  const { weightKg, date, time, id, syncVersion, clientRecordVersion } = measurement;
+  const { weightKg, date, time, id, syncVersion, clientRecordVersion, timestamp, zoneOffset } = measurement;
   if (weightKg === null || weightKg === undefined || weightKg === "") return null;
 
   const weightNum = typeof weightKg === "number" ? weightKg : parseFloat(String(weightKg).replace(",", "."));
@@ -158,7 +172,18 @@ export function mapMeasurementToHealthRecord(measurement) {
   }
 
   const cleanTime = time && isValidTime(String(time)) ? String(time) : "08:00";
-  const isoTime = localDateTimeToIso(String(date), cleanTime);
+
+  // Item 4 (P0): Usar measurement.timestamp diretamente se for válido (fonte de verdade do instante histórico)
+  let isoTime = null;
+  if (timestamp) {
+    if (!isValidIsoTimestamp(timestamp)) {
+      return null; // Rejeição estrita fail-closed de timestamp corrompido
+    }
+    isoTime = new Date(timestamp).toISOString();
+  } else {
+    isoTime = localDateTimeToIso(String(date), cleanTime);
+  }
+
   if (!isoTime) return null;
 
   const recordId = id ? String(id) : `m_${date}_${cleanTime.replace(":", "")}`;
@@ -167,6 +192,7 @@ export function mapMeasurementToHealthRecord(measurement) {
   return {
     timestamp: isoTime,
     time: isoTime,
+    zoneOffset: zoneOffset || null,
     weightKg: Math.round(weightNum * 100) / 100,
     clientRecordId: recordId,
     clientRecordVersion: version,

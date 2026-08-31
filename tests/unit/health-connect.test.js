@@ -7,7 +7,8 @@ import {
   mapMeasurementToHealthRecord,
   mapHealthRecordToMeasurement,
   mergeHealthMeasurements,
-  haveMeasurementsChanged
+  haveMeasurementsChanged,
+  isValidIsoTimestamp
 } from "../../src/domain/health-connect.js";
 import { HealthConnectService } from "../../src/services/health-connect.js";
 
@@ -105,6 +106,72 @@ describe("Health Connect Domain", () => {
       expect(mapMeasurementToHealthRecord({ weightKg: 0 })).toBeNull();
       expect(mapMeasurementToHealthRecord({ weightKg: -10 })).toBeNull();
       expect(mapMeasurementToHealthRecord({ weightKg: NaN })).toBeNull();
+    });
+
+    it("preserva timestamp e zoneOffset exatos (cenário Rio -> Tóquio) sem recalcular por fuso atual", () => {
+      // Medição criada no Rio (UTC-3 às 08:00 -> 11:00 UTC)
+      const measurementFromRio = {
+        id: "m_rio_1",
+        date: "2026-08-29",
+        time: "08:00",
+        timestamp: "2026-08-29T11:00:00.000Z",
+        zoneOffset: "-03:00",
+        weightKg: 82.5
+      };
+
+      const record = mapMeasurementToHealthRecord(measurementFromRio);
+      expect(record).not.toBeNull();
+      // O instante deve permanecer exatamente 11:00:00.000Z, imune a recalculos pelo fuso local da execução
+      expect(record.timestamp).toBe("2026-08-29T11:00:00.000Z");
+      expect(record.time).toBe("2026-08-29T11:00:00.000Z");
+      expect(record.zoneOffset).toBe("-03:00");
+      expect(record.weightKg).toBe(82.5);
+    });
+
+    it("utiliza fallback seguro para registros legados sem campo timestamp", () => {
+      const legacyMeasurement = {
+        id: "m_legacy_1",
+        date: "2026-08-29",
+        time: "08:00",
+        weightKg: 80.0
+      };
+
+      const record = mapMeasurementToHealthRecord(legacyMeasurement);
+      expect(record).not.toBeNull();
+      expect(record.timestamp).toBeDefined();
+      expect(record.timestamp).toContain("2026-08-29T");
+      expect(record.zoneOffset).toBeNull();
+    });
+
+    it("rejeita com fail-closed medições com timestamp corrompido ou inválido", () => {
+      const corruptedMeasurement = {
+        id: "m_corrupt_1",
+        date: "2026-08-29",
+        time: "08:00",
+        timestamp: "invalid-not-a-timestamp",
+        weightKg: 80.0
+      };
+
+      const record = mapMeasurementToHealthRecord(corruptedMeasurement);
+      expect(record).toBeNull();
+    });
+  });
+
+  describe("isValidIsoTimestamp", () => {
+    it("valida timestamps no padrão UTC e com offset", () => {
+      expect(isValidIsoTimestamp("2026-08-29T11:00:00.000Z")).toBe(true);
+      expect(isValidIsoTimestamp("2026-08-29T11:00:00Z")).toBe(true);
+      expect(isValidIsoTimestamp("2026-08-29T08:00:00-03:00")).toBe(true);
+      expect(isValidIsoTimestamp("2026-08-29T20:00:00+09:00")).toBe(true);
+    });
+
+    it("rejeita formatos não ISO ou datas parciais", () => {
+      expect(isValidIsoTimestamp("")).toBe(false);
+      expect(isValidIsoTimestamp(null)).toBe(false);
+      expect(isValidIsoTimestamp(undefined)).toBe(false);
+      expect(isValidIsoTimestamp("2026-08-29")).toBe(false);
+      expect(isValidIsoTimestamp("08:00")).toBe(false);
+      expect(isValidIsoTimestamp("2026-99-99T99:99:99Z")).toBe(false);
     });
   });
 

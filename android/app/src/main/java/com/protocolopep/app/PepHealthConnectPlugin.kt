@@ -24,6 +24,7 @@ import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 import java.time.Instant
 import java.time.ZoneId
+import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 
@@ -314,7 +315,16 @@ class PepHealthConnectPlugin : Plugin() {
                     1L
                 }
 
-                val zoneOffset = localZone.rules.getOffset(instant)
+                val rawZoneOffset = obj.optString("zoneOffset", "")
+                val recordZoneOffset = try {
+                    if (rawZoneOffset.isNotBlank()) {
+                        ZoneOffset.of(rawZoneOffset)
+                    } else {
+                        localZone.rules.getOffset(instant)
+                    }
+                } catch (e: Exception) {
+                    localZone.rules.getOffset(instant)
+                }
 
                 val metadata = if (clientRecordId.isNotEmpty()) {
                     Metadata(clientRecordId = clientRecordId, clientRecordVersion = clientRecordVersion)
@@ -325,7 +335,7 @@ class PepHealthConnectPlugin : Plugin() {
                 val weightRecord = WeightRecord(
                     weight = Mass.kilograms(weightKg),
                     time = instant,
-                    zoneOffset = zoneOffset,
+                    zoneOffset = recordZoneOffset,
                     metadata = metadata
                 )
                 recordsToInsert.add(weightRecord)
