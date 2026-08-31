@@ -16,16 +16,18 @@ Aplicativo Android nativo para acompanhamento de protocolos de peptídeos, cálc
   - Identidade completa (`dataOrigin`, `healthConnectRecordId`, `clientRecordId`, `clientRecordVersion`, `zoneOffset`) e chaves compostas imunes a colisão entre apps distintos.
   - Prevenção total de Sync Echo: medições importadas de fontes externas recebem `ownership: "external"` e não são reexportadas.
   - Versionamento monotônico com `clientRecordVersion` para atualizações in-place sem duplicatas.
-  - Sincronização de exclusões com rastreamento local de tombstones e chamada nativa a `deleteRecords`.
+  - Sincronização de exclusões com rastreamento local de tombstones e chamada nativa a `deleteRecords` apenas para registros do PEP.
+  - Mutex lock `isSyncing` e debounce de 1000ms na interface para prevenir concorrência e race conditions.
   - Tratamento fail-closed estrito em falhas de leitura/permissão e rejeição pura de datas/horários impossíveis.
 - **Notificações Nativas Multi-Canal & Verificação de Exact Alarm:**
   - Configuração de dois `NotificationChannel`s no Android: `pep_lembretes` (som + vibração) e `pep_lembretes_silenciosos` (discreto sem som/vibração).
-  - Verificação de `SCHEDULE_EXACT_ALARM` em runtime com fallback seguro (`allowWhileIdle: true`) no Android 12+ (API 31+).
-  - Centralização e eliminação de listeners redundantes de notificação na interface.
+  - Verificação de `SCHEDULE_EXACT_ALARM` em runtime com fail-closed (`not_applicable` no web e fallback seguro `allowWhileIdle: true` no Android).
+  - Centralização e eliminação de listeners redundantes de notificação na interface com foco acessível e ARIA.
 - **Proteção Matemática de Doses em UI sem Concentração:**
   - Bloqueio automático de débito de estoque (`VIAL_MISSING_CONCENTRATION`) caso a dose esteja em UI e o frasco não possua concentração calculada, com diálogo explícito para permitir salvar apenas no histórico sem afetar o estoque.
 - **Android SDK 36 & Conformidade com Google Play:**
   - Atualização completa de `compileSdkVersion` e `targetSdkVersion` para API 36 com bibliotecas AndroidX atualizadas.
+  - Contrato nativo de permissões `PermissionController.createRequestPermissionResultContract()` com `@ActivityCallback` de ciclo de vida seguro.
   - Remoção da permissão restrita `USE_EXACT_ALARM` em conformidade com as diretrizes do Google Play.
 - **Integridade Bidirecional Dose ↔ Movimento ↔ Frasco:**
   - O ID do log de dose (`doseLogId`) é pré-alocado e registrado no ledger de estoque antes da confirmação, garantindo rastreabilidade perfeita e estornos auditáveis.
@@ -41,8 +43,9 @@ Aplicativo Android nativo para acompanhamento de protocolos de peptídeos, cálc
 - **Cancelamento Seletivo de Lembretes & Sanitização de Busca:**
   - Cancelamento direcionado de notificações por peptídeo (`cancelScheduleForPeptide`) e sanitização de caracteres de controle na biblioteca científica.
 - **Qualidade & Testes Automatizados:**
-  - **229 testes unitários** no Vitest passando com 100% de sucesso.
-  - **24 testes E2E** no Playwright cobrindo todos os fluxos críticos.
+  - **234 testes unitários** no Vitest passando com 100% de sucesso.
+  - **27 testes E2E** no Playwright cobrindo todos os fluxos críticos em 3 viewports móveis.
+  - Testes unitários JUnit para Android em Kotlin (`HealthConnectTest.kt`) validados no Gradle.
 
 ---
 

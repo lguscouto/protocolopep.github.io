@@ -64,4 +64,18 @@ describe("Notification Formatter & Visual State (V05)", () => {
     expect(state.message).toContain("14 lembretes agendados");
     expect(state.badgeClass).toBe("badge-success");
   });
+
+  it("deve refletir restrição de exact alarm quando permitido mas com exact alarm restrito", () => {
+    const state = getNotificationVisualState({
+      enabled: true,
+      permission: "granted",
+      exactAlarm: "denied",
+      pendingCount: 14,
+      horizonDays: 14
+    });
+
+    expect(state.state).toBe("active");
+    expect(state.canSchedule).toBe(true);
+    expect(state.message).toContain("Alarmes exatos restritos");
+  });
 });

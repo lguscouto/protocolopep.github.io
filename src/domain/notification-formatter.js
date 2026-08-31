@@ -26,6 +26,7 @@ export function formatNotificationContent(peptide = {}, options = {}) {
 export function getNotificationVisualState({
   enabled = false,
   permission = "prompt", // "granted" | "denied" | "prompt"
+  exactAlarm = "granted", // "granted" | "denied" | "not_applicable" | "unknown"
   pendingCount = 0,
   horizonDays = 14
 } = {}) {
@@ -36,6 +37,7 @@ export function getNotificationVisualState({
       message: "As notificações estão bloqueadas nas configurações do seu Android. Acesse as Configurações do sistema para permitir.",
       badgeClass: "badge-danger",
       canSchedule: false,
+      exactAlarm,
       pendingCount: 0
     };
   }
@@ -47,17 +49,24 @@ export function getNotificationVisualState({
       message: "Ative os lembretes para receber alertas locais no horário das suas aplicações.",
       badgeClass: "badge-neutral",
       canSchedule: false,
+      exactAlarm,
       pendingCount: 0
     };
   }
 
   if (permission === "granted") {
+    const isExactDenied = exactAlarm === "denied" || exactAlarm === "unknown";
+    const exactMsg = isExactDenied
+      ? ` (Alarmes exatos restritos no sistema; lembretes usarão janelas normais)`
+      : "";
+
     return {
       state: "active",
       label: "Ativo & Agendado",
-      message: `${pendingCount} lembretes agendados no sistema para os próximos ${horizonDays} dias.`,
+      message: `${pendingCount} lembretes agendados no sistema para os próximos ${horizonDays} dias.${exactMsg}`,
       badgeClass: "badge-success",
       canSchedule: true,
+      exactAlarm,
       pendingCount: pendingCount
     };
   }
@@ -68,6 +77,7 @@ export function getNotificationVisualState({
     message: "O aplicativo precisa da sua autorização para agendar lembretes no aparelho.",
     badgeClass: "badge-warning",
     canSchedule: false,
+    exactAlarm,
     pendingCount: 0
   };
 }

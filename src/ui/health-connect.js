@@ -3,6 +3,7 @@ import {
   getHealthConnectStatusLabel,
   haveMeasurementsChanged
 } from "../domain/health-connect.js";
+import { accessibilityService } from "../services/accessibility.js";
 
 /**
  * Configura os controles e listeners da interface do Health Connect.
@@ -26,6 +27,7 @@ export function setupHealthConnectUI({
   const statusBadge = document.getElementById("hc-status-badge");
   const syncBtn = document.getElementById("hc-sync-btn");
   const settingsBtn = document.getElementById("hc-settings-btn");
+  let autoSyncDebounceTimer = null;
 
   async function updateSettingsCard() {
     if (!statusBadge) return;
@@ -33,6 +35,7 @@ export function setupHealthConnectUI({
     const isEnabled = healthConnectService.isEnabled();
     if (toggle) {
       toggle.checked = isEnabled;
+      toggle.setAttribute("aria-checked", isEnabled ? "true" : "false");
     }
 
     if (!isEnabled) {
@@ -78,6 +81,7 @@ export function setupHealthConnectUI({
   async function handleToggleChange() {
     if (!toggle) return;
     const shouldEnable = toggle.checked;
+    toggle.setAttribute("aria-checked", shouldEnable ? "true" : "false");
 
     if (shouldEnable) {
       const avail = await healthConnectService.checkAvailability();
@@ -85,6 +89,7 @@ export function setupHealthConnectUI({
         showToast(avail.message || "Health Connect não disponível neste dispositivo.");
         haptics.warning();
         toggle.checked = false;
+        toggle.setAttribute("aria-checked", "false");
         healthConnectService.setEnabled(false);
         await updateSettingsCard();
         return;
@@ -95,6 +100,7 @@ export function setupHealthConnectUI({
         showToast("Permissões de saúde não concedidas.");
         haptics.warning();
         toggle.checked = false;
+        toggle.setAttribute("aria-checked", "false");
         healthConnectService.setEnabled(false);
         await updateSettingsCard();
         return;
@@ -103,26 +109,42 @@ export function setupHealthConnectUI({
       healthConnectService.setEnabled(true);
       haptics.success();
       showToast("Health Connect ativado com sucesso.");
+      accessibilityService.announce("Health Connect ativado e conectado.");
       await updateSettingsCard();
-      await triggerAutoSync();
+      await triggerAutoSync(true);
     } else {
       healthConnectService.setEnabled(false);
       haptics.selection();
       showToast("Health Connect desativado.");
+      accessibilityService.announce("Health Connect desativado.");
       await updateSettingsCard();
     }
   }
 
-  async function triggerAutoSync() {
+  async function triggerAutoSync(immediate = false) {
     if (!healthConnectService.isEnabled()) return;
-    const currentMeasurements = storage.getMeasurements();
-    const result = await healthConnectService.syncMeasurements(currentMeasurements);
 
-    if (result.success && result.measurements) {
-      if (haveMeasurementsChanged(currentMeasurements, result.measurements)) {
-        storage.setMeasurements(result.measurements);
-        onSyncComplete(result.measurements);
+    if (autoSyncDebounceTimer) {
+      clearTimeout(autoSyncDebounceTimer);
+      autoSyncDebounceTimer = null;
+    }
+
+    const runSync = async () => {
+      const currentMeasurements = storage.getMeasurements();
+      const result = await healthConnectService.syncMeasurements(currentMeasurements);
+
+      if (result.success && result.measurements) {
+        if (haveMeasurementsChanged(currentMeasurements, result.measurements)) {
+          storage.setMeasurements(result.measurements);
+          onSyncComplete(result.measurements);
+        }
       }
+    };
+
+    if (immediate) {
+      await runSync();
+    } else {
+      autoSyncDebounceTimer = setTimeout(runSync, 1000);
     }
   }
 
@@ -145,10 +167,14 @@ export function setupHealthConnectUI({
         }
       }
       haptics.success();
-      showToast(`Sincronizado: ${result.exportedCount} enviados, ${result.importedCount} importados.`);
+      const msg = `Sincronizado: ${result.exportedCount} enviados, ${result.importedCount} importados.`;
+      showToast(msg);
+      accessibilityService.announce(msg);
     } else {
       haptics.warning();
-      showToast(result.reason || "Erro na sincronização.");
+      const err = result.reason || "Erro na sincronização.";
+      showToast(err);
+      accessibilityService.announce(err, "assertive");
     }
   }
 

@@ -138,6 +138,7 @@ export class NotificationService {
   async getSystemStatus() {
     let permission = "prompt";
     let pendingCount = 0;
+    let exactAlarm = "not_applicable";
 
     if (Capacitor.isNativePlatform()) {
       try {
@@ -152,6 +153,9 @@ export class NotificationService {
 
         const pending = await LocalNotifications.getPending();
         pendingCount = pending && pending.notifications ? pending.notifications.length : 0;
+
+        const eaRes = await this.checkExactAlarmPermission();
+        exactAlarm = eaRes.status;
       } catch (e) {
         permission = "denied";
       }
@@ -164,6 +168,7 @@ export class NotificationService {
     return getNotificationVisualState({
       enabled: this.cfg.enabled,
       permission,
+      exactAlarm,
       pendingCount,
       horizonDays: 14
     });

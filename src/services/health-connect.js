@@ -24,6 +24,7 @@ const HC_ENABLED_KEY = "pep_health_connect_enabled";
 export class HealthConnectService {
   constructor(storage = defaultStorage) {
     this.storage = storage;
+    this.isSyncing = false;
   }
 
   isNativeAndroid() {
@@ -129,18 +130,23 @@ export class HealthConnectService {
       return { success: false, reason: "Health Connect desativado pelo usuário.", measurements: localMeasurements };
     }
 
-    // Item 10: Verificar permissões reais no sistema antes de iniciar qualquer operação de sync
-    const permStatus = await this.checkPermissions();
-    if (!permStatus.granted) {
-      return {
-        success: false,
-        reason: "PERMISSION_DENIED",
-        message: permStatus.reason || "Permissão do Health Connect não autorizada ou revogada.",
-        measurements: localMeasurements
-      };
+    if (this.isSyncing) {
+      return { success: false, reason: "SYNC_IN_PROGRESS", message: "Sincronização já em andamento.", measurements: localMeasurements };
     }
 
+    this.isSyncing = true;
     try {
+      // Item 10: Verificar permissões reais no sistema antes de iniciar qualquer operação de sync
+      const permStatus = await this.checkPermissions();
+      if (!permStatus.granted) {
+        return {
+          success: false,
+          reason: "PERMISSION_DENIED",
+          message: permStatus.reason || "Permissão do Health Connect não autorizada ou revogada.",
+          measurements: localMeasurements
+        };
+      }
+
       // 1. Processar e sincronizar exclusões com tombstones locais
       let deletedCount = 0;
       const tombstones = this.storage && typeof this.storage.getTombstones === "function"
@@ -199,6 +205,8 @@ export class HealthConnectService {
         reason: e.message || "Erro ao sincronizar com o Health Connect.",
         measurements: localMeasurements
       };
+    } finally {
+      this.isSyncing = false;
     }
   }
 }
