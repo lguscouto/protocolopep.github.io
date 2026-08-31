@@ -34,11 +34,11 @@ describe("Diagnósticos Técnicos Desidentificados (V09)", () => {
 
     const report = generateDiagnosticReport({
       storage: mockStorage,
-      appVersion: "1.9.0",
+      appVersion: "1.9.9",
       notificationsActive: true
     });
 
-    expect(report.app.version).toBe("1.9.0");
+    expect(report.app.version).toBe("1.9.9");
     expect(report.metrics.totalPeptidesCount).toBe(2);
     expect(report.metrics.totalLogDatesCount).toBe(2);
     expect(report.metrics.totalRecordedDosesCount).toBe(2);
@@ -57,7 +57,7 @@ describe("Diagnósticos Técnicos Desidentificados (V09)", () => {
 
   it("sanitizeTechnicalReport deve bloquear e lançar exceção se detectar campos sensíveis", () => {
     const dangerousPayload = {
-      app: { version: "1.9.0" },
+      app: { version: "1.9.9" },
       metrics: { count: 1 },
       leak: { name: "Semaglutide", dose: "1mg" }
     };

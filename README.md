@@ -1,6 +1,6 @@
 # 🧪 Protocolo PEP · App Android (Local-First)
 
-![Version](https://img.shields.io/badge/version-1.9.0-2CC5C0)
+![Version](https://img.shields.io/badge/version-1.9.9-2CC5C0)
 ![Android](https://img.shields.io/badge/Android-8.0%2B-green)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![CI](https://github.com/lguscouto/protocolopep.github.io/actions/workflows/ci.yml/badge.svg)
@@ -9,7 +9,39 @@ Aplicativo Android nativo para acompanhamento de protocolos de peptídeos, cálc
 
 ---
 
-## 🚀 Novidades da Versão 1.9.0
+## 🚀 Novidades da Versão 1.9.9 (Evolução Visual & Arquitetural)
+
+- **Arquitetura Resiliente & Fail-Closed:**
+  - Orquestrador de persistência seguro (`committed-action`): nenhum feedback visual, tátil (`haptics`) ou rotação de inventário é acionado antes da confirmação de escrita em disco.
+- **Design System Acessível & Ergonomia Mobile:**
+  - Paleta com contraste WCAG 2.1 AA auditado ($\ge 4.5:1$) sobre fundos escuros OLED e claros.
+  - Dimensão de toque mínima de $44 \times 44\text{ px}$ em todos os botões e alvos interativos, e barra de navegação com altura $\ge 48\text{ px}$.
+- **Redesenho do Dashboard & Fluxo Diário:**
+  - Estado vazio contextual *"Seu protocolo começa aqui"* com CTA limpo de criação, eliminando contadores zerados confusos (`0%` e `0/0`).
+  - Cards da rotina diária enriquecidos com badges de status textuais (*Pendente* / *Aplicado*), horário, saldo de frasco e rotação de sítio de aplicação.
+  - Seção de **Próximas Aplicações** calculando cronologicamente os próximos dias da rotina.
+- **Calculadora com Dupla Conferência & Régua U-100:**
+  - Escala visual de seringa calibrada iniciando no marco zero (0 UI até 100 UI).
+  - Card explícito *"Confira os dados usados"* (Frasco mg, Diluente mL e Dose pretendida) com cálculo automático e validação de botões de ação.
+- **Visão Semanal Responsiva & Estável:**
+  - Rolagem horizontal interna (`.week-scroll`) sem estourar a tela em dispositivos compactos (360px).
+  - Primeira coluna de compostos fixa (`position: sticky; left: 0`) para fácil identificação durante o scroll.
+  - Legenda informativa completa (*Aplicado*, *Pendente*, *Não programado*).
+- **Ajustes Estruturados em 4 Grupos Semânticos:**
+  1. *Aparência e Acessibilidade* (Idioma, Modo de Alto Contraste).
+  2. *Segurança e Notificações* (Bloqueio PIN/Biometria, Widget Discreto, Lembretes Locais).
+  3. *Dados e Inventário* (Frascos Reconstituídos, Sítios, Health Connect, Backup JSON).
+  4. *Sobre o App e Ajuda* (Diagnósticos Técnicos, Termos & Privacidade).
+- **Estados de Dose Avançados & Tendências Descritivas:**
+  - Registro de doses além do binário: suporte a `applied` (aplicada), `skipped` (pausa) e `missed` (esquecida) com motivo.
+  - Estatísticas de variação de peso ($\Delta\text{ kg}$) e sintomas estritamente descritivas sem inferências médicas.
+- **Suíte de Testes Automatizada & CI/CD:**
+  - 173 testes unitários no `vitest` e 24 testes E2E multi-viewport no `playwright` com verificação de runtime limpo.
+  - Validação nativa completa no emulador Android e build automatizado no GitHub Actions.
+
+---
+
+## 🚀 Novidades Anteriores (Versão 1.9.0)
 
 - **Refinamento Completo para Português Brasileiro (PT-BR) Natural & Não Prescritivo:**
   - Terminologia correta para compostos injetáveis no Dashboard: *"0 / 2 aplicados hoje"*.
