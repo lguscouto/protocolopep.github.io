@@ -2,6 +2,31 @@
  * Motor Puro de Agendamento e Ocorrências de Doses
  */
 
+export function isValidTime(timeStr) {
+  if (typeof timeStr !== "string") return false;
+  const trimmed = timeStr.trim();
+  if (!/^\d{2}:\d{2}$/.test(trimmed)) return false;
+  const [hh, mm] = trimmed.split(":").map(Number);
+  return Number.isInteger(hh) && Number.isInteger(mm) && hh >= 0 && hh <= 23 && mm >= 0 && mm <= 59;
+}
+
+export function isValidDateKey(key) {
+  if (typeof key !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(key)) {
+    return false;
+  }
+  const [y, m, d] = key.split("-").map(Number);
+  if (!Number.isInteger(y) || y < 1900 || y > 2100) return false;
+  if (!Number.isInteger(m) || m < 1 || m > 12) return false;
+  if (!Number.isInteger(d) || d < 1 || d > 31) return false;
+
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  return (
+    dt.getUTCFullYear() === y &&
+    dt.getUTCMonth() === m - 1 &&
+    dt.getUTCDate() === d
+  );
+}
+
 export function dateToKey(d = new Date()) {
   const x = new Date(d);
   x.setMinutes(x.getMinutes() - x.getTimezoneOffset());
@@ -9,7 +34,7 @@ export function dateToKey(d = new Date()) {
 }
 
 export function keyToDate(key) {
-  if (typeof key !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(key)) {
+  if (typeof key !== "string" || !isValidDateKey(key)) {
     return new Date();
   }
   const [y, m, d] = key.split("-").map(Number);
@@ -18,10 +43,17 @@ export function keyToDate(key) {
 
 export function daysBetween(aKey, bDate) {
   if (!aKey || !bDate) return 0;
-  const a = keyToDate(typeof aKey === "string" ? aKey : dateToKey(aKey));
-  const b = new Date(bDate);
-  b.setHours(0, 0, 0, 0);
-  return Math.round((b.getTime() - a.getTime()) / 86400000);
+  const aStr = typeof aKey === "string" ? aKey : dateToKey(aKey);
+  const bStr = typeof bDate === "string" ? bDate : dateToKey(bDate);
+  if (!isValidDateKey(aStr) || !isValidDateKey(bStr)) return 0;
+
+  const [y1, m1, d1] = aStr.split("-").map(Number);
+  const [y2, m2, d2] = bStr.split("-").map(Number);
+
+  const utc1 = Date.UTC(y1, m1 - 1, d1);
+  const utc2 = Date.UTC(y2, m2 - 1, d2);
+
+  return Math.round((utc2 - utc1) / 86400000);
 }
 
 export function isScheduledOnDate(peptide, targetDate = new Date()) {
@@ -60,28 +92,58 @@ export function calculateDayProgress(peptides = [], logs = {}, targetDate = new 
   const scheduled = getScheduledPeptides(peptides, targetDate);
 
   let totalDue = 0;
+  let scheduledTaken = 0;
+  const scheduledPepIds = new Set();
+
   scheduled.forEach((p) => {
-    totalDue += Math.max(1, parseInt(p.perDay, 10) || 1);
+    const due = Math.max(1, parseInt(p.perDay, 10) || 1);
+    totalDue += due;
+    scheduledPepIds.add(p.id);
+
+    const val = dayLogs[p.id];
+    let count = 0;
+    if (Array.isArray(val)) {
+      count = val.length;
+    } else if (val && typeof val === "object") {
+      count = 1;
+    }
+    scheduledTaken += Math.min(due, count);
   });
 
   let totalTaken = 0;
+  let extraTaken = 0;
   Object.entries(dayLogs).forEach(([pepId, val]) => {
+    let count = 0;
     if (Array.isArray(val)) {
-      totalTaken += val.length;
+      count = val.length;
     } else if (val && typeof val === "object") {
-      totalTaken += 1;
+      count = 1;
+    }
+    totalTaken += count;
+    if (!scheduledPepIds.has(pepId)) {
+      extraTaken += count;
+    } else {
+      const p = scheduled.find((x) => x.id === pepId);
+      const due = p ? Math.max(1, parseInt(p.perDay, 10) || 1) : 1;
+      if (count > due) {
+        extraTaken += (count - due);
+      }
     }
   });
 
-  const percentage = totalDue > 0 ? Math.min(100, Math.round((totalTaken / totalDue) * 100)) : (totalTaken > 0 ? 100 : 0);
+  const percentage = totalDue > 0
+    ? Math.min(100, Math.round((scheduledTaken / totalDue) * 100))
+    : (totalTaken > 0 ? 100 : 0);
 
   return {
     dateKey: tKey,
     totalScheduled: scheduled.length,
     totalDue,
     totalTaken,
+    scheduledTaken,
+    extraTaken,
     percentage,
-    isComplete: totalDue > 0 && totalTaken >= totalDue
+    isComplete: totalDue > 0 && scheduledTaken >= totalDue
   };
 }
 

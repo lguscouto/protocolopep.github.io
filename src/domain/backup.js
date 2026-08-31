@@ -44,7 +44,7 @@ export function validateAndParseBackup(jsonString) {
 
   // Se versão for maior que a suportada
   const version = parseInt(parsed.version, 10) || 1;
-  if (version > CURRENT_SCHEMA_VERSION + 2) {
+  if (version > CURRENT_SCHEMA_VERSION) {
     return {
       valid: false,
       error: `Versão do backup (${version}) é mais recente que a versão suportada por este aplicativo.`

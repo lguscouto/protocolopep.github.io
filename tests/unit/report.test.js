@@ -99,4 +99,37 @@ describe("Relatórios de Aplicações e Exportação (V08)", () => {
     expect(escapeCSV('Teste "com aspas"')).toBe('"Teste ""com aspas"""');
     expect(escapeCSV(null)).toBe('""');
   });
+
+  it("deve prevenir CSV Formula Injection para campos iniciando com =, +, -, @ ou tab", () => {
+    expect(escapeCSV("=1+1")).toBe('"\'=1+1"');
+    expect(escapeCSV("+SUM(A1:A10)")).toBe('"\'+SUM(A1:A10)"');
+    expect(escapeCSV("-2+5")).toBe('"\' -2+5"'.replace(" ", ""));
+    expect(escapeCSV("@SUM(B1:B2)")).toBe('"\'@SUM(B1:B2)"');
+    expect(escapeCSV("\tDose")).toBe('"\'\tDose"');
+    expect(escapeCSV("Texto Normal")).toBe('"Texto Normal"');
+  });
+
+  it("deve sanitizar estritamente tags HTML e scripts contra XSS em generateReportHTML", () => {
+    const maliciousEntries = [
+      {
+        date: "2026-08-30",
+        time: "<script>alert(1)</script>",
+        peptideName: '<img src=x onerror="alert(1)">',
+        peptideSub: '"><svg onload=alert(1)>',
+        dose: "<iframe src=evil.com>",
+        ui: 10,
+        type: "Regular",
+        note: "<script>document.cookie</script>"
+      }
+    ];
+
+    const html = generateReportHTML(maliciousEntries);
+    expect(html).not.toContain("<script>");
+    expect(html).not.toContain("<img src=x");
+    expect(html).not.toContain("<svg");
+    expect(html).not.toContain("<iframe");
+    expect(html).toContain("&lt;script&gt;alert(1)&lt;/script&gt;");
+    expect(html).toContain("&lt;img src=x onerror=&quot;alert(1)&quot;&gt;");
+    expect(html).toContain("&lt;script&gt;document.cookie&lt;/script&gt;");
+  });
 });

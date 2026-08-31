@@ -20,16 +20,25 @@ export function calculateWidgetSummary({
   const dayLogs = (logs && typeof logs === "object" && logs[tKey]) ? logs[tKey] : {};
 
   const scheduled = getScheduledPeptides(peptides, dateObj);
-  const totalCount = scheduled.length;
-
+  let totalCount = 0;
   let takenCount = 0;
   const pendingPeptides = [];
 
   scheduled.forEach((p) => {
-    const isTaken = Boolean(dayLogs[p.id]);
-    if (isTaken) {
-      takenCount++;
-    } else {
+    const due = Math.max(1, parseInt(p.perDay, 10) || 1);
+    totalCount += due;
+
+    const val = dayLogs[p.id];
+    let recorded = 0;
+    if (Array.isArray(val)) {
+      recorded = val.length;
+    } else if (val && typeof val === "object") {
+      recorded = 1;
+    }
+    const takenForPeptide = Math.min(due, recorded);
+    takenCount += takenForPeptide;
+
+    if (recorded < due) {
       pendingPeptides.push(p);
     }
   });

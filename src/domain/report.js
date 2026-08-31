@@ -70,10 +70,25 @@ export function buildReportData({
   return entries;
 }
 
+export function escapeHTML(val) {
+  if (val === null || val === undefined) return "";
+  return String(val)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 export function escapeCSV(val) {
   if (val === null || val === undefined) return '""';
-  const str = String(val).replace(/"/g, '""');
-  return `"${str}"`;
+  let str = String(val);
+  // Formula Injection prevention: se iniciar por =, +, -, @ ou \t, prefixa com '
+  if (/^[=+\-@\t\r]/.test(str)) {
+    str = `'${str}`;
+  }
+  const escaped = str.replace(/"/g, '""');
+  return `"${escaped}"`;
 }
 
 export function generateReportCSV(entries = []) {
@@ -101,8 +116,8 @@ export function generateReportCSV(entries = []) {
 }
 
 export function generateReportHTML(entries = [], { startDate, endDate, generatedAt = new Date() } = {}) {
-  const dStr = generatedAt.toLocaleDateString("pt-BR");
-  const tStr = generatedAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  const dStr = escapeHTML(generatedAt.toLocaleDateString("pt-BR"));
+  const tStr = escapeHTML(generatedAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }));
   
   let periodText = "Todo o Histórico";
   if (startDate && endDate) {
@@ -112,20 +127,21 @@ export function generateReportHTML(entries = [], { startDate, endDate, generated
   } else if (endDate) {
     periodText = `Até ${endDate.split("-").reverse().join("/")}`;
   }
+  const safePeriodText = escapeHTML(periodText);
 
   const rows = entries.map((e) => {
     const [y, m, d] = (e.date || "").split("-");
     const dateFmt = d && m && y ? `${d}/${m}/${y}` : e.date;
     return `
       <tr>
-        <td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;font-weight:600;">${dateFmt}</td>
-        <td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;">${e.time}</td>
-        <td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;font-weight:700;">${e.peptideName}</td>
-        <td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;">${e.dose} (${e.ui} UI)</td>
+        <td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;font-weight:600;">${escapeHTML(dateFmt)}</td>
+        <td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;">${escapeHTML(e.time)}</td>
+        <td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;font-weight:700;">${escapeHTML(e.peptideName)}</td>
+        <td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;">${escapeHTML(e.dose)} (${Number(e.ui) || 0} UI)</td>
         <td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;">
-          <span style="display:inline-block;padding:2px 6px;border-radius:4px;font-size:11px;background:${e.retroactive ? "#FEF3C7;color:#92400E" : "#E6FFFA;color:#047857"}">${e.type}</span>
+          <span style="display:inline-block;padding:2px 6px;border-radius:4px;font-size:11px;background:${e.retroactive ? "#FEF3C7;color:#92400E" : "#E6FFFA;color:#047857"}">${escapeHTML(e.type)}</span>
         </td>
-        <td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;color:#64748B;font-size:12px;">${e.note || "--"}</td>
+        <td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;color:#64748B;font-size:12px;">${escapeHTML(e.note || "--")}</td>
       </tr>
     `;
   }).join("");
@@ -156,7 +172,7 @@ export function generateReportHTML(entries = [], { startDate, endDate, generated
   <div class="header">
     <div>
       <h1 class="title">Protocolo PEP — Relatório de Aplicações</h1>
-      <div class="meta">Período: <b>${periodText}</b> · Emitido em: <b>${dStr} às ${tStr}</b></div>
+      <div class="meta">Período: <b>${safePeriodText}</b> · Emitido em: <b>${dStr} às ${tStr}</b></div>
     </div>
   </div>
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isScheduledOnDate, getScheduledPeptides, calculateDayProgress, occurrencesForRange, daysBetween, getUpcomingOccurrences } from "../../src/domain/schedule.js";
+import { isScheduledOnDate, getScheduledPeptides, calculateDayProgress, occurrencesForRange, daysBetween, getUpcomingOccurrences, isValidTime, isValidDateKey } from "../../src/domain/schedule.js";
 
 describe("Schedule Domain", () => {
   it("calcula dias entre datas corretamente", () => {
@@ -92,5 +92,54 @@ describe("Schedule Domain", () => {
     expect(upcoming[1].name).toBe("BPC-157");
     expect(upcoming[2].dateKey).toBe("2026-08-31"); // Segunda: TB-500 20:00
     expect(upcoming[2].name).toBe("TB-500");
+  });
+
+  it("deve validar horários reais com isValidTime (P1 - Sec 17)", () => {
+    expect(isValidTime("00:00")).toBe(true);
+    expect(isValidTime("00:30")).toBe(true);
+    expect(isValidTime("12:00")).toBe(true);
+    expect(isValidTime("23:59")).toBe(true);
+
+    expect(isValidTime("24:00")).toBe(false);
+    expect(isValidTime("12:60")).toBe(false);
+    expect(isValidTime("99:99")).toBe(false);
+    expect(isValidTime("25:70")).toBe(false);
+    expect(isValidTime("invalid")).toBe(false);
+    expect(isValidTime(null)).toBe(false);
+  });
+
+  it("deve validar datas reais e anos bissextos com isValidDateKey (P1 - Sec 18)", () => {
+    expect(isValidDateKey("2026-08-30")).toBe(true);
+    expect(isValidDateKey("2026-02-28")).toBe(true);
+    expect(isValidDateKey("2024-02-29")).toBe(true); // 2024 é bissexto
+
+    expect(isValidDateKey("2026-02-29")).toBe(false); // 2026 NÃO é bissexto
+    expect(isValidDateKey("2026-04-31")).toBe(false); // Abril tem 30 dias
+    expect(isValidDateKey("2026-13-01")).toBe(false); // Mês 13 inválido
+    expect(isValidDateKey("2026-99-99")).toBe(false);
+    expect(isValidDateKey("invalid-date")).toBe(false);
+    expect(isValidDateKey(null)).toBe(false);
+  });
+
+  it("não deve permitir que doses extras inflam percentual de doses previstas (P1 - Sec 21)", () => {
+    const peptides = [
+      { id: "p1", name: "Diário", days: null, perDay: 1 }
+    ];
+
+    const domingo = new Date("2026-08-30T12:00:00");
+    // p1 teve 1 dose agendada tomada + 2 doses extras do mesmo peptídeo + 1 dose de peptídeo não agendado
+    const logs = {
+      "2026-08-30": {
+        "p1": [{ t: "08:00" }, { t: "12:00" }, { t: "18:00" }],
+        "p_extra": [{ t: "20:00" }]
+      }
+    };
+
+    const prog = calculateDayProgress(peptides, logs, domingo);
+    expect(prog.totalDue).toBe(1);
+    expect(prog.scheduledTaken).toBe(1); // Limitado à dose prevista
+    expect(prog.extraTaken).toBe(3); // 2 excedentes de p1 + 1 de p_extra
+    expect(prog.totalTaken).toBe(4);
+    expect(prog.percentage).toBe(100); // 1 / 1 = 100%, e não 400%
   });
 });

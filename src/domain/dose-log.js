@@ -21,7 +21,9 @@ export function createDoseLog(data = {}) {
       // Se for retroativo e não informou takenAt completo, compõe a data com o horário
       const timeStr = data.time || "12:00";
       const [hh, mm] = timeStr.split(":").map(Number);
-      const pastD = new Date(`${scheduledDate}T${String(hh || 12).padStart(2, "0")}:${String(mm || 0).padStart(2, "0")}:00`);
+      const safeH = Number.isInteger(hh) ? hh : 12;
+      const safeM = Number.isInteger(mm) ? mm : 0;
+      const pastD = new Date(`${scheduledDate}T${String(safeH).padStart(2, "0")}:${String(safeM).padStart(2, "0")}:00`);
       takenAt = pastD.toISOString();
     } else {
       takenAt = now.toISOString();
@@ -33,8 +35,8 @@ export function createDoseLog(data = {}) {
   const status = DOSE_STATUSES.includes(rawStatus) ? rawStatus : "applied";
 
   return {
-    id: data.id && typeof data.id === "string" && data.id.startsWith("log_")
-      ? data.id
+    id: data.id && typeof data.id === "string" && data.id.trim()
+      ? data.id.trim()
       : `log_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`,
     peptideId: data.peptideId ? String(data.peptideId) : "",
     scheduledDate,
@@ -46,6 +48,8 @@ export function createDoseLog(data = {}) {
     ui: Number.isFinite(Number(data.ui)) ? Number(data.ui) : 0,
     note: data.note ? String(data.note).trim() : "",
     site: data.site ? String(data.site).trim() : "",
+    vialId: data.vialId ? String(data.vialId) : null,
+    inventoryMovementId: data.inventoryMovementId ? String(data.inventoryMovementId) : null,
     retroactive: isRetroactive,
     createdAt: data.createdAt || now.toISOString(),
     editedAt: data.editedAt || null
@@ -90,6 +94,7 @@ export function normalizeDoseEntry(entry, scheduledDate, peptideId) {
 
   // Objeto legado (ex: { time: "08:30" } ou { taken: true })
   return createDoseLog({
+    id: typeof entry === "object" && entry.id ? entry.id : undefined,
     peptideId,
     scheduledDate,
     time: typeof entry === "object" ? entry.time || "12:00" : "12:00",
@@ -97,6 +102,8 @@ export function normalizeDoseEntry(entry, scheduledDate, peptideId) {
     ui: typeof entry === "object" ? entry.ui || 0 : 0,
     note: typeof entry === "object" ? entry.note || "" : "",
     site: typeof entry === "object" ? entry.site || "" : "",
+    vialId: typeof entry === "object" && entry.vialId ? entry.vialId : null,
+    inventoryMovementId: typeof entry === "object" && entry.inventoryMovementId ? entry.inventoryMovementId : null,
     retroactive: scheduledDate < dateToKey(new Date())
   });
 }

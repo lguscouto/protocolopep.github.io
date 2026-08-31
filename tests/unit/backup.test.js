@@ -48,4 +48,29 @@ describe("Backup Domain", () => {
     expect(result.valid).toBe(false);
     expect(result.error).toContain("tamanho máximo permitido");
   });
+
+  it("rejeita backup com versão de schema futura (P1 - Sec 6)", () => {
+    const futureBackup = JSON.stringify({
+      version: 99,
+      protocol: [{ name: "Futuristic Peptídeo", dose: "1 mg" }],
+      logs: {}
+    });
+    const result = validateAndParseBackup(futureBackup);
+    expect(result.valid).toBe(false);
+    expect(result.error).toContain("mais recente que a versão suportada");
+  });
+
+  it("migra adequadamente backups de versões legadas sem inventário ou locais", () => {
+    const legacyJson = JSON.stringify({
+      version: 1,
+      peptides: [{ name: "BPC-157", dose: "250 mcg" }],
+      logs: {}
+    });
+    const result = validateAndParseBackup(legacyJson);
+    expect(result.valid).toBe(true);
+    expect(result.data.protocol).toHaveLength(1);
+    expect(result.data.inventory).toEqual([]);
+    expect(result.data.sites.length).toBeGreaterThan(0); // Locais padrão
+    expect(result.data.measurements).toEqual([]);
+  });
 });

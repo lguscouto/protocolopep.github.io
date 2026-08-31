@@ -48,8 +48,11 @@ import { researchService } from "./services/research.js";
 import { setupResearchUI } from "./ui/research.js";
 import { AccessibilityService } from "./services/accessibility.js";
 import { setupAccessibilityUI } from "./ui/accessibility.js";
+import { DoseService } from "./services/dose-service.js";
+import { openRetroLogModal as openRetroModal, saveRetroLog as saveRetro } from "./ui/retro-log.js";
 
 export const accessibilityService = new AccessibilityService();
+export const doseService = new DoseService(storage);
 let accessibilityUI = null;
 
 const esc = escapeHtml;
@@ -684,171 +687,98 @@ function toggleDose(id) {
   const peptides = storage.getPeptides();
   const logs = storage.getLogs();
   const todayK = dateKey(new Date());
-  const rec = { ...(logs[todayK] || {}) };
+  const rec = logs[todayK] || {};
   const p = peptides.find((x) => x.id === id);
   if (!p) return;
 
-  const nowTime = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
   const isUndoing = dosesTaken(rec, id) > 0;
-
-  let createdLog = null;
   if (isUndoing) {
-    delete rec[id];
+    const res = doseService.undoDose({ peptideId: p.id, scheduledDate: todayK });
+    if (!res.success) {
+      alert("Erro ao desmarcar aplicação: " + (res.message || res.error));
+      return;
+    }
+    haptics.light();
+    accessibilityService.announce(`Aplicação de ${p.name} desmarcada.`);
   } else {
     const configuredSites = storage.getSites();
     const lastUsed = getLastUsedSite(logs, p.id);
     const currentSite = getNextSite(configuredSites, lastUsed ? lastUsed.site : null) || "";
-
-    createdLog = createDoseLog({
+    const res = doseService.registerDose({
       peptideId: p.id,
       scheduledDate: todayK,
-      time: nowTime,
       dose: p.dose,
       ui: p.ui,
-      site: currentSite,
-      retroactive: false
+      site: currentSite
     });
-    rec[id] = [createdLog];
-  }
-
-  if (Object.keys(rec).length === 0) {
-    delete logs[todayK];
-  } else {
-    logs[todayK] = rec;
-  }
-
-  const res = commitAction({
-    persist: () => storage.setLogs(logs),
-    onSuccess: () => {
-      if (isUndoing) {
-        haptics.light();
-        accessibilityService.announce(`Aplicação de ${p.name} desmarcada.`);
-      } else {
-        haptics.success();
-        accessibilityService.announce(`Aplicação de ${p.name} confirmada.`);
-      }
-
-      // Movimentação no inventário após persistência confirmada
-      const activeVial = storage.findVialForPeptide(p.id, p.name);
-      if (activeVial) {
-        if (isUndoing) {
-          storage.creditDoseToVial(activeVial.id, { doseStr: p.dose, note: `Estorno de aplicação (${p.name})` });
-        } else {
-          storage.debitDoseFromVial(activeVial.id, { doseStr: p.dose, doseLogId: createdLog?.id, note: p.name });
-        }
-      }
-
-      renderToday();
-      renderWeek();
-      renderHistory();
+    if (!res.success) {
+      alert("Erro ao gravar aplicação: " + (res.message || res.error));
+      return;
     }
-  });
-
-  if (!res.success) {
-    alert("Erro ao gravar aplicação: " + (res.error || "Armazenamento local indisponível"));
+    haptics.success();
+    accessibilityService.announce(`Aplicação de ${p.name} confirmada.`);
   }
+
+  renderToday();
+  renderWeek();
+  renderHistory();
 }
 
 function addSingleDose(id) {
   const peptides = storage.getPeptides();
   const logs = storage.getLogs();
   const todayK = dateKey(new Date());
-  const rec = { ...(logs[todayK] || {}) };
+  const rec = logs[todayK] || {};
   const p = peptides.find((x) => x.id === id);
   if (!p) return;
 
   const perDay = p.perDay || 1;
-  const curr = rec[id];
-  let arr = [];
-
-  if (Array.isArray(curr)) {
-    arr = [...curr];
-  } else if (curr && typeof curr === "object") {
-    const norm = normalizeDoseEntry(curr, todayK, id);
-    if (norm) arr = [norm];
-  }
-
-  if (arr.length >= perDay) return;
+  const takenCount = dosesTaken(rec, id);
+  if (takenCount >= perDay) return;
 
   const configuredSites = storage.getSites();
   const lastUsed = getLastUsedSite(logs, p.id);
   const currentSite = getNextSite(configuredSites, lastUsed ? lastUsed.site : null) || "";
 
-  const nowTime = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-  const doseLog = createDoseLog({
+  const res = doseService.registerDose({
     peptideId: p.id,
     scheduledDate: todayK,
-    time: nowTime,
     dose: p.dose,
     ui: p.ui,
-    site: currentSite,
-    retroactive: false
-  });
-  arr.push(doseLog);
-  rec[id] = arr;
-  logs[todayK] = rec;
-
-  const res = commitAction({
-    persist: () => storage.setLogs(logs),
-    onSuccess: () => {
-      // Débito no inventário após persistência confirmada
-      const activeVial = storage.findVialForPeptide(p.id, p.name);
-      if (activeVial) {
-        storage.debitDoseFromVial(activeVial.id, { doseStr: p.dose, doseLogId: doseLog.id, note: p.name });
-      }
-
-      haptics.medium();
-      renderToday();
-      renderWeek();
-      renderHistory();
-    }
+    site: currentSite
   });
 
   if (!res.success) {
-    alert("Erro ao gravar dose: " + (res.error || "Armazenamento indisponível"));
+    alert("Erro ao gravar dose: " + (res.message || res.error));
+    return;
   }
+
+  haptics.medium();
+  renderToday();
+  renderWeek();
+  renderHistory();
 }
 
 function undoSingleDose(id) {
-  const logs = storage.getLogs();
+  const peptides = storage.getPeptides();
+  const p = peptides.find((x) => x.id === id);
+  if (!p) return;
   const todayK = dateKey(new Date());
-  const rec = { ...(logs[todayK] || {}) };
-  const curr = rec[id];
 
-  if (Array.isArray(curr) && curr.length > 0) {
-    curr.pop();
-    if (curr.length === 0) delete rec[id];
-    else rec[id] = curr;
-  } else if (curr) {
-    delete rec[id];
-  }
-
-  if (Object.keys(rec).length === 0) delete logs[todayK];
-  else logs[todayK] = rec;
-
-  const res = commitAction({
-    persist: () => storage.setLogs(logs),
-    onSuccess: () => {
-      // Estorno no inventário
-      const peptides = storage.getPeptides();
-      const p = peptides.find((x) => x.id === id);
-      if (p) {
-        const activeVial = storage.findVialForPeptide(p.id, p.name);
-        if (activeVial) {
-          storage.creditDoseToVial(activeVial.id, { doseStr: p.dose, note: `Estorno de dose (${p.name})` });
-        }
-      }
-
-      haptics.light();
-      renderToday();
-      renderWeek();
-      renderHistory();
-    }
+  const res = doseService.undoDose({
+    peptideId: p.id,
+    scheduledDate: todayK
   });
 
   if (!res.success) {
-    alert("Erro ao remover dose: " + (res.error || "Armazenamento indisponível"));
+    alert("Erro ao remover dose: " + (res.message || res.error));
+    return;
   }
+
+  haptics.light();
+  renderToday();
+  renderWeek();
+  renderHistory();
 }
 
 function renderWeek() {
@@ -981,13 +911,13 @@ async function toggleDateLog(id, dKey) {
       });
       if (!confirmed) return;
 
-      delete rec[id];
-      if (Object.keys(rec).length === 0) delete logs[dKey];
-      else logs[dKey] = rec;
+      const res = doseService.deleteDose({
+        peptideId: p.id,
+        scheduledDate: dKey
+      });
 
-      const res = storage.setLogs(logs);
       if (!res.success) {
-        alert("Não foi possível remover o registro: " + (res.error || "armazenamento indisponível"));
+        alert("Não foi possível remover o registro: " + (res.message || res.error));
         return;
       }
       haptics.light();
@@ -1004,147 +934,20 @@ async function toggleDateLog(id, dKey) {
 }
 
 function openRetroLogModal(prefillDate = null, prefillPepId = null) {
-  const modal = document.getElementById("retro-log-modal");
-  if (!modal) return;
-
-  const peptides = storage.getPeptides();
-  if (peptides.length === 0) {
-    alert("Cadastre ao menos um peptídeo no seu protocolo antes de registrar uma aplicação.");
-    return;
-  }
-
-  const pepSelect = document.getElementById("retro-pep-select");
-  const siteSelect = document.getElementById("retro-site-select");
-  const dateInput = document.getElementById("retro-date-input");
-  const timeInput = document.getElementById("retro-time-input");
-  const doseInput = document.getElementById("retro-dose-input");
-  const uiInput = document.getElementById("retro-ui-input");
-  const noteInput = document.getElementById("retro-note-input");
-
-  const todayKey = dateKey(new Date());
-
-  if (dateInput) {
-    dateInput.max = todayKey;
-    dateInput.value = prefillDate || todayKey;
-  }
-
-  const nowTime = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-  if (timeInput) {
-    timeInput.value = nowTime;
-  }
-
-  if (pepSelect) {
-    pepSelect.innerHTML = peptides.map((p) => `
-      <option value="${esc(p.id)}" ${p.id === prefillPepId ? "selected" : ""}>
-        ${esc(p.name)} (${esc(p.dose || "")}${p.ui ? ` · ${esc(String(p.ui))} UI` : ""})
-      </option>
-    `).join("");
-
-    const updateDoseAndUi = () => {
-      const selectedId = pepSelect.value;
-      const p = peptides.find((x) => x.id === selectedId);
-      if (p) {
-        if (doseInput) doseInput.value = p.dose || "";
-        if (uiInput) uiInput.value = p.ui !== undefined && p.ui !== null ? p.ui : "";
-      }
-      if (siteSelect) {
-        const configuredSites = storage.getSites();
-        const lastUsed = getLastUsedSite(storage.getLogs(), selectedId);
-        const nextSite = getNextSite(configuredSites, lastUsed ? lastUsed.site : null);
-        siteSelect.innerHTML = `
-          <option value="">-- Não especificado --</option>
-          ${configuredSites.map((s) => `<option value="${esc(s)}" ${s === nextSite ? "selected" : ""}>${esc(s)}</option>`).join("")}
-        `;
-      }
-    };
-
-    pepSelect.onchange = updateDoseAndUi;
-    updateDoseAndUi();
-  }
-
-  if (noteInput) noteInput.value = "";
-
-  modal.classList.add("on");
+  openRetroModal(prefillDate, prefillPepId, { storage, dateKey });
 }
 
 function saveRetroLog() {
-  const pepSelect = document.getElementById("retro-pep-select");
-  const siteSelect = document.getElementById("retro-site-select");
-  const dateInput = document.getElementById("retro-date-input");
-  const timeInput = document.getElementById("retro-time-input");
-  const doseInput = document.getElementById("retro-dose-input");
-  const uiInput = document.getElementById("retro-ui-input");
-  const noteInput = document.getElementById("retro-note-input");
-
-  const pepId = pepSelect ? pepSelect.value : "";
-  const siteVal = siteSelect ? siteSelect.value.trim() : "";
-  const dKey = dateInput ? dateInput.value : "";
-  const timeVal = timeInput ? timeInput.value : "12:00";
-  const doseVal = doseInput ? doseInput.value.trim() : "";
-  const uiVal = uiInput ? parseInt(uiInput.value, 10) || 0 : 0;
-  const noteVal = noteInput ? noteInput.value.trim() : "";
-
-  if (!pepId) {
-    alert("Selecione um peptídeo da lista.");
-    return;
-  }
-
-  if (!dKey) {
-    alert("Informe a data da aplicação.");
-    return;
-  }
-
-  const todayKey = dateKey(new Date());
-  if (dKey > todayKey) {
-    alert("Não é possível registrar aplicações em datas futuras.");
-    return;
-  }
-
-  const logEntry = createDoseLog({
-    peptideId: pepId,
-    scheduledDate: dKey,
-    time: timeVal,
-    dose: doseVal,
-    ui: uiVal,
-    note: noteVal,
-    site: siteVal,
-    retroactive: dKey < todayKey
+  saveRetro({
+    doseService,
+    dateKey,
+    haptics,
+    renderAll: () => {
+      renderToday();
+      renderWeek();
+      renderHistory();
+    }
   });
-
-  const validRes = validateDoseLog(logEntry);
-  if (!validRes.valid) {
-    alert(validRes.error || "Dados inválidos para registro de dose.");
-    return;
-  }
-
-  const logs = storage.getLogs();
-  const rec = { ...(logs[dKey] || {}) };
-  const curr = rec[pepId];
-  let arr = [];
-  if (Array.isArray(curr)) {
-    arr = [...curr];
-  } else if (curr && typeof curr === "object") {
-    const norm = normalizeDoseEntry(curr, dKey, pepId);
-    if (norm) arr = [norm];
-  }
-
-  arr.push(logEntry);
-  rec[pepId] = arr;
-  logs[dKey] = rec;
-
-  const res = storage.setLogs(logs);
-  if (!res.success) {
-    alert("Não foi possível salvar a aplicação: " + (res.error || "armazenamento indisponível"));
-    return;
-  }
-
-  const modal = document.getElementById("retro-log-modal");
-  if (modal) modal.classList.remove("on");
-
-  haptics.success();
-  renderToday();
-  renderWeek();
-  renderHistory();
 }
 
 function renderHistory() {
@@ -1281,31 +1084,20 @@ function deleteHistoryEntry(dKey, pId, idx) {
   if (!logs[dKey] || !logs[dKey][pId]) return;
 
   const val = logs[dKey][pId];
-  if (Array.isArray(val)) {
-    val.splice(idx, 1);
-    if (val.length === 0) delete logs[dKey][pId];
-  } else {
-    delete logs[dKey][pId];
+  let targetLogId = null;
+  if (Array.isArray(val) && val[idx]) {
+    targetLogId = val[idx].id;
   }
 
-  if (Object.keys(logs[dKey]).length === 0) {
-    delete logs[dKey];
-  }
+  const res = doseService.deleteDose({
+    peptideId: pId,
+    scheduledDate: dKey,
+    doseLogId: targetLogId
+  });
 
-  const res = storage.setLogs(logs);
   if (!res.success) {
-    alert("Erro ao remover registro: " + (res.error || "Armazenamento indisponível"));
+    alert("Erro ao remover registro: " + (res.message || res.error || "Armazenamento indisponível"));
     return;
-  }
-
-  // Estorno no inventário após exclusão confirmada
-  const peptides = storage.getPeptides();
-  const p = peptides.find((x) => x.id === pId);
-  if (p) {
-    const activeVial = storage.findVialForPeptide(p.id, p.name);
-    if (activeVial) {
-      storage.creditDoseToVial(activeVial.id, { doseStr: p.dose, note: `Estorno por exclusão (${p.name})` });
-    }
   }
 
   haptics.light();
@@ -1328,6 +1120,8 @@ function showConfirmDialog({ title = "Confirmar", message = "", confirmText = "C
       return resolve(res);
     }
 
+    const previousActive = document.activeElement;
+
     if (titleEl) titleEl.textContent = title;
     if (msgEl) msgEl.textContent = message;
     if (okBtn) {
@@ -1338,9 +1132,14 @@ function showConfirmDialog({ title = "Confirmar", message = "", confirmText = "C
 
     const cleanup = () => {
       modal.classList.remove("on");
+      modal.setAttribute("aria-hidden", "true");
       okBtn?.removeEventListener("click", onOk);
       cancelBtn?.removeEventListener("click", onCancel);
       closeBtn?.removeEventListener("click", onCancel);
+      window.removeEventListener("keydown", onKeyDown);
+      if (previousActive && typeof previousActive.focus === "function") {
+        previousActive.focus();
+      }
     };
 
     const onOk = () => {
@@ -1353,12 +1152,40 @@ function showConfirmDialog({ title = "Confirmar", message = "", confirmText = "C
       resolve(false);
     };
 
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onCancel();
+      } else if (e.key === "Tab") {
+        const focusable = [cancelBtn, okBtn, closeBtn].filter(Boolean);
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+
     okBtn?.addEventListener("click", onOk);
     cancelBtn?.addEventListener("click", onCancel);
     closeBtn?.addEventListener("click", onCancel);
+    window.addEventListener("keydown", onKeyDown);
 
     modal.classList.add("on");
+    modal.setAttribute("aria-hidden", "false");
     haptics.warning();
+
+    // Foco inicial seguro no botão de cancelar para evitar exclusões acidentais
+    if (cancelBtn) {
+      cancelBtn.focus();
+    } else if (okBtn) {
+      okBtn.focus();
+    }
   });
 }
 
@@ -1627,6 +1454,16 @@ function setupModalsAndButtons() {
         haptics.light();
       }
     });
+  });
+
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      const openModal = document.querySelector(".modal.on");
+      if (openModal) {
+        closeAllModals();
+        haptics.light();
+      }
+    }
   });
 
   const savePepBtn = document.getElementById("edit-save") || document.getElementById("save-pep-btn");

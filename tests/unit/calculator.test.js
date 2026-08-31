@@ -76,4 +76,23 @@ describe("Calculator Domain", () => {
     expect(result.valid).toBe(false);
     expect(result.error).toContain("excede a capacidade máxima da seringa");
   });
+
+  it("rejeita explicitamente unidades não permitidas (P1 - Sec 15)", () => {
+    const res = calculateReconstitution({
+      vialMg: 5,
+      waterMl: 2,
+      doseVal: 250,
+      doseUnit: "ui" // UI não é unidade de massa válida
+    });
+    expect(res.valid).toBe(false);
+    expect(res.error).toContain("Unidade de dose inválida");
+
+    const res2 = calculateReconstitution({
+      vialMg: 5,
+      waterMl: 2,
+      doseVal: 250,
+      doseUnit: "grams"
+    });
+    expect(res2.valid).toBe(false);
+  });
 });

@@ -3,6 +3,9 @@
  */
 
 export function convertDoseValue(value, fromUnit, toUnit) {
+  if (!["mg", "mcg"].includes(fromUnit) || !["mg", "mcg"].includes(toUnit)) {
+    return "";
+  }
   const num = parseFloat(value);
   if (!Number.isFinite(num) || num <= 0) return "";
   if (fromUnit === toUnit) return String(num);
@@ -25,6 +28,10 @@ export function calculateReconstitution({
   doseUnit = "mcg",
   syringeMaxUI = 100
 }) {
+  if (!["mg", "mcg"].includes(doseUnit)) {
+    return { valid: false, error: "Unidade de dose inválida. Utilize 'mg' ou 'mcg'." };
+  }
+
   const vMg = parseFloat(vialMg);
   const wMl = parseFloat(waterMl);
   const dVal = parseFloat(doseVal);

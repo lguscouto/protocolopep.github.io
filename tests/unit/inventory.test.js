@@ -73,7 +73,7 @@ describe("Inventory Domain & Logic (V10)", () => {
     expect(res2.isFinished).toBe(true);
   });
 
-  it("impede saldo negativo travando no zero", () => {
+  it("rejeita débito se a dose for maior que o saldo disponível (P1 - Sec 12)", () => {
     const vial = createVial({
       peptideName: "Semaglutida",
       totalMg: 1, // 1000 mcg
@@ -82,9 +82,9 @@ describe("Inventory Domain & Logic (V10)", () => {
     });
 
     const res = debitVialDose(vial, { doseMcg: 500 });
-    expect(res.success).toBe(true);
-    expect(res.vial.remainingMcg).toBe(0);
-    expect(res.vial.status).toBe("finished");
+    expect(res.success).toBe(false);
+    expect(res.error).toBe("INSUFFICIENT_BALANCE");
+    expect(res.vial.remainingMcg).toBe(200); // Saldo inalterado
   });
 
   it("estorna dose com sucesso e reativa frasco se estava finalizado", () => {

@@ -61,6 +61,7 @@ export function createVial(data = {}) {
     reconstitutionDate,
     expirationDate,
     status,
+    finishedAt: data.finishedAt || null,
     notes: typeof data.notes === "string" ? data.notes.trim() : "",
     createdAt: data.createdAt || new Date().toISOString(),
     movements
@@ -95,6 +96,7 @@ export function validateVial(vial) {
 
 /**
  * Extrai dose em mcg a partir de string ou número
+ * Nota: UI (unidades internacionais) NÃO é convertida diretamente em mcg sem concentração.
  */
 export function extractDoseInMcg(doseInput) {
   if (typeof doseInput === "number" && !isNaN(doseInput)) {
@@ -103,22 +105,27 @@ export function extractDoseInMcg(doseInput) {
   if (typeof doseInput === "string") {
     const trimmed = doseInput.trim().toLowerCase();
     if (!trimmed) return 0;
-    const match = trimmed.match(/^([\d.,]+)\s*(mcg|mg|ui)?$/);
+    const match = trimmed.match(/^([\d.,]+)\s*(mcg|mg|ui)$/);
     if (match) {
       const val = parseFloat(match[1].replace(",", "."));
-      const unit = match[2] || "mcg";
+      const unit = match[2];
       if (isNaN(val) || val <= 0) return 0;
       if (unit === "mg") return Math.round(val * 1000 * 100) / 100;
-      return val;
+      if (unit === "mcg") return val;
+      if (unit === "ui") return 0; // UI requer concentração conhecida, não converter diretamente
     }
-    const fallbackNum = parseFloat(trimmed.replace(",", "."));
-    return !isNaN(fallbackNum) && fallbackNum > 0 ? fallbackNum : 0;
+    const numOnlyMatch = trimmed.match(/^([\d.,]+)$/);
+    if (numOnlyMatch) {
+      const val = parseFloat(numOnlyMatch[1].replace(",", "."));
+      return !isNaN(val) && val > 0 ? val : 0;
+    }
   }
   return 0;
 }
 
 /**
  * Debita uma dose de um frasco (retorna novo objeto de frasco imutável)
+ * Rejeita a operação se amountToDebit > saldo atual.
  */
 export function debitVialDose(vial, { doseMcg = 0, doseStr = "", doseLogId = null, date = null, note = "" } = {}) {
   const amountToDebit = doseMcg > 0 ? doseMcg : extractDoseInMcg(doseStr);
@@ -127,7 +134,16 @@ export function debitVialDose(vial, { doseMcg = 0, doseStr = "", doseLogId = nul
   }
 
   const currentBalance = Number(vial.remainingMcg) || 0;
-  const newBalance = Math.max(0, currentBalance - amountToDebit);
+  if (amountToDebit > currentBalance) {
+    return {
+      success: false,
+      error: "INSUFFICIENT_BALANCE",
+      message: `Saldo insuficiente (${currentBalance} mcg disponíveis, solicitado ${amountToDebit} mcg).`,
+      vial
+    };
+  }
+
+  const newBalance = Math.round((currentBalance - amountToDebit) * 100) / 100;
   const now = new Date();
   const dateStr = date || now.toISOString().slice(0, 10);
 
@@ -148,6 +164,7 @@ export function debitVialDose(vial, { doseMcg = 0, doseStr = "", doseLogId = nul
     ...vial,
     remainingMcg: newBalance,
     status: newStatus,
+    finishedAt: newBalance <= 0 ? (vial.finishedAt || now.toISOString()) : null,
     movements: [...(vial.movements || []), newMovement]
   };
 
@@ -162,6 +179,7 @@ export function debitVialDose(vial, { doseMcg = 0, doseStr = "", doseLogId = nul
 
 /**
  * Estorna/Credita uma dose no frasco (retorna novo objeto imutável)
+ * Calcula o crédito real respeitando a capacidade máxima do frasco e reabrindo frasco finished se saldo > 0.
  */
 export function creditVialDose(vial, { doseMcg = 0, doseStr = "", doseLogId = null, date = null, note = "" } = {}) {
   const amountToCredit = doseMcg > 0 ? doseMcg : extractDoseInMcg(doseStr);
@@ -171,7 +189,14 @@ export function creditVialDose(vial, { doseMcg = 0, doseStr = "", doseLogId = nu
 
   const currentBalance = Number(vial.remainingMcg) || 0;
   const maxBalance = Number(vial.initialMcg) || (vial.totalMg * 1000);
-  const newBalance = Math.min(maxBalance, currentBalance + amountToCredit);
+  const targetBalance = currentBalance + amountToCredit;
+  const newBalance = Math.min(maxBalance, Math.round(targetBalance * 100) / 100);
+  const actualCredit = Math.round((newBalance - currentBalance) * 100) / 100;
+
+  if (actualCredit <= 0) {
+    return { success: false, error: "Frasco já está na capacidade máxima.", vial };
+  }
+
   const now = new Date();
   const dateStr = date || now.toISOString().slice(0, 10);
 
@@ -179,10 +204,10 @@ export function creditVialDose(vial, { doseMcg = 0, doseStr = "", doseLogId = nu
     id: `mov-${now.getTime()}-${Math.random().toString(36).slice(2, 6)}`,
     date: dateStr,
     type: "undo_dose",
-    amountMcg: amountToCredit,
+    amountMcg: actualCredit,
     balanceAfterMcg: newBalance,
     doseLogId: doseLogId || null,
-    note: note || `Estorno de dose (${amountToCredit} mcg)`,
+    note: note || `Estorno de dose (${actualCredit} mcg)`,
     timestamp: now.toISOString()
   };
 
@@ -192,13 +217,14 @@ export function creditVialDose(vial, { doseMcg = 0, doseStr = "", doseLogId = nu
     ...vial,
     remainingMcg: newBalance,
     status: newStatus,
+    finishedAt: newStatus === "active" ? null : vial.finishedAt,
     movements: [...(vial.movements || []), newMovement]
   };
 
   return {
     success: true,
     vial: updatedVial,
-    creditedMcg: amountToCredit,
+    creditedMcg: actualCredit,
     newBalanceMcg: newBalance
   };
 }

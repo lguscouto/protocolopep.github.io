@@ -17,6 +17,18 @@ const KEYS = {
   LEGACY_LOGS: "peptideos-registro-v1"
 };
 
+export function deepClone(data) {
+  if (data === undefined || data === null) return data;
+  if (typeof structuredClone === "function") {
+    try {
+      return structuredClone(data);
+    } catch (e) {
+      // fallback
+    }
+  }
+  return JSON.parse(JSON.stringify(data));
+}
+
 export class StorageService {
   constructor() {
     this.peptides = [];
@@ -129,7 +141,7 @@ export class StorageService {
   }
 
   getPeptides() {
-    return this.peptides;
+    return deepClone(this.peptides);
   }
 
   setPeptides(newPeptides) {
@@ -155,7 +167,7 @@ export class StorageService {
   }
 
   getLogs() {
-    return this.logs;
+    return deepClone(this.logs);
   }
 
   setLogs(newLogs) {
@@ -181,7 +193,7 @@ export class StorageService {
   }
 
   getInventory() {
-    return this.inventory;
+    return deepClone(this.inventory);
   }
 
   setInventory(newInventory) {
@@ -256,7 +268,7 @@ export class StorageService {
   }
 
   getSites() {
-    return Array.isArray(this.sites) ? [...this.sites] : getDefaultSites();
+    return Array.isArray(this.sites) ? deepClone(this.sites) : getDefaultSites();
   }
 
   setSites(newSites) {
@@ -282,7 +294,7 @@ export class StorageService {
   }
 
   getMeasurements() {
-    return Array.isArray(this.measurements) ? [...this.measurements] : [];
+    return Array.isArray(this.measurements) ? deepClone(this.measurements) : [];
   }
 
   setMeasurements(newMeasurements) {
@@ -350,11 +362,11 @@ export class StorageService {
 
   takeSnapshot() {
     return {
-      peptides: JSON.parse(JSON.stringify(this.peptides)),
-      logs: JSON.parse(JSON.stringify(this.logs)),
-      inventory: JSON.parse(JSON.stringify(this.inventory)),
-      sites: JSON.parse(JSON.stringify(this.sites)),
-      measurements: JSON.parse(JSON.stringify(this.measurements))
+      peptides: deepClone(this.peptides),
+      logs: deepClone(this.logs),
+      inventory: deepClone(this.inventory),
+      sites: deepClone(this.sites),
+      measurements: deepClone(this.measurements)
     };
   }
 
