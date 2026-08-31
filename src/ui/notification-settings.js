@@ -4,6 +4,7 @@
 
 import { notifications } from "../services/notifications.js";
 import { haptics } from "../services/haptics.js";
+import { accessibilityService } from "../services/accessibility.js";
 import { escapeHtml } from "./dom.js";
 
 const esc = escapeHtml;
@@ -78,7 +79,13 @@ export function setupNotificationListeners(storage) {
     btn.addEventListener("click", () => {
       haptics.light();
       const modal = document.getElementById("notif-modal");
-      if (modal) modal.classList.add("on");
+      if (modal) {
+        modal.classList.add("on");
+        modal.setAttribute("aria-hidden", "false");
+        if (accessibilityService) {
+          accessibilityService.trapFocus(modal);
+        }
+      }
       updateNotificationUI(storage.getPeptides());
     });
   });

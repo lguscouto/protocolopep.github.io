@@ -129,4 +129,25 @@ describe("Storage Service", () => {
     storageInstance.clearTombstones(["m_to_delete"]);
     expect(storageInstance.getTombstones()).toHaveLength(0);
   });
+
+  it("NÃO registra tombstone ao excluir uma medição externa importada", () => {
+    storageInstance.init();
+    storageInstance.addMeasurement({
+      id: "hc_ext_samsung_123",
+      date: "2026-08-29",
+      time: "08:00",
+      weightKg: 81.0,
+      source: "health_connect",
+      ownership: "external",
+      dataOrigin: "com.sec.android.app.shealth"
+    });
+
+    expect(storageInstance.getTombstones()).toHaveLength(0);
+
+    const delRes = storageInstance.deleteMeasurement("hc_ext_samsung_123");
+    expect(delRes.success).toBe(true);
+
+    // Medições externas removidas da visualização local nunca geram tombstone no Health Connect
+    expect(storageInstance.getTombstones()).toHaveLength(0);
+  });
 });

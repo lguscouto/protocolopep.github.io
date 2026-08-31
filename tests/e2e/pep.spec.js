@@ -247,6 +247,29 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
 
     runtime.assertCleanRuntime();
   });
+
+  test("clique no botão de notificações abre modal com zero exceções ou erros de console", async ({ page }) => {
+    const runtime = trackPageRuntime(page);
+    await seedStorage(page, { skipOnboarding: true, peptides: [] });
+
+    await page.goto("/");
+    await page.waitForLoadState("domcontentloaded");
+
+    const notifBtn = page.locator("#notif-btn");
+    await expect(notifBtn).toBeVisible();
+    await notifBtn.click();
+
+    const notifModal = page.locator("#notif-modal");
+    await expect(notifModal).toHaveClass(/on/);
+
+    const closeBtn = page.locator("#notif-close, #nf-done");
+    if (await closeBtn.count() > 0) {
+      await closeBtn.first().click();
+      await expect(notifModal).not.toHaveClass(/on/);
+    }
+
+    runtime.assertCleanRuntime();
+  });
 });
 
 

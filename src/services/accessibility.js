@@ -175,3 +175,5 @@ export class AccessibilityService {
     }
   }
 }
+
+export const accessibilityService = new AccessibilityService();

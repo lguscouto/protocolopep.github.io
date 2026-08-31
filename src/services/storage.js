@@ -374,8 +374,9 @@ export class StorageService {
     const current = this.getMeasurements();
     const target = current.find((m) => m.id === id);
 
-    // Se for medição do PEP com peso que possa estar no Health Connect, registra tombstone
-    if (target && target.ownership === "pep" && target.weightKg !== null) {
+    // Se for medição originada pelo PEP com peso que possa estar no Health Connect, registra tombstone
+    const isPepOwnership = target && target.ownership === "pep" && (target.dataOrigin === "com.protocolopep.app" || !target.dataOrigin) && target.source !== "health_connect";
+    if (isPepOwnership && target.weightKg !== null && target.weightKg !== undefined) {
       this.addTombstone({
         id: target.id,
         clientRecordId: target.clientRecordId || target.id,

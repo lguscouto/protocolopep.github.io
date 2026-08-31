@@ -220,7 +220,8 @@ export function mapHealthRecordToMeasurement(record) {
   const hcRecId = record.healthConnectRecordId || record.metadataId || record.id || "";
   const clientRecId = record.clientRecordId || "";
   const originPkg = record.dataOrigin || "";
-  const isPepOrigin = originPkg === "com.protocolopep.app" || (clientRecId && !clientRecId.startsWith("hc_"));
+  // Item 6: Apenas o package com.protocolopep.app define ownership PEP (sem heurísticas por clientRecordId)
+  const isPepOrigin = originPkg === "com.protocolopep.app";
 
   // Chave composta para registros externos evitando colisões de IDs idênticos entre apps distintos
   const resolvedId = isPepOrigin && clientRecId

@@ -109,10 +109,11 @@ describe("Health Connect Domain", () => {
   });
 
   describe("mapHealthRecordToMeasurement", () => {
-    it("converte registro do Health Connect para medição interna preservando clientRecordId e data local", () => {
+    it("converte registro do PEP Health Connect para medição interna com ownership 'pep'", () => {
       const hcRecord = {
         id: "hc_raw_id_999",
         clientRecordId: "m_local_123",
+        dataOrigin: "com.protocolopep.app",
         timestamp: localDateTimeToIso("2026-08-29", "08:30"),
         weightKg: 83.2
       };
@@ -120,10 +121,29 @@ describe("Health Connect Domain", () => {
       const measurement = mapHealthRecordToMeasurement(hcRecord);
       expect(measurement).not.toBeNull();
       expect(measurement.id).toBe("m_local_123");
+      expect(measurement.ownership).toBe("pep");
+      expect(measurement.dataOrigin).toBe("com.protocolopep.app");
       expect(measurement.date).toBe("2026-08-29");
       expect(measurement.time).toBe("08:30");
       expect(measurement.weightKg).toBe(83.2);
       expect(measurement.source).toBe("health_connect");
+    });
+
+    it("atribui ownership 'external' para apps de terceiros mesmo que possuam clientRecordId", () => {
+      const externalWithClientRecordId = {
+        id: "hc_samsung_raw_777",
+        clientRecordId: "custom_samsung_id_abc",
+        dataOrigin: "com.sec.android.app.shealth",
+        timestamp: localDateTimeToIso("2026-08-29", "08:30"),
+        weightKg: 80.5
+      };
+
+      const measurement = mapHealthRecordToMeasurement(externalWithClientRecordId);
+      expect(measurement).not.toBeNull();
+      expect(measurement.ownership).toBe("external");
+      expect(measurement.dataOrigin).toBe("com.sec.android.app.shealth");
+      // ID deve ser composto com a origem externa, sem assumir ID de cliente local
+      expect(measurement.id).toBe("hc_com.sec.android.app.shealth_hc_samsung_raw_777");
     });
 
     it("converte registro com date e localTime diretamente", () => {

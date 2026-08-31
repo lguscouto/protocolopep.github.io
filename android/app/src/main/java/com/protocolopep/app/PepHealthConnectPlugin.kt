@@ -361,7 +361,7 @@ class PepHealthConnectPlugin : Plugin() {
                         put("weightKg", weightKg)
                         put("unit", "kg")
                         put("source", "health_connect")
-                        put("ownership", if (originPkg == "com.protocolopep.app" || clientRecId.isNotEmpty()) "pep" else "external")
+                        put("ownership", if (originPkg == "com.protocolopep.app") "pep" else "external")
                     }
                     resultList.add(item)
                 }

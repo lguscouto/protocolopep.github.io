@@ -47,12 +47,12 @@ import { i18nService } from "./services/i18n.js";
 import { setupI18nUI, applyTranslations } from "./ui/i18n.js";
 import { researchService } from "./services/research.js";
 import { setupResearchUI } from "./ui/research.js";
-import { AccessibilityService } from "./services/accessibility.js";
+import { AccessibilityService, accessibilityService } from "./services/accessibility.js";
 import { setupAccessibilityUI } from "./ui/accessibility.js";
 import { DoseService } from "./services/dose-service.js";
 import { openRetroLogModal as openRetroModal, saveRetroLog as saveRetro } from "./ui/retro-log.js";
 
-export const accessibilityService = new AccessibilityService();
+export { accessibilityService };
 export const doseService = new DoseService(storage);
 let accessibilityUI = null;
 
@@ -1461,20 +1461,6 @@ function setupModalsAndButtons() {
     themeBtn.addEventListener("click", async () => {
       haptics.medium();
       await theme.toggle();
-    });
-  }
-
-  const notifBtn = document.getElementById("notif-btn");
-  const notifModal = document.getElementById("notif-modal");
-  if (notifBtn && notifModal) {
-    notifBtn.addEventListener("click", () => {
-      updateNotifModalUI();
-      notifModal.classList.add("on");
-      notifModal.setAttribute("aria-hidden", "false");
-      if (accessibilityService) {
-        accessibilityService.trapFocus(notifModal);
-      }
-      haptics.light();
     });
   }
 
