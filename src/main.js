@@ -1470,6 +1470,10 @@ function setupModalsAndButtons() {
     notifBtn.addEventListener("click", () => {
       updateNotifModalUI();
       notifModal.classList.add("on");
+      notifModal.setAttribute("aria-hidden", "false");
+      if (accessibilityService) {
+        accessibilityService.trapFocus(notifModal);
+      }
       haptics.light();
     });
   }
@@ -2202,6 +2206,10 @@ function openSharePreviewModal() {
 
   updatePreview();
   modal.classList.add("on");
+  modal.setAttribute("aria-hidden", "false");
+  if (accessibilityService) {
+    accessibilityService.trapFocus(modal);
+  }
 }
 
 if (document.readyState === "loading") {

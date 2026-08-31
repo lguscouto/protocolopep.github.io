@@ -11,17 +11,24 @@ Aplicativo Android nativo para acompanhamento de protocolos de peptídeos, cálc
 
 ## 🚀 Novidades da Versão 2.2.0 (Health Connect API 36, Integridade Total e Proteção de Dados)
 
-- **Sincronização Health Connect Resiliente & Timezone-Aware:**
-  - Conversão pura de timestamps locais (`localDateTimeToIso` e `isoToLocalDateTime`), eliminando saltos de data próximo à meia-noite em fusos como UTC-3.
-  - Desduplicação estrita via `clientRecordId` em `Metadata` no plugin nativo Kotlin e motor de fusão local idempotente.
-  - Verificação de status real via `PermissionController` nativo e detecção automática de alterações por conteúdo (`haveMeasurementsChanged`).
+- **Sincronização Health Connect Resiliente & Proteção contra Sync Echo:**
+  - Conversão pura de timestamps locais (`localDateTimeToIso` e `isoToLocalDateTime`) e preservação de `zoneOffset` histórico.
+  - Identidade completa (`dataOrigin`, `healthConnectRecordId`, `clientRecordId`, `clientRecordVersion`, `zoneOffset`) e chaves compostas imunes a colisão entre apps distintos.
+  - Prevenção total de Sync Echo: medições importadas de fontes externas recebem `ownership: "external"` e não são reexportadas.
+  - Versionamento monotônico com `clientRecordVersion` para atualizações in-place sem duplicatas.
+  - Sincronização de exclusões com rastreamento local de tombstones e chamada nativa a `deleteRecords`.
+  - Tratamento fail-closed estrito em falhas de leitura/permissão e rejeição pura de datas/horários impossíveis.
+- **Notificações Nativas Multi-Canal & Verificação de Exact Alarm:**
+  - Configuração de dois `NotificationChannel`s no Android: `pep_lembretes` (som + vibração) e `pep_lembretes_silenciosos` (discreto sem som/vibração).
+  - Verificação de `SCHEDULE_EXACT_ALARM` em runtime com fallback seguro (`allowWhileIdle: true`) no Android 12+ (API 31+).
+  - Centralização e eliminação de listeners redundantes de notificação na interface.
+- **Proteção Matemática de Doses em UI sem Concentração:**
+  - Bloqueio automático de débito de estoque (`VIAL_MISSING_CONCENTRATION`) caso a dose esteja em UI e o frasco não possua concentração calculada, com diálogo explícito para permitir salvar apenas no histórico sem afetar o estoque.
 - **Android SDK 36 & Conformidade com Google Play:**
   - Atualização completa de `compileSdkVersion` e `targetSdkVersion` para API 36 com bibliotecas AndroidX atualizadas.
-  - Remoção da permissão restrita `USE_EXACT_ALARM` em favor do agendamento padrão em conformidade com as diretrizes do Google Play.
+  - Remoção da permissão restrita `USE_EXACT_ALARM` em conformidade com as diretrizes do Google Play.
 - **Integridade Bidirecional Dose ↔ Movimento ↔ Frasco:**
   - O ID do log de dose (`doseLogId`) é pré-alocado e registrado no ledger de estoque antes da confirmação, garantindo rastreabilidade perfeita e estornos auditáveis.
-- **Débito de Doses em UI (Unidades Internacionais) com Reconstituição:**
-  - Conversão matemática pura ($100\text{ UI} = 1\text{ mL}$) baseada na concentração do frasco ativo com bloqueio contra deduções arbitrárias sem concentração.
 - **Proteção Estrutural de Frascos & Soft-Delete:**
   - Frascos com histórico de movimentação têm dados estruturais (massa mg e diluente mL) travados contra alteração acidental (`PROTECTED_HISTORICAL_VIAL`).
   - Frascos com movimentações recebem descarte/arquivamento seguro (`archiveVial`), preservando o histórico de aplicações passadas sem exclusão física destrutiva.
@@ -34,20 +41,8 @@ Aplicativo Android nativo para acompanhamento de protocolos de peptídeos, cálc
 - **Cancelamento Seletivo de Lembretes & Sanitização de Busca:**
   - Cancelamento direcionado de notificações por peptídeo (`cancelScheduleForPeptide`) e sanitização de caracteres de controle na biblioteca científica.
 - **Qualidade & Testes Automatizados:**
-  - **215 testes unitários** no Vitest passando com 100% de sucesso.
+  - **229 testes unitários** no Vitest passando com 100% de sucesso.
   - **24 testes E2E** no Playwright cobrindo todos os fluxos críticos.
-
----
-
-- **Seleção da Data da Primeira Dose / Início do Protocolo:**
-  - Novo campo de seleção de data de início (`Data da Primeira Dose / Início`) disponível diretamente nos fluxos de cadastro e edição de peptídeos.
-- **Preenchimento Retroativo Automático & Idempotente:**
-  - Ao selecionar uma data anterior a hoje, o sistema calcula cronologicamente todas as doses programadas desde a data inicial até o dia anterior a hoje (`startDate <= date < today`).
-  - Container de prévia em tempo real com checkbox marcado por padrão: exibe exatamente a quantidade de aplicações estimadas no período.
-  - **Dose de Hoje Preservada:** Se hoje for dia de aplicação no cronograma, a dose permanece pendente no Dashboard para acompanhamento diário.
-  - **Idempotência & Estoque Seguro:** Não duplica registros caso a data já contenha aplicação e preserva o inventário de frascos atuais intacto.
-- **Suíte de Testes Automatizada:**
-  - **197 testes unitários** no Vitest passando com 100% de sucesso (incluindo testes de frequências semanais, diárias, cíclicas e múltiplas doses por dia).
 
 ---
 
@@ -256,7 +251,7 @@ pep-protocol/
 │   ├── data/                    # Catálogo nominal de referência
 │   └── css/                     # Estilos modulares e responsivos
 ├── tests/
-│   ├── unit/                    # 215 testes unitários com Vitest
+│   ├── unit/                    # 229 testes unitários com Vitest
 │   └── e2e/                     # 24 testes E2E com Playwright
 ├── docs/
 │   ├── PRODUCT.md               # Contrato do produto e público-alvo
