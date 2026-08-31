@@ -245,3 +245,72 @@ export function deleteDoseState({
     doseLogId
   });
 }
+
+/**
+ * Preenche retroativamente os logs de doses de um peptídeo para uma lista de datas calculadas.
+ * Idempotente: não duplica logs caso uma data já possua dose registrada para este peptídeo.
+ * Não debita inventário de frascos passados.
+ * @param {Object} logs Objeto de logs { [dateKey]: { [peptideId]: [...] } }
+ * @param {Object} peptide Objeto do peptídeo
+ * @param {Array<{dateKey: string, times: string[]}>} backfillDates Lista de datas com horários
+ * @returns {{ logs: Object, addedCount: number, datesAdded: string[] }}
+ */
+export function backfillPeptideDoseLogs(logs = {}, peptide = {}, backfillDates = []) {
+  if (!peptide || !peptide.id || !Array.isArray(backfillDates) || backfillDates.length === 0) {
+    return { logs: logs || {}, addedCount: 0, datesAdded: [] };
+  }
+
+  const updatedLogs = { ...(logs || {}) };
+  let addedCount = 0;
+  const datesAdded = [];
+
+  const peptideId = peptide.id;
+  const doseStr = peptide.dose || "";
+  const uiVal = Number(peptide.ui) || 0;
+
+  for (const item of backfillDates) {
+    const { dateKey, times } = item;
+    if (!dateKey) continue;
+
+    const dayRec = { ...(updatedLogs[dateKey] || {}) };
+    const curr = dayRec[peptideId];
+
+    let existingArr = [];
+    if (Array.isArray(curr)) {
+      existingArr = curr;
+    } else if (curr && typeof curr === "object") {
+      existingArr = [curr];
+    }
+
+    if (existingArr.length > 0) {
+      continue;
+    }
+
+    const timesList = Array.isArray(times) && times.length > 0 ? times : [peptide.time || "08:00"];
+    const newLogsForDay = timesList.map((t) =>
+      createDoseLog({
+        peptideId,
+        scheduledDate: dateKey,
+        time: t,
+        dose: doseStr,
+        ui: uiVal,
+        note: "Início do protocolo (retroativo)",
+        status: "applied",
+        retroactive: true,
+        vialId: null,
+        inventoryMovementId: null
+      })
+    );
+
+    dayRec[peptideId] = newLogsForDay;
+    updatedLogs[dateKey] = dayRec;
+    addedCount += newLogsForDay.length;
+    datesAdded.push(dateKey);
+  }
+
+  return {
+    logs: updatedLogs,
+    addedCount,
+    datesAdded
+  };
+}

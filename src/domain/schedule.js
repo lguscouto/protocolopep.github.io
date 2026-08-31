@@ -207,3 +207,45 @@ export function getUpcomingOccurrences(peptides = [], fromDate = new Date(), lim
   return results.slice(0, limit);
 }
 
+/**
+ * Calcula as ocorrências de doses programadas anteriores à data atual (até ontem).
+ * @param {Object} peptide Objeto do peptídeo com regras de agendamento
+ * @param {string|Date} startDate Data da primeira dose / início do protocolo
+ * @param {string|Date} [todayDate=new Date()] Data de referência (hoje)
+ * @returns {Array<{dateKey: string, date: Date, times: string[]}>}
+ */
+export function calculateBackfillDates(peptide, startDate, todayDate = new Date()) {
+  if (!peptide || !startDate) return [];
+
+  const startStr = typeof startDate === "string" ? startDate : dateToKey(startDate);
+  const todayStr = typeof todayDate === "string" ? todayDate : dateToKey(todayDate);
+
+  if (!isValidDateKey(startStr) || !isValidDateKey(todayStr)) return [];
+  if (startStr >= todayStr) return [];
+
+  const startDt = keyToDate(startStr);
+  const todayDt = keyToDate(todayStr);
+
+  const endDt = new Date(todayDt);
+  endDt.setDate(endDt.getDate() - 1);
+
+  if (startDt > endDt) return [];
+
+  const dates = occurrencesForRange(peptide, startDt, endDt);
+
+  const times = Array.isArray(peptide.times) && peptide.times.length > 0
+    ? peptide.times
+    : [peptide.time || "08:00"];
+
+  const perDay = Math.max(1, parseInt(peptide.perDay, 10) || times.length || 1);
+  const resolvedTimes = times.slice(0, perDay);
+  while (resolvedTimes.length < perDay) {
+    resolvedTimes.push(resolvedTimes[resolvedTimes.length - 1] || "08:00");
+  }
+
+  return dates.map((d) => ({
+    dateKey: dateToKey(d),
+    date: d,
+    times: resolvedTimes
+  }));
+}

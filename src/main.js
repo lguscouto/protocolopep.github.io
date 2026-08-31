@@ -18,7 +18,8 @@ import {
   isScheduledOnDate,
   getScheduledPeptides,
   calculateDayProgress,
-  getUpcomingOccurrences
+  getUpcomingOccurrences,
+  calculateBackfillDates
 } from "./domain/schedule.js";
 import { createDoseCardViewModel, renderEmptyDashboardHTML, renderUpcomingHTML } from "./ui/dashboard.js";
 import { createPeptide, validatePeptide } from "./domain/protocol.js";
@@ -1582,6 +1583,27 @@ function setupModalsAndButtons() {
     });
   }
 
+  const protocolStartDateInput = document.getElementById("edit-protocol-start-date");
+  if (protocolStartDateInput) {
+    protocolStartDateInput.addEventListener("input", () => {
+      const syncIntervalDate = document.getElementById("edit-start-date");
+      if (syncIntervalDate && selectedFreqType === "intervalo") {
+        syncIntervalDate.value = protocolStartDateInput.value;
+      }
+      updateBackfillPreviewUI();
+    });
+  }
+
+  const intervalStartDateInput = document.getElementById("edit-start-date");
+  if (intervalStartDateInput) {
+    intervalStartDateInput.addEventListener("input", () => {
+      if (protocolStartDateInput) {
+        protocolStartDateInput.value = intervalStartDateInput.value;
+      }
+      updateBackfillPreviewUI();
+    });
+  }
+
   const exportBtn = document.getElementById("export-btn");
   const handleExport = () => {
     const backupPayload = storage.exportBackup(theme.getTheme());
@@ -1795,6 +1817,56 @@ function formatDaysLabel(days) {
   return [...days].sort((a, b) => a - b).map((d) => dayNames[d]).join(" · ");
 }
 
+function updateBackfillPreviewUI() {
+  const startVal = document.getElementById("edit-protocol-start-date")?.value;
+  const backfillWrap = document.getElementById("edit-backfill-wrap");
+  const backfillPreview = document.getElementById("edit-backfill-preview");
+  if (!backfillWrap || !backfillPreview || !startVal) {
+    if (backfillWrap) backfillWrap.style.display = "none";
+    return;
+  }
+
+  let days = null;
+  let interval = null;
+  if (selectedFreqType === "especificos") {
+    days = [...selectedDays].sort((a, b) => a - b);
+  } else if (selectedFreqType === "intervalo") {
+    interval = parseInt(document.getElementById("edit-interval-val")?.value, 10) || 2;
+  }
+
+  const perDay = parseInt(document.getElementById("edit-perday")?.value, 10) || 1;
+  const mainTime = document.getElementById("edit-time")?.value?.trim() || "08:00";
+  const times = [];
+  if (mainTime) times.push(mainTime);
+  document.querySelectorAll(".edit-extra-time").forEach((input) => {
+    const val = input.value.trim();
+    if (val) times.push(val);
+  });
+
+  const tempPeptide = {
+    id: editingPeptideId || "temp",
+    days,
+    interval,
+    start: startVal,
+    perDay,
+    times,
+    time: mainTime
+  };
+
+  const dates = calculateBackfillDates(tempPeptide, startVal, new Date());
+  if (dates.length > 0) {
+    backfillWrap.style.display = "block";
+    const totalDoses = dates.reduce((acc, d) => acc + (d.times?.length || 1), 0);
+    const firstParts = dates[0].dateKey.split("-");
+    const lastParts = dates[dates.length - 1].dateKey.split("-");
+    const firstStr = `${firstParts[2]}/${firstParts[1]}`;
+    const lastStr = `${lastParts[2]}/${lastParts[1]}`;
+    backfillPreview.textContent = `Preencher ${totalDoses} aplicação(ões) anterior(es) a hoje (${firstStr} a ${lastStr}) como aplicadas no histórico.`;
+  } else {
+    backfillWrap.style.display = "none";
+  }
+}
+
 function updateFreqPreviewAndUI() {
   const preview = document.getElementById("edit-freq-preview");
   const daysWrap = document.getElementById("edit-days-wrap");
@@ -1815,6 +1887,8 @@ function updateFreqPreviewAndUI() {
     const intVal = parseInt(document.getElementById("edit-interval-val")?.value) || 2;
     if (preview) preview.textContent = `A cada ${intVal} dias`;
   }
+
+  updateBackfillPreviewUI();
 }
 
 function renderDayChipsUI() {
@@ -1940,6 +2014,16 @@ function openEditModal(pepId, prefillData = null) {
   selectedColor = p ? p.accent || PALETTE[0] : PALETTE[peptides.length % PALETTE.length];
   renderColorSwatches();
 
+  const protocolStartInput = document.getElementById("edit-protocol-start-date");
+  if (protocolStartInput) {
+    protocolStartInput.value = p?.start || prefillData?.start || dateKey(new Date());
+  }
+  const backfillCheck = document.getElementById("edit-backfill-check");
+  if (backfillCheck) {
+    backfillCheck.checked = true;
+  }
+  updateBackfillPreviewUI();
+
   const delBtn = document.getElementById("edit-del-btn");
   if (delBtn) {
     delBtn.style.display = pepId ? "inline-flex" : "none";
@@ -1985,9 +2069,10 @@ function saveEditedPeptide() {
     if (val) times.push(val);
   });
 
+  const protocolStartDate = document.getElementById("edit-protocol-start-date")?.value || null;
   let days = null;
   let interval = null;
-  let start = null;
+  let start = protocolStartDate;
   let freq = "Todos os dias";
 
   if (selectedFreqType === "especificos") {
@@ -1999,7 +2084,7 @@ function saveEditedPeptide() {
     freq = formatDaysLabel(days);
   } else if (selectedFreqType === "intervalo") {
     const intVal = parseInt(document.getElementById("edit-interval-val")?.value) || 2;
-    const sDate = document.getElementById("edit-start-date")?.value || dateKey(new Date());
+    const sDate = protocolStartDate || document.getElementById("edit-start-date")?.value || dateKey(new Date());
     interval = intVal;
     start = sDate;
     freq = `A cada ${intVal} dias`;
@@ -2044,8 +2129,26 @@ function saveEditedPeptide() {
     return;
   }
 
+  // Preenchimento de histórico retroativo se selecionado
+  const backfillWrap = document.getElementById("edit-backfill-wrap");
+  const backfillCheck = document.getElementById("edit-backfill-check");
+  let backfillAdded = 0;
+  if (backfillWrap && backfillWrap.style.display !== "none" && backfillCheck && backfillCheck.checked && start) {
+    const backfillRes = doseService.backfillPeptideDoses({
+      peptide: peptideData,
+      startDate: start,
+      todayDate: new Date()
+    });
+    if (backfillRes.success && backfillRes.addedCount > 0) {
+      backfillAdded = backfillRes.addedCount;
+    }
+  }
+
   if (accessibilityService) {
-    accessibilityService.announce(`Peptídeo ${name} salvo com sucesso.`);
+    const msg = backfillAdded > 0
+      ? `Peptídeo ${name} salvo e ${backfillAdded} dose(s) anterior(es) registradas no histórico.`
+      : `Peptídeo ${name} salvo com sucesso.`;
+    accessibilityService.announce(msg);
   }
 
   renderToday();

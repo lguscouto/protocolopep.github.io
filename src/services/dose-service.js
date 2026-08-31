@@ -2,7 +2,13 @@
  * Serviço de Gerenciamento e Persistência Atômica de Doses e Estoque (P0)
  */
 
-import { registerDoseState, undoDoseState, deleteDoseState } from "../domain/dose-service.js";
+import {
+  registerDoseState,
+  undoDoseState,
+  deleteDoseState,
+  backfillPeptideDoseLogs
+} from "../domain/dose-service.js";
+import { calculateBackfillDates } from "../domain/schedule.js";
 
 export class DoseService {
   constructor(storageService) {
@@ -119,5 +125,39 @@ export class DoseService {
    */
   deleteDose({ peptideId, scheduledDate, doseLogId = null }) {
     return this.undoDose({ peptideId, scheduledDate, doseLogId });
+  }
+
+  /**
+   * Preenche o histórico de doses de forma atômica para um intervalo retroativo
+   */
+  backfillPeptideDoses({ peptide, startDate, todayDate = new Date() }) {
+    if (!peptide || !startDate) {
+      return { success: true, addedCount: 0, datesAdded: [] };
+    }
+
+    const backfillDates = calculateBackfillDates(peptide, startDate, todayDate);
+    if (backfillDates.length === 0) {
+      return { success: true, addedCount: 0, datesAdded: [] };
+    }
+
+    const logs = this.storage.getLogs();
+    const result = backfillPeptideDoseLogs(logs, peptide, backfillDates);
+
+    if (result.addedCount === 0) {
+      return { success: true, addedCount: 0, datesAdded: [] };
+    }
+
+    const snapshot = this.storage.takeSnapshot();
+    const saveRes = this.storage.setLogs(result.logs);
+    if (!saveRes.success) {
+      this.storage.restoreSnapshot(snapshot);
+      return { success: false, error: saveRes.error || "Falha ao gravar histórico retroativo" };
+    }
+
+    return {
+      success: true,
+      addedCount: result.addedCount,
+      datesAdded: result.datesAdded
+    };
   }
 }

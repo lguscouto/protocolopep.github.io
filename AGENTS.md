@@ -7,6 +7,7 @@ Este documento orienta agentes de IA e desenvolvedores que trabalham na evoluç�
 2. **Segurança Matemática:** Qualquer cálculo de dosagem ou reconstituição deve ser puro, auditável e conter testes cobrindo valores limítrofes, zero, NaN e grandezas canônicas.
 3. **Não Prescrição:** Nunca inserir dosagens terapêuticas como padrão recomendado em fluxos iniciais. O primeiro acesso deve ser um protocolo limpo.
 4. **Resiliência e Fail-Closed:** Nenhuma operação de escrita deve emitir feedback de sucesso (haptic ou toast) sem confirmação prévia de persistência no storage.
+5. **Versionamento e Sincronização Contínua:** Sempre que alterações no código forem implementadas e validadas por testes automatizados (`npm test`, build e/ou E2E), realizar `git commit` e `git push` para o repositório remoto no GitHub.
 
 ## 2. Padrões de Código
 - Código modular em `src/domain/` (lógica pura e sem dependência do DOM), `src/services/` (interação com plugins nativos e storage) e `src/ui/` (manipulação segura do DOM).
