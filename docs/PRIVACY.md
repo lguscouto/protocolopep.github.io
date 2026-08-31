@@ -1,43 +1,46 @@
 # Política de Privacidade — Protocolo PEP
 
-**Última atualização:** Agosto de 2026
+**Última atualização:** Agosto de 2026  
+**Versão da Aplicação:** 2.3.0
 
-## 1. Princípio Fundamental
-O **Protocolo PEP** foi concebido sob a filosofia **Local-First** e de máxima privacidade de dados. Acreditamos que informações de saúde, rotinas de aplicação e registros corporais pertencem única e exclusivamente a você.
+## 1. Princípio Fundamental e Arquitetura Local-First
+O **Protocolo PEP** foi concebido e estruturado sob os princípios **Local-First**, **Privacidade por Padrão** e **Não Rastreamento**. Acreditamos que seus dados médicos, protocolos de peptídeos, horários de aplicação, notas de reconstituição e medições corporais pertencem única e exclusivamente a você.
 
 ---
 
 ## 2. Coleta e Tratamento de Dados
-- **Zero Coleta em Nuvem:** O aplicativo **não** coleta, transmite, armazena ou processa seus dados pessoais ou registros em nenhum servidor remoto ou serviço de nuvem.
-- **Armazenamento 100% Local:** Todos os dados (nome dos peptídeos, horários, doses, registros de histórico de aplicação, estoque de frascos, locais de injeção, medições de peso e preferências de interface) são salvos exclusivamente no armazenamento local do seu dispositivo (`localStorage` protegido no WebView e armazenamento isolado de app no Android).
-- **Sem Rastreamento, Telemetria ou Anúncios:** O aplicativo não contém bibliotecas de analytics invasivas, identificadores de publicidade, rastreadores comportamentais ou anúncios.
+- **Zero Coleta em Servidores Remotos:** O Protocolo PEP **não** transmite, armazena ou processa seus dados pessoais em servidores em nuvem, bancos de dados externos ou APIs remotas de terceiros.
+- **Armazenamento 100% Local:** Todos os dados (protocolos cadastrados, histórico de doses, controle de estoque de frascos, mapa de sítios de injeção, medições de peso/sintomas e preferências de interface) residem exclusivamente no armazenamento protegido e isolado da aplicação no seu dispositivo (`localStorage` encapsulado e sandbox de dados do Android).
+- **Sem Rastreamento, Telemetria ou Anúncios:** A aplicação é totalmente livre de identificadores de publicidade (Ad-ID), SDKs de telemetria invasiva ou anúncios.
 
 ---
 
 ## 3. Integração com Android Health Connect
-O Protocolo PEP oferece integração opcional com o **Health Connect (Android)** para leitura e escrita de registros de peso corporal:
-- **Dados Acessados:** Leitura e registro de **Peso Corporal (kg)** e respectivos carimbos de data/hora (`Instant` e `ZoneOffset`).
-- **Finalidade:** Permitir que o usuário acompanhe a evolução do peso corporal em conjunto com sua rotina de peptídeos e sincronize medições com o repositório de saúde nativo do sistema operacional.
-- **Controle do Usuário:** A sincronização com o Health Connect é estritamente **opt-in** (desativada por padrão) e exige permissão explícita através da interface nativa do Android.
-- **Revogação de Permissões:** Você pode revogar as permissões de leitura ou escrita a qualquer momento nas configurações do Health Connect no Android (`Configurações > Segurança e Privacidade > Health Connect > Protocolo PEP`).
-- **Não Compartilhamento:** Nenhum dado lido do Health Connect é transmitido para terceiros ou servidores externos.
+O Protocolo PEP inclui suporte opcional e transparente à API nativa do **Health Connect (Android)**:
+- **Dados Acessados:**
+  - **Leitura:** Leitura estrita de registros de **Peso Corporal (`WeightRecord`)** em quilogramas (kg) e respectivos carimbos temporais (`Instant` e `ZoneOffset`).
+  - **Escrita:** Gravação das medições de **Peso Corporal (`WeightRecord`)** inseridas manualmente pelo usuário no aplicativo.
+- **Finalidade:** Permitir a visualização consolidada da evolução do peso corporal em conjunto com o acompanhamento da rotina de peptídeos, sincronizando com o ecossistema de saúde nativo do sistema operacional.
+- **Controle do Usuário e Consentimento Explícito:** A sincronização com o Health Connect é estritamente **opt-in** (desativada por padrão). O aplicativo solicita permissão explícita por meio da interface oficial do sistema operacional Android.
+- **Isolamento de Origem (`dataOrigin`):** O aplicativo identifica estritamente a origem dos registros. Medições de outras fontes (ex: balanças inteligentes ou apps terceiros) não são reivindicadas nem alteradas pelo Protocolo PEP.
+- **Revogação e Exclusão:** Você pode revogar as permissões de leitura e gravação a qualquer momento em `Configurações > Segurança e Privacidade > Health Connect > Protocolo PEP`. Ao desativar ou limpar os dados no app, os vínculos locais são integralmente removidos.
+- **Não Compartilhamento:** Nenhum dado lido ou processado a partir do Health Connect é transmitido para terceiros, intermediários ou redes externas.
 
 ---
 
 ## 4. Permissões Solicitadas no Android
-- `SCHEDULE_EXACT_ALARM`: Necessária para agendar e disparar lembretes sonoros e vibratórios nos horários exatos configurados pelo usuário, respeitando os modos de economia de bateria.
-- `POST_NOTIFICATIONS`: Necessária no Android 13+ (API 33+) para exibir os avisos visuais de lembrete de dose na barra de notificações.
-- `android.permission.health.READ_WEIGHT` e `android.permission.health.WRITE_WEIGHT`: Necessárias exclusivamente quando o usuário opta por sincronizar medições de peso com o Health Connect.
-- `USE_BIOMETRIC`: Utilizada opcionalmente no Bloqueio por Biometria/PIN local para proteger o acesso visual ao aplicativo. A autenticação é processada pelo hardware de segurança do próprio sistema operacional (Keystore/BiometricPrompt) sem retenção de dados biométricos pelo app.
+- `SCHEDULE_EXACT_ALARM`: Utilizada para disparar alarmes e lembretes sonoros/vibratórios nos horários exatos programados para cada composto, garantindo que o usuário não perca a janela de aplicação mesmo com otimizações de economia de bateria (Doze Mode).
+- `POST_NOTIFICATIONS`: Utilizada no Android 13+ (API 33+) para a exibição dos avisos visuais de lembrete de dose na barra de status.
+- `android.permission.health.READ_WEIGHT` e `android.permission.health.WRITE_WEIGHT`: Utilizadas unicamente quando o usuário opta expressamente por conectar o aplicativo ao Health Connect.
+- `USE_BIOMETRIC` / `USE_FINGERPRINT`: Utilizada de forma opcional no Bloqueio por Biometria/PIN local para restringir o acesso à interface do app. A autenticação é realizada diretamente pelo hardware seguro do Android (BiometricPrompt / KeyStore), sem acesso ou retenção de dados biométricos pela aplicação.
 
 ---
 
-## 5. Backup e Exportação
-- O aplicativo permite exportar um arquivo `.json` contendo seus registros para que você possa fazer cópias de segurança manuais ou migrar de dispositivo.
-- Esse arquivo fica sob seu controle no armazenamento de arquivos do seu celular e nunca é transmitido automaticamente para a internet.
+## 5. Cópia de Segurança e Portabilidade (Backup Local)
+- O aplicativo disponibiliza ferramenta de exportação em formato `.json` para que você possa gerar cópias de segurança locais e restaurá-las quando desejar.
+- O arquivo exportado é salvo diretamente no armazenamento do seu dispositivo e nunca é enviado automaticamente para a internet.
 
 ---
 
-## 6. Exclusão de Dados
-- Você pode apagar todos os registros, históricos e protocolos a qualquer momento diretamente na aba **Ajustes > Limpar Dados** do aplicativo ou limpando os dados do aplicativo nas Configurações do Android.
-
+## 6. Exclusão Total de Dados
+- Você tem autonomia completa para apagar todos os dados, históricos e configurações a qualquer momento em **Ajustes > Limpar Dados** ou através da limpeza de dados do aplicativo no menu de configurações do Android.

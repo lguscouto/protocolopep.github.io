@@ -35,6 +35,10 @@ describe("Measurements Domain (V12)", () => {
     expect(entry.moodLevel).toBe(5);
     expect(entry.symptoms).toEqual(["Fadiga", "Dor de cabeça"]);
     expect(entry.notes).toBe("Pós treino leve");
+    expect(entry.zoneOffset).toBeDefined();
+    expect(entry.timestamp).toBeDefined();
+    expect(typeof entry.zoneOffset).toBe("string");
+    expect(entry.zoneOffset).toMatch(/^[+-]\d{2}:\d{2}$/);
 
     const validRes = validateMeasurementEntry(entry);
     expect(validRes.valid).toBe(true);

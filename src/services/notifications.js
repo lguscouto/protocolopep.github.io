@@ -76,13 +76,13 @@ export class NotificationService {
             status: (res && res.exact_alarm) || "prompt"
           };
         }
-        return { granted: true, status: "granted" };
+        return { granted: false, status: "unknown" };
       } catch (e) {
         console.warn("[Notif] Erro ao verificar permissão de exact alarm:", e);
-        return { granted: true, status: "granted" };
+        return { granted: false, status: "unknown", error: e.message };
       }
     }
-    return { granted: true, status: "granted" };
+    return { granted: true, status: "not_applicable" };
   }
 
   async requestExactAlarmPermission() {
@@ -97,9 +97,10 @@ export class NotificationService {
         }
       } catch (e) {
         console.warn("[Notif] Erro ao abrir configurações de exact alarm:", e);
+        return { granted: false, status: "error", error: e.message };
       }
     }
-    return { granted: true, status: "granted" };
+    return { granted: true, status: "not_applicable" };
   }
 
   async checkPermission() {

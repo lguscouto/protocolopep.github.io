@@ -129,6 +129,17 @@ export class HealthConnectService {
       return { success: false, reason: "Health Connect desativado pelo usuário.", measurements: localMeasurements };
     }
 
+    // Item 10: Verificar permissões reais no sistema antes de iniciar qualquer operação de sync
+    const permStatus = await this.checkPermissions();
+    if (!permStatus.granted) {
+      return {
+        success: false,
+        reason: "PERMISSION_DENIED",
+        message: permStatus.reason || "Permissão do Health Connect não autorizada ou revogada.",
+        measurements: localMeasurements
+      };
+    }
+
     try {
       // 1. Processar e sincronizar exclusões com tombstones locais
       let deletedCount = 0;

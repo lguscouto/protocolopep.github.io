@@ -3,7 +3,9 @@ package com.protocolopep.app
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import androidx.activity.result.ActivityResult
 import androidx.health.connect.client.HealthConnectClient
+import androidx.health.connect.client.PermissionController
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.WeightRecord
 import androidx.health.connect.client.records.metadata.Metadata
@@ -15,6 +17,7 @@ import com.getcapacitor.JSObject
 import com.getcapacitor.Plugin
 import com.getcapacitor.PluginCall
 import com.getcapacitor.PluginMethod
+import com.getcapacitor.annotation.ActivityCallback
 import com.getcapacitor.annotation.CapacitorPlugin
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
@@ -131,6 +134,59 @@ class PepHealthConnectPlugin : Plugin() {
     @PluginMethod
     override fun requestPermissions(call: PluginCall) {
         val client = getHealthClient()
+        val ctx = context
+
+        if (client == null || ctx == null) {
+            val ret = JSObject().apply {
+                put("granted", false)
+                put("status", "UNAVAILABLE")
+                put("reason", "Health Connect indisponível.")
+            }
+            call.resolve(ret)
+            return
+        }
+
+        try {
+            runBlocking(Dispatchers.IO) {
+                val granted = client.permissionController.getGrantedPermissions()
+                val hasAll = REQUIRED_PERMISSIONS.all { it in granted }
+
+                if (hasAll) {
+                    val ret = JSObject().apply {
+                        put("granted", true)
+                        put("status", "CONNECTED")
+                    }
+                    call.resolve(ret)
+                } else {
+                    try {
+                        val contract = PermissionController.createRequestPermissionResultContract()
+                        val intent = contract.createIntent(ctx, REQUIRED_PERMISSIONS)
+                        startActivityForResult(call, intent, "healthPermissionsCallback")
+                    } catch (e: Exception) {
+                        openSettingsInternal()
+                        val ret = JSObject().apply {
+                            put("granted", false)
+                            put("status", "NOT_AUTHORIZED")
+                            put("reason", "Permissões pendentes no Health Connect.")
+                        }
+                        call.resolve(ret)
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            val ret = JSObject().apply {
+                put("granted", false)
+                put("status", "ERROR")
+                put("reason", "Erro ao verificar permissões: ${e.message}")
+            }
+            call.resolve(ret)
+        }
+    }
+
+    @ActivityCallback
+    private fun healthPermissionsCallback(call: PluginCall?, @Suppress("UNUSED_PARAMETER") result: ActivityResult) {
+        if (call == null) return
+        val client = getHealthClient()
         val ret = JSObject()
 
         if (client == null) {
@@ -145,24 +201,24 @@ class PepHealthConnectPlugin : Plugin() {
             runBlocking(Dispatchers.IO) {
                 val granted = client.permissionController.getGrantedPermissions()
                 val hasAll = REQUIRED_PERMISSIONS.all { it in granted }
+                val hasAny = REQUIRED_PERMISSIONS.any { it in granted }
 
                 if (hasAll) {
                     ret.put("granted", true)
                     ret.put("status", "CONNECTED")
-                    call.resolve(ret)
+                } else if (hasAny) {
+                    ret.put("granted", false)
+                    ret.put("status", "PARTIALLY_AUTHORIZED")
                 } else {
-                    // Abre a tela de configurações/permissões do Health Connect
-                    openSettingsInternal()
                     ret.put("granted", false)
                     ret.put("status", "NOT_AUTHORIZED")
-                    ret.put("reason", "Permissões pendentes no Health Connect.")
-                    call.resolve(ret)
                 }
+                call.resolve(ret)
             }
         } catch (e: Exception) {
             ret.put("granted", false)
             ret.put("status", "ERROR")
-            ret.put("reason", "Erro ao verificar permissões: ${e.message}")
+            ret.put("reason", "Erro ao verificar permissões após autorização: ${e.message}")
             call.resolve(ret)
         }
     }

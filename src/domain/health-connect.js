@@ -219,8 +219,8 @@ export function mapHealthRecordToMeasurement(record) {
 
   const hcRecId = record.healthConnectRecordId || record.metadataId || record.id || "";
   const clientRecId = record.clientRecordId || "";
-  const originPkg = record.dataOrigin || "";
-  // Item 6: Apenas o package com.protocolopep.app define ownership PEP (sem heurísticas por clientRecordId)
+  const originPkg = record.dataOrigin || (clientRecId ? "com.protocolopep.app" : "");
+  // Apenas o package com.protocolopep.app define ownership PEP (sem heurísticas por clientRecordId para apps terceiros)
   const isPepOrigin = originPkg === "com.protocolopep.app";
 
   // Chave composta para registros externos evitando colisões de IDs idênticos entre apps distintos
@@ -274,9 +274,27 @@ export function mergeHealthMeasurements(localMeasurements = [], importedRecords 
 
     let matchedId = null;
     for (const [id, localEntry] of resultMap.entries()) {
-      const matchById = id === parsed.id || (raw.clientRecordId && id === raw.clientRecordId);
-      const matchByDateTime = localEntry.date === parsed.date && localEntry.time === parsed.time;
-      if (matchById || matchByDateTime) {
+      // 1. Correspondência por healthConnectRecordId nativo (se ambos possuírem)
+      const matchByHcId = Boolean(
+        localEntry.healthConnectRecordId &&
+        parsed.healthConnectRecordId &&
+        localEntry.healthConnectRecordId === parsed.healthConnectRecordId
+      );
+
+      // 2. Correspondência por clientRecordId respeitando estritamente a origem
+      let matchByClientRecId = false;
+      if (raw.clientRecordId) {
+        if (parsed.ownership === "pep" || parsed.dataOrigin === "com.protocolopep.app" || !parsed.dataOrigin || parsed.dataOrigin === "unknown") {
+          matchByClientRecId = id === raw.clientRecordId || localEntry.clientRecordId === raw.clientRecordId;
+        } else if (localEntry.dataOrigin && parsed.dataOrigin && localEntry.dataOrigin === parsed.dataOrigin) {
+          matchByClientRecId = localEntry.clientRecordId === raw.clientRecordId;
+        }
+      }
+
+      // 3. Correspondência por ID
+      const matchById = id === parsed.id;
+
+      if (matchByHcId || matchByClientRecId || matchById) {
         matchedId = id;
         break;
       }
@@ -284,7 +302,7 @@ export function mergeHealthMeasurements(localMeasurements = [], importedRecords 
 
     if (matchedId) {
       const existing = resultMap.get(matchedId);
-      // Se a medição local veio do Health Connect ou não tinha peso definido, atualiza o peso
+      // Se a medição local veio do Health Connect ou não tinha peso definido, atualiza o peso e metadados
       if (existing.weightKg === null || existing.weightKg === undefined || existing.source === "health_connect") {
         resultMap.set(matchedId, {
           ...existing,
@@ -292,6 +310,14 @@ export function mergeHealthMeasurements(localMeasurements = [], importedRecords 
           source: existing.source || "health_connect",
           healthConnectRecordId: parsed.healthConnectRecordId || existing.healthConnectRecordId,
           dataOrigin: parsed.dataOrigin || existing.dataOrigin,
+          zoneOffset: parsed.zoneOffset || existing.zoneOffset,
+          clientRecordVersion: parsed.clientRecordVersion || existing.clientRecordVersion
+        });
+      } else {
+        // Se a medição local é original do PEP, apenas vincula os identificadores remotos sem sobrepor dados
+        resultMap.set(matchedId, {
+          ...existing,
+          healthConnectRecordId: parsed.healthConnectRecordId || existing.healthConnectRecordId,
           zoneOffset: parsed.zoneOffset || existing.zoneOffset
         });
       }

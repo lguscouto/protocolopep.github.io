@@ -9,6 +9,21 @@
  */
 
 import { isValidDateKey, isValidTime } from "./schedule.js";
+import { localDateTimeToIso } from "./health-connect.js";
+
+/**
+ * Calcula o offset de fuso horário atual no formato ISO (+HH:mm ou -HH:mm)
+ * @param {Date} [date]
+ * @returns {string}
+ */
+export function getCurrentZoneOffset(date = new Date()) {
+  const offsetMinutes = -date.getTimezoneOffset();
+  const sign = offsetMinutes >= 0 ? "+" : "-";
+  const abs = Math.abs(offsetMinutes);
+  const hours = String(Math.floor(abs / 60)).padStart(2, "0");
+  const minutes = String(abs % 60).padStart(2, "0");
+  return `${sign}${hours}:${minutes}`;
+}
 
 export const DEFAULT_SYMPTOM_SUGGESTIONS = Object.freeze([
   "Disposição elevada",
@@ -105,6 +120,12 @@ export function createMeasurementEntry({
   const cleanTime = time && isValidTime(String(time)) ? String(time) : "08:00";
   const version = Math.max(1, parseInt(syncVersion || clientRecordVersion, 10) || 1);
 
+  const cleanZoneOffset = zoneOffset !== undefined && zoneOffset !== null
+    ? zoneOffset
+    : (source === "local" ? getCurrentZoneOffset() : null);
+
+  const cleanTimestamp = createdAt || localDateTimeToIso(cleanDate, cleanTime) || new Date().toISOString();
+
   return {
     id: id || `m_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
     date: cleanDate,
@@ -120,8 +141,9 @@ export function createMeasurementEntry({
     clientRecordVersion: version,
     healthConnectRecordId: healthConnectRecordId || null,
     dataOrigin: dataOrigin || (source === "local" ? "com.protocolopep.app" : null),
-    zoneOffset: zoneOffset || null,
-    createdAt: createdAt || new Date().toISOString()
+    zoneOffset: cleanZoneOffset,
+    timestamp: cleanTimestamp,
+    createdAt: createdAt || cleanTimestamp
   };
 }
 

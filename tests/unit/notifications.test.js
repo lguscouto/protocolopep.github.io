@@ -35,9 +35,11 @@ describe("Notifications Service", () => {
     const checkRes = await notifService.checkExactAlarmPermission();
     expect(checkRes).toBeDefined();
     expect(checkRes.granted).toBe(true);
+    expect(checkRes.status).toBe("not_applicable");
 
     const reqRes = await notifService.requestExactAlarmPermission();
     expect(reqRes).toBeDefined();
     expect(reqRes.granted).toBe(true);
+    expect(reqRes.status).toBe("not_applicable");
   });
 });

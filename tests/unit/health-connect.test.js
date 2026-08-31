@@ -232,6 +232,34 @@ describe("Health Connect Domain", () => {
       }
       expect(state.length).toBe(3);
     });
+
+    it("mantém registros distintos que ocorrem no mesmo minuto mas possuem IDs ou origens diferentes", () => {
+      const local = [
+        {
+          id: "m_pep_morning",
+          date: "2026-08-30",
+          time: "08:00",
+          weightKg: 80.0,
+          source: "local",
+          ownership: "pep"
+        }
+      ];
+
+      const externalImported = [
+        {
+          id: "hc_samsung_morning",
+          dataOrigin: "com.sec.android.app.shealth",
+          timestamp: localDateTimeToIso("2026-08-30", "08:00"),
+          weightKg: 80.4
+        }
+      ];
+
+      const merged = mergeHealthMeasurements(local, externalImported);
+      // Não deve sobrescrever nem fundir porque são origens e IDs distintos
+      expect(merged.length).toBe(2);
+      expect(merged.some((m) => m.id === "m_pep_morning" && m.weightKg === 80.0)).toBe(true);
+      expect(merged.some((m) => m.id === "hc_com.sec.android.app.shealth_hc_samsung_morning" && m.weightKg === 80.4)).toBe(true);
+    });
   });
 
   describe("haveMeasurementsChanged", () => {
@@ -366,6 +394,29 @@ describe("Health Connect Domain", () => {
       expect(syncRes.success).toBe(true);
       expect(syncRes.deletedCount).toBe(1);
       expect(mockStorage.tombstones.length).toBe(0);
+    });
+
+    it("interrompe a sincronização com fail-closed se permissões forem negadas ou revogadas", async () => {
+      const mockStorage = {
+        store: {},
+        getItem(k) { return this.store[k] || null; },
+        setItem(k, v) { this.store[k] = String(v); }
+      };
+
+      const service = new HealthConnectService(mockStorage);
+      service.setEnabled(true);
+
+      // Mock checkPermissions retornando negado
+      service.checkPermissions = async () => ({
+        granted: false,
+        status: "NOT_AUTHORIZED",
+        reason: "Permissão revogada pelo usuário."
+      });
+
+      const res = await service.syncMeasurements([{ id: "m_1", weightKg: 80 }]);
+      expect(res.success).toBe(false);
+      expect(res.reason).toBe("PERMISSION_DENIED");
+      expect(res.message).toBe("Permissão revogada pelo usuário.");
     });
   });
 
