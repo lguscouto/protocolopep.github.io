@@ -381,7 +381,7 @@ class PepHealthConnectPlugin : Plugin() {
             val startInstant = if (!startTimeStr.isNullOrEmpty()) {
                 Instant.parse(startTimeStr)
             } else {
-                Instant.now().minusSeconds(90L * 24 * 3600)
+                Instant.now().minusSeconds(30L * 24 * 3600)
             }
 
             val endInstant = if (!endTimeStr.isNullOrEmpty()) {

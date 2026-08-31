@@ -283,6 +283,14 @@ async function initApp() {
   }
 
   syncAppWidget();
+
+  // P1 Item 11: Verificar estado do Exact Alarm no cold start
+  notifications.checkExactAlarmPermission().then((exactRes) => {
+    if (!exactRes.granted && exactRes.status === "denied") {
+      console.info("[Cold Start] Exact alarm não concedido no Android. Alarmes operarão com janelas padrão.");
+    }
+  }).catch(() => {});
+
   notifications.schedulePeptideReminders(storage.getPeptides());
 }
 

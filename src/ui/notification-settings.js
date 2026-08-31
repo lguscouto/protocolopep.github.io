@@ -146,10 +146,17 @@ export function setupNotificationListeners(storage) {
           }
         }
 
-        // Item 10: Verificar Exact Alarm no Android (API 31+) e registrar status
+        // P1 Item 11: Verificar Exact Alarm no Android (API 31+) e solicitar autorização se negado
         const exactAlarmRes = await notifications.checkExactAlarmPermission();
         if (!exactAlarmRes.granted && exactAlarmRes.status === "denied") {
-          console.info("[Notif] Exact alarm restrito no Android. Lembretes serão agendados com janelas padrão.");
+          const userWants = window.confirm(
+            "Para que os lembretes toquem no minuto exato no Android, o Protocolo PEP precisa de permissão para 'Alarmes e Lembretes'. Deseja abrir as configurações do sistema para autorizar?"
+          );
+          if (userWants) {
+            await notifications.requestExactAlarmPermission();
+          } else {
+            console.info("[Notif] Exact alarm não autorizado pelo usuário. Lembretes serão agendados com janelas padrão.");
+          }
         }
 
         notifications.saveConfig({ enabled: true });

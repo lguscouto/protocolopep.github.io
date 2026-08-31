@@ -95,10 +95,15 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
   function openMeasurementModal(entry = null, prefillDate = null) {
     if (!modal) return;
     editingEntryId = entry ? entry.id : null;
+    const isExternal = Boolean(entry && entry.ownership === "external");
 
     const titleEl = document.getElementById("measurement-modal-title");
     if (titleEl) {
-      titleEl.textContent = entry ? "Editar Registro Corporal / Sintomas" : "Novo Registro Corporal / Sintomas";
+      if (isExternal) {
+        titleEl.textContent = "Registro Externo (Health Connect)";
+      } else {
+        titleEl.textContent = entry ? "Editar Registro Corporal / Sintomas" : "Novo Registro Corporal / Sintomas";
+      }
     }
 
     const todayStr = new Date().toISOString().slice(0, 10);
@@ -107,9 +112,19 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
     if (dateInput) {
       dateInput.max = todayStr;
       dateInput.value = entry ? entry.date : (prefillDate || todayStr);
+      dateInput.disabled = isExternal;
     }
-    if (timeInput) timeInput.value = entry ? entry.time : nowTimeStr;
-    if (weightInput) weightInput.value = entry && entry.weightKg !== null ? entry.weightKg : "";
+    if (timeInput) {
+      timeInput.value = entry ? entry.time : nowTimeStr;
+      timeInput.disabled = isExternal;
+    }
+    if (weightInput) {
+      weightInput.value = entry && entry.weightKg !== null ? entry.weightKg : "";
+      weightInput.disabled = isExternal;
+      weightInput.title = isExternal
+        ? "Registro importado do Health Connect. Para alterar peso ou horário, utilize o aplicativo de origem."
+        : "";
+    }
     if (notesInput) notesInput.value = entry ? (entry.notes || "") : "";
 
     selectedEnergy = entry ? entry.energyLevel : null;
@@ -120,6 +135,8 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
 
     if (deleteBtn) {
       deleteBtn.style.display = entry ? "inline-block" : "none";
+      deleteBtn.textContent = isExternal ? "Ocultar no PEP" : "Excluir";
+      deleteBtn.title = isExternal ? "Oculta a exibição desta medição externa no Protocolo PEP" : "Excluir medição";
     }
 
     updateLevelButtons();
@@ -218,6 +235,7 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
                     ${m.weightKg !== null ? `<span class="chip-acc" style="background:rgba(99,102,241,0.12);color:var(--primary);font-size:11.5px;font-weight:700;">⚖️ ${m.weightKg} kg</span>` : ""}
                     ${m.energyLevel ? `<span class="chip-acc" style="background:rgba(234,179,8,0.12);color:#ca8a04;font-size:11.5px;font-weight:700;">⚡ Energia ${m.energyLevel}/5</span>` : ""}
                     ${m.moodLevel ? `<span class="chip-acc" style="background:rgba(14,133,128,0.12);color:var(--accent);font-size:11.5px;font-weight:700;">😊 Humor ${m.moodLevel}/5</span>` : ""}
+                    ${m.ownership === "external" ? `<span class="chip-acc" style="background:rgba(59,130,246,0.12);color:#3b82f6;font-size:11px;font-weight:600;">🔗 Health Connect</span>` : ""}
                   </div>
                   ${m.symptoms && m.symptoms.length > 0 ? `
                     <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;">
@@ -341,11 +359,17 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
     });
   }
 
-  // Delete measurement handler
+  // Delete / Ocultar measurement handler
   if (deleteBtn) {
     deleteBtn.addEventListener("click", () => {
       if (!editingEntryId) return;
-      if (confirm("Deseja realmente excluir este registro corporal / sintomas?")) {
+      const target = storage.getMeasurements().find((m) => m.id === editingEntryId);
+      const isExternal = Boolean(target && target.ownership === "external");
+      const confirmMsg = isExternal
+        ? "Este registro foi importado do Health Connect. Deseja ocultá-lo da visualização do Protocolo PEP? (O registro original continuará preservado no Health Connect)"
+        : "Deseja realmente excluir este registro corporal / sintomas?";
+
+      if (confirm(confirmMsg)) {
         const res = storage.deleteMeasurement(editingEntryId);
         if (res.success) {
           haptics.warning();
@@ -365,16 +389,20 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
     form.addEventListener("submit", (e) => {
       e.preventDefault();
 
-      const dateVal = dateInput ? dateInput.value : "";
-      const timeVal = timeInput ? timeInput.value : "08:00";
-      const rawWeight = weightInput ? weightInput.value.trim() : "";
+      const existing = editingEntryId ? storage.getMeasurements().find((m) => m.id === editingEntryId) : null;
+      const isExternal = Boolean(existing && existing.ownership === "external");
+
+      // P1 Item 13: Se o registro for externo, preservar os campos originais do Health Connect
+      const dateVal = isExternal && existing ? existing.date : (dateInput ? dateInput.value : "");
+      const timeVal = isExternal && existing ? existing.time : (timeInput ? timeInput.value : "08:00");
+      const rawWeight = isExternal && existing ? existing.weightKg : (weightInput ? weightInput.value.trim() : "");
       const notesVal = notesInput ? notesInput.value.trim() : "";
 
       const entryPayload = {
         id: editingEntryId,
         date: dateVal,
         time: timeVal,
-        weightKg: rawWeight || null,
+        weightKg: rawWeight !== null && rawWeight !== undefined && rawWeight !== "" ? rawWeight : null,
         energyLevel: selectedEnergy,
         moodLevel: selectedMood,
         symptoms: Array.from(selectedSymptoms),

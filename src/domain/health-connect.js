@@ -150,8 +150,10 @@ export function isValidIsoTimestamp(str) {
 export function mapMeasurementToHealthRecord(measurement) {
   if (!measurement || typeof measurement !== "object") return null;
 
-  // Prevenção de Sync Echo: jamais exportar registros originados externamente no Health Connect
-  if (measurement.source === "health_connect" || measurement.ownership === "external") {
+  // P1 (CODEX v2.5.0 Item 6): Prevenção de Sync Echo baseada exclusivamente em ownership.
+  // Registros externos (ownership === "external") nunca são exportados.
+  // Registros do PEP (mesmo reimportados com source === "health_connect") continuam exportáveis.
+  if (measurement.ownership === "external") {
     return null;
   }
 

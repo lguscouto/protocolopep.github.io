@@ -21,7 +21,7 @@ Aplicativo Android nativo para acompanhamento de protocolos de peptídeos, cálc
   - Tratamento fail-closed estrito em falhas de leitura/permissão e rejeição pura de datas/horários impossíveis.
 - **Notificações Nativas Multi-Canal & Verificação de Exact Alarm:**
   - Configuração de dois `NotificationChannel`s no Android: `pep_lembretes` (som + vibração) e `pep_lembretes_silenciosos` (discreto sem som/vibração).
-  - Verificação de `SCHEDULE_EXACT_ALARM` em runtime com fail-closed (`not_applicable` no web e fallback seguro `allowWhileIdle: true` no Android).
+  - Verificação de `SCHEDULE_EXACT_ALARM` em runtime com solicitação de autorização direta do usuário (API 31+). A flag `allowWhileIdle: true` assegura que os lembretes acordem o dispositivo em modo Doze, enquanto a permissão de Exact Alarm garante a precisão ao minuto exato.
   - Centralização e eliminação de listeners redundantes de notificação na interface com foco acessível e ARIA.
 - **Proteção Matemática de Doses em UI sem Concentração:**
   - Bloqueio automático de débito de estoque (`VIAL_MISSING_CONCENTRATION`) caso a dose esteja em UI e o frasco não possua concentração calculada, com diálogo explícito para permitir salvar apenas no histórico sem afetar o estoque.

@@ -164,10 +164,10 @@ export class HealthConnectService {
         }
       }
 
-      // 2. Exportar medições do PEP (ignora registros de origem externa para prevenir Sync Echo)
+      // 2. Exportar medições do PEP (P1 Item 6: direito de exportação baseado em ownership, não source)
       const exportRecords = [];
       for (const m of localMeasurements) {
-        if (!m || m.source === "health_connect" || m.ownership === "external") continue;
+        if (!m || m.ownership === "external") continue;
         const r = mapMeasurementToHealthRecord(m);
         if (r) exportRecords.push(r);
       }
@@ -176,10 +176,11 @@ export class HealthConnectService {
         await PepHealthConnect.writeRecords({ records: exportRecords });
       }
 
-      // 3. Importar registros dos últimos 90 dias do Health Connect
-      const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
+      // 3. Importar registros dos últimos 30 dias do Health Connect (P1 Item 9: janela padrão segura sem requerer permissão de histórico ampliado)
+      const SYNC_WINDOW_DAYS = 30;
+      const syncWindowStart = new Date(Date.now() - SYNC_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString();
       const readRes = await PepHealthConnect.readRecords({
-        startTime: ninetyDaysAgo,
+        startTime: syncWindowStart,
         endTime: new Date().toISOString()
       });
 
@@ -188,7 +189,19 @@ export class HealthConnectService {
         throw new Error(readRes?.error || readRes?.message || "HEALTH_CONNECT_READ_FAILED");
       }
 
-      const imported = Array.isArray(readRes.records) ? readRes.records : [];
+      const importedRaw = Array.isArray(readRes.records) ? readRes.records : [];
+      // P1 Item 14: Filtrar medições externas que o usuário optou por ocultar no PEP
+      const hiddenIds = this.storage && typeof this.storage.getHiddenMeasurementIds === "function"
+        ? this.storage.getHiddenMeasurementIds()
+        : [];
+      const hiddenSet = new Set(hiddenIds);
+      const imported = importedRaw.filter((r) => {
+        if (!r) return false;
+        const recId = r.healthConnectRecordId || r.metadataId || r.id;
+        const clientRecId = r.clientRecordId;
+        return !hiddenSet.has(recId) && (!clientRecId || !hiddenSet.has(clientRecId));
+      });
+
       const merged = mergeHealthMeasurements(localMeasurements, imported);
 
       return {

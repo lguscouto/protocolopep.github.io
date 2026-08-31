@@ -12,6 +12,7 @@ const KEYS = {
   SITES: "pep_sites_v2",
   MEASUREMENTS: "pep_measurements_v2",
   TOMBSTONES: "pep_hc_tombstones_v2",
+  HIDDEN_MEASUREMENTS: "pep_hidden_measurements_v2",
   SETTINGS: "pep_settings_v2",
   ROLLBACK_SNAPSHOT: "pep_rollback_snapshot",
   LEGACY_PROTO: "peptideos-protocolo-v1",
@@ -38,6 +39,7 @@ export class StorageService {
     this.sites = getDefaultSites();
     this.measurements = [];
     this.tombstones = [];
+    this.hiddenMeasurementIds = [];
     this.listeners = new Set();
   }
 
@@ -136,6 +138,19 @@ export class StorageService {
         this.tombstones = [];
       }
 
+      // 7. Carregar IDs de Medições Ocultadas (P1 Item 14)
+      let storedHidden = localStorage.getItem(KEYS.HIDDEN_MEASUREMENTS);
+      if (storedHidden) {
+        try {
+          const raw = JSON.parse(storedHidden);
+          this.hiddenMeasurementIds = Array.isArray(raw) ? raw : [];
+        } catch (e) {
+          this.hiddenMeasurementIds = [];
+        }
+      } else {
+        this.hiddenMeasurementIds = [];
+      }
+
     } catch (err) {
       console.error("[Storage] Erro ao inicializar storage local:", err);
       this.peptides = migratePeptides(DEFAULT_PROTOCOL);
@@ -144,6 +159,7 @@ export class StorageService {
       this.sites = getDefaultSites();
       this.measurements = [];
       this.tombstones = [];
+      this.hiddenMeasurementIds = [];
     }
 
     this.notify();
@@ -417,8 +433,9 @@ export class StorageService {
     const current = this.getMeasurements();
     const target = current.find((m) => m.id === id);
 
-    // Se for medição originada pelo PEP com peso que possa estar no Health Connect, registra tombstone
-    const isPepOwnership = target && target.ownership === "pep" && (target.dataOrigin === "com.protocolopep.app" || !target.dataOrigin) && target.source !== "health_connect";
+    // P1 (CODEX v2.5.0 Item 7): Tombstone baseado estritamente em ownership, NÃO bloqueado por source.
+    // Registros PEP reimportados (source: "health_connect", ownership: "pep") devem gerar tombstone ao serem excluídos.
+    const isPepOwnership = target && target.ownership === "pep" && (target.dataOrigin === "com.protocolopep.app" || !target.dataOrigin);
     if (isPepOwnership && target.weightKg !== null && target.weightKg !== undefined) {
       this.addTombstone({
         id: target.id,
@@ -426,6 +443,12 @@ export class StorageService {
         healthConnectRecordId: target.healthConnectRecordId || null,
         deletedAt: new Date().toISOString()
       });
+    } else if (target && target.ownership === "external") {
+      // P1 Item 14: Registros externos excluídos no PEP são adicionados aos IDs ocultos para não reaparecerem no sync
+      this.addHiddenMeasurementId(target.id);
+      if (target.healthConnectRecordId) {
+        this.addHiddenMeasurementId(target.healthConnectRecordId);
+      }
     }
 
     const filtered = current.filter((m) => m.id !== id);
@@ -470,6 +493,35 @@ export class StorageService {
     }
   }
 
+  getHiddenMeasurementIds() {
+    return Array.isArray(this.hiddenMeasurementIds) ? deepClone(this.hiddenMeasurementIds) : [];
+  }
+
+  addHiddenMeasurementId(id) {
+    if (!id || typeof id !== "string") return;
+    const current = this.getHiddenMeasurementIds();
+    if (!current.includes(id)) {
+      current.push(id);
+      this.hiddenMeasurementIds = current;
+      this.saveHiddenMeasurementIds();
+    }
+  }
+
+  clearHiddenMeasurementIds() {
+    this.hiddenMeasurementIds = [];
+    this.saveHiddenMeasurementIds();
+  }
+
+  saveHiddenMeasurementIds() {
+    try {
+      localStorage.setItem(KEYS.HIDDEN_MEASUREMENTS, JSON.stringify(this.hiddenMeasurementIds));
+      return { success: true };
+    } catch (e) {
+      console.error("[Storage] Erro ao salvar medições ocultas:", e);
+      return { success: false, error: e.message };
+    }
+  }
+
   saveMeasurements() {
     try {
       localStorage.setItem(KEYS.MEASUREMENTS, JSON.stringify(this.measurements));
@@ -487,7 +539,8 @@ export class StorageService {
       inventory: deepClone(this.inventory),
       sites: deepClone(this.sites),
       measurements: deepClone(this.measurements),
-      tombstones: deepClone(this.tombstones)
+      tombstones: deepClone(this.tombstones),
+      hiddenMeasurementIds: deepClone(this.hiddenMeasurementIds)
     };
   }
 
@@ -499,6 +552,7 @@ export class StorageService {
     this.sites = snapshot.sites || getDefaultSites();
     this.measurements = snapshot.measurements || [];
     this.tombstones = snapshot.tombstones || [];
+    this.hiddenMeasurementIds = snapshot.hiddenMeasurementIds || [];
     try {
       localStorage.setItem(KEYS.PROTOCOL, JSON.stringify(this.peptides));
       localStorage.setItem(KEYS.LOGS, JSON.stringify(this.logs));
@@ -506,6 +560,7 @@ export class StorageService {
       localStorage.setItem(KEYS.SITES, JSON.stringify(this.sites));
       localStorage.setItem(KEYS.MEASUREMENTS, JSON.stringify(this.measurements));
       localStorage.setItem(KEYS.TOMBSTONES, JSON.stringify(this.tombstones));
+      localStorage.setItem(KEYS.HIDDEN_MEASUREMENTS, JSON.stringify(this.hiddenMeasurementIds));
     } catch (e) {
       console.error("[Storage] Erro ao restaurar snapshot:", e);
     }

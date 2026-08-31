@@ -273,6 +273,55 @@ describe("Storage Service", () => {
       expect(edited.entry.timestamp).not.toBe(originalTimestamp);
       expect(edited.entry.createdAt).toBe(originalCreatedAt);
     });
+
+    it("Item 7: deleteMeasurement registra tombstone para registro PEP reimportado (source: health_connect, ownership: pep)", () => {
+      storageInstance.init();
+      storageInstance.addMeasurement({
+        id: "m_reimported_pep",
+        clientRecordId: "m_reimported_pep",
+        healthConnectRecordId: "hc_rec_999",
+        date: "2026-08-29",
+        time: "08:00",
+        weightKg: 83.0,
+        source: "health_connect",
+        ownership: "pep",
+        dataOrigin: "com.protocolopep.app"
+      });
+
+      const delRes = storageInstance.deleteMeasurement("m_reimported_pep");
+      expect(delRes.success).toBe(true);
+
+      const tombstones = storageInstance.getTombstones();
+      expect(tombstones).toHaveLength(1);
+      expect(tombstones[0].id).toBe("m_reimported_pep");
+      expect(tombstones[0].clientRecordId).toBe("m_reimported_pep");
+    });
+
+    it("Item 14: deleteMeasurement em registro externo adiciona aos hiddenMeasurementIds", () => {
+      storageInstance.init();
+      storageInstance.addMeasurement({
+        id: "hc_ext_fitbit_456",
+        healthConnectRecordId: "hc_raw_fitbit_456",
+        date: "2026-08-29",
+        time: "08:00",
+        weightKg: 80.0,
+        source: "health_connect",
+        ownership: "external",
+        dataOrigin: "com.fitbit.FitbitMobile"
+      });
+
+      const delRes = storageInstance.deleteMeasurement("hc_ext_fitbit_456");
+      expect(delRes.success).toBe(true);
+
+      // Não gera tombstone remoto
+      expect(storageInstance.getTombstones()).toHaveLength(0);
+
+      // Mas registra nos IDs ocultos locais
+      const hidden = storageInstance.getHiddenMeasurementIds();
+      expect(hidden).toContain("hc_ext_fitbit_456");
+      expect(hidden).toContain("hc_raw_fitbit_456");
+    });
   });
 });
+
 

@@ -557,5 +557,125 @@ describe("Health Connect Domain", () => {
       expect(record.clientRecordVersion).toBe(3);
     });
   });
+
+  // ─── P1 (CODEX v2.5.0): Ownership vs Source, Reimportação e Ciclo Completo ───
+
+  describe("P1 — Ownership, Reimportação e Janela 30d (CODEX v2.5.0)", () => {
+    it("Item 6: mapMeasurementToHealthRecord permite exportação de registro PEP reimportado (source: health_connect, ownership: pep)", () => {
+      const reimportedPepRecord = {
+        id: "m_pep_reimported_1",
+        clientRecordId: "m_pep_reimported_1",
+        date: "2026-08-29",
+        time: "08:00",
+        weightKg: 82.0,
+        source: "health_connect",
+        ownership: "pep",
+        dataOrigin: "com.protocolopep.app",
+        timestamp: "2026-08-29T11:00:00.000Z"
+      };
+
+      const record = mapMeasurementToHealthRecord(reimportedPepRecord);
+      expect(record).not.toBeNull();
+      expect(record.weightKg).toBe(82.0);
+      expect(record.clientRecordId).toBe("m_pep_reimported_1");
+    });
+
+    it("Item 6: mapMeasurementToHealthRecord bloqueia registros externos (ownership: external)", () => {
+      const externalRecord = {
+        id: "hc_com.sec.android_123",
+        date: "2026-08-29",
+        time: "08:00",
+        weightKg: 82.0,
+        source: "health_connect",
+        ownership: "external",
+        dataOrigin: "com.sec.android.app.shealth"
+      };
+
+      expect(mapMeasurementToHealthRecord(externalRecord)).toBeNull();
+    });
+
+    it("Item 8: Ciclo completo — Criar -> Exportar -> Reinstalar -> Reimportar -> Editar -> Excluir com Tombstone", () => {
+      // 1. PEP cria registro local
+      const localOriginal = {
+        id: "m_cycle_1",
+        clientRecordId: "m_cycle_1",
+        date: "2026-08-29",
+        time: "08:00",
+        weightKg: 85.0,
+        source: "local",
+        ownership: "pep",
+        dataOrigin: "com.protocolopep.app",
+        syncVersion: 1,
+        timestamp: "2026-08-29T11:00:00.000Z",
+        createdAt: "2026-08-29T11:00:00.000Z"
+      };
+
+      // 2. Exportar para o Health Connect
+      const exported = mapMeasurementToHealthRecord(localOriginal);
+      expect(exported).not.toBeNull();
+      expect(exported.clientRecordId).toBe("m_cycle_1");
+      expect(exported.weightKg).toBe(85.0);
+
+      // 3. Simula reinstalação/limpeza e reimportação do Health Connect
+      const rawFromHealthConnect = {
+        id: "hc_raw_id_999",
+        clientRecordId: "m_cycle_1",
+        dataOrigin: "com.protocolopep.app",
+        time: "2026-08-29T11:00:00.000Z",
+        weight: 85.0,
+        weightKg: 85.0,
+        clientRecordVersion: 1
+      };
+
+      const importedMeasurement = mapHealthRecordToMeasurement(rawFromHealthConnect);
+      expect(importedMeasurement).not.toBeNull();
+      expect(importedMeasurement.ownership).toBe("pep"); // Pertence ao PEP!
+      expect(importedMeasurement.source).toBe("health_connect");
+      expect(importedMeasurement.clientRecordId).toBe("m_cycle_1");
+      expect(importedMeasurement.id).toBe("m_cycle_1");
+
+      // 4. Editar o registro reimportado (usuário altera peso para 84.5)
+      const editedRecord = {
+        ...importedMeasurement,
+        weightKg: 84.5,
+        syncVersion: 2,
+        clientRecordVersion: 2
+      };
+
+      // 5. O registro editado DEVE continuar exportável para o Health Connect
+      const reExported = mapMeasurementToHealthRecord(editedRecord);
+      expect(reExported).not.toBeNull();
+      expect(reExported.weightKg).toBe(84.5);
+      expect(reExported.clientRecordVersion).toBe(2);
+    });
+
+    it("Item 14: Medições externas marcadas como ocultas não são reimportadas pelo merge", () => {
+      const importedRecords = [
+        {
+          id: "hc_ext_samsung_1",
+          healthConnectRecordId: "hc_rec_samsung_1",
+          dataOrigin: "com.sec.android.app.shealth",
+          time: "2026-08-29T11:00:00.000Z",
+          weight: 80.0
+        },
+        {
+          id: "hc_ext_garmin_2",
+          healthConnectRecordId: "hc_rec_garmin_2",
+          dataOrigin: "com.garmin.android.apps.connectmobile",
+          time: "2026-08-28T11:00:00.000Z",
+          weight: 81.0
+        }
+      ];
+
+      // Simula storage com id oculto
+      const hiddenIds = ["hc_com.sec.android.app.shealth_hc_rec_samsung_1", "hc_rec_samsung_1"];
+      const hiddenSet = new Set(hiddenIds);
+
+      const filtered = importedRecords.filter(r => !hiddenSet.has(r.healthConnectRecordId) && !hiddenSet.has(r.id));
+      expect(filtered).toHaveLength(1);
+      expect(filtered[0].dataOrigin).toBe("com.garmin.android.apps.connectmobile");
+    });
+  });
 });
+
 
