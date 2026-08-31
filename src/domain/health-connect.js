@@ -245,14 +245,14 @@ export function mapHealthRecordToMeasurement(record) {
 
   const hcRecId = record.healthConnectRecordId || record.metadataId || record.id || "";
   const clientRecId = record.clientRecordId || "";
-  const originPkg = record.dataOrigin || (clientRecId ? "com.protocolopep.app" : "");
-  // Apenas o package com.protocolopep.app define ownership PEP (sem heurísticas por clientRecordId para apps terceiros)
+  const originPkg = record.dataOrigin || "unknown";
+  // Item 7: Apenas o package com.protocolopep.app define ownership PEP (sem qualquer inferência por clientRecordId)
   const isPepOrigin = originPkg === "com.protocolopep.app";
 
   // Chave composta para registros externos evitando colisões de IDs idênticos entre apps distintos
   const resolvedId = isPepOrigin && clientRecId
     ? clientRecId
-    : (hcRecId ? `hc_${originPkg || "ext"}_${hcRecId}` : `hc_${dateStr}_${timeStr.replace(":", "")}`);
+    : (hcRecId ? `hc_${originPkg}_${hcRecId}` : `hc_${dateStr}_${timeStr.replace(":", "")}`);
 
   return {
     id: resolvedId,
@@ -265,7 +265,7 @@ export function mapHealthRecordToMeasurement(record) {
     notes: "Importado via Health Connect",
     source: "health_connect",
     ownership: isPepOrigin ? "pep" : "external",
-    dataOrigin: originPkg || "unknown",
+    dataOrigin: originPkg,
     healthConnectRecordId: hcRecId,
     clientRecordId: clientRecId,
     clientRecordVersion: parseInt(record.clientRecordVersion, 10) || 1,
@@ -307,13 +307,15 @@ export function mergeHealthMeasurements(localMeasurements = [], importedRecords 
         localEntry.healthConnectRecordId === parsed.healthConnectRecordId
       );
 
-      // 2. Correspondência por clientRecordId respeitando estritamente a origem
+      // 2. Correspondência por clientRecordId
       let matchByClientRecId = false;
       if (raw.clientRecordId) {
-        if (parsed.ownership === "pep" || parsed.dataOrigin === "com.protocolopep.app" || !parsed.dataOrigin || parsed.dataOrigin === "unknown") {
-          matchByClientRecId = id === raw.clientRecordId || localEntry.clientRecordId === raw.clientRecordId;
-        } else if (localEntry.dataOrigin && parsed.dataOrigin && localEntry.dataOrigin === parsed.dataOrigin) {
-          matchByClientRecId = localEntry.clientRecordId === raw.clientRecordId;
+        if (id === raw.clientRecordId) {
+          matchByClientRecId = true;
+        } else if (localEntry.clientRecordId && localEntry.clientRecordId === raw.clientRecordId) {
+          if (!localEntry.dataOrigin || !parsed.dataOrigin || localEntry.dataOrigin === parsed.dataOrigin) {
+            matchByClientRecId = true;
+          }
         }
       }
 

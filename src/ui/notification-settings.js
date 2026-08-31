@@ -102,9 +102,13 @@ export function setupNotificationListeners(storage) {
   }
 
   if (soundToggle) {
-    soundToggle.addEventListener("change", () => {
+    soundToggle.addEventListener("change", async () => {
       notifications.saveConfig({ sound: soundToggle.checked });
       haptics.light();
+      if (notifications.getConfig().enabled) {
+        await notifications.schedulePeptideReminders(storage.getPeptides());
+        await updateNotificationUI(storage.getPeptides());
+      }
     });
   }
 
@@ -140,6 +144,12 @@ export function setupNotificationListeners(storage) {
             alert("Permissão de notificação não autorizada pelo sistema Android. Para ativar, permita as notificações nas Configurações do aparelho.");
             return;
           }
+        }
+
+        // Item 10: Verificar Exact Alarm no Android (API 31+) e registrar status
+        const exactAlarmRes = await notifications.checkExactAlarmPermission();
+        if (!exactAlarmRes.granted && exactAlarmRes.status === "denied") {
+          console.info("[Notif] Exact alarm restrito no Android. Lembretes serão agendados com janelas padrão.");
         }
 
         notifications.saveConfig({ enabled: true });

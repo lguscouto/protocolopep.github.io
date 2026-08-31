@@ -45,6 +45,18 @@ describe("Measurements Domain (V12)", () => {
     expect(validRes.errors).toHaveLength(0);
   });
 
+  it("preserva clientRecordId quando fornecido", () => {
+    const entry = createMeasurementEntry({
+      id: "m_custom_1",
+      clientRecordId: "client_rec_12345",
+      date: "2026-08-29",
+      weightKg: 81.0
+    });
+
+    expect(entry.clientRecordId).toBe("client_rec_12345");
+    expect(entry.id).toBe("m_custom_1");
+  });
+
   it("distingue estritamente entre peso ausente (null) e valores numéricos", () => {
     const entryWithoutWeight = createMeasurementEntry({
       date: "2026-08-29",

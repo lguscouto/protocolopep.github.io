@@ -333,8 +333,16 @@ export class StorageService {
 
     let syncVersion = 1;
     if (existing) {
-      // Se dados foram alterados, incrementa a versão para atualização no Health Connect
-      const hasChanged = existing.weightKg !== entryData.weightKg || existing.date !== entryData.date || existing.time !== entryData.time;
+      // Item 9: Normalizar valores numéricos e textos antes de comparar para evitar falso incremento de syncVersion
+      const parseW = (w) => (w !== null && w !== undefined && w !== "" ? Math.round(Number(String(w).replace(",", ".")) * 100) / 100 : null);
+      const prevW = parseW(existing.weightKg);
+      const nextW = parseW(entryData.weightKg);
+      const prevDate = String(existing.date || "");
+      const nextDate = String(entryData.date || "");
+      const prevTime = String(existing.time || "08:00");
+      const nextTime = String(entryData.time || "08:00");
+
+      const hasChanged = prevW !== nextW || prevDate !== nextDate || prevTime !== nextTime;
       syncVersion = hasChanged ? (existing.syncVersion || 1) + 1 : (existing.syncVersion || 1);
     }
 
@@ -342,9 +350,13 @@ export class StorageService {
       ...entryData,
       syncVersion,
       clientRecordVersion: syncVersion,
+      clientRecordId: existing ? (existing.clientRecordId || entryData.clientRecordId || null) : (entryData.clientRecordId || null),
       source: existing ? (existing.source || entryData.source || "local") : (entryData.source || "local"),
       ownership: existing ? (existing.ownership || entryData.ownership || "pep") : (entryData.ownership || "pep"),
-      healthConnectRecordId: existing ? (existing.healthConnectRecordId || entryData.healthConnectRecordId) : entryData.healthConnectRecordId
+      healthConnectRecordId: existing ? (existing.healthConnectRecordId || entryData.healthConnectRecordId) : entryData.healthConnectRecordId,
+      dataOrigin: existing ? (existing.dataOrigin || entryData.dataOrigin) : entryData.dataOrigin,
+      zoneOffset: existing ? (existing.zoneOffset || entryData.zoneOffset) : entryData.zoneOffset,
+      createdAt: existing ? (existing.createdAt || entryData.createdAt) : entryData.createdAt
     };
 
     const entry = createMeasurementEntry(payload);

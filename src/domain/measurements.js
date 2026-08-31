@@ -63,6 +63,7 @@ export function formatSymptomLabel(symptom) {
  * @param {string} [params.source] - "local" | "health_connect"
  * @param {string} [params.ownership] - "pep" | "external"
  * @param {number} [params.syncVersion] - Versão incremental monotônica
+ * @param {string|null} [params.clientRecordId]
  * @param {string|null} [params.healthConnectRecordId]
  * @param {string|null} [params.dataOrigin]
  * @param {string|null} [params.zoneOffset]
@@ -71,6 +72,7 @@ export function formatSymptomLabel(symptom) {
  */
 export function createMeasurementEntry({
   id = null,
+  clientRecordId = null,
   date,
   time = "08:00",
   weightKg = null,
@@ -139,6 +141,7 @@ export function createMeasurementEntry({
     ownership: ownership || (source === "health_connect" ? "external" : "pep"),
     syncVersion: version,
     clientRecordVersion: version,
+    clientRecordId: clientRecordId || null,
     healthConnectRecordId: healthConnectRecordId || null,
     dataOrigin: dataOrigin || (source === "local" ? "com.protocolopep.app" : null),
     zoneOffset: cleanZoneOffset,

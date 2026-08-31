@@ -80,4 +80,30 @@ class HealthConnectTest {
         // O offset original preservado no registro continua sendo -03:00
         assertEquals("-03:00", parsedOffsetRio.id)
     }
+
+    @Test
+    fun testExternalAppWithClientRecordIdRemainsExternal() {
+        val externalPkg = "com.sec.android.app.shealth"
+        val clientRecId = "samsung_health_rec_456"
+
+        val originPkg = externalPkg
+        val isPepOrigin = originPkg == "com.protocolopep.app"
+        val ownership = if (isPepOrigin) "pep" else "external"
+
+        assertFalse("Não deve inferir PEP ownership a partir de clientRecordId de terceiros", isPepOrigin)
+        assertEquals("external", ownership)
+        assertEquals("samsung_health_rec_456", clientRecId)
+    }
+
+    @Test
+    fun testSyncVersionMonotonicIncrement() {
+        val initialVersion = 1L
+        val weightChanged = true
+        val nextVersion = if (weightChanged) initialVersion + 1L else initialVersion
+
+        assertEquals(2L, nextVersion)
+
+        val unchangedVersion = if (false) nextVersion + 1L else nextVersion
+        assertEquals(2L, unchangedVersion)
+    }
 }

@@ -103,6 +103,17 @@ describe("Storage Service", () => {
     });
     expect(updated.success).toBe(true);
     expect(updated.entry.syncVersion).toBe(2);
+
+    // Salva novamente com valor equivalente em string sem alteração real
+    const unchanged = storageInstance.addMeasurement({
+      id: "m_test_1",
+      date: "2026-08-29",
+      time: "08:00",
+      weightKg: "83.5",
+      notes: "Anotação puramente local"
+    });
+    expect(unchanged.success).toBe(true);
+    expect(unchanged.entry.syncVersion).toBe(2); // Não deve incrementar para 3
   });
 
   it("registra tombstone ao excluir uma medição local do PEP com peso", () => {

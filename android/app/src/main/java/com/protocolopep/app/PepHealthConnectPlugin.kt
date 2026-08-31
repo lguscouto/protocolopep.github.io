@@ -148,17 +148,20 @@ class PepHealthConnectPlugin : Plugin() {
         }
 
         try {
+            var hasAll = false
             runBlocking(Dispatchers.IO) {
                 val granted = client.permissionController.getGrantedPermissions()
-                val hasAll = REQUIRED_PERMISSIONS.all { it in granted }
+                hasAll = REQUIRED_PERMISSIONS.all { it in granted }
+            }
 
-                if (hasAll) {
-                    val ret = JSObject().apply {
-                        put("granted", true)
-                        put("status", "CONNECTED")
-                    }
-                    call.resolve(ret)
-                } else {
+            if (hasAll) {
+                val ret = JSObject().apply {
+                    put("granted", true)
+                    put("status", "CONNECTED")
+                }
+                call.resolve(ret)
+            } else {
+                activity.runOnUiThread {
                     try {
                         val contract = PermissionController.createRequestPermissionResultContract()
                         val intent = contract.createIntent(ctx, REQUIRED_PERMISSIONS)
