@@ -1,6 +1,6 @@
 # 🧪 Protocolo PEP · App Android (Local-First)
 
-![Version](https://img.shields.io/badge/version-2.4.0-2CC5C0)
+![Version](https://img.shields.io/badge/version-2.5.0-2CC5C0)
 ![Android](https://img.shields.io/badge/Android-8.0%2B-green)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![CI](https://github.com/lguscouto/protocolopep.github.io/actions/workflows/ci.yml/badge.svg)
@@ -9,7 +9,7 @@ Aplicativo Android nativo para acompanhamento de protocolos de peptídeos, cálc
 
 ---
 
-## 🚀 Novidades da Versão 2.4.0 (Auditoria Completa, Health Connect Estrito, Exact Alarm e Lifecycle Seguro)
+## 🚀 Novidades da Versão 2.5.0 (Auditoria Completa Codex, Health Connect Estrito, Exact Alarm e Pipeline de Migrações)
 
 - **Sincronização Health Connect Resiliente & Proteção contra Sync Echo:**
   - Conversão pura de timestamps locais (`localDateTimeToIso` e `isoToLocalDateTime`) e preservação de `zoneOffset` histórico.

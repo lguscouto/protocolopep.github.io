@@ -6,7 +6,7 @@ import { generateDiagnosticReport } from "../services/diagnostics.js";
 import { downloadBlob } from "../services/export.js";
 import { haptics } from "../services/haptics.js";
 
-export function setupDiagnosticsModal({ storage, getNotificationsActive, appVersion = "2.4.0" }) {
+export function setupDiagnosticsModal({ storage, getNotificationsActive, appVersion = "2.5.0" }) {
   const modal = document.getElementById("diag-modal");
   const openBtn = document.getElementById("open-diag-btn");
   const closeBtn = document.getElementById("diag-close");
