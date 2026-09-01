@@ -190,18 +190,19 @@ export function createMeasurementEntry({
   const cleanTime = hasExplicitTime ? String(time) : "08:00";
   const version = Math.max(1, parseInt(syncVersion || clientRecordVersion, 10) || 1);
 
+  const hasExplicitZoneOffset = zoneOffset !== undefined && zoneOffset !== null && zoneOffset !== "";
   const cleanTimeZoneId = timeZoneId !== undefined && timeZoneId !== null && timeZoneId !== ""
     ? String(timeZoneId)
-    : (source === "local" ? getSystemTimeZoneId() : null);
+    : (source === "local" && !hasExplicitZoneOffset ? getSystemTimeZoneId() : null);
   if (cleanTimeZoneId && !isValidTimeZoneId(cleanTimeZoneId)) {
     throw new MeasurementValidationError("INVALID_TIME_ZONE", "Timezone IANA inválido.");
   }
 
-  if (zoneOffset !== undefined && zoneOffset !== null && zoneOffset !== "" && !isValidZoneOffset(String(zoneOffset))) {
+  if (hasExplicitZoneOffset && !isValidZoneOffset(String(zoneOffset))) {
     throw new MeasurementValidationError("INVALID_ZONE_OFFSET", "Offset de fuso inválido; use +HH:mm, -HH:mm ou Z.");
   }
 
-  const cleanZoneOffset = zoneOffset !== undefined && zoneOffset !== null && zoneOffset !== ""
+  const cleanZoneOffset = hasExplicitZoneOffset
     ? String(zoneOffset)
     : (source === "local"
       ? getZoneOffsetForLocalDateTime(cleanDate, cleanTime, cleanTimeZoneId)

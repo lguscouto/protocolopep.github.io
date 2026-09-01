@@ -293,6 +293,7 @@ describe("Storage Service", () => {
       });
 
       expect(initial.success).toBe(true);
+      expect(initial.entry.timeZoneId).toBeNull();
       expect(edited.success).toBe(true);
       expect(edited.entry.zoneOffset).toBe("-03:00");
       expect(edited.entry.timestamp).toBe("2026-08-30T13:00:00.000Z");
