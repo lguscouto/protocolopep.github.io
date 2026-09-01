@@ -1,11 +1,20 @@
 # 🧪 Protocolo PEP · App Android (Local-First)
 
-![Version](https://img.shields.io/badge/version-2.7.0-2CC5C0)
+![Version](https://img.shields.io/badge/version-2.8.0-2CC5C0)
 ![Android](https://img.shields.io/badge/Android-8.0%2B-green)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![CI](https://github.com/lguscouto/protocolopep.github.io/actions/workflows/ci.yml/badge.svg)
 
 Aplicativo Android nativo para acompanhamento de protocolos de peptídeos, cálculo de reconstituição e registro diário de doses, construído com arquitetura **100% Local-First**, segurança matemática auditável e suporte aos **temas Branco e Preto OLED**.
+
+---
+
+## 🚀 Novidades da Versão 2.8.0 (Toolchain Kotlin Atualizada e Release Android)
+
+- **Release Android versionada:** `versionName 2.8.0` e `versionCode 19`, com APK instalável publicado no GitHub Releases.
+- **Compilador Kotlin atualizado:** projeto nativo compilado com Kotlin `2.1.20`, mantendo o Android Gradle Plugin compatível.
+- **Testes Health Connect atualizados:** `connect-testing:1.0.0-alpha04` com adaptação ao novo fake client; o aplicativo continua usando `connect-client:1.1.0` estável.
+- **Validação contínua:** testes unitários web e Kotlin, lint, build do APK, E2E e CI do GitHub Actions executados antes da publicação.
 
 ---
 
