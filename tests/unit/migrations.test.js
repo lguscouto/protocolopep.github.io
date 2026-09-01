@@ -7,6 +7,7 @@ import {
   migrateV2ToV3,
   migrateV3ToV4,
   migrateV4ToV5,
+  migrateV5ToV6,
   CURRENT_SCHEMA_VERSION
 } from "../../src/domain/migrations.js";
 
@@ -104,11 +105,32 @@ describe("Migrations Domain", () => {
     expect(v5again.measurements[0].updatedAt).toBe("2026-08-10T08:00:00.000Z");
   });
 
-  it("CURRENT_SCHEMA_VERSION é 5", () => {
-    expect(CURRENT_SCHEMA_VERSION).toBe(5);
+  it("migrateV5ToV6 corrige ownership legado e inicializa estado Health Connect", () => {
+    const v6 = migrateV5ToV6({
+      version: 5,
+      measurements: [
+        { id: "own", source: "health_connect", dataOrigin: "com.protocolopep.app" },
+        { id: "external-known", source: "health_connect", dataOrigin: "com.fitbit.FitbitMobile" },
+        { id: "external-unknown", source: "health_connect" },
+        { id: "manual", source: "local" }
+      ],
+      healthConnectState: {
+        hiddenMeasurementIds: ["hc-1", "hc-1"],
+        tombstones: [{ id: "m-deleted", clientRecordId: "m-deleted", ownership: "pep" }]
+      }
+    });
+
+    expect(v6.version).toBe(6);
+    expect(v6.measurements.map((m) => m.ownership)).toEqual(["pep", "external", "external", "pep"]);
+    expect(v6.healthConnectState.hiddenMeasurementIds).toEqual(["hc-1"]);
+    expect(v6.healthConnectState.tombstones).toHaveLength(1);
   });
 
-  it("migrateAppState inclui V5 no pipeline completo", () => {
+  it("CURRENT_SCHEMA_VERSION é 6", () => {
+    expect(CURRENT_SCHEMA_VERSION).toBe(6);
+  });
+
+  it("migrateAppState inclui V6 no pipeline completo", () => {
     const v1State = {
       version: 1,
       protocol: [],
@@ -117,11 +139,10 @@ describe("Migrations Domain", () => {
       ]
     };
     const result = migrateAppState(v1State);
-    expect(result.version).toBe(5);
+    expect(result.version).toBe(6);
     // Medição legada deve ter updatedAt após migração completa
     const m = result.measurements.find(x => x.date === "2026-08-01");
     expect(m).toBeDefined();
     expect(m.updatedAt).toBeDefined();
   });
 });
-

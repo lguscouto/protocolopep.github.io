@@ -280,10 +280,10 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
 
     await page.goto("/");
     await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(400);
 
     const accessibilityScanResults = await new AxeBuilder({ page })
       .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
-      .disableRules(["color-contrast"])
       .analyze();
 
     expect(accessibilityScanResults.violations).toEqual([]);
@@ -301,15 +301,43 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     if (await calcTab.count() > 0) {
       await calcTab.first().click();
     }
+    await page.waitForTimeout(400);
 
     const accessibilityScanResults = await new AxeBuilder({ page })
       .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
-      .disableRules(["color-contrast"])
       .analyze();
 
     expect(accessibilityScanResults.violations).toEqual([]);
     runtime.assertCleanRuntime();
   });
+
+  for (const scenario of [
+    { name: "Histórico e medições", tab: "history", open: "#open-measurement-modal-btn" },
+    { name: "Ajustes, inventário e Health Connect", tab: "settings" },
+    { name: "Notificações", open: "#notif-btn" }
+  ]) {
+    test(`avalia acessibilidade WCAG 2.1 AA em ${scenario.name}`, async ({ page }) => {
+      const runtime = trackPageRuntime(page);
+      await seedStorage(page, { skipOnboarding: true, peptides: [] });
+      await page.goto("/");
+      await page.waitForLoadState("domcontentloaded");
+
+      if (scenario.tab) {
+        await page.locator(`#tab-${scenario.tab}`).click();
+      }
+      if (scenario.open) {
+        await page.locator(scenario.open).click();
+      }
+      await page.waitForTimeout(400);
+
+      const accessibilityScanResults = await new AxeBuilder({ page })
+        .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+        .analyze();
+
+      expect(accessibilityScanResults.violations).toEqual([]);
+      runtime.assertCleanRuntime();
+    });
+  }
 });
 
 

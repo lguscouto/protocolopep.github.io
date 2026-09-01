@@ -165,7 +165,7 @@ describe("Storage Service", () => {
   // ─── P0 (CODEX v2.5.0): Campos temporais no upsert de medições ───
 
   describe("P0 — addMeasurement: timestamp/createdAt/updatedAt no upsert", () => {
-    it("novo registro possui timestamp, createdAt e updatedAt definidos e iguais", () => {
+    it("novo registro retroativo possui timestamp histórico e createdAt/updatedAt atuais", () => {
       storageInstance.init();
       const res = storageInstance.addMeasurement({
         id: "m_new_1",
@@ -177,7 +177,8 @@ describe("Storage Service", () => {
       expect(res.entry.timestamp).toBeDefined();
       expect(res.entry.createdAt).toBeDefined();
       expect(res.entry.updatedAt).toBeDefined();
-      expect(res.entry.createdAt).toBe(res.entry.timestamp);
+      expect(res.entry.createdAt).not.toBe(res.entry.timestamp);
+      expect(Date.parse(res.entry.createdAt)).toBeGreaterThan(Date.parse(res.entry.timestamp));
       expect(res.entry.updatedAt).toBe(res.entry.createdAt);
     });
 
@@ -274,6 +275,73 @@ describe("Storage Service", () => {
       expect(edited.entry.createdAt).toBe(originalCreatedAt);
     });
 
+    it("edição temporal preserva offset histórico ao simular viagem Rio → Japão", () => {
+      storageInstance.init();
+      const initial = storageInstance.addMeasurement({
+        id: "m_rio_trip",
+        date: "2026-08-29",
+        time: "08:00",
+        weightKg: 82,
+        zoneOffset: "-03:00",
+        timestamp: "2026-08-29T11:00:00.000Z"
+      });
+      const edited = storageInstance.addMeasurement({
+        id: "m_rio_trip",
+        date: "2026-08-30",
+        time: "10:00",
+        weightKg: 82
+      });
+
+      expect(initial.success).toBe(true);
+      expect(edited.success).toBe(true);
+      expect(edited.entry.zoneOffset).toBe("-03:00");
+      expect(edited.entry.timestamp).toBe("2026-08-30T13:00:00.000Z");
+    });
+
+    it("rejeita data/hora inválidas sem persistir medição falsa", () => {
+      storageInstance.init();
+      const invalidDate = storageInstance.addMeasurement({ date: "2026-99-99", weightKg: 80 });
+      const invalidTime = storageInstance.addMeasurement({ date: "2026-08-29", time: "99:99", weightKg: 80 });
+
+      expect(invalidDate.success).toBe(false);
+      expect(invalidDate.code).toBe("INVALID_DATE");
+      expect(invalidTime.success).toBe(false);
+      expect(invalidTime.code).toBe("INVALID_TIME");
+      expect(storageInstance.getMeasurements()).toEqual([]);
+    });
+
+    it("rejeita payload ausente sem lançar exceção", () => {
+      storageInstance.init();
+      const result = storageInstance.addMeasurement(null);
+
+      expect(result.success).toBe(false);
+      expect(result.code).toBe("INVALID_MEASUREMENT");
+      expect(storageInstance.getMeasurements()).toEqual([]);
+    });
+
+    it("backup e restore preservam hidden IDs e tombstones pendentes", () => {
+      storageInstance.init();
+      storageInstance.addHiddenMeasurementId("hc_external_hidden");
+      storageInstance.addTombstone({
+        id: "m_pending_delete",
+        clientRecordId: "m_pending_delete",
+        ownership: "pep",
+        dataOrigin: "com.protocolopep.app"
+      });
+
+      const backup = storageInstance.exportBackup();
+      const restored = new StorageService();
+      restored.init();
+      restored.clearHiddenMeasurementIds();
+      restored.clearTombstones(["m_pending_delete"]);
+      const result = restored.importBackup(backup);
+
+      expect(result.success).toBe(true);
+      expect(restored.getHiddenMeasurementIds()).toContain("hc_external_hidden");
+      expect(restored.getTombstones()).toHaveLength(1);
+      expect(restored.getTombstones()[0].ownership).toBe("pep");
+    });
+
     it("Item 7: deleteMeasurement registra tombstone para registro PEP reimportado (source: health_connect, ownership: pep)", () => {
       storageInstance.init();
       storageInstance.addMeasurement({
@@ -323,5 +391,3 @@ describe("Storage Service", () => {
     });
   });
 });
-
-

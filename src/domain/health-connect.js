@@ -1,4 +1,12 @@
 import { isValidDateKey, isValidTime } from "./schedule.js";
+import { haveMeasurementsChanged } from "./measurements.js";
+import {
+  isValidIsoTimestamp,
+  isValidZoneOffset,
+  localDateTimeToIso
+} from "./time.js";
+
+export { haveMeasurementsChanged, isValidIsoTimestamp, localDateTimeToIso };
 
 /**
  * Status possíveis da integração com o Health Connect.
@@ -57,20 +65,6 @@ export function getHealthConnectStatusLabel(status) {
  * @param {string} timeStr - Formato HH:mm
  * @returns {string|null} Timestamp ISO 8601 UTC ou null se inválido
  */
-export function localDateTimeToIso(dateStr, timeStr = "08:00") {
-  if (!isValidDateKey(dateStr) || !isValidTime(timeStr)) {
-    return null;
-  }
-
-  const [year, month, day] = dateStr.split("-").map(Number);
-  const [hour, minute] = timeStr.split(":").map(Number);
-
-  const dt = new Date(year, month - 1, day, hour, minute, 0, 0);
-  if (Number.isNaN(dt.getTime())) return null;
-
-  return dt.toISOString();
-}
-
 /**
  * Converte timestamp ISO Instant em componentes de data (YYYY-MM-DD) e hora (HH:mm).
  * Se zoneOffset histórico for fornecido (ex: "-03:00", "+01:00", "Z"), preserva o horário local original.
@@ -132,13 +126,6 @@ export function isoToLocalDateTime(isoString, zoneOffset = null) {
  * @param {string} str
  * @returns {boolean}
  */
-export function isValidIsoTimestamp(str) {
-  if (typeof str !== "string" || !str.trim()) return false;
-  const d = new Date(str);
-  if (Number.isNaN(d.getTime())) return false;
-  return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})$/.test(str);
-}
-
 /**
  * Converte uma medição interna do Protocolo PEP para o formato de registro de peso do Health Connect.
  * Registros de origem externa ou sem peso válido NÃO são exportados (prevenção de Sync Echo).
@@ -157,7 +144,7 @@ export function mapMeasurementToHealthRecord(measurement) {
     return null;
   }
 
-  const { weightKg, date, time, id, syncVersion, clientRecordVersion, timestamp, zoneOffset } = measurement;
+  const { weightKg, date, time, id, syncVersion, clientRecordVersion, timestamp, zoneOffset, timeZoneId } = measurement;
   if (weightKg === null || weightKg === undefined || weightKg === "") return null;
 
   const weightNum = typeof weightKg === "number" ? weightKg : parseFloat(String(weightKg).replace(",", "."));
@@ -183,7 +170,7 @@ export function mapMeasurementToHealthRecord(measurement) {
     }
     isoTime = new Date(timestamp).toISOString();
   } else {
-    isoTime = localDateTimeToIso(String(date), cleanTime);
+    isoTime = localDateTimeToIso(String(date), cleanTime, zoneOffset || null, timeZoneId || null);
   }
 
   if (!isoTime) return null;
@@ -195,6 +182,7 @@ export function mapMeasurementToHealthRecord(measurement) {
     timestamp: isoTime,
     time: isoTime,
     zoneOffset: zoneOffset || null,
+    timeZoneId: timeZoneId || null,
     weightKg: Math.round(weightNum * 100) / 100,
     clientRecordId: recordId,
     clientRecordVersion: version,
@@ -223,7 +211,7 @@ export function mapHealthRecordToMeasurement(record) {
   let dateStr = "";
   let timeStr = "08:00";
 
-  const timeSource = record.timestamp || record.time;
+  const timeSource = record.timestamp || (isValidIsoTimestamp(record.time) ? record.time : null);
   if (timeSource && typeof timeSource === "string") {
     const localComponents = isoToLocalDateTime(timeSource, record.zoneOffset);
     if (localComponents && isValidDateKey(localComponents.date) && isValidTime(localComponents.time)) {
@@ -245,6 +233,14 @@ export function mapHealthRecordToMeasurement(record) {
     return null; // Rejeição estrita de registros sem data válida
   }
 
+  const resolvedTimestamp = timeSource || localDateTimeToIso(
+    dateStr,
+    timeStr,
+    isValidZoneOffset(record.zoneOffset) ? record.zoneOffset : null,
+    record.timeZoneId || null
+  );
+  if (!resolvedTimestamp || !isValidIsoTimestamp(resolvedTimestamp)) return null;
+
   const hcRecId = record.healthConnectRecordId || record.metadataId || record.id || "";
   const clientRecId = record.clientRecordId || "";
   const originPkg = record.dataOrigin || "unknown";
@@ -255,6 +251,9 @@ export function mapHealthRecordToMeasurement(record) {
   const resolvedId = isPepOrigin && clientRecId
     ? clientRecId
     : (hcRecId ? `hc_${originPkg}_${hcRecId}` : `hc_${dateStr}_${timeStr.replace(":", "")}`);
+
+  const importedAt = new Date().toISOString();
+  const remoteVersion = Math.max(1, parseInt(record.clientRecordVersion, 10) || 1);
 
   return {
     id: resolvedId,
@@ -270,14 +269,15 @@ export function mapHealthRecordToMeasurement(record) {
     dataOrigin: originPkg,
     healthConnectRecordId: hcRecId,
     clientRecordId: clientRecId,
-    clientRecordVersion: parseInt(record.clientRecordVersion, 10) || 1,
+    syncVersion: remoteVersion,
+    clientRecordVersion: remoteVersion,
     zoneOffset: record.zoneOffset || null,
+    timeZoneId: record.timeZoneId || null,
     // P0 (CODEX v2.5.0): timestamp = instante histórico do Health Connect
-    timestamp: timeSource || new Date().toISOString(),
-    // createdAt = quando foi originalmente registrado (instante do HC)
-    createdAt: timeSource || new Date().toISOString(),
-    // updatedAt = quando foi importado para o PEP (agora)
-    updatedAt: new Date().toISOString()
+    timestamp: resolvedTimestamp,
+    // createdAt local = momento em que o registro entrou no PEP.
+    createdAt: importedAt,
+    updatedAt: importedAt
   };
 }
 
@@ -337,30 +337,45 @@ export function mergeHealthMeasurements(localMeasurements = [], importedRecords 
 
     if (matchedId) {
       const existing = resultMap.get(matchedId);
-      const now = new Date().toISOString();
-      // Se a medição local veio do Health Connect ou não tinha peso definido, atualiza o peso e metadados
-      if (existing.weightKg === null || existing.weightKg === undefined || existing.source === "health_connect") {
-        resultMap.set(matchedId, {
+      if (existing.ownership === "external" || parsed.ownership === "external") {
+        const remoteAuthoritative = {
           ...existing,
+          date: parsed.date,
+          time: parsed.time,
+          timestamp: parsed.timestamp,
+          zoneOffset: parsed.zoneOffset,
+          timeZoneId: parsed.timeZoneId,
           weightKg: parsed.weightKg,
-          source: existing.source || "health_connect",
-          healthConnectRecordId: parsed.healthConnectRecordId || existing.healthConnectRecordId,
-          dataOrigin: parsed.dataOrigin || existing.dataOrigin,
-          zoneOffset: parsed.zoneOffset || existing.zoneOffset,
-          clientRecordVersion: parsed.clientRecordVersion || existing.clientRecordVersion,
-          // P0: preservar createdAt original; atualizar updatedAt na reimportação
-          createdAt: existing.createdAt || parsed.createdAt || now,
-          updatedAt: now
+          source: "health_connect",
+          ownership: "external",
+          healthConnectRecordId: parsed.healthConnectRecordId,
+          clientRecordId: parsed.clientRecordId,
+          clientRecordVersion: parsed.clientRecordVersion,
+          syncVersion: parsed.syncVersion,
+          dataOrigin: parsed.dataOrigin,
+          createdAt: existing.createdAt || parsed.createdAt,
+          updatedAt: existing.updatedAt || existing.createdAt || parsed.createdAt
+        };
+        const changedRemotely = haveMeasurementsChanged(
+          [{ ...existing, updatedAt: remoteAuthoritative.updatedAt }],
+          [remoteAuthoritative]
+        );
+        resultMap.set(matchedId, {
+          ...remoteAuthoritative,
+          updatedAt: changedRemotely ? new Date().toISOString() : remoteAuthoritative.updatedAt
         });
       } else {
-        // Se a medição local é original do PEP, apenas vincula os identificadores remotos sem sobrepor dados
+        // Registros do PEP preservam conteúdo local e apenas recebem identidade remota.
         resultMap.set(matchedId, {
           ...existing,
           healthConnectRecordId: parsed.healthConnectRecordId || existing.healthConnectRecordId,
-          zoneOffset: parsed.zoneOffset || existing.zoneOffset,
-          // P0: preservar createdAt original; updatedAt apenas se não existia
-          createdAt: existing.createdAt || parsed.createdAt || now,
-          updatedAt: existing.updatedAt || now
+          clientRecordId: parsed.clientRecordId || existing.clientRecordId,
+          clientRecordVersion: parsed.clientRecordVersion || existing.clientRecordVersion,
+          dataOrigin: parsed.dataOrigin || existing.dataOrigin,
+          zoneOffset: existing.zoneOffset || parsed.zoneOffset,
+          timeZoneId: existing.timeZoneId || parsed.timeZoneId,
+          createdAt: existing.createdAt || parsed.createdAt,
+          updatedAt: existing.updatedAt || existing.createdAt || parsed.createdAt
         });
       }
     } else {
@@ -373,39 +388,4 @@ export function mergeHealthMeasurements(localMeasurements = [], importedRecords 
     const dtB = `${b.date || ""} ${b.time || ""}`;
     return dtB.localeCompare(dtA);
   });
-}
-
-/**
- * Verifica de forma auditável e profunda se duas listas de medições possuem diferenças de conteúdo.
- *
- * @param {Object[]} oldList
- * @param {Object[]} newList
- * @returns {boolean} True se houver alterações de conteúdo ou tamanho
- */
-export function haveMeasurementsChanged(oldList = [], newList = []) {
-  if (!Array.isArray(oldList) || !Array.isArray(newList)) {
-    return oldList !== newList;
-  }
-  if (oldList.length !== newList.length) {
-    return true;
-  }
-  for (let i = 0; i < oldList.length; i++) {
-    const a = oldList[i];
-    const b = newList[i];
-    if (!a || !b) return true;
-    if (a.id !== b.id) return true;
-    if (a.date !== b.date) return true;
-    if (a.time !== b.time) return true;
-    if (a.weightKg !== b.weightKg) return true;
-    if (a.energyLevel !== b.energyLevel) return true;
-    if (a.moodLevel !== b.moodLevel) return true;
-    if (a.notes !== b.notes) return true;
-    if (a.source !== b.source) return true;
-    if (a.ownership !== b.ownership) return true;
-    if (a.syncVersion !== b.syncVersion) return true;
-    const symA = Array.isArray(a.symptoms) ? a.symptoms.join("|") : "";
-    const symB = Array.isArray(b.symptoms) ? b.symptoms.join("|") : "";
-    if (symA !== symB) return true;
-  }
-  return false;
 }

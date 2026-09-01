@@ -327,6 +327,56 @@ describe("Health Connect Domain", () => {
       expect(merged.some((m) => m.id === "m_pep_morning" && m.weightKg === 80.0)).toBe(true);
       expect(merged.some((m) => m.id === "hc_com.sec.android.app.shealth_hc_samsung_morning" && m.weightKg === 80.4)).toBe(true);
     });
+
+    it("atualiza campos remotos autoritativos e preserva conteúdo local em registro externo", () => {
+      const local = [{
+        id: "hc_com.fitbit.app_hc-77",
+        healthConnectRecordId: "hc-77",
+        clientRecordId: "fitbit-77",
+        clientRecordVersion: 1,
+        dataOrigin: "com.fitbit.app",
+        ownership: "external",
+        source: "health_connect",
+        date: "2026-08-28",
+        time: "08:00",
+        timestamp: "2026-08-28T11:00:00.000Z",
+        zoneOffset: "-03:00",
+        weightKg: 82,
+        notes: "Nota local",
+        energyLevel: 4,
+        moodLevel: 3,
+        symptoms: ["Fadiga"],
+        createdAt: "2026-08-28T12:00:00.000Z",
+        updatedAt: "2026-08-28T12:00:00.000Z"
+      }];
+      const remote = [{
+        id: "hc-77-new-id",
+        healthConnectRecordId: "hc-77",
+        clientRecordId: "fitbit-77",
+        clientRecordVersion: 2,
+        dataOrigin: "com.fitbit.app",
+        timestamp: "2026-08-29T14:30:00.000Z",
+        zoneOffset: "-03:00",
+        weightKg: 81.4
+      }];
+
+      const merged = mergeHealthMeasurements(local, remote);
+      expect(merged).toHaveLength(1);
+      expect(merged[0]).toMatchObject({
+        date: "2026-08-29",
+        time: "11:30",
+        timestamp: "2026-08-29T14:30:00.000Z",
+        weightKg: 81.4,
+        clientRecordVersion: 2,
+        notes: "Nota local",
+        energyLevel: 4,
+        moodLevel: 3,
+        symptoms: ["Fadiga"]
+      });
+
+      const again = mergeHealthMeasurements(merged, remote);
+      expect(haveMeasurementsChanged(merged, again)).toBe(false);
+    });
   });
 
   describe("haveMeasurementsChanged", () => {
@@ -363,6 +413,20 @@ describe("Health Connect Domain", () => {
         { id: "2", date: "2026-08-30", time: "08:00", weightKg: 83.0 }
       ];
       expect(haveMeasurementsChanged(listA, listB)).toBe(true);
+    });
+
+    it.each([
+      ["timestamp", "2026-08-29T12:00:00.000Z"],
+      ["zoneOffset", "-03:00"],
+      ["timeZoneId", "America/Sao_Paulo"],
+      ["healthConnectRecordId", "hc-new"],
+      ["clientRecordId", "client-new"],
+      ["clientRecordVersion", 2],
+      ["dataOrigin", "com.protocolopep.app"],
+      ["ownership", "pep"]
+    ])("detecta alteração isolada em %s", (field, value) => {
+      const base = { id: "1", date: "2026-08-29", time: "08:00", weightKg: 83.5 };
+      expect(haveMeasurementsChanged([base], [{ ...base, [field]: value }])).toBe(true);
     });
   });
 
@@ -444,7 +508,12 @@ describe("Health Connect Domain", () => {
 
     it("processa tombstones de exclusão durante a sincronização", async () => {
       const mockStorage = {
-        tombstones: [{ id: "m_deleted_1", clientRecordId: "m_deleted_1" }],
+        tombstones: [{
+          id: "m_deleted_1",
+          clientRecordId: "m_deleted_1",
+          ownership: "pep",
+          dataOrigin: "com.protocolopep.app"
+        }],
         store: {},
         getItem(k) { return this.store[k] || null; },
         setItem(k, v) { this.store[k] = String(v); },
@@ -677,5 +746,4 @@ describe("Health Connect Domain", () => {
     });
   });
 });
-
 

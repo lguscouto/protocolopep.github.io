@@ -5,6 +5,7 @@
 import { generateDiagnosticReport } from "../services/diagnostics.js";
 import { downloadBlob } from "../services/export.js";
 import { haptics } from "../services/haptics.js";
+import { dialogService } from "../services/dialog.js";
 
 export function setupDiagnosticsModal({ storage, getNotificationsActive, appVersion = "2.6.0" }) {
   const modal = document.getElementById("diag-modal");
@@ -64,10 +65,10 @@ export function setupDiagnosticsModal({ storage, getNotificationsActive, appVers
           document.execCommand("copy");
           document.body.removeChild(ta);
         }
-        alert("Diagnóstico técnico copiado para a área de transferência!");
+        void dialogService.alert({ title: "Diagnóstico copiado", message: "Diagnóstico técnico copiado para a área de transferência!" });
         haptics.success();
       } catch {
-        alert("Não foi possível copiar automaticamente.");
+        void dialogService.alert({ title: "Falha ao copiar", message: "Não foi possível copiar automaticamente.", isDanger: true });
       }
     });
   }

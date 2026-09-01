@@ -42,4 +42,20 @@ describe("Notifications Service", () => {
     expect(reqRes.granted).toBe(true);
     expect(reqRes.status).toBe("not_applicable");
   });
+
+  it("centraliza fallback exact/approximate/not_applicable no próprio scheduler", async () => {
+    notifService.saveConfig({ enabled: true });
+
+    notifService.checkExactAlarmPermission = vi.fn(async () => ({ granted: false, status: "denied" }));
+    let result = await notifService.schedulePeptideReminders([]);
+    expect(result.schedulingMode).toBe("approximate");
+
+    notifService.checkExactAlarmPermission = vi.fn(async () => ({ granted: true, status: "granted" }));
+    result = await notifService.schedulePeptideReminders([]);
+    expect(result.schedulingMode).toBe("exact");
+
+    notifService.checkExactAlarmPermission = vi.fn(async () => ({ granted: true, status: "not_applicable" }));
+    result = await notifService.schedulePeptideReminders([]);
+    expect(result.schedulingMode).toBe("not_applicable");
+  });
 });

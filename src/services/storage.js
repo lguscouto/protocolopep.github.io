@@ -1,5 +1,12 @@
 import { DEFAULT_PROTOCOL } from "../data/default-library.js";
-import { migrateAppState, migratePeptides, migrateLogs, migrateInventory, migrateSites, migrateMeasurements, CURRENT_SCHEMA_VERSION } from "../domain/migrations.js";
+import {
+  migratePeptides,
+  migrateLogs,
+  migrateInventory,
+  migrateSites,
+  migrateMeasurements,
+  sanitizeHealthConnectState
+} from "../domain/migrations.js";
 import { validateAndParseBackup, createBackupPayload } from "../domain/backup.js";
 import { debitVialDose, creditVialDose } from "../domain/inventory.js";
 import { getDefaultSites } from "../domain/injection-sites.js";
@@ -130,7 +137,14 @@ export class StorageService {
       if (storedTombstones) {
         try {
           const raw = JSON.parse(storedTombstones);
-          this.tombstones = Array.isArray(raw) ? raw : [];
+          const legacySafe = Array.isArray(raw)
+            ? raw.map((item) => ({
+                ...item,
+                ownership: item?.ownership || "pep",
+                dataOrigin: item?.dataOrigin || "com.protocolopep.app"
+              }))
+            : [];
+          this.tombstones = sanitizeHealthConnectState({ tombstones: legacySafe }).tombstones;
         } catch (e) {
           this.tombstones = [];
         }
@@ -143,7 +157,7 @@ export class StorageService {
       if (storedHidden) {
         try {
           const raw = JSON.parse(storedHidden);
-          this.hiddenMeasurementIds = Array.isArray(raw) ? raw : [];
+          this.hiddenMeasurementIds = sanitizeHealthConnectState({ hiddenMeasurementIds: raw }).hiddenMeasurementIds;
         } catch (e) {
           this.hiddenMeasurementIds = [];
         }
@@ -331,7 +345,12 @@ export class StorageService {
 
   setMeasurements(newMeasurements) {
     const backupSnapshot = this.takeSnapshot();
-    this.measurements = migrateMeasurements(newMeasurements);
+    try {
+      this.measurements = migrateMeasurements(newMeasurements);
+    } catch (error) {
+      this.restoreSnapshot(backupSnapshot);
+      return { success: false, error: error?.message || "Medições inválidas." };
+    }
     const res = this.saveMeasurements();
     if (!res.success) {
       this.restoreSnapshot(backupSnapshot);
@@ -343,6 +362,9 @@ export class StorageService {
 
   addMeasurement(entryData) {
     const backupSnapshot = this.takeSnapshot();
+    if (!entryData || typeof entryData !== "object" || Array.isArray(entryData)) {
+      return { success: false, error: "Medição inválida.", code: "INVALID_MEASUREMENT" };
+    }
     const current = this.getMeasurements();
     const existingIdx = entryData && entryData.id ? current.findIndex((m) => m.id === entryData.id) : -1;
     const existing = existingIdx !== -1 ? current[existingIdx] : null;
@@ -366,25 +388,40 @@ export class StorageService {
       // Se não mudaram → preservar o instante histórico original.
       const dateChanged = prevDate !== nextDate;
       const timeChanged = prevTime !== nextTime;
-      const preservedTimestamp = (dateChanged || timeChanged) ? null : (existing.timestamp || null);
+      const temporalChanged = dateChanged || timeChanged;
+      const preservedTimestamp = temporalChanged ? null : (existing.timestamp || null);
+      const historicalTimeZoneId = entryData.timeZoneId !== undefined
+        ? entryData.timeZoneId
+        : (existing.timeZoneId || null);
+      const historicalZoneOffset = entryData.zoneOffset !== undefined
+        ? entryData.zoneOffset
+        : (existing.zoneOffset || null);
 
       const payload = {
         ...entryData,
         syncVersion,
         clientRecordVersion: syncVersion,
-        clientRecordId: existing.clientRecordId || entryData.clientRecordId || null,
-        source: existing.source || entryData.source || "local",
-        ownership: existing.ownership || entryData.ownership || "pep",
-        healthConnectRecordId: existing.healthConnectRecordId || entryData.healthConnectRecordId,
-        dataOrigin: existing.dataOrigin || entryData.dataOrigin,
-        zoneOffset: existing.zoneOffset || entryData.zoneOffset,
+        clientRecordId: entryData.clientRecordId ?? existing.clientRecordId ?? null,
+        source: entryData.source ?? existing.source ?? "local",
+        ownership: entryData.ownership ?? existing.ownership ?? null,
+        healthConnectRecordId: entryData.healthConnectRecordId ?? existing.healthConnectRecordId ?? null,
+        dataOrigin: entryData.dataOrigin ?? existing.dataOrigin ?? null,
+        // Uma zona IANA permite recalcular o offset correto para a nova data (inclusive DST).
+        // Sem timeZoneId, o offset histórico fixo é preservado para evitar usar o fuso atual do aparelho.
+        zoneOffset: temporalChanged && historicalTimeZoneId ? null : historicalZoneOffset,
+        timeZoneId: historicalTimeZoneId,
         // Campos temporais (P0): createdAt imutável, updatedAt sempre agora, timestamp condicional
         timestamp: preservedTimestamp,
         createdAt: existing.createdAt || entryData.createdAt || null,
         updatedAt: new Date().toISOString()
       };
 
-      const entry = createMeasurementEntry(payload);
+      let entry;
+      try {
+        entry = createMeasurementEntry(payload);
+      } catch (error) {
+        return { success: false, error: error?.message || "Medição inválida.", code: error?.code || "INVALID_MEASUREMENT" };
+      }
       const validRes = validateMeasurementEntry(entry);
       if (!validRes.valid) {
         return { success: false, error: validRes.errors.join("; ") };
@@ -400,18 +437,23 @@ export class StorageService {
       return { success: true, entry, measurements: this.measurements };
     }
 
-    // Novo registro: timestamp/createdAt/updatedAt serão calculados em createMeasurementEntry
+    // Novo registro: timestamp representa a medição; createdAt/updatedAt representam o momento local de criação.
     const newPayload = {
       ...entryData,
       syncVersion,
       clientRecordVersion: syncVersion,
       // Para novos registros oriundos do Health Connect, preservar o timestamp recebido
       timestamp: entryData.timestamp || null,
-      createdAt: null,   // createMeasurementEntry inicializa como now
-      updatedAt: null    // createMeasurementEntry inicializa como now
+      createdAt: entryData.createdAt || null,
+      updatedAt: entryData.updatedAt || null
     };
 
-    const entry = createMeasurementEntry(newPayload);
+    let entry;
+    try {
+      entry = createMeasurementEntry(newPayload);
+    } catch (error) {
+      return { success: false, error: error?.message || "Medição inválida.", code: error?.code || "INVALID_MEASUREMENT" };
+    }
     const validRes = validateMeasurementEntry(entry);
     if (!validRes.valid) {
       return { success: false, error: validRes.errors.join("; ") };
@@ -441,6 +483,8 @@ export class StorageService {
         id: target.id,
         clientRecordId: target.clientRecordId || target.id,
         healthConnectRecordId: target.healthConnectRecordId || null,
+        ownership: "pep",
+        dataOrigin: "com.protocolopep.app",
         deletedAt: new Date().toISOString()
       });
     } else if (target && target.ownership === "external") {
@@ -467,10 +511,17 @@ export class StorageService {
   }
 
   addTombstone(tombstone) {
-    if (!tombstone || !tombstone.id) return;
+    const normalized = sanitizeHealthConnectState({
+      tombstones: [{
+        ...tombstone,
+        ownership: tombstone?.ownership || "pep",
+        dataOrigin: tombstone?.dataOrigin || "com.protocolopep.app"
+      }]
+    }).tombstones[0];
+    if (!normalized) return;
     const current = this.getTombstones();
-    if (!current.some((t) => t.id === tombstone.id)) {
-      current.push(tombstone);
+    if (!current.some((t) => t.id === normalized.id)) {
+      current.push(normalized);
       this.tombstones = current;
       this.saveTombstones();
     }
@@ -498,10 +549,11 @@ export class StorageService {
   }
 
   addHiddenMeasurementId(id) {
-    if (!id || typeof id !== "string") return;
+    const normalized = sanitizeHealthConnectState({ hiddenMeasurementIds: [id] }).hiddenMeasurementIds[0];
+    if (!normalized) return;
     const current = this.getHiddenMeasurementIds();
-    if (!current.includes(id)) {
-      current.push(id);
+    if (!current.includes(normalized)) {
+      current.push(normalized);
       this.hiddenMeasurementIds = current;
       this.saveHiddenMeasurementIds();
     }
@@ -568,7 +620,18 @@ export class StorageService {
   }
 
   exportBackup(theme = "black") {
-    return createBackupPayload(this.peptides, this.logs, theme, this.inventory, this.sites, this.measurements);
+    return createBackupPayload(
+      this.peptides,
+      this.logs,
+      theme,
+      this.inventory,
+      this.sites,
+      this.measurements,
+      {
+        tombstones: this.tombstones,
+        hiddenMeasurementIds: this.hiddenMeasurementIds
+      }
+    );
   }
 
   importBackup(jsonString) {
@@ -585,15 +648,22 @@ export class StorageService {
       this.inventory = clean.inventory || [];
       this.sites = clean.sites || getDefaultSites();
       this.measurements = clean.measurements || [];
+      this.tombstones = clean.healthConnectState?.tombstones || [];
+      this.hiddenMeasurementIds = clean.healthConnectState?.hiddenMeasurementIds || [];
 
       const resProto = this.saveProtocol();
       const resLogs = this.saveLogs();
       const resInv = this.saveInventory();
       const resSites = this.saveSites();
       const resMeas = this.saveMeasurements();
+      const resTomb = this.saveTombstones();
+      const resHidden = this.saveHiddenMeasurementIds();
 
-      if (!resProto.success || !resLogs.success || !resInv.success || !resSites.success || !resMeas.success) {
-        throw new Error(resProto.error || resLogs.error || resInv.error || resSites.error || resMeas.error || "Falha na escrita local");
+      if (!resProto.success || !resLogs.success || !resInv.success || !resSites.success || !resMeas.success || !resTomb.success || !resHidden.success) {
+        throw new Error(
+          resProto.error || resLogs.error || resInv.error || resSites.error || resMeas.error ||
+          resTomb.error || resHidden.error || "Falha na escrita local"
+        );
       }
 
       this.notify();

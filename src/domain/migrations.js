@@ -5,7 +5,41 @@ import { validateSitesList, getDefaultSites } from "./injection-sites.js";
 import { createMeasurementEntry } from "./measurements.js";
 import { isValidDateKey } from "./schedule.js";
 
-export const CURRENT_SCHEMA_VERSION = 5;
+export const CURRENT_SCHEMA_VERSION = 6;
+
+function sanitizeHealthConnectId(value) {
+  if (typeof value !== "string") return null;
+  const clean = value.trim().replace(/[\u0000-\u001F\u007F]/g, "").slice(0, 300);
+  return clean || null;
+}
+
+export function sanitizeHealthConnectState(rawState = {}) {
+  const state = rawState && typeof rawState === "object" && !Array.isArray(rawState) ? rawState : {};
+  const hiddenMeasurementIds = Array.isArray(state.hiddenMeasurementIds)
+    ? [...new Set(state.hiddenMeasurementIds.map(sanitizeHealthConnectId).filter(Boolean))]
+    : [];
+  const tombstones = Array.isArray(state.tombstones)
+    ? state.tombstones.reduce((safe, item) => {
+        if (!item || typeof item !== "object" || item.ownership !== "pep") return safe;
+        if (item.dataOrigin && item.dataOrigin !== "com.protocolopep.app") return safe;
+        const id = sanitizeHealthConnectId(item.id);
+        const clientRecordId = sanitizeHealthConnectId(item.clientRecordId || item.id);
+        const healthConnectRecordId = sanitizeHealthConnectId(item.healthConnectRecordId);
+        if (!id || !clientRecordId) return safe;
+        safe.push({
+          id,
+          clientRecordId,
+          healthConnectRecordId,
+          ownership: "pep",
+          dataOrigin: "com.protocolopep.app",
+          deletedAt: typeof item.deletedAt === "string" ? item.deletedAt : null
+        });
+        return safe;
+      }, [])
+    : [];
+
+  return { tombstones, hiddenMeasurementIds };
+}
 
 export function migratePeptides(rawPeptides = []) {
   if (!Array.isArray(rawPeptides)) return [];
@@ -111,6 +145,24 @@ export function migrateV4ToV5(state = {}) {
   };
 }
 
+export function migrateV5ToV6(state = {}) {
+  const rawMeasurements = Array.isArray(state.measurements) ? state.measurements : [];
+  const measurements = rawMeasurements.map((measurement) => {
+    if (!measurement || typeof measurement !== "object") return measurement;
+    const ownership = measurement.dataOrigin === "com.protocolopep.app"
+      ? "pep"
+      : (measurement.source === "health_connect" ? "external" : "pep");
+    return { ...measurement, ownership };
+  });
+
+  return {
+    ...state,
+    version: 6,
+    measurements,
+    healthConnectState: sanitizeHealthConnectState(state.healthConnectState)
+  };
+}
+
 export function migrateAppState(state = {}) {
   if (!state || typeof state !== "object") {
     state = {};
@@ -130,6 +182,9 @@ export function migrateAppState(state = {}) {
   if (version < 5) {
     current = migrateV4ToV5(current);
   }
+  if (version < 6) {
+    current = migrateV5ToV6(current);
+  }
 
   const rawProtocol = current.protocol || current.peptides || [];
   const rawLogs = current.logs || {};
@@ -145,6 +200,7 @@ export function migrateAppState(state = {}) {
     inventory: migrateInventory(rawInventory),
     sites: migrateSites(rawSites),
     measurements: migrateMeasurements(rawMeasurements),
+    healthConnectState: sanitizeHealthConnectState(current.healthConnectState),
     theme: current.theme === "white" || current.theme === "light" ? "white" : "black"
   };
 }

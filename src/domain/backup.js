@@ -2,11 +2,19 @@
  * Validação, Serialização e Segurança de Backup JSON
  */
 
-import { migrateAppState, CURRENT_SCHEMA_VERSION } from "./migrations.js";
+import { migrateAppState, CURRENT_SCHEMA_VERSION, sanitizeHealthConnectState } from "./migrations.js";
 
 export const MAX_BACKUP_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 
-export function createBackupPayload(protocol = [], logs = {}, theme = "black", inventory = [], sites = [], measurements = []) {
+export function createBackupPayload(
+  protocol = [],
+  logs = {},
+  theme = "black",
+  inventory = [],
+  sites = [],
+  measurements = [],
+  healthConnectState = {}
+) {
   const payload = {
     app: "protocolo-pep",
     version: CURRENT_SCHEMA_VERSION,
@@ -16,6 +24,7 @@ export function createBackupPayload(protocol = [], logs = {}, theme = "black", i
     inventory: Array.isArray(inventory) ? inventory : [],
     sites: Array.isArray(sites) ? sites : [],
     measurements: Array.isArray(measurements) ? measurements : [],
+    healthConnectState: sanitizeHealthConnectState(healthConnectState),
     theme: theme === "white" ? "white" : "black"
   };
 
@@ -76,6 +85,8 @@ export function validateAndParseBackup(jsonString) {
   const vialsCount = Array.isArray(cleanState.inventory) ? cleanState.inventory.length : 0;
   const sitesCount = Array.isArray(cleanState.sites) ? cleanState.sites.length : 0;
   const measurementsCount = Array.isArray(cleanState.measurements) ? cleanState.measurements.length : 0;
+  const tombstonesCount = cleanState.healthConnectState?.tombstones?.length || 0;
+  const hiddenMeasurementsCount = cleanState.healthConnectState?.hiddenMeasurementIds?.length || 0;
   let totalDosesCount = 0;
 
   Object.values(cleanState.logs).forEach((day) => {
@@ -98,6 +109,8 @@ export function validateAndParseBackup(jsonString) {
       vialsCount,
       sitesCount,
       measurementsCount,
+      tombstonesCount,
+      hiddenMeasurementsCount,
       theme: cleanState.theme,
       exportedAt: cleanState.exportedAt
     }

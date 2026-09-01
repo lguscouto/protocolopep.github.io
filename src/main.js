@@ -290,13 +290,6 @@ async function initApp() {
 
   syncAppWidget();
 
-  // P1 Item 11: Verificar estado do Exact Alarm no cold start
-  notifications.checkExactAlarmPermission().then((exactRes) => {
-    if (!exactRes.granted && exactRes.status === "denied") {
-      console.info("[Cold Start] Exact alarm não concedido no Android. Alarmes operarão com janelas padrão.");
-    }
-  }).catch(() => {});
-
   notifications.schedulePeptideReminders(storage.getPeptides());
 }
 
@@ -710,7 +703,7 @@ async function toggleDose(id) {
   if (isUndoing) {
     const res = doseService.undoDose({ peptideId: p.id, scheduledDate: todayK });
     if (!res.success) {
-      alert("Erro ao desmarcar aplicação: " + (res.message || res.error));
+      void dialogService.alert({ title: "Erro ao desmarcar", message: "Erro ao desmarcar aplicação: " + (res.message || res.error), isDanger: true });
       return;
     }
     haptics.light();
@@ -748,7 +741,7 @@ async function toggleDose(id) {
     }
 
     if (!res.success) {
-      alert("Erro ao gravar aplicação: " + (res.message || res.error));
+      void dialogService.alert({ title: "Erro ao gravar", message: "Erro ao gravar aplicação: " + (res.message || res.error), isDanger: true });
       return;
     }
     haptics.success();
@@ -805,7 +798,7 @@ async function addSingleDose(id) {
   }
 
   if (!res.success) {
-    alert("Erro ao gravar dose: " + (res.message || res.error));
+    void dialogService.alert({ title: "Erro ao gravar", message: "Erro ao gravar dose: " + (res.message || res.error), isDanger: true });
     return;
   }
 
@@ -827,7 +820,7 @@ function undoSingleDose(id) {
   });
 
   if (!res.success) {
-    alert("Erro ao remover dose: " + (res.message || res.error));
+    void dialogService.alert({ title: "Erro ao remover", message: "Erro ao remover dose: " + (res.message || res.error), isDanger: true });
     return;
   }
 
@@ -953,7 +946,7 @@ async function toggleDateLog(id, dKey) {
   const todayK = dateKey(new Date());
 
   if (dKey > todayK) {
-    alert("Não é possível registrar aplicações em datas futuras.");
+    void dialogService.alert({ title: "Data inválida", message: "Não é possível registrar aplicações em datas futuras.", isDanger: true });
     return;
   }
 
@@ -973,7 +966,7 @@ async function toggleDateLog(id, dKey) {
       });
 
       if (!res.success) {
-        alert("Não foi possível remover o registro: " + (res.message || res.error));
+        void dialogService.alert({ title: "Erro ao remover", message: "Não foi possível remover o registro: " + (res.message || res.error), isDanger: true });
         return;
       }
       haptics.light();
@@ -1152,7 +1145,7 @@ function deleteHistoryEntry(dKey, pId, idx) {
   });
 
   if (!res.success) {
-    alert("Erro ao remover registro: " + (res.message || res.error || "Armazenamento indisponível"));
+    void dialogService.alert({ title: "Erro ao remover", message: "Erro ao remover registro: " + (res.message || res.error || "Armazenamento indisponível"), isDanger: true });
     return;
   }
 
@@ -1469,10 +1462,10 @@ function setupModalsAndButtons() {
           document.body.removeChild(textarea);
         }
         haptics.success();
-        alert("Resumo copiado com sucesso para a área de transferência! ✓");
+        void dialogService.alert({ title: "Resumo copiado", message: "Resumo copiado com sucesso para a área de transferência! ✓" });
       } catch (err) {
         console.error("Falha ao copiar:", err);
-        alert("Não foi possível copiar automaticamente para a área de transferência.");
+        void dialogService.alert({ title: "Falha ao copiar", message: "Não foi possível copiar automaticamente para a área de transferência.", isDanger: true });
       }
     });
   }
@@ -1499,9 +1492,9 @@ function setupModalsAndButtons() {
             await navigator.clipboard.writeText(text);
           }
           haptics.success();
-          alert("Compartilhamento nativo indisponível. Resumo copiado para a área de transferência! ✓");
+          void dialogService.alert({ title: "Resumo copiado", message: "Compartilhamento nativo indisponível. Resumo copiado para a área de transferência! ✓" });
         } catch (err) {
-          alert("Compartilhamento não suportado neste aparelho.");
+          void dialogService.alert({ title: "Compartilhamento indisponível", message: "Compartilhamento não suportado neste aparelho.", isDanger: true });
         }
       }
     });
@@ -1820,7 +1813,7 @@ function openEditModal(pepId, prefillData = null) {
 function saveEditedPeptide() {
   const name = document.getElementById("edit-name").value.trim();
   if (!name) {
-    alert("Informe o nome do peptídeo.");
+    void dialogService.alert({ title: "Nome obrigatório", message: "Informe o nome do peptídeo.", isDanger: true });
     return;
   }
 
@@ -1846,7 +1839,7 @@ function saveEditedPeptide() {
 
   if (selectedFreqType === "especificos") {
     if (selectedDays.length === 0) {
-      alert("Selecione ao menos um dia da semana.");
+      void dialogService.alert({ title: "Agenda incompleta", message: "Selecione ao menos um dia da semana.", isDanger: true });
       return;
     }
     days = [...selectedDays].sort((a, b) => a - b);
@@ -1894,7 +1887,7 @@ function saveEditedPeptide() {
 
   const res = storage.setPeptides(peptides);
   if (!res.success) {
-    alert("Erro ao salvar peptídeo: " + (res.error || "Armazenamento local indisponível"));
+    void dialogService.alert({ title: "Erro ao salvar", message: "Erro ao salvar peptídeo: " + (res.error || "Armazenamento local indisponível"), isDanger: true });
     return;
   }
 

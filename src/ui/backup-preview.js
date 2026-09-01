@@ -5,6 +5,7 @@
 import { validateAndParseBackup, MAX_BACKUP_SIZE_BYTES } from "../domain/backup.js";
 import { recordBackupRestore, renderBackupStatusUI } from "./backup-status.js";
 import { haptics } from "../services/haptics.js";
+import { dialogService } from "../services/dialog.js";
 import { escapeHtml } from "./dom.js";
 
 const esc = escapeHtml;
@@ -43,7 +44,11 @@ export function setupBackupPreview({
 
       if (file.size > MAX_BACKUP_SIZE_BYTES) {
         haptics.warning();
-        alert(`O arquivo selecionado (${(file.size / (1024 * 1024)).toFixed(1)} MB) é maior que o limite máximo de 5 MB.`);
+        void dialogService.alert({
+          title: "Arquivo muito grande",
+          message: `O arquivo selecionado (${(file.size / (1024 * 1024)).toFixed(1)} MB) é maior que o limite máximo de 5 MB.`,
+          isDanger: true
+        });
         return;
       }
 
@@ -139,10 +144,13 @@ export function setupBackupPreview({
 
         if (modal) modal.classList.remove("on");
         haptics.success();
-        alert(`Backup restaurado com sucesso! ✓\n• Peptídeos: ${res.stats.peptideCount}\n• Dias registrados: ${res.stats.logDaysCount}\n• Total de doses: ${res.stats.totalDosesCount}`);
+        void dialogService.alert({
+          title: "Backup restaurado",
+          message: `Backup restaurado com sucesso! ✓\n• Peptídeos: ${res.stats.peptideCount}\n• Dias registrados: ${res.stats.logDaysCount}\n• Total de doses: ${res.stats.totalDosesCount}`
+        });
       } else {
         haptics.warning();
-        alert("Erro ao importar backup: " + (res.error || "Formato incompatível"));
+        void dialogService.alert({ title: "Erro ao importar", message: "Erro ao importar backup: " + (res.error || "Formato incompatível"), isDanger: true });
       }
     });
   }

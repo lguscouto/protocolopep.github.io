@@ -160,7 +160,6 @@ describe("DialogService (V13)", () => {
   it("fallback gracioso se document não existir", async () => {
     delete global.document;
     const res = await dialog.confirm({ message: "Sem document" });
-    expect(res).toBe(true);
+    expect(res).toBe(false);
   });
 });
-

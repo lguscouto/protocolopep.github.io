@@ -29,7 +29,7 @@ export class DialogService {
   } = {}) {
     return new Promise((resolve) => {
       if (typeof document === "undefined") {
-        return resolve(true);
+        return resolve(false);
       }
 
       const modal = document.getElementById("confirm-modal");
@@ -40,10 +40,8 @@ export class DialogService {
       const closeBtn = document.getElementById("confirm-close");
 
       if (!modal) {
-        if (typeof window !== "undefined" && typeof window.confirm === "function") {
-          return resolve(window.confirm(message));
-        }
-        return resolve(true);
+        console.warn("[DialogService] Modal de confirmação indisponível; ação cancelada por segurança.");
+        return resolve(false);
       }
 
       const previousActive = document.activeElement;
@@ -159,9 +157,7 @@ export class DialogService {
       const closeBtn = document.getElementById("confirm-close");
 
       if (!modal) {
-        if (typeof window !== "undefined" && typeof window.alert === "function") {
-          window.alert(message);
-        }
+        console.warn(`[DialogService] ${title}: ${message}`);
         return resolve(true);
       }
 

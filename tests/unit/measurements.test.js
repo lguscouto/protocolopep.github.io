@@ -66,13 +66,10 @@ describe("Measurements Domain (V12)", () => {
     expect(entryWithoutWeight.weightKg).toBeNull();
     expect(validateMeasurementEntry(entryWithoutWeight).valid).toBe(true);
 
-    const invalidWeight = createMeasurementEntry({
+    expect(() => createMeasurementEntry({
       date: "2026-08-29",
-      weightKg: 500 // Acima do limite aceitável de 400kg
-    });
-    const valRes = validateMeasurementEntry(invalidWeight);
-    expect(valRes.valid).toBe(false);
-    expect(valRes.errors[0]).toContain("O peso deve estar entre 20 kg e 400 kg");
+      weightKg: 500
+    })).toThrow("O peso deve estar entre 20 kg e 400 kg");
   });
 
   it("rejeita datas inválidas e níveis de energia/humor fora da escala 1 a 5", () => {
@@ -136,13 +133,62 @@ describe("Measurements Domain (V12)", () => {
   // ─── P0 (CODEX v2.5.0): Separação semântica de timestamp / createdAt / updatedAt ───
 
   describe("P0 — timestamp / createdAt / updatedAt (CODEX v2.5.0)", () => {
-    it("novo registro: timestamp calculado de date+time, createdAt = updatedAt = timestamp", () => {
+    it("novo registro retroativo: timestamp é histórico e createdAt = updatedAt = agora", () => {
       const entry = createMeasurementEntry({ date: "2026-08-29", time: "08:00", weightKg: 82.5 });
       expect(entry.timestamp).toBeDefined();
       expect(entry.createdAt).toBeDefined();
       expect(entry.updatedAt).toBeDefined();
-      expect(entry.createdAt).toBe(entry.timestamp);
+      expect(entry.createdAt).not.toBe(entry.timestamp);
+      expect(Date.parse(entry.createdAt)).toBeGreaterThan(Date.parse(entry.timestamp));
       expect(entry.updatedAt).toBe(entry.createdAt);
+    });
+
+    it("persiste timeZoneId e calcula offset histórico coerente", () => {
+      const january = createMeasurementEntry({
+        date: "2026-01-15", time: "08:00", weightKg: 82.5, timeZoneId: "America/New_York"
+      });
+      const july = createMeasurementEntry({
+        date: "2026-07-15", time: "08:00", weightKg: 82.5, timeZoneId: "America/New_York"
+      });
+      expect(january.timeZoneId).toBe("America/New_York");
+      expect(january.zoneOffset).toBe("-05:00");
+      expect(january.timestamp).toBe("2026-01-15T13:00:00.000Z");
+      expect(july.zoneOffset).toBe("-04:00");
+      expect(july.timestamp).toBe("2026-07-15T12:00:00.000Z");
+    });
+
+    it("rejeita data, hora, offset e timezone explicitamente inválidos", () => {
+      expect(() => createMeasurementEntry({ date: "2026-99-99" })).toThrow("Data da medição inválida");
+      expect(() => createMeasurementEntry({ date: "2026-08-29", time: "99:99" })).toThrow("Hora da medição inválida");
+      expect(() => createMeasurementEntry({ date: "" })).toThrow("Data da medição inválida");
+      expect(() => createMeasurementEntry({ date: "2026-08-29", time: "" })).toThrow("Hora da medição inválida");
+      expect(() => createMeasurementEntry({ date: "2026-08-29", zoneOffset: "+19:00" })).toThrow("Offset de fuso inválido");
+      expect(() => createMeasurementEntry({ date: "2026-08-29", timeZoneId: "Not/A_Zone" })).toThrow("Timezone IANA inválido");
+    });
+
+    it("rejeita números parcialmente válidos e escalas fracionárias", () => {
+      expect(() => createMeasurementEntry({ date: "2026-08-29", weightKg: "80kg" })).toThrow("peso");
+      expect(() => createMeasurementEntry({ date: "2026-08-29", energyLevel: 2.5 })).toThrow("energia");
+      expect(() => createMeasurementEntry({ date: "2026-08-29", moodLevel: "3.5" })).toThrow("humor");
+    });
+
+    it("detecta mudanças apenas em metadados de sincronização", () => {
+      const base = createMeasurementEntry({
+        id: "m_meta", date: "2026-08-29", time: "08:00", weightKg: 80,
+        timestamp: "2026-08-29T11:00:00.000Z", zoneOffset: "-03:00",
+        healthConnectRecordId: "hc-1", clientRecordId: "m_meta", clientRecordVersion: 1,
+        dataOrigin: "com.protocolopep.app", ownership: "pep"
+      });
+      for (const patch of [
+        { healthConnectRecordId: "hc-2" },
+        { zoneOffset: "+09:00" },
+        { clientRecordVersion: 2 },
+        { timestamp: "2026-08-29T12:00:00.000Z" },
+        { timeZoneId: "Asia/Tokyo" }
+      ]) {
+        expect(haveMeasurementsChanged([base], [{ ...base, ...patch }])).toBe(true);
+      }
+      expect(haveMeasurementsChanged([base], [{ ...base }])).toBe(false);
     });
 
     it("timestamp explícito é preservado e não derivado de createdAt", () => {

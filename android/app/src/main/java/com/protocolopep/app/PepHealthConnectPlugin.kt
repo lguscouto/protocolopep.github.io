@@ -8,10 +8,8 @@ import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.PermissionController
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.WeightRecord
-import androidx.health.connect.client.records.metadata.Metadata
 import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
-import androidx.health.connect.client.units.Mass
 import com.getcapacitor.JSArray
 import com.getcapacitor.JSObject
 import com.getcapacitor.Plugin
@@ -24,7 +22,6 @@ import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 import java.time.Instant
 import java.time.ZoneId
-import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 
@@ -318,28 +315,13 @@ class PepHealthConnectPlugin : Plugin() {
                     1L
                 }
 
-                val rawZoneOffset = obj.optString("zoneOffset", "")
-                val recordZoneOffset = try {
-                    if (rawZoneOffset.isNotBlank()) {
-                        ZoneOffset.of(rawZoneOffset)
-                    } else {
-                        localZone.rules.getOffset(instant)
-                    }
-                } catch (e: Exception) {
-                    localZone.rules.getOffset(instant)
-                }
-
-                val metadata = if (clientRecordId.isNotEmpty()) {
-                    Metadata(clientRecordId = clientRecordId, clientRecordVersion = clientRecordVersion)
-                } else {
-                    Metadata()
-                }
-
-                val weightRecord = WeightRecord(
-                    weight = Mass.kilograms(weightKg),
-                    time = instant,
-                    zoneOffset = recordZoneOffset,
-                    metadata = metadata
+                val weightRecord = PepHealthConnectMapper.createWeightRecord(
+                    weightKg = weightKg,
+                    timestamp = instant.toString(),
+                    clientRecordId = clientRecordId,
+                    clientRecordVersion = clientRecordVersion,
+                    zoneOffset = obj.optString("zoneOffset", "").ifBlank { null },
+                    fallbackZone = localZone
                 )
                 recordsToInsert.add(weightRecord)
             }
@@ -402,35 +384,25 @@ class PepHealthConnectPlugin : Plugin() {
                 )
 
                 for (record in response.records) {
-                    val weightKg = record.weight.inKilograms
-                    val zdt = record.time.atZone(localZone)
-                    val dateStr = zdt.format(DateTimeFormatter.ISO_LOCAL_DATE)
-                    val timeStr = zdt.format(DateTimeFormatter.ofPattern("HH:mm"))
-                    val timestampStr = record.time.toString()
-
-                    val clientRecId = record.metadata.clientRecordId ?: ""
-                    val recId = record.metadata.id
-                    val originPkg = record.metadata.dataOrigin.packageName
-                    val recVersion = record.metadata.clientRecordVersion
-                    val zoneOffsetStr = record.zoneOffset?.toString() ?: ""
+                    val payload = PepHealthConnectMapper.toPayload(record, localZone)
 
                     val item = JSONObject().apply {
-                        put("id", recId)
-                        put("healthConnectRecordId", recId)
-                        put("clientRecordId", clientRecId)
-                        put("clientRecordVersion", recVersion)
-                        put("dataOrigin", originPkg)
-                        put("zoneOffset", zoneOffsetStr)
-                        put("metadataId", recId)
-                        put("timestamp", timestampStr)
-                        put("time", timestampStr)
-                        put("date", dateStr)
-                        put("localTime", timeStr)
-                        put("weight", weightKg)
-                        put("weightKg", weightKg)
+                        put("id", payload.id)
+                        put("healthConnectRecordId", payload.healthConnectRecordId)
+                        put("clientRecordId", payload.clientRecordId)
+                        put("clientRecordVersion", payload.clientRecordVersion)
+                        put("dataOrigin", payload.dataOrigin)
+                        put("zoneOffset", payload.zoneOffset)
+                        put("metadataId", payload.id)
+                        put("timestamp", payload.timestamp)
+                        put("time", payload.timestamp)
+                        put("date", payload.date)
+                        put("localTime", payload.localTime)
+                        put("weight", payload.weightKg)
+                        put("weightKg", payload.weightKg)
                         put("unit", "kg")
                         put("source", "health_connect")
-                        put("ownership", if (originPkg == "com.protocolopep.app") "pep" else "external")
+                        put("ownership", payload.ownership)
                     }
                     resultList.add(item)
                 }

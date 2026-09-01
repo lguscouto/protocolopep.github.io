@@ -1273,6 +1273,43 @@ input:focus, textarea:focus {
   color: var(--primary);
 }
 
+/* Contraste mínimo WCAG AA para controles sobre superfícies claras. */
+body.theme-light .unittoggle button.on,
+body.light .unittoggle button.on {
+  color: var(--primary-strong);
+}
+
+body.theme-light .btn-sec,
+body.light .btn-sec {
+  color: #415465;
+}
+
+body.theme-light .badge-success,
+body.light .badge-success,
+body.theme-light #current-lang-badge,
+body.light #current-lang-badge {
+  background: #D1FAE5 !important;
+  color: #047857 !important;
+}
+
+body.theme-light .badge-danger,
+body.light .badge-danger {
+  background: #FEE2E2;
+  color: #991B1B;
+}
+
+body.theme-light .badge-warning,
+body.light .badge-warning {
+  background: #FEF3C7;
+  color: #92400E;
+}
+
+body.theme-light [data-i18n="settings.widgetBadge"],
+body.light [data-i18n="settings.widgetBadge"] {
+  background: #E0E7FF !important;
+  color: #3730A3 !important;
+}
+
 .result {
   background: linear-gradient(155deg, var(--surface2), var(--surface));
   border: 1px solid var(--border2);

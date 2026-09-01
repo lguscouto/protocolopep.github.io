@@ -5,6 +5,7 @@
 import { buildReportData, generateReportCSV, generateReportHTML } from "../domain/report.js";
 import { downloadBlob, printReportHTML } from "../services/export.js";
 import { haptics } from "../services/haptics.js";
+import { dialogService } from "../services/dialog.js";
 import { escapeHtml } from "./dom.js";
 
 const esc = escapeHtml;
@@ -130,7 +131,7 @@ export function setupReportModal(storage) {
   if (csvBtn) {
     csvBtn.addEventListener("click", () => {
       if (currentEntries.length === 0) {
-        alert("Nenhum dado encontrado para exportação no período selecionado.");
+        void dialogService.alert({ title: "Sem dados", message: "Nenhum dado encontrado para exportação no período selecionado." });
         return;
       }
       const csv = generateReportCSV(currentEntries);
@@ -143,7 +144,7 @@ export function setupReportModal(storage) {
   if (pdfBtn) {
     pdfBtn.addEventListener("click", () => {
       if (currentEntries.length === 0) {
-        alert("Nenhum dado encontrado para impressão no período selecionado.");
+        void dialogService.alert({ title: "Sem dados", message: "Nenhum dado encontrado para impressão no período selecionado." });
         return;
       }
       const { startDate, endDate } = getDateRange();

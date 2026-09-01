@@ -154,12 +154,17 @@ export class HealthConnectService {
         : [];
 
       if (tombstones.length > 0) {
-        const clientRecordIds = tombstones.map((t) => t.clientRecordId || t.id).filter(Boolean);
+        const safeTombstones = tombstones.filter((t) =>
+          t &&
+          t.ownership === "pep" &&
+          (!t.dataOrigin || t.dataOrigin === "com.protocolopep.app")
+        );
+        const clientRecordIds = safeTombstones.map((t) => t.clientRecordId || t.id).filter(Boolean);
         if (clientRecordIds.length > 0) {
           await PepHealthConnect.deleteRecords({ clientRecordIds });
           deletedCount = clientRecordIds.length;
           if (this.storage && typeof this.storage.clearTombstones === "function") {
-            this.storage.clearTombstones(tombstones.map((t) => t.id));
+            this.storage.clearTombstones(safeTombstones.map((t) => t.id));
           }
         }
       }

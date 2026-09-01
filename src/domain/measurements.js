@@ -9,7 +9,22 @@
  */
 
 import { isValidDateKey, isValidTime } from "./schedule.js";
-import { localDateTimeToIso } from "./health-connect.js";
+import {
+  getSystemTimeZoneId,
+  getZoneOffsetForLocalDateTime,
+  isValidIsoTimestamp,
+  isValidTimeZoneId,
+  isValidZoneOffset,
+  localDateTimeToIso
+} from "./time.js";
+
+export class MeasurementValidationError extends Error {
+  constructor(code, message) {
+    super(message);
+    this.name = "MeasurementValidationError";
+    this.code = code;
+  }
+}
 
 /**
  * Calcula o offset de fuso horário atual no formato ISO (+HH:mm ou -HH:mm)
@@ -23,6 +38,26 @@ export function getCurrentZoneOffset(date = new Date()) {
   const hours = String(Math.floor(abs / 60)).padStart(2, "0");
   const minutes = String(abs % 60).padStart(2, "0");
   return `${sign}${hours}:${minutes}`;
+}
+
+export { getZoneOffsetForLocalDateTime, getSystemTimeZoneId };
+
+function currentLocalDateKey(now = new Date()) {
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function requireValidInstant(value, fieldName) {
+  if (value === null || value === undefined || value === "") return null;
+  if (!isValidIsoTimestamp(String(value))) {
+    throw new MeasurementValidationError(
+      `INVALID_${fieldName.toUpperCase()}`,
+      `${fieldName} deve ser um timestamp ISO 8601 válido.`
+    );
+  }
+  return new Date(String(value)).toISOString();
 }
 
 export const DEFAULT_SYMPTOM_SUGGESTIONS = Object.freeze([
@@ -80,46 +115,70 @@ export function formatSymptomLabel(symptom) {
 export function createMeasurementEntry({
   id = null,
   clientRecordId = null,
-  date,
-  time = "08:00",
+  date = undefined,
+  time = undefined,
   weightKg = null,
   energyLevel = null,
   moodLevel = null,
   symptoms = [],
   notes = "",
   source = "local",
-  ownership = "pep",
+  ownership = null,
   syncVersion = 1,
   clientRecordVersion = 1,
   healthConnectRecordId = null,
   dataOrigin = null,
   zoneOffset = null,
+  timeZoneId = null,
   timestamp = null,
   createdAt = null,
   updatedAt = null
 }) {
+  const hasExplicitDate = date !== undefined && date !== null;
+  const hasExplicitTime = time !== undefined && time !== null;
+
+  if (hasExplicitDate && !isValidDateKey(String(date))) {
+    throw new MeasurementValidationError(
+      "INVALID_DATE",
+      "Data da medição inválida ou inexistente no calendário gregoriano."
+    );
+  }
+  if (hasExplicitTime && !isValidTime(String(time))) {
+    throw new MeasurementValidationError(
+      "INVALID_TIME",
+      "Hora da medição inválida; informe um horário HH:mm válido."
+    );
+  }
+
   let parsedWeight = null;
   if (weightKg !== null && weightKg !== undefined && weightKg !== "") {
-    const num = typeof weightKg === "number" ? weightKg : parseFloat(String(weightKg).replace(",", "."));
-    if (!Number.isNaN(num) && Number.isFinite(num)) {
-      parsedWeight = Math.round(num * 100) / 100;
+    const num = typeof weightKg === "number" ? weightKg : Number(String(weightKg).replace(",", "."));
+    if (Number.isNaN(num) || !Number.isFinite(num) || num < 20 || num > 400) {
+      throw new MeasurementValidationError("INVALID_WEIGHT", "O peso deve estar entre 20 kg e 400 kg.");
     }
+    parsedWeight = Math.round(num * 100) / 100;
   }
 
   let parsedEnergy = null;
   if (energyLevel !== null && energyLevel !== undefined && energyLevel !== "") {
-    const e = parseInt(String(energyLevel), 10);
-    if (!Number.isNaN(e) && e >= 1 && e <= 5) {
-      parsedEnergy = e;
+    const e = Number(energyLevel);
+    if (!Number.isInteger(e) || e < 1 || e > 5) {
+      throw new MeasurementValidationError("INVALID_ENERGY", "O nível de energia deve ser um número inteiro de 1 a 5.");
     }
+    parsedEnergy = e;
   }
 
   let parsedMood = null;
   if (moodLevel !== null && moodLevel !== undefined && moodLevel !== "") {
-    const m = parseInt(String(moodLevel), 10);
-    if (!Number.isNaN(m) && m >= 1 && m <= 5) {
-      parsedMood = m;
+    const m = Number(moodLevel);
+    if (!Number.isInteger(m) || m < 1 || m > 5) {
+      throw new MeasurementValidationError("INVALID_MOOD", "O nível de humor deve ser um número inteiro de 1 a 5.");
     }
+    parsedMood = m;
+  }
+
+  if (!Array.isArray(symptoms)) {
+    throw new MeasurementValidationError("INVALID_SYMPTOMS", "A lista de sintomas deve ser um array.");
   }
 
   const cleanedSymptoms = Array.isArray(symptoms)
@@ -127,24 +186,49 @@ export function createMeasurementEntry({
     : [];
 
   const uniqueSymptoms = [...new Set(cleanedSymptoms)];
-  const cleanDate = date && isValidDateKey(String(date)) ? String(date) : new Date().toISOString().slice(0, 10);
-  const cleanTime = time && isValidTime(String(time)) ? String(time) : "08:00";
+  const cleanDate = hasExplicitDate ? String(date) : currentLocalDateKey();
+  const cleanTime = hasExplicitTime ? String(time) : "08:00";
   const version = Math.max(1, parseInt(syncVersion || clientRecordVersion, 10) || 1);
 
-  const cleanZoneOffset = zoneOffset !== undefined && zoneOffset !== null
-    ? zoneOffset
-    : (source === "local" ? getCurrentZoneOffset() : null);
+  const cleanTimeZoneId = timeZoneId !== undefined && timeZoneId !== null && timeZoneId !== ""
+    ? String(timeZoneId)
+    : (source === "local" ? getSystemTimeZoneId() : null);
+  if (cleanTimeZoneId && !isValidTimeZoneId(cleanTimeZoneId)) {
+    throw new MeasurementValidationError("INVALID_TIME_ZONE", "Timezone IANA inválido.");
+  }
 
-  // P0 (CODEX v2.5.0): timestamp é fonte de verdade do instante da medição.
-  // Nunca derivado de createdAt — sempre calculado de date+time ou preservado explicitamente.
-  const cleanTimestamp = timestamp || localDateTimeToIso(cleanDate, cleanTime) || new Date().toISOString();
+  if (zoneOffset !== undefined && zoneOffset !== null && zoneOffset !== "" && !isValidZoneOffset(String(zoneOffset))) {
+    throw new MeasurementValidationError("INVALID_ZONE_OFFSET", "Offset de fuso inválido; use +HH:mm, -HH:mm ou Z.");
+  }
 
-  // createdAt: imutável após criação. Se não passado, inicializa com cleanTimestamp (novo registro).
-  const cleanCreatedAt = createdAt || cleanTimestamp;
+  const cleanZoneOffset = zoneOffset !== undefined && zoneOffset !== null && zoneOffset !== ""
+    ? String(zoneOffset)
+    : (source === "local"
+      ? getZoneOffsetForLocalDateTime(cleanDate, cleanTime, cleanTimeZoneId)
+      : null);
 
-  // updatedAt: reflete a última modificação local. Herda cleanCreatedAt se não passado
-  // (registros legados sem updatedAt recebem createdAt como valor inicial na migração V4→V5).
-  const cleanUpdatedAt = updatedAt || cleanCreatedAt;
+  const explicitTimestamp = requireValidInstant(timestamp, "timestamp");
+  const cleanTimestamp = explicitTimestamp || localDateTimeToIso(
+    cleanDate,
+    cleanTime,
+    cleanZoneOffset,
+    cleanTimeZoneId
+  );
+  if (!cleanTimestamp) {
+    throw new MeasurementValidationError(
+      "INVALID_LOCAL_DATE_TIME",
+      "A data e o horário não representam um instante válido no contexto de fuso informado."
+    );
+  }
+
+  const nowIso = new Date().toISOString();
+  const cleanCreatedAt = requireValidInstant(createdAt, "createdAt") || nowIso;
+  const cleanUpdatedAt = requireValidInstant(updatedAt, "updatedAt") || cleanCreatedAt;
+  const resolvedOwnership = ownership === "pep" || ownership === "external"
+    ? ownership
+    : (dataOrigin === "com.protocolopep.app"
+      ? "pep"
+      : (source === "health_connect" ? "external" : "pep"));
 
   return {
     id: id || `m_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
@@ -156,13 +240,14 @@ export function createMeasurementEntry({
     symptoms: uniqueSymptoms,
     notes: notes ? String(notes).trim().slice(0, 500) : "",
     source: source || "local",
-    ownership: ownership || (source === "health_connect" ? "external" : "pep"),
+    ownership: resolvedOwnership,
     syncVersion: version,
     clientRecordVersion: version,
     clientRecordId: clientRecordId || null,
     healthConnectRecordId: healthConnectRecordId || null,
     dataOrigin: dataOrigin || (source === "local" ? "com.protocolopep.app" : null),
     zoneOffset: cleanZoneOffset,
+    timeZoneId: cleanTimeZoneId,
     timestamp: cleanTimestamp,
     createdAt: cleanCreatedAt,
     updatedAt: cleanUpdatedAt
@@ -348,24 +433,30 @@ export function haveMeasurementsChanged(oldList = [], newList = []) {
   if (!Array.isArray(oldList) || !Array.isArray(newList)) {
     return oldList !== newList;
   }
-  if (oldList.length !== newList.length) {
-    return true;
-  }
-  for (let i = 0; i < oldList.length; i++) {
-    const a = oldList[i];
-    const b = newList[i];
-    if (!a || !b) return true;
-    if (a.id !== b.id) return true;
-    if (a.date !== b.date) return true;
-    if (a.time !== b.time) return true;
-    if (a.weightKg !== b.weightKg) return true;
-    if (a.energyLevel !== b.energyLevel) return true;
-    if (a.moodLevel !== b.moodLevel) return true;
-    if (a.notes !== b.notes) return true;
-    if (a.source !== b.source) return true;
-    const symA = Array.isArray(a.symptoms) ? a.symptoms.join("|") : "";
-    const symB = Array.isArray(b.symptoms) ? b.symptoms.join("|") : "";
-    if (symA !== symB) return true;
-  }
-  return false;
+  const fingerprint = (entry) => JSON.stringify({
+    id: entry?.id || null,
+    date: entry?.date || null,
+    time: entry?.time || null,
+    timestamp: entry?.timestamp || null,
+    zoneOffset: entry?.zoneOffset || null,
+    timeZoneId: entry?.timeZoneId || null,
+    weightKg: entry?.weightKg ?? null,
+    energyLevel: entry?.energyLevel ?? null,
+    moodLevel: entry?.moodLevel ?? null,
+    symptoms: Array.isArray(entry?.symptoms) ? entry.symptoms : [],
+    notes: entry?.notes || "",
+    source: entry?.source || null,
+    ownership: entry?.ownership || null,
+    syncVersion: entry?.syncVersion ?? null,
+    clientRecordId: entry?.clientRecordId || null,
+    clientRecordVersion: entry?.clientRecordVersion ?? null,
+    healthConnectRecordId: entry?.healthConnectRecordId || null,
+    dataOrigin: entry?.dataOrigin || null,
+    createdAt: entry?.createdAt || null,
+    updatedAt: entry?.updatedAt || null
+  });
+  const canonical = (list) => list
+    .map(fingerprint)
+    .sort();
+  return JSON.stringify(canonical(oldList)) !== JSON.stringify(canonical(newList));
 }

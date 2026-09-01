@@ -15,6 +15,7 @@ import {
 } from "../domain/injection-sites.js";
 import { escapeHtml } from "./dom.js";
 import { haptics } from "../services/haptics.js";
+import { dialogService } from "../services/dialog.js";
 
 export function setupInjectionSitesUI({ storage, onSitesChange = () => {} }) {
   const modal = document.getElementById("sites-modal");
@@ -122,13 +123,13 @@ export function setupInjectionSitesUI({ storage, onSitesChange = () => {} }) {
     const rawVal = addInput.value;
     const formatted = formatSiteLabel(rawVal);
     if (!formatted) {
-      alert("Informe um nome válido para o local.");
+      void dialogService.alert({ title: "Nome inválido", message: "Informe um nome válido para o local.", isDanger: true });
       return;
     }
 
     const sites = storage.getSites();
     if (sites.some((s) => s.toLowerCase() === formatted.toLowerCase())) {
-      alert(`O local "${formatted}" já está na rotação.`);
+      void dialogService.alert({ title: "Local duplicado", message: `O local "${formatted}" já está na rotação.` });
       return;
     }
 
@@ -140,7 +141,7 @@ export function setupInjectionSitesUI({ storage, onSitesChange = () => {} }) {
       renderSitesList();
       onSitesChange();
     } else {
-      alert("Erro ao salvar local: " + (res.error || "Falha no armazenamento"));
+      void dialogService.alert({ title: "Erro ao salvar", message: "Erro ao salvar local: " + (res.error || "Falha no armazenamento"), isDanger: true });
     }
   }
 

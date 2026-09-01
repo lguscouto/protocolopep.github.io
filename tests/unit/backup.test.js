@@ -14,6 +14,48 @@ describe("Backup Domain", () => {
     expect(parsed.logs["2026-08-28"]).toBeDefined();
   });
 
+  it("preserva hidden IDs e tombstones PEP no schema V6", () => {
+    const payload = createBackupPayload([], {}, "black", [], [], [], {
+      hiddenMeasurementIds: ["hc_external_1"],
+      tombstones: [{
+        id: "m_deleted_1",
+        clientRecordId: "m_deleted_1",
+        healthConnectRecordId: "hc_pep_1",
+        ownership: "pep",
+        dataOrigin: "com.protocolopep.app",
+        deletedAt: "2026-09-01T10:00:00.000Z"
+      }]
+    });
+    const result = validateAndParseBackup(payload);
+
+    expect(result.valid).toBe(true);
+    expect(result.data.version).toBe(6);
+    expect(result.data.healthConnectState.hiddenMeasurementIds).toEqual(["hc_external_1"]);
+    expect(result.data.healthConnectState.tombstones).toHaveLength(1);
+    expect(result.stats.hiddenMeasurementsCount).toBe(1);
+    expect(result.stats.tombstonesCount).toBe(1);
+  });
+
+  it("descarta tombstone externo ou sem ownership para nunca excluir recurso de terceiros", () => {
+    const result = validateAndParseBackup(JSON.stringify({
+      version: 6,
+      protocol: [],
+      logs: {},
+      healthConnectState: {
+        hiddenMeasurementIds: ["hc-safe"],
+        tombstones: [
+          { id: "external", clientRecordId: "external", ownership: "external" },
+          { id: "missing-owner", clientRecordId: "missing-owner" },
+          { id: "wrong-origin", clientRecordId: "wrong-origin", ownership: "pep", dataOrigin: "com.third.party" }
+        ]
+      }
+    }));
+
+    expect(result.valid).toBe(true);
+    expect(result.data.healthConnectState.tombstones).toEqual([]);
+    expect(result.data.healthConnectState.hiddenMeasurementIds).toEqual(["hc-safe"]);
+  });
+
   it("valida backup válido e retorna estatísticas de prévia", () => {
     const validJson = JSON.stringify({
       version: 1,
@@ -95,5 +137,16 @@ describe("Backup Domain", () => {
     expect(result.data.logs["2026-02-29"]).toBeUndefined();
     expect(result.data.logs["invalid-date"]).toBeUndefined();
     expect(result.data.protocol[0].start).toBeNull();
+  });
+
+  it("rejeita backup com medição de data ou hora explicitamente inválida", () => {
+    const result = validateAndParseBackup(JSON.stringify({
+      version: 6,
+      protocol: [],
+      logs: {},
+      measurements: [{ id: "invalid", date: "2026-99-99", time: "99:99", weightKg: 80 }]
+    }));
+    expect(result.valid).toBe(false);
+    expect(result.error).toContain("Data da medição inválida");
   });
 });

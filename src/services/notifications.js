@@ -275,14 +275,28 @@ export class NotificationService {
     }
   }
 
+  async resolveSchedulingPolicy() {
+    const exactAlarm = await this.checkExactAlarmPermission();
+    if (exactAlarm.status === "not_applicable") {
+      return { mode: "not_applicable", allowWhileIdle: false, exactAlarm };
+    }
+    if (exactAlarm.granted) {
+      return { mode: "exact", allowWhileIdle: true, exactAlarm };
+    }
+    return { mode: "approximate", allowWhileIdle: false, exactAlarm };
+  }
+
   async schedulePeptideReminders(peptides = []) {
     // 1. Sempre cancelar lembretes anteriores
     await this.cancelAllPepReminders();
 
     // Se notificações estiverem desativadas, parar por aqui garantindo que nada fique agendado
     if (!this.cfg.enabled) {
-      return { scheduledCount: 0 };
+      return { scheduledCount: 0, schedulingMode: "disabled" };
     }
+
+    // A política de Exact Alarm pertence ao serviço: todo chamador recebe o mesmo fallback seguro.
+    const schedulingPolicy = await this.resolveSchedulingPolicy();
 
     if (Capacitor.isNativePlatform()) {
       try {
@@ -321,7 +335,9 @@ export class NotificationService {
                   title: formatted.title,
                   body: formatted.body,
                   channelId: activeChannelId,
-                  schedule: { at: schedDate, allowWhileIdle: true },
+                  schedule: schedulingPolicy.allowWhileIdle
+                    ? { at: schedDate, allowWhileIdle: true }
+                    : { at: schedDate },
                   smallIcon: "ic_stat_pep",
                   iconColor: "#2CC5C0",
                   extra: { peptideId: p.id }
@@ -346,7 +362,9 @@ export class NotificationService {
                   title: "Protocolo PEP · Resumo Diário",
                   body: "Verifique suas doses de peptídeos programadas para hoje.",
                   channelId: activeChannelId,
-                  schedule: { at: sumDate, allowWhileIdle: true },
+                  schedule: schedulingPolicy.allowWhileIdle
+                    ? { at: sumDate, allowWhileIdle: true }
+                    : { at: sumDate },
                   smallIcon: "ic_stat_pep",
                   iconColor: "#2CC5C0"
                 });
@@ -360,14 +378,27 @@ export class NotificationService {
           console.log(`[Notif] ${notifications.length} lembretes nativos agendados no canal ${activeChannelId}.`);
         }
 
-        return { scheduledCount: notifications.length };
+        return {
+          scheduledCount: notifications.length,
+          schedulingMode: schedulingPolicy.mode,
+          exactAlarmStatus: schedulingPolicy.exactAlarm.status
+        };
       } catch (e) {
         console.warn("[Notif] Native scheduling error:", e);
-        return { scheduledCount: 0, error: e.message };
+        return {
+          scheduledCount: 0,
+          schedulingMode: schedulingPolicy.mode,
+          exactAlarmStatus: schedulingPolicy.exactAlarm.status,
+          error: e.message
+        };
       }
     }
 
-    return { scheduledCount: 0 };
+    return {
+      scheduledCount: 0,
+      schedulingMode: schedulingPolicy.mode,
+      exactAlarmStatus: schedulingPolicy.exactAlarm.status
+    };
   }
 }
 

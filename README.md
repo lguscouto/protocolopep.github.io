@@ -9,25 +9,32 @@ Aplicativo Android nativo para acompanhamento de protocolos de peptídeos, cálc
 
 ---
 
-## 🚀 Novidades da Versão 2.6.0 (DialogService Acessível, Modularização da Calculadora, Ownership Estrito e Auditoria WCAG 2.1 AA)
+## 🚀 Novidades da Versão 2.6.0 (Tempo Histórico, Health Connect Estável, Backup V6 e Auditoria WCAG 2.1 AA)
 
 - **Centralização de Diálogos & Acessibilidade (`DialogService`):**
   - Implementação do `DialogService` centralizado (`src/services/dialog.js`) com `confirm()` e `alert()` assíncronos.
   - Eliminação completa de chamadas síncronas bloqueantes `alert()` e `confirm()` nativas em todo o código.
   - Suporte completo a navegação por teclado com focus trap (`Tab`/`Shift+Tab`), cancelamento e fechamento via tecla `Escape`, retorno de foco ao elemento disparador e haptics integrados.
-- **Separação Semântica de Timestamps & Migração V4→V5 (P0):**
-  - Desacoplamento estrito de `timestamp` (instante do fato clínico) e `createdAt` (instante de criação do registro no banco local), além da inclusão de `updatedAt`.
-  - Pipeline sequencial de migrações automáticas `migrateV4ToV5` com backfill seguro.
+- **Tempo histórico e semântica de auditoria (P0/P1):**
+  - `timestamp` representa o instante da medição; `createdAt` registra quando o item entrou no PEP; `updatedAt` registra a última alteração local.
+  - `zoneOffset` é calculado para a data/hora histórica e `timeZoneId` IANA é preservado quando disponível, incluindo regras de DST.
+  - Datas, horas, timestamps, offsets e zonas explicitamente inválidos são rejeitados sem substituição silenciosa por valores atuais.
+- **Migração V5→V6 e backup Health Connect (P1):**
+  - Backfill seguro de `ownership` legado conforme `dataOrigin` e origem do registro.
+  - Backup e restauração incluem tombstones PEP e IDs externos ocultos, com sanitização que impede tombstones de terceiros.
 - **Sincronização Estrita Health Connect & Proteção de Registros Externos (P1):**
   - Decisões de exportação e emissão de tombstones baseadas exclusivamente no campo `ownership === "pep"`.
   - Janela de sincronização de leitura calibrada para 30 dias no JavaScript e Kotlin (`PepHealthConnectPlugin.kt`).
   - Proteção de dados importados do Health Connect: campos corporais externos em modo somente leitura e ação de exclusão convertida para ocultação local ("Ocultar no PEP") com persistência em `hiddenMeasurementIds`.
+  - Merge externo atualiza peso, instante, data/hora, offset, IDs e versão remotos, preservando notas, energia, humor e sintomas locais.
+  - Cliente Android migrado para `androidx.health.connect:connect-client:1.1.0` estável, com mapper nativo testável e fake oficial nos testes Kotlin.
   - Fluxo de autorização de `SCHEDULE_EXACT_ALARM` no Android com prompt acessível.
+  - Política de agendamento exato/aproximado centralizada no serviço de notificações.
 - **Modularização da Calculadora de Reconstituição (P2):**
   - Desacoplamento da interface da calculadora em módulo autônomo `src/ui/calculator.js`.
   - Transição refinada da Base de Pesquisa Científica para a Calculadora com toast descritivo e auto-foco na dose pretendida.
 - **Auditoria de Acessibilidade Automatizada com Axe no Playwright (P2):**
-  - Validação contínua WCAG 2.1 AA em suites E2E com `@axe-core/playwright` em múltiplos viewports Android.
+  - Validação contínua WCAG 2.1 AA, incluindo contraste, em dashboard, calculadora, histórico, medições, inventário, Health Connect, notificações e ajustes.
   - Conformidade estrita de atributos e roles ARIA (`role="region"`).
 
 ---
@@ -66,8 +73,7 @@ Aplicativo Android nativo para acompanhamento de protocolos de peptídeos, cálc
 - **Cancelamento Seletivo de Lembretes & Sanitização de Busca:**
   - Cancelamento direcionado de notificações por peptídeo (`cancelScheduleForPeptide`) e sanitização de caracteres de controle na biblioteca científica.
 - **Qualidade & Testes Automatizados:**
-  - **234 testes unitários** no Vitest passando com 100% de sucesso.
-  - **27 testes E2E** no Playwright cobrindo todos os fluxos críticos em 3 viewports móveis.
+  - Vitest e Playwright cobrem os fluxos críticos; o workflow de CI é a fonte de verdade para a contagem e o resultado atuais.
   - Testes unitários JUnit para Android em Kotlin (`HealthConnectTest.kt`) validados no Gradle.
 
 ---
@@ -75,7 +81,7 @@ Aplicativo Android nativo para acompanhamento de protocolos de peptídeos, cálc
 ## 🚀 Novidades da Versão 2.0.0 (Health Connect Real & Integridade Total)
 
 - **Integração Real com o AndroidX Health Connect SDK:**
-  - Migração completa do plugin nativo para Kotlin (`PepHealthConnectPlugin.kt`) utilizando a biblioteca oficial `androidx.health.connect:connect-client:1.1.0-alpha07`.
+  - Origem do plugin nativo em Kotlin (`PepHealthConnectPlugin.kt`), atualmente validado com a versão estável do AndroidX Health Connect.
   - Verificação de status em tempo real (`HealthConnectClient.getSdkStatus()`) e solicitação de permissões reais de leitura e escrita de registros de peso (`WeightRecord`).
   - Sincronização bidirecional de peso corporal com balanças inteligentes e aplicativos de saúde (Google Fit, Samsung Health, etc.).
   - Declaração de `activity-alias` de privacidade (`ViewPermissionUsageActivity`) e rationale de permissões em conformidade com as diretrizes da Google Play Store.
@@ -101,8 +107,7 @@ Aplicativo Android nativo para acompanhamento de protocolos de peptídeos, cálc
 - **Acessibilidade Aprimorada (WCAG 2.1 AA):**
   - Diálogos de confirmação (`showConfirmDialog`) com foco inicial no botão Cancelar (prevenindo ações destrutivas acidentais), focus trap interno e suporte ao fechamento com tecla `Escape`.
 - **Qualidade & Testes Automatizados:**
-  - **188 testes unitários** no Vitest passando com 100% de sucesso.
-  - **24 testes E2E** no Playwright cobrindo todos os fluxos críticos e alvos de toque em múltiplos viewports móveis.
+  - Cobertura automatizada com Vitest e Playwright para regras de negócio, fluxos críticos e alvos de toque.
 
 ---
 
@@ -133,7 +138,7 @@ Aplicativo Android nativo para acompanhamento de protocolos de peptídeos, cálc
   - Registro de doses além do binário: suporte a `applied` (aplicada), `skipped` (pausa) e `missed` (esquecida) com motivo.
   - Estatísticas de variação de peso ($\Delta\text{ kg}$) e sintomas estritamente descritivas sem inferências médicas.
 - **Suíte de Testes Automatizada & CI/CD:**
-  - 173 testes unitários no `vitest` e 24 testes E2E multi-viewport no `playwright` com verificação de runtime limpo.
+  - Suítes unitárias e E2E multi-viewport com verificação de runtime limpo; a contagem vigente é publicada pelo CI.
   - Validação nativa completa no emulador Android e build automatizado no GitHub Actions.
 
 ---
@@ -223,7 +228,7 @@ Aplicativo Android nativo para acompanhamento de protocolos de peptídeos, cálc
 - **Persistência Fail-Closed & Atômica (`src/services/storage.js`):** Snapshot automático antes de operações de gravação e rollback imediato em caso de erro.
 - **Calculadora de Reconstituição Canônica:** Conversões rigorosas entre `mcg` e `mg`, validações de capacidade de seringas U-100 e visualização de êmbolo SVG.
 - **Notificações Nativas Confiáveis:** Agendamento com horizonte de 14 dias concretos e rotina de cancelamento real via `@capacitor/local-notifications`.
-- **Suíte de Testes Unitários:** 35 testes unitários automatizados com Vitest cobrindo todos os módulos de domínio e regras de negócio.
+- **Suíte de Testes Unitários:** Vitest cobrindo os módulos de domínio e regras de negócio.
 - **Pipeline de Integração Contínua (CI):** Validação automática com GitHub Actions para Node 22, testes Vitest, compilação Vite e build Android Gradle.
 - **Governança & Privacidade:** Primeiro acesso com protocolo limpo e documentação contratual (`docs/PRODUCT.md`, `docs/PRIVACY.md`, `AGENTS.md`).
 
@@ -277,8 +282,8 @@ pep-protocol/
 │   ├── data/                    # Catálogo nominal de referência
 │   └── css/                     # Estilos modulares e responsivos
 ├── tests/
-│   ├── unit/                    # 229 testes unitários com Vitest
-│   └── e2e/                     # 24 testes E2E com Playwright
+│   ├── unit/                    # Testes unitários com Vitest
+│   └── e2e/                     # Testes E2E com Playwright e Axe
 ├── docs/
 │   ├── PRODUCT.md               # Contrato do produto e público-alvo
 │   └── PRIVACY.md               # Política de privacidade Local-First
