@@ -81,6 +81,21 @@ class HealthConnectTest {
     }
 
     @Test
+    fun alpha04FakePermissionControllerSupportsReplacingGrantedPermissions() = runBlocking {
+        val permissions = FakePermissionController(grantAll = true)
+        permissions.replaceGrantedPermissions(emptySet())
+        assertTrue(permissions.getGrantedPermissions().isEmpty())
+
+        permissions.grantPermission("android.permission.health.READ_WEIGHT")
+        assertEquals(
+            setOf("android.permission.health.READ_WEIGHT"),
+            permissions.getGrantedPermissions()
+        )
+        permissions.revokeAllPermissions()
+        assertTrue(permissions.getGrantedPermissions().isEmpty())
+    }
+
+    @Test
     fun fakeClientCoversInsertReadVersionedUpdateAndDelete() = runBlocking {
         val permissions = FakePermissionController(grantAll = true)
         val client = FakeHealthConnectClient(
