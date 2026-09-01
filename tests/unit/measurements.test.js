@@ -195,7 +195,7 @@ describe("Measurements Domain (V12)", () => {
       const explicitTimestamp = "2026-08-29T11:00:00.000Z";
       const entry = createMeasurementEntry({
         date: "2026-08-29", time: "08:00", weightKg: 82.5,
-        timestamp: explicitTimestamp,
+        timestamp: explicitTimestamp, zoneOffset: "-03:00",
         createdAt: "2099-01-01T00:00:00.000Z"
       });
       expect(entry.timestamp).toBe(explicitTimestamp);
@@ -270,7 +270,7 @@ describe("Measurements Domain (V12)", () => {
       const ts = "2026-08-10T14:00:00.000Z";
       const ca = "2026-08-10T14:00:00.000Z";
       const ua = "2026-08-25T09:30:00.000Z";
-      const entry = createMeasurementEntry({ id: "m_bk", date: "2026-08-10", time: "11:00", weightKg: 80.0, timestamp: ts, createdAt: ca, updatedAt: ua });
+      const entry = createMeasurementEntry({ id: "m_bk", date: "2026-08-10", time: "11:00", weightKg: 80.0, timestamp: ts, zoneOffset: "-03:00", createdAt: ca, updatedAt: ua });
       expect(entry.timestamp).toBe(ts);
       expect(entry.createdAt).toBe(ca);
       expect(entry.updatedAt).toBe(ua);
