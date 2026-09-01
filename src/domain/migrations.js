@@ -3,7 +3,14 @@ import { normalizeDoseEntry } from "./dose-log.js";
 import { createVial } from "./inventory.js";
 import { validateSitesList, getDefaultSites } from "./injection-sites.js";
 import { createMeasurementEntry } from "./measurements.js";
-import { isValidDateKey } from "./schedule.js";
+import { isValidDateKey, isValidTime } from "./schedule.js";
+import {
+  assessTemporalConsistency,
+  getZoneOffsetForLocalDateTime,
+  isValidTimeZoneId,
+  isValidZoneOffset,
+  localDateTimeToIso
+} from "./time.js";
 
 export const CURRENT_SCHEMA_VERSION = 6;
 
@@ -23,9 +30,9 @@ export function sanitizeHealthConnectState(rawState = {}) {
         if (!item || typeof item !== "object" || item.ownership !== "pep") return safe;
         if (item.dataOrigin && item.dataOrigin !== "com.protocolopep.app") return safe;
         const id = sanitizeHealthConnectId(item.id);
-        const clientRecordId = sanitizeHealthConnectId(item.clientRecordId || item.id);
+        const clientRecordId = sanitizeHealthConnectId(item.clientRecordId);
         const healthConnectRecordId = sanitizeHealthConnectId(item.healthConnectRecordId);
-        if (!id || !clientRecordId) return safe;
+        if (!id || (!clientRecordId && !healthConnectRecordId)) return safe;
         safe.push({
           id,
           clientRecordId,
@@ -86,7 +93,50 @@ export function migrateMeasurements(rawMeasurements = []) {
   if (!Array.isArray(rawMeasurements)) return [];
   return rawMeasurements
     .filter((item) => item && typeof item === "object")
-    .map((item) => createMeasurementEntry(item));
+    .map((item) => createMeasurementEntry(remediateTemporalFields(item)));
+}
+
+export function remediateTemporalFields(measurement = {}) {
+  if (!measurement || typeof measurement !== "object") return measurement;
+  const date = String(measurement.date || "");
+  const time = String(measurement.time || "08:00");
+  const timeZoneId = measurement.timeZoneId || null;
+  const zoneOffset = measurement.zoneOffset || null;
+
+  const initialAssessment = assessTemporalConsistency({ ...measurement, date, time });
+  if (initialAssessment.valid) {
+    return { ...measurement, temporalIntegrity: "valid" };
+  }
+
+  if (isValidDateKey(date) && isValidTime(time) && isValidTimeZoneId(timeZoneId)) {
+    const recalculatedOffset = getZoneOffsetForLocalDateTime(date, time, timeZoneId);
+    const recalculatedTimestamp = localDateTimeToIso(date, time, null, timeZoneId);
+    if (recalculatedOffset && recalculatedTimestamp) {
+      return {
+        ...measurement,
+        zoneOffset: recalculatedOffset,
+        timestamp: recalculatedTimestamp,
+        temporalIntegrity: "valid"
+      };
+    }
+  }
+
+  if (
+    isValidDateKey(date) &&
+    isValidTime(time) &&
+    isValidZoneOffset(zoneOffset) &&
+    !measurement.timestamp
+  ) {
+    const calculatedTimestamp = localDateTimeToIso(date, time, zoneOffset, null);
+    if (calculatedTimestamp) {
+      return { ...measurement, timestamp: calculatedTimestamp, temporalIntegrity: "valid" };
+    }
+  }
+
+  return {
+    ...measurement,
+    temporalIntegrity: "needs_review"
+  };
 }
 
 export function migrateV1ToV2(state = {}) {
@@ -152,7 +202,7 @@ export function migrateV5ToV6(state = {}) {
     const ownership = measurement.dataOrigin === "com.protocolopep.app"
       ? "pep"
       : (measurement.source === "health_connect" ? "external" : "pep");
-    return { ...measurement, ownership };
+    return remediateTemporalFields({ ...measurement, ownership });
   });
 
   return {

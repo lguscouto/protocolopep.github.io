@@ -15,6 +15,10 @@ Aplicativo Android nativo para acompanhamento de protocolos de peptídeos, cálc
 - **Tempo histórico consistente em qualquer ambiente:** offsets fornecidos explicitamente não recebem o timezone atual do dispositivo por inferência; edições preservam o instante histórico mesmo quando executadas em UTC ou durante uma viagem.
 - **Validação reproduzível:** os testes cobrem o cenário UTC do GitHub Actions, além de datas, horários, pesos e escalas inválidos sem correção silenciosa.
 - **Pipeline de CI atualizado:** actions oficiais de checkout, Node.js e Android SDK atualizadas para eliminar runtimes Node.js obsoletos.
+- **Merge versionado no Health Connect:** `clientRecordVersion` decide qual conteúdo sincronizado prevalece; versões iguais divergentes usam `lastModifiedTime`/`updatedAt` ou ficam marcadas para revisão, sem sobrescrita silenciosa.
+- **Exclusão remota sem identidade sintética:** tombstones preservam e enviam separadamente `healthConnectRecordId` e `clientRecordId`, incluindo compatibilidade com registros legados que possuem apenas o ID nativo.
+- **Integridade temporal fail-closed:** data, hora, instante, offset e zona IANA são validados em conjunto; registros contraditórios restaurados recebem `temporalIntegrity: needs_review` e não são exportados até correção.
+- **Cobertura de regressão ampliada:** testes incluem backup local V1/80 contra remoto V2/79, idempotência, conflitos de mesma versão, DST ambíguo, metadados nativos e exclusão por ambos os tipos de ID.
 
 ---
 

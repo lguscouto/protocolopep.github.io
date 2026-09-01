@@ -155,6 +155,14 @@ describe("Health Connect Domain", () => {
       const record = mapMeasurementToHealthRecord(corruptedMeasurement);
       expect(record).toBeNull();
     });
+
+    it("não exporta medição marcada para revisão temporal", () => {
+      expect(mapMeasurementToHealthRecord({
+        id: "m_review", date: "2026-08-29", time: "08:00", weightKg: 80,
+        timestamp: "2026-08-29T11:00:00.000Z", zoneOffset: "-02:00",
+        temporalIntegrity: "needs_review", ownership: "pep"
+      })).toBeNull();
+    });
   });
 
   describe("isValidIsoTimestamp", () => {
@@ -194,6 +202,16 @@ describe("Health Connect Domain", () => {
       expect(measurement.time).toBe("08:30");
       expect(measurement.weightKg).toBe(83.2);
       expect(measurement.source).toBe("health_connect");
+    });
+
+    it("preserva metadata.lastModifiedTime para desempate de versões iguais", () => {
+      const measurement = mapHealthRecordToMeasurement({
+        id: "hc-last-modified", clientRecordId: "m-last-modified",
+        dataOrigin: "com.protocolopep.app", timestamp: "2026-08-29T11:00:00.000Z",
+        zoneOffset: "-03:00", weightKg: 80, clientRecordVersion: 2,
+        lastModifiedTime: "2026-08-30T14:00:00Z"
+      });
+      expect(measurement.healthConnectLastModifiedTime).toBe("2026-08-30T14:00:00.000Z");
     });
 
     it("atribui ownership 'external' para apps de terceiros mesmo que possuam clientRecordId", () => {
@@ -377,6 +395,65 @@ describe("Health Connect Domain", () => {
       const again = mergeHealthMeasurements(merged, remote);
       expect(haveMeasurementsChanged(merged, again)).toBe(false);
     });
+
+    it("backup local V1/80 recebe remoto V2/79 e permanece idempotente", () => {
+      const local = [{
+        id: "m_backup_old", clientRecordId: "m_backup_old", ownership: "pep",
+        dataOrigin: "com.protocolopep.app", date: "2026-08-29", time: "08:00",
+        timestamp: "2026-08-29T11:00:00.000Z", zoneOffset: "-03:00",
+        weightKg: 80, syncVersion: 1, clientRecordVersion: 1,
+        notes: "nota preservada", symptoms: ["Fadiga"],
+        updatedAt: "2026-08-29T12:00:00.000Z"
+      }];
+      const remote = [{
+        id: "hc-backup-old", clientRecordId: "m_backup_old",
+        dataOrigin: "com.protocolopep.app", timestamp: "2026-08-29T11:00:00.000Z",
+        zoneOffset: "-03:00", weightKg: 79, clientRecordVersion: 2,
+        lastModifiedTime: "2026-08-30T12:00:00.000Z"
+      }];
+
+      const merged = mergeHealthMeasurements(local, remote);
+      expect(merged[0]).toMatchObject({
+        weightKg: 79, syncVersion: 2, clientRecordVersion: 2,
+        notes: "nota preservada", symptoms: ["Fadiga"],
+        healthConnectLastModifiedTime: "2026-08-30T12:00:00.000Z"
+      });
+      expect(haveMeasurementsChanged(merged, mergeHealthMeasurements(merged, remote))).toBe(false);
+    });
+
+    it("mantém conteúdo local quando a versão local é maior", () => {
+      const local = [{
+        id: "m_local_newer", clientRecordId: "m_local_newer", ownership: "pep",
+        date: "2026-08-29", time: "08:00", timestamp: "2026-08-29T11:00:00.000Z",
+        zoneOffset: "-03:00", weightKg: 78, syncVersion: 3, clientRecordVersion: 3
+      }];
+      const remote = [{
+        id: "hc-local-newer", clientRecordId: "m_local_newer", dataOrigin: "com.protocolopep.app",
+        timestamp: "2026-08-29T11:00:00.000Z", zoneOffset: "-03:00",
+        weightKg: 80, clientRecordVersion: 2
+      }];
+      expect(mergeHealthMeasurements(local, remote)[0]).toMatchObject({
+        weightKg: 78, syncVersion: 3, clientRecordVersion: 3
+      });
+    });
+
+    it("marca conflito quando versões iguais divergem sem desempate temporal", () => {
+      const local = [{
+        id: "m_equal", clientRecordId: "m_equal", ownership: "pep",
+        date: "2026-08-29", time: "08:00", timestamp: "2026-08-29T11:00:00.000Z",
+        zoneOffset: "-03:00", weightKg: 80, syncVersion: 2, clientRecordVersion: 2
+      }];
+      const remote = [{
+        id: "hc-equal", clientRecordId: "m_equal", dataOrigin: "com.protocolopep.app",
+        timestamp: "2026-08-29T11:00:00.000Z", zoneOffset: "-03:00",
+        weightKg: 79, clientRecordVersion: 2
+      }];
+      const merged = mergeHealthMeasurements(local, remote)[0];
+      expect(merged.weightKg).toBe(80);
+      expect(merged.syncConflict).toMatchObject({
+        status: "needs_review", reason: "EQUAL_VERSION_DIVERGENT_CONTENT"
+      });
+    });
   });
 
   describe("haveMeasurementsChanged", () => {
@@ -513,6 +590,12 @@ describe("Health Connect Domain", () => {
           clientRecordId: "m_deleted_1",
           ownership: "pep",
           dataOrigin: "com.protocolopep.app"
+        }, {
+          id: "m_deleted_legacy",
+          clientRecordId: null,
+          healthConnectRecordId: "hc-native-legacy",
+          ownership: "pep",
+          dataOrigin: "com.protocolopep.app"
         }],
         store: {},
         getItem(k) { return this.store[k] || null; },
@@ -528,7 +611,7 @@ describe("Health Connect Domain", () => {
 
       const syncRes = await service.syncMeasurements([]);
       expect(syncRes.success).toBe(true);
-      expect(syncRes.deletedCount).toBe(1);
+      expect(syncRes.deletedCount).toBe(2);
       expect(mockStorage.tombstones.length).toBe(0);
     });
 
@@ -693,7 +776,8 @@ describe("Health Connect Domain", () => {
         time: "2026-08-29T11:00:00.000Z",
         weight: 85.0,
         weightKg: 85.0,
-        clientRecordVersion: 1
+        clientRecordVersion: 1,
+        zoneOffset: "-03:00"
       };
 
       const importedMeasurement = mapHealthRecordToMeasurement(rawFromHealthConnect);
@@ -746,4 +830,3 @@ describe("Health Connect Domain", () => {
     });
   });
 });
-

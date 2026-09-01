@@ -306,7 +306,8 @@ class PepHealthConnectPlugin : Plugin() {
                     throw IllegalArgumentException("Timestamp inválido para o registro '${obj.optString("clientRecordId", "")}': ${e.message}")
                 }
 
-                val clientRecordId = obj.optString("clientRecordId", obj.optString("metadataId", obj.optString("id", "")))
+                // Nunca converte ID local/sintético em clientRecordId: somente a identidade explícita é válida.
+                val clientRecordId = obj.optString("clientRecordId", "")
                 val clientRecordVersion = if (obj.has("clientRecordVersion")) {
                     obj.optLong("clientRecordVersion", 1L)
                 } else if (obj.has("syncVersion")) {
@@ -391,6 +392,7 @@ class PepHealthConnectPlugin : Plugin() {
                         put("healthConnectRecordId", payload.healthConnectRecordId)
                         put("clientRecordId", payload.clientRecordId)
                         put("clientRecordVersion", payload.clientRecordVersion)
+                        put("lastModifiedTime", payload.lastModifiedTime)
                         put("dataOrigin", payload.dataOrigin)
                         put("zoneOffset", payload.zoneOffset)
                         put("metadataId", payload.id)

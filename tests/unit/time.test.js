@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  assessTemporalConsistency,
   getZoneOffsetForLocalDateTime,
   localDateTimeToIso
 } from "../../src/domain/time.js";
@@ -25,5 +26,26 @@ describe("Time Domain — timezone histórico e DST", () => {
   it("recalcula edição Rio em aparelho no Japão com o offset histórico preservado", () => {
     expect(localDateTimeToIso("2026-08-30", "10:00", "-03:00", "Asia/Tokyo"))
       .toBe("2026-08-30T13:00:00.000Z");
+  });
+
+  it("detecta divergência entre timestamp, offset e horário civil", () => {
+    expect(assessTemporalConsistency({
+      date: "2026-08-29", time: "08:00",
+      timestamp: "2026-08-29T11:00:00.000Z",
+      zoneOffset: "-03:00", timeZoneId: "America/Sao_Paulo"
+    })).toMatchObject({ valid: true, status: "valid" });
+
+    expect(assessTemporalConsistency({
+      date: "2026-08-29", time: "09:00",
+      timestamp: "2026-08-29T11:00:00.000Z", zoneOffset: "-03:00"
+    })).toMatchObject({ valid: false, status: "needs_review" });
+  });
+
+  it("aceita o offset explícito válido em horário ambíguo de DST", () => {
+    expect(assessTemporalConsistency({
+      date: "2026-11-01", time: "01:30",
+      timestamp: "2026-11-01T06:30:00.000Z",
+      zoneOffset: "-05:00", timeZoneId: "America/New_York"
+    }).valid).toBe(true);
   });
 });

@@ -76,6 +76,24 @@ function offsetMinutesAtInstant(instantMs, timeZoneId) {
   return Math.round((representedAsUtc - instantMs) / 60000);
 }
 
+function offsetMinutesFromString(zoneOffset) {
+  if (!isValidZoneOffset(zoneOffset)) return null;
+  if (zoneOffset === "Z") return 0;
+  const sign = zoneOffset[0] === "-" ? -1 : 1;
+  const [hours, minutes] = zoneOffset.slice(1).split(":").map(Number);
+  return sign * ((hours * 60) + minutes);
+}
+
+function wallTimeForInstantAndOffset(instantMs, zoneOffset) {
+  const offsetMinutes = offsetMinutesFromString(zoneOffset);
+  if (offsetMinutes === null) return null;
+  const shifted = new Date(instantMs + offsetMinutes * 60000);
+  return {
+    date: `${shifted.getUTCFullYear()}-${String(shifted.getUTCMonth() + 1).padStart(2, "0")}-${String(shifted.getUTCDate()).padStart(2, "0")}`,
+    time: `${String(shifted.getUTCHours()).padStart(2, "0")}:${String(shifted.getUTCMinutes()).padStart(2, "0")}`
+  };
+}
+
 function localDateTimeInZoneToInstant(dateKey, time, timeZoneId) {
   if (!isValidDateKey(dateKey) || !isValidTime(time) || !isValidTimeZoneId(timeZoneId)) {
     return null;
@@ -151,4 +169,58 @@ export function isValidIsoTimestamp(value) {
     return false;
   }
   return !Number.isNaN(new Date(value).getTime());
+}
+
+/**
+ * Verifica se os quatro campos temporais descrevem o mesmo horário civil e instante.
+ * Em horários repetidos pelo DST, um offset explícito é aceito quando o instante
+ * resultante também representa o mesmo horário na zona IANA.
+ */
+export function assessTemporalConsistency({
+  date,
+  time = "08:00",
+  timestamp,
+  zoneOffset = null,
+  timeZoneId = null
+} = {}) {
+  const errors = [];
+  if (!isValidDateKey(String(date || ""))) errors.push("INVALID_DATE");
+  if (!isValidTime(String(time || ""))) errors.push("INVALID_TIME");
+  if (!isValidIsoTimestamp(String(timestamp || ""))) errors.push("INVALID_TIMESTAMP");
+  if (zoneOffset && !isValidZoneOffset(String(zoneOffset))) errors.push("INVALID_ZONE_OFFSET");
+  if (timeZoneId && !isValidTimeZoneId(String(timeZoneId))) errors.push("INVALID_TIME_ZONE");
+  if (errors.length > 0) return { valid: false, status: "needs_review", errors };
+
+  const instantMs = new Date(timestamp).getTime();
+  const expectedDate = String(date);
+  const expectedTime = String(time);
+
+  if (zoneOffset) {
+    const wall = wallTimeForInstantAndOffset(instantMs, String(zoneOffset));
+    if (!wall || wall.date !== expectedDate || wall.time !== expectedTime) {
+      errors.push("TIMESTAMP_OFFSET_MISMATCH");
+    }
+  }
+
+  if (timeZoneId) {
+    const wall = localPartsForInstant(instantMs, String(timeZoneId));
+    const zoneDate = `${wall.year}-${String(wall.month).padStart(2, "0")}-${String(wall.day).padStart(2, "0")}`;
+    const zoneTime = `${String(wall.hour).padStart(2, "0")}:${String(wall.minute).padStart(2, "0")}`;
+    if (zoneDate !== expectedDate || zoneTime !== expectedTime) {
+      errors.push("TIMESTAMP_TIME_ZONE_MISMATCH");
+    }
+    if (zoneOffset) {
+      const actualOffset = formatZoneOffset(offsetMinutesAtInstant(instantMs, String(timeZoneId)));
+      const normalizedOffset = zoneOffset === "Z" ? "+00:00" : String(zoneOffset);
+      if (actualOffset !== normalizedOffset) errors.push("TIME_ZONE_OFFSET_MISMATCH");
+    }
+  }
+
+  if (!zoneOffset && !timeZoneId) errors.push("MISSING_TIME_CONTEXT");
+
+  return {
+    valid: errors.length === 0,
+    status: errors.length === 0 ? "valid" : "needs_review",
+    errors
+  };
 }

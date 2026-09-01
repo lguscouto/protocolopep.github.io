@@ -478,10 +478,11 @@ export class StorageService {
     // P1 (CODEX v2.5.0 Item 7): Tombstone baseado estritamente em ownership, NÃO bloqueado por source.
     // Registros PEP reimportados (source: "health_connect", ownership: "pep") devem gerar tombstone ao serem excluídos.
     const isPepOwnership = target && target.ownership === "pep" && (target.dataOrigin === "com.protocolopep.app" || !target.dataOrigin);
-    if (isPepOwnership && target.weightKg !== null && target.weightKg !== undefined) {
+    const hasRemoteIdentity = Boolean(target?.clientRecordId || target?.healthConnectRecordId);
+    if (isPepOwnership && hasRemoteIdentity && target.weightKg !== null && target.weightKg !== undefined) {
       this.addTombstone({
         id: target.id,
-        clientRecordId: target.clientRecordId || target.id,
+        clientRecordId: target.clientRecordId || null,
         healthConnectRecordId: target.healthConnectRecordId || null,
         ownership: "pep",
         dataOrigin: "com.protocolopep.app",
@@ -530,7 +531,11 @@ export class StorageService {
   clearTombstones(idsToClear = []) {
     if (!Array.isArray(idsToClear) || idsToClear.length === 0) return;
     const set = new Set(idsToClear);
-    this.tombstones = this.tombstones.filter((t) => !set.has(t.id) && !set.has(t.clientRecordId));
+    this.tombstones = this.tombstones.filter((t) =>
+      !set.has(t.id) &&
+      !set.has(t.clientRecordId) &&
+      !set.has(t.healthConnectRecordId)
+    );
     this.saveTombstones();
   }
 

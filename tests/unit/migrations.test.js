@@ -116,18 +116,45 @@ describe("Migrations Domain", () => {
       ],
       healthConnectState: {
         hiddenMeasurementIds: ["hc-1", "hc-1"],
-        tombstones: [{ id: "m-deleted", clientRecordId: "m-deleted", ownership: "pep" }]
+        tombstones: [
+          { id: "m-deleted", clientRecordId: "m-deleted", ownership: "pep" },
+          { id: "m-native-only", healthConnectRecordId: "hc-native-only", ownership: "pep" }
+        ]
       }
     });
 
     expect(v6.version).toBe(6);
     expect(v6.measurements.map((m) => m.ownership)).toEqual(["pep", "external", "external", "pep"]);
     expect(v6.healthConnectState.hiddenMeasurementIds).toEqual(["hc-1"]);
-    expect(v6.healthConnectState.tombstones).toHaveLength(1);
+    expect(v6.healthConnectState.tombstones).toHaveLength(2);
+    expect(v6.healthConnectState.tombstones[1].clientRecordId).toBeNull();
   });
 
   it("CURRENT_SCHEMA_VERSION é 6", () => {
     expect(CURRENT_SCHEMA_VERSION).toBe(6);
+  });
+
+  it("V5→V6 recalcula campos pela zona IANA e marca contradição sem contexto", () => {
+    const migrated = migrateAppState({
+      version: 5,
+      measurements: [
+        {
+          id: "with-zone", date: "2026-07-15", time: "08:00", weightKg: 80,
+          timestamp: "2026-07-15T13:00:00.000Z", zoneOffset: "-05:00",
+          timeZoneId: "America/New_York"
+        },
+        {
+          id: "contradictory", date: "2026-08-29", time: "09:00", weightKg: 79,
+          timestamp: "2026-08-29T11:00:00.000Z", zoneOffset: "-03:00"
+        }
+      ]
+    });
+    expect(migrated.measurements[0]).toMatchObject({
+      timestamp: "2026-07-15T12:00:00.000Z",
+      zoneOffset: "-04:00",
+      temporalIntegrity: "valid"
+    });
+    expect(migrated.measurements[1].temporalIntegrity).toBe("needs_review");
   });
 
   it("migrateAppState inclui V6 no pipeline completo", () => {

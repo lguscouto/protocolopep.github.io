@@ -10,6 +10,7 @@
 
 import { isValidDateKey, isValidTime } from "./schedule.js";
 import {
+  assessTemporalConsistency,
   getSystemTimeZoneId,
   getZoneOffsetForLocalDateTime,
   isValidIsoTimestamp,
@@ -132,7 +133,10 @@ export function createMeasurementEntry({
   timeZoneId = null,
   timestamp = null,
   createdAt = null,
-  updatedAt = null
+  updatedAt = null,
+  temporalIntegrity = null,
+  healthConnectLastModifiedTime = null,
+  syncConflict = null
 }) {
   const hasExplicitDate = date !== undefined && date !== null;
   const hasExplicitTime = time !== undefined && time !== null;
@@ -208,7 +212,12 @@ export function createMeasurementEntry({
       ? getZoneOffsetForLocalDateTime(cleanDate, cleanTime, cleanTimeZoneId)
       : null);
 
-  const explicitTimestamp = requireValidInstant(timestamp, "timestamp");
+  let explicitTimestamp = null;
+  if (temporalIntegrity === "needs_review" && timestamp && !isValidIsoTimestamp(String(timestamp))) {
+    explicitTimestamp = String(timestamp);
+  } else {
+    explicitTimestamp = requireValidInstant(timestamp, "timestamp");
+  }
   const cleanTimestamp = explicitTimestamp || localDateTimeToIso(
     cleanDate,
     cleanTime,
@@ -219,6 +228,24 @@ export function createMeasurementEntry({
     throw new MeasurementValidationError(
       "INVALID_LOCAL_DATE_TIME",
       "A data e o horário não representam um instante válido no contexto de fuso informado."
+    );
+  }
+
+  const temporalAssessment = assessTemporalConsistency({
+    date: cleanDate,
+    time: cleanTime,
+    timestamp: cleanTimestamp,
+    zoneOffset: cleanZoneOffset,
+    timeZoneId: cleanTimeZoneId
+  });
+  const allowTemporalReview = temporalIntegrity === "needs_review" || (
+    source === "health_connect" && !cleanZoneOffset && !cleanTimeZoneId
+  );
+  const cleanTemporalIntegrity = temporalAssessment.valid ? "valid" : "needs_review";
+  if (!temporalAssessment.valid && !allowTemporalReview) {
+    throw new MeasurementValidationError(
+      "TEMPORAL_INCONSISTENCY",
+      `Campos temporais inconsistentes: ${temporalAssessment.errors.join(", ")}.`
     );
   }
 
@@ -250,6 +277,14 @@ export function createMeasurementEntry({
     zoneOffset: cleanZoneOffset,
     timeZoneId: cleanTimeZoneId,
     timestamp: cleanTimestamp,
+    temporalIntegrity: cleanTemporalIntegrity,
+    healthConnectLastModifiedTime: requireValidInstant(
+      healthConnectLastModifiedTime,
+      "healthConnectLastModifiedTime"
+    ),
+    syncConflict: syncConflict && typeof syncConflict === "object"
+      ? { ...syncConflict }
+      : null,
     createdAt: cleanCreatedAt,
     updatedAt: cleanUpdatedAt
   };
@@ -297,6 +332,10 @@ export function validateMeasurementEntry(entry) {
 
   if (entry.symptoms && !Array.isArray(entry.symptoms)) {
     errors.push("A lista de sintomas deve ser um array.");
+  }
+  const temporalAssessment = assessTemporalConsistency(entry);
+  if (!temporalAssessment.valid && entry.temporalIntegrity !== "needs_review") {
+    errors.push(`Campos temporais inconsistentes: ${temporalAssessment.errors.join(", ")}.`);
   }
 
   return {
@@ -453,6 +492,9 @@ export function haveMeasurementsChanged(oldList = [], newList = []) {
     clientRecordVersion: entry?.clientRecordVersion ?? null,
     healthConnectRecordId: entry?.healthConnectRecordId || null,
     dataOrigin: entry?.dataOrigin || null,
+    temporalIntegrity: entry?.temporalIntegrity || null,
+    healthConnectLastModifiedTime: entry?.healthConnectLastModifiedTime || null,
+    syncConflict: entry?.syncConflict || null,
     createdAt: entry?.createdAt || null,
     updatedAt: entry?.updatedAt || null
   });

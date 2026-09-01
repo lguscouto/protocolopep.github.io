@@ -1,6 +1,7 @@
 import { isValidDateKey, isValidTime } from "./schedule.js";
 import { haveMeasurementsChanged } from "./measurements.js";
 import {
+  assessTemporalConsistency,
   isValidIsoTimestamp,
   isValidZoneOffset,
   localDateTimeToIso
@@ -143,6 +144,7 @@ export function mapMeasurementToHealthRecord(measurement) {
   if (measurement.ownership === "external") {
     return null;
   }
+  if (measurement.temporalIntegrity === "needs_review") return null;
 
   const { weightKg, date, time, id, syncVersion, clientRecordVersion, timestamp, zoneOffset, timeZoneId } = measurement;
   if (weightKg === null || weightKg === undefined || weightKg === "") return null;
@@ -174,6 +176,13 @@ export function mapMeasurementToHealthRecord(measurement) {
   }
 
   if (!isoTime) return null;
+  if ((zoneOffset || timeZoneId) && !assessTemporalConsistency({
+    date: String(date),
+    time: cleanTime,
+    timestamp: isoTime,
+    zoneOffset: zoneOffset || null,
+    timeZoneId: timeZoneId || null
+  }).valid) return null;
 
   const recordId = id ? String(id) : `m_${date}_${cleanTime.replace(":", "")}`;
   const version = Math.max(1, parseInt(clientRecordVersion || syncVersion, 10) || 1);
@@ -233,13 +242,14 @@ export function mapHealthRecordToMeasurement(record) {
     return null; // Rejeição estrita de registros sem data válida
   }
 
-  const resolvedTimestamp = timeSource || localDateTimeToIso(
+  const rawResolvedTimestamp = timeSource || localDateTimeToIso(
     dateStr,
     timeStr,
     isValidZoneOffset(record.zoneOffset) ? record.zoneOffset : null,
     record.timeZoneId || null
   );
-  if (!resolvedTimestamp || !isValidIsoTimestamp(resolvedTimestamp)) return null;
+  if (!rawResolvedTimestamp || !isValidIsoTimestamp(rawResolvedTimestamp)) return null;
+  const resolvedTimestamp = new Date(rawResolvedTimestamp).toISOString();
 
   const hcRecId = record.healthConnectRecordId || record.metadataId || record.id || "";
   const clientRecId = record.clientRecordId || "";
@@ -254,6 +264,16 @@ export function mapHealthRecordToMeasurement(record) {
 
   const importedAt = new Date().toISOString();
   const remoteVersion = Math.max(1, parseInt(record.clientRecordVersion, 10) || 1);
+  const healthConnectLastModifiedTime = isValidIsoTimestamp(record.lastModifiedTime)
+    ? new Date(record.lastModifiedTime).toISOString()
+    : null;
+  const temporalIntegrity = assessTemporalConsistency({
+    date: dateStr,
+    time: timeStr,
+    timestamp: resolvedTimestamp,
+    zoneOffset: record.zoneOffset || null,
+    timeZoneId: record.timeZoneId || null
+  }).status;
 
   return {
     id: resolvedId,
@@ -275,9 +295,63 @@ export function mapHealthRecordToMeasurement(record) {
     timeZoneId: record.timeZoneId || null,
     // P0 (CODEX v2.5.0): timestamp = instante histórico do Health Connect
     timestamp: resolvedTimestamp,
+    temporalIntegrity,
+    healthConnectLastModifiedTime,
+    syncConflict: null,
     // createdAt local = momento em que o registro entrou no PEP.
     createdAt: importedAt,
     updatedAt: importedAt
+  };
+}
+
+const SYNC_FIELDS = Object.freeze([
+  "date",
+  "time",
+  "timestamp",
+  "zoneOffset",
+  "timeZoneId",
+  "weightKg"
+]);
+
+function syncVersionOf(entry) {
+  return Math.max(
+    1,
+    parseInt(entry?.syncVersion, 10) || 1,
+    parseInt(entry?.clientRecordVersion, 10) || 1
+  );
+}
+
+function synchronizedContentMatches(left, right) {
+  return SYNC_FIELDS.every((field) => (left?.[field] ?? null) === (right?.[field] ?? null));
+}
+
+function validInstantMs(value) {
+  return isValidIsoTimestamp(value) ? new Date(value).getTime() : null;
+}
+
+function remoteAuthoritativePep(existing, parsed, matchedId) {
+  const remoteVersion = syncVersionOf(parsed);
+  return {
+    ...existing,
+    id: matchedId,
+    date: parsed.date,
+    time: parsed.time,
+    timestamp: parsed.timestamp,
+    zoneOffset: parsed.zoneOffset,
+    timeZoneId: parsed.timeZoneId,
+    weightKg: parsed.weightKg,
+    source: "health_connect",
+    ownership: "pep",
+    healthConnectRecordId: parsed.healthConnectRecordId || existing.healthConnectRecordId || null,
+    clientRecordId: parsed.clientRecordId || existing.clientRecordId || matchedId,
+    clientRecordVersion: remoteVersion,
+    syncVersion: remoteVersion,
+    dataOrigin: parsed.dataOrigin || existing.dataOrigin || "com.protocolopep.app",
+    temporalIntegrity: parsed.temporalIntegrity,
+    healthConnectLastModifiedTime: parsed.healthConnectLastModifiedTime,
+    syncConflict: null,
+    createdAt: existing.createdAt || parsed.createdAt,
+    updatedAt: parsed.healthConnectLastModifiedTime || existing.updatedAt || existing.createdAt || parsed.createdAt
   };
 }
 
@@ -353,6 +427,9 @@ export function mergeHealthMeasurements(localMeasurements = [], importedRecords 
           clientRecordVersion: parsed.clientRecordVersion,
           syncVersion: parsed.syncVersion,
           dataOrigin: parsed.dataOrigin,
+          temporalIntegrity: parsed.temporalIntegrity,
+          healthConnectLastModifiedTime: parsed.healthConnectLastModifiedTime,
+          syncConflict: null,
           createdAt: existing.createdAt || parsed.createdAt,
           updatedAt: existing.updatedAt || existing.createdAt || parsed.createdAt
         };
@@ -365,18 +442,45 @@ export function mergeHealthMeasurements(localMeasurements = [], importedRecords 
           updatedAt: changedRemotely ? new Date().toISOString() : remoteAuthoritative.updatedAt
         });
       } else {
-        // Registros do PEP preservam conteúdo local e apenas recebem identidade remota.
-        resultMap.set(matchedId, {
+        const localVersion = syncVersionOf(existing);
+        const remoteVersion = syncVersionOf(parsed);
+        const linkedLocal = {
           ...existing,
           healthConnectRecordId: parsed.healthConnectRecordId || existing.healthConnectRecordId,
           clientRecordId: parsed.clientRecordId || existing.clientRecordId,
-          clientRecordVersion: parsed.clientRecordVersion || existing.clientRecordVersion,
           dataOrigin: parsed.dataOrigin || existing.dataOrigin,
-          zoneOffset: existing.zoneOffset || parsed.zoneOffset,
-          timeZoneId: existing.timeZoneId || parsed.timeZoneId,
+          healthConnectLastModifiedTime: parsed.healthConnectLastModifiedTime || existing.healthConnectLastModifiedTime || null,
           createdAt: existing.createdAt || parsed.createdAt,
           updatedAt: existing.updatedAt || existing.createdAt || parsed.createdAt
-        });
+        };
+
+        if (remoteVersion > localVersion) {
+          resultMap.set(matchedId, remoteAuthoritativePep(existing, parsed, matchedId));
+        } else if (localVersion > remoteVersion) {
+          resultMap.set(matchedId, linkedLocal);
+        } else if (synchronizedContentMatches(existing, parsed)) {
+          resultMap.set(matchedId, { ...linkedLocal, syncConflict: null });
+        } else {
+          const remoteModified = validInstantMs(parsed.healthConnectLastModifiedTime);
+          const localModified = validInstantMs(existing.updatedAt);
+          if (remoteModified !== null && (localModified === null || remoteModified > localModified)) {
+            resultMap.set(matchedId, remoteAuthoritativePep(existing, parsed, matchedId));
+          } else if (localModified !== null && remoteModified !== null && localModified > remoteModified) {
+            resultMap.set(matchedId, { ...linkedLocal, syncConflict: null });
+          } else {
+            resultMap.set(matchedId, {
+              ...linkedLocal,
+              syncConflict: {
+                status: "needs_review",
+                reason: "EQUAL_VERSION_DIVERGENT_CONTENT",
+                localVersion,
+                remoteVersion,
+                localUpdatedAt: existing.updatedAt || null,
+                remoteLastModifiedTime: parsed.healthConnectLastModifiedTime || null
+              }
+            });
+          }
+        }
       }
     } else {
       resultMap.set(parsed.id, parsed);

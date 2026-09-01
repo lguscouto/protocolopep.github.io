@@ -116,7 +116,7 @@ describe("Storage Service", () => {
     expect(unchanged.entry.syncVersion).toBe(2); // Não deve incrementar para 3
   });
 
-  it("registra tombstone ao excluir uma medição local do PEP com peso", () => {
+  it("não fabrica tombstone remoto ao excluir uma medição local ainda não sincronizada", () => {
     storageInstance.init();
     storageInstance.addMeasurement({
       id: "m_to_delete",
@@ -132,12 +132,6 @@ describe("Storage Service", () => {
     const delRes = storageInstance.deleteMeasurement("m_to_delete");
     expect(delRes.success).toBe(true);
 
-    const tombstones = storageInstance.getTombstones();
-    expect(tombstones).toHaveLength(1);
-    expect(tombstones[0].id).toBe("m_to_delete");
-
-    // Limpar tombstones após sincronização
-    storageInstance.clearTombstones(["m_to_delete"]);
     expect(storageInstance.getTombstones()).toHaveLength(0);
   });
 
@@ -364,6 +358,28 @@ describe("Storage Service", () => {
       expect(tombstones).toHaveLength(1);
       expect(tombstones[0].id).toBe("m_reimported_pep");
       expect(tombstones[0].clientRecordId).toBe("m_reimported_pep");
+    });
+
+    it("registra tombstone por healthConnectRecordId sem fabricar clientRecordId", () => {
+      storageInstance.init();
+      const added = storageInstance.addMeasurement({
+        id: "m_hc_id_only",
+        clientRecordId: null,
+        healthConnectRecordId: "hc-native-only",
+        date: "2026-08-29",
+        time: "08:00",
+        weightKg: 82,
+        source: "health_connect",
+        ownership: "pep",
+        dataOrigin: "com.protocolopep.app"
+      });
+      expect(added.success).toBe(true);
+      expect(storageInstance.deleteMeasurement("m_hc_id_only").success).toBe(true);
+      expect(storageInstance.getTombstones()[0]).toMatchObject({
+        id: "m_hc_id_only",
+        clientRecordId: null,
+        healthConnectRecordId: "hc-native-only"
+      });
     });
 
     it("Item 14: deleteMeasurement em registro externo adiciona aos hiddenMeasurementIds", () => {

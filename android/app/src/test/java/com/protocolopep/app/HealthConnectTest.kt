@@ -49,6 +49,7 @@ class HealthConnectTest {
         assertEquals("08:00", payload.localTime)
         assertEquals("-03:00", payload.zoneOffset)
         assertEquals("2026-08-29T11:00:00Z", payload.timestamp)
+        assertEquals(record.metadata.lastModifiedTime.toString(), payload.lastModifiedTime)
     }
 
     @Test
@@ -114,8 +115,22 @@ class HealthConnectTest {
         )
         val stored = client.readRecords(request).records
         assertEquals(1, stored.size)
-        assertEquals(79.5, stored.single().weight.inKilograms, 0.001)
-        assertEquals(2L, stored.single().metadata.clientRecordVersion)
+        val storedRecord = stored.single()
+        assertEquals(79.5, storedRecord.weight.inKilograms, 0.001)
+        assertEquals(2L, storedRecord.metadata.clientRecordVersion)
+        assertEquals(
+            storedRecord.metadata.lastModifiedTime.toString(),
+            PepHealthConnectMapper.toPayload(storedRecord).lastModifiedTime
+        )
+
+        client.deleteRecords(
+            WeightRecord::class,
+            recordIdsList = listOf(storedRecord.metadata.id),
+            clientRecordIdsList = emptyList()
+        )
+        assertTrue(client.readRecords(request).records.isEmpty())
+
+        client.insertRecords(listOf(version2))
 
         client.deleteRecords(
             WeightRecord::class,
