@@ -112,6 +112,16 @@ export const en = {
     emptyDesc: "Confirmed or registered applications will appear here in chronological order.",
     exportReport: "Export Report PDF / CSV"
   },
+  inventory: {
+    emptyTitle: "Your inventory starts here",
+    emptyDesc: "Add a reconstituted vial to track its remaining balance and expiration on this device.",
+    addVial: "Add vial"
+  },
+  measurements: {
+    emptyTitle: "Record your first check-in",
+    emptyDesc: "Weight, symptoms, and notes stay organized in a personal history.",
+    addEntry: "Record measurements"
+  },
   calculator: {
     title: "Reconstitution Calculator",
     subtitle: "Safely calculate dilution and syringe unit dosage",
@@ -208,6 +218,8 @@ export const en = {
     safety: "Safety & Regulatory Notes",
     scientificReferences: "Scientific References (PubMed)",
     noResults: "No compounds found for your search query.",
+    emptyTitle: "No results here",
+    emptyDesc: "Try another term or remove the filter to explore the research base.",
     disclaimer: "Strictly educational and scientific content. PEP Protocol does not recommend or prescribe therapeutic dosages.",
     favoriteBtn: "Favorite Compound",
     unfavoriteBtn: "Remove from Favorites",

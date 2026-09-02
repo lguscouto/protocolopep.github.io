@@ -63,10 +63,17 @@ Evoluir o Protocolo PEP de uma interface predominantemente utilitária para uma 
 - Estados vazios agora explicam o próximo passo sem parecer uma tela quebrada.
 - A hierarquia visual continua factual: o componente apenas organiza registros e agenda local; não indica conduta clínica.
 
+## Quarta entrega implementada — estados vazios ilustrados
+
+- Inventário, medidas e pesquisa passaram a usar ilustrações raster compactas, originais e armazenadas localmente no app.
+- Cada estado mantém a informação principal em texto, usa `alt` vazio para não duplicar a mensagem e ocupa pouco espaço vertical.
+- Inventário e medidas oferecem uma ação direta para iniciar o primeiro registro; a pesquisa orienta a refinar o termo ou filtro.
+- Os textos dos estados foram adicionados aos três idiomas suportados, sem dependência de rede ou conteúdo clínico prescritivo.
+
 ## Próximas prioridades visuais
 
 1. ~~Redesenhar o dashboard para destacar “próxima ação” e reduzir o peso dos avisos legais repetidos.~~ Concluído.
 2. ~~Transformar histórico e semana em uma linha do tempo mais visual.~~ Concluído.
-3. Criar estados vazios ilustrados menores para inventário, medidas e pesquisa.
+3. ~~Criar estados vazios ilustrados menores para inventário, medidas e pesquisa.~~ Concluído.
 4. Padronizar campos hoje definidos com estilos inline em componentes reutilizáveis.
 5. Preparar screenshots de loja próprios, com linguagem de benefício sem imitar a campanha do OzemPro.

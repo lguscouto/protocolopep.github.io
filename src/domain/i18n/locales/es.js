@@ -112,6 +112,16 @@ export const es = {
     emptyDesc: "Las aplicaciones confirmadas o registradas aparecerán aquí en orden cronológico.",
     exportReport: "Exportar Reporte PDF / CSV"
   },
+  inventory: {
+    emptyTitle: "Tu inventario comienza aquí",
+    emptyDesc: "Añade un vial reconstituido para seguir el saldo y la caducidad en este dispositivo.",
+    addVial: "Añadir vial"
+  },
+  measurements: {
+    emptyTitle: "Registra tu primer seguimiento",
+    emptyDesc: "Peso, síntomas y observaciones quedan organizados en un historial personal.",
+    addEntry: "Registrar medidas"
+  },
   calculator: {
     title: "Calculadora de Reconstitución",
     subtitle: "Calcula con seguridad la dilución y dosificación en jeringa",
@@ -208,6 +218,8 @@ export const es = {
     safety: "Notas de Seguridad y Evidencia",
     scientificReferences: "Referencias Científicas (PubMed)",
     noResults: "No se encontraron compuestos para el término buscado.",
+    emptyTitle: "No hay resultados aquí",
+    emptyDesc: "Prueba otro término o quita el filtro para explorar la base.",
     disclaimer: "Contenido estrictamente educativo y científico. Protocolo PEP no recomienda ni prescribe dosis terapéuticas.",
     favoriteBtn: "Marcar como Favorito",
     unfavoriteBtn: "Quitar de Favoritos",

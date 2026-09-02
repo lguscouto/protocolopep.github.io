@@ -14,6 +14,7 @@ import {
 } from "../domain/inventory.js";
 import { haptics } from "../services/haptics.js";
 import { dialogService } from "../services/dialog.js";
+import { i18nService } from "../services/i18n.js";
 
 export function setupInventoryUI({ storage, onInventoryChange }) {
   const vialModal = document.getElementById("vial-modal");
@@ -148,14 +149,12 @@ export function setupInventoryUI({ storage, onInventoryChange }) {
 
     if (inventory.length === 0) {
       inventoryListEl.innerHTML = `
-        <div style="text-align:center;padding:24px 16px;background:var(--surface);border-radius:14px;border:1px dashed var(--border);margin-top:12px;">
-          <div style="font-size:26px;margin-bottom:6px;">🧪</div>
-          <div style="font-weight:700;font-size:14px;color:var(--text);margin-bottom:4px;">Nenhum frasco no inventário</div>
-          <div style="font-size:12px;color:var(--text-muted);max-width:280px;margin:0 auto 12px;">
-            Cadastre seus frascos reconstituídos para acompanhar saldo em tempo real e validade.
-          </div>
-          <button type="button" class="btn-primary" id="empty-add-vial-btn" style="font-size:12px;padding:8px 16px;">
-            + Adicionar Frasco
+        <div class="empty-state-illustrated empty-state-illustrated--inventory">
+          <img class="empty-state-illustration" src="/assets/illustrations/empty-inventory.png" alt="" aria-hidden="true">
+          <div class="empty-state-title">${escapeHtml(i18nService.t("inventory.emptyTitle"))}</div>
+          <div class="empty-state-description">${escapeHtml(i18nService.t("inventory.emptyDesc"))}</div>
+          <button type="button" class="btn-primary empty-state-action" id="empty-add-vial-btn">
+            + ${escapeHtml(i18nService.t("inventory.addVial"))}
           </button>
         </div>
       `;

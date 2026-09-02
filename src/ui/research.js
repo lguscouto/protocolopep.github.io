@@ -75,9 +75,10 @@ export function setupResearchUI({
 
     if (compounds.length === 0) {
       resultsContainer.innerHTML = `
-        <div class="empty-note" style="padding:32px 16px;text-align:center;">
-          <span style="font-size:28px;display:block;margin-bottom:8px;">🔍</span>
-          ${esc(i18nService.t("research.noResults"))}
+        <div class="empty-state-illustrated empty-state-illustrated--research">
+          <img class="empty-state-illustration" src="/assets/illustrations/empty-research.png" alt="" aria-hidden="true">
+          <div class="empty-state-title">${esc(i18nService.t("research.emptyTitle"))}</div>
+          <div class="empty-state-description">${esc(i18nService.t("research.emptyDesc"))}</div>
         </div>
       `;
       return;

@@ -112,6 +112,16 @@ export const ptBR = {
     emptyDesc: "As aplicações confirmadas ou registradas aparecerão aqui em ordem cronológica.",
     exportReport: "Exportar Relatório PDF / CSV"
   },
+  inventory: {
+    emptyTitle: "Seu inventário começa aqui",
+    emptyDesc: "Cadastre um frasco reconstituído para acompanhar saldo e validade neste aparelho.",
+    addVial: "Adicionar frasco"
+  },
+  measurements: {
+    emptyTitle: "Registre seu primeiro acompanhamento",
+    emptyDesc: "Peso, sintomas e observações ficam organizados em um histórico pessoal.",
+    addEntry: "Registrar medidas"
+  },
   calculator: {
     title: "Calculadora de Reconstituição",
     subtitle: "Calcule com segurança a diluição e dosagem da seringa",
@@ -208,6 +218,8 @@ export const ptBR = {
     safety: "Notas de Segurança & Evidência",
     scientificReferences: "Referências Científicas (PubMed)",
     noResults: "Nenhum composto encontrado para o termo pesquisado.",
+    emptyTitle: "Nenhum resultado por aqui",
+    emptyDesc: "Tente outro termo ou remova o filtro para explorar a base.",
     disclaimer: "Conteúdo estritamente educacional e científico. O Protocolo PEP não recomenda nem prescreve dosagens terapêuticas.",
     favoriteBtn: "Favoritar Composto",
     unfavoriteBtn: "Remover dos Favoritos",

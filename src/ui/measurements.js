@@ -18,6 +18,7 @@ import {
 import { escapeHtml, sanitizeId } from "./dom.js";
 import { haptics } from "../services/haptics.js";
 import { dialogService } from "../services/dialog.js";
+import { i18nService } from "../services/i18n.js";
 
 const esc = escapeHtml;
 
@@ -152,10 +153,16 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
 
     if (stats.totalEntries === 0) {
       trendSummaryEl.innerHTML = `
-        <div style="padding:16px;text-align:center;color:var(--muted);font-size:13px;background:var(--card-bg);border:1px solid var(--border);border-radius:12px;">
-          Nenhum registro de peso ou sintomas ainda.<br>
-          Toque em <b>+ Registrar Medidas / Sintomas</b> para iniciar seu histórico pessoal.
+        <div class="empty-state-illustrated empty-state-illustrated--measurements">
+          <img class="empty-state-illustration" src="/assets/illustrations/empty-measurements.png" alt="" aria-hidden="true">
+          <div class="empty-state-title">${esc(i18nService.t("measurements.emptyTitle"))}</div>
+          <div class="empty-state-description">${esc(i18nService.t("measurements.emptyDesc"))}</div>
+          <button type="button" class="btn-primary empty-state-action" id="empty-add-measurement-btn">
+            + ${esc(i18nService.t("measurements.addEntry"))}
+          </button>
         </div>`;
+      const emptyBtn = document.getElementById("empty-add-measurement-btn");
+      if (emptyBtn) emptyBtn.addEventListener("click", () => openMeasurementModal());
       return;
     }
 

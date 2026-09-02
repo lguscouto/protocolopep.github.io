@@ -426,6 +426,51 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     runtime.assertCleanRuntime();
   });
 
+  test("renderiza estados vazios ilustrados e compactos para inventário, medidas e pesquisa", async ({ page }) => {
+    const runtime = trackPageRuntime(page);
+    await seedStorage(page, {
+      skipOnboarding: true,
+      peptides: [{
+        id: "pep_empty_states",
+        name: "Composto de teste",
+        dose: "250 mcg",
+        ui: 10,
+        perDay: 1,
+        time: "08:00",
+        color: "#30D5C8",
+        days: null
+      }]
+    });
+
+    await page.goto("/");
+    await page.waitForLoadState("domcontentloaded");
+
+    await page.locator("#tab-settings").click();
+    const inventoryEmpty = page.locator("#inventory-list .empty-state-illustrated--inventory");
+    await expect(inventoryEmpty).toBeVisible();
+    await expect(inventoryEmpty.locator(".empty-state-title")).toContainText("Seu inventário começa aqui");
+    await expect(inventoryEmpty.locator("img")).toHaveAttribute("src", "/assets/illustrations/empty-inventory.png");
+    await expect.poll(() => inventoryEmpty.locator("img").evaluate((img) => img.complete && img.naturalWidth > 0)).toBe(true);
+
+    await page.locator("#tab-history").click();
+    const measurementsEmpty = page.locator("#measurements-trend-summary .empty-state-illustrated--measurements");
+    await expect(measurementsEmpty).toBeVisible();
+    await expect(measurementsEmpty.locator(".empty-state-title")).toContainText("Registre seu primeiro acompanhamento");
+    await expect(measurementsEmpty.locator("img")).toHaveAttribute("src", "/assets/illustrations/empty-measurements.png");
+    await expect.poll(() => measurementsEmpty.locator("img").evaluate((img) => img.complete && img.naturalWidth > 0)).toBe(true);
+
+    await page.locator("#tab-today").click();
+    await page.locator("#dash-research-btn").click();
+    await page.locator("#research-search-input").fill("termo-sem-resultado");
+    const researchEmpty = page.locator("#research-results-list .empty-state-illustrated--research");
+    await expect(researchEmpty).toBeVisible();
+    await expect(researchEmpty.locator(".empty-state-title")).toContainText("Nenhum resultado por aqui");
+    await expect(researchEmpty.locator("img")).toHaveAttribute("src", "/assets/illustrations/empty-research.png");
+    await expect.poll(() => researchEmpty.locator("img").evaluate((img) => img.complete && img.naturalWidth > 0)).toBe(true);
+
+    runtime.assertCleanRuntime();
+  });
+
   test("clique no botão de notificações abre modal com zero exceções ou erros de console", async ({ page }) => {
     const runtime = trackPageRuntime(page);
     await seedStorage(page, { skipOnboarding: true, peptides: [] });
