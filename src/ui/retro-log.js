@@ -5,6 +5,7 @@
 import { escapeHtml } from "./dom.js";
 import { getNextSite, getLastUsedSite } from "../domain/injection-sites.js";
 import { dialogService } from "../services/dialog.js";
+import { renderInjectionSitePicker } from "./injection-site-picker.js";
 
 const esc = escapeHtml;
 
@@ -23,6 +24,7 @@ export function openRetroLogModal(prefillDate = null, prefillPepId = null, { sto
 
   const pepSelect = document.getElementById("retro-pep-select");
   const siteSelect = document.getElementById("retro-site-select");
+  const sitePicker = document.getElementById("retro-site-picker");
   const dateInput = document.getElementById("retro-date-input");
   const timeInput = document.getElementById("retro-time-input");
   const doseInput = document.getElementById("retro-dose-input");
@@ -63,6 +65,14 @@ export function openRetroLogModal(prefillDate = null, prefillPepId = null, { sto
           <option value="">-- Não especificado --</option>
           ${configuredSites.map((s) => `<option value="${esc(s)}" ${s === nextSite ? "selected" : ""}>${esc(s)}</option>`).join("")}
         `;
+        renderInjectionSitePicker({
+          container: sitePicker,
+          select: siteSelect,
+          sites: configuredSites,
+          selectedSite: nextSite || "",
+          nextSite: nextSite || "",
+          lastSite: lastUsed?.site || ""
+        });
       }
     };
 

@@ -146,6 +146,87 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     runtime.assertCleanRuntime();
   });
 
+  test("registro de aplicação usa mapa visual acessível e preserva os demais locais", async ({ page }) => {
+    const runtime = trackPageRuntime(page);
+    const mockPeptides = [
+      {
+        id: "pep-visual",
+        name: "Composto Visual",
+        sub: "teste de interface",
+        dose: "250 mcg",
+        ui: 10,
+        perDay: 1,
+        time: "08:00",
+        color: "#30D5C8",
+        days: null
+      }
+    ];
+
+    await seedStorage(page, { skipOnboarding: true, peptides: mockPeptides });
+    await page.goto("/");
+    await page.waitForLoadState("domcontentloaded");
+
+    await page.locator("#tab-history").click();
+    await page.locator("#hist-retro-btn").click();
+
+    const modal = page.locator("#retro-log-modal");
+    await expect(modal).toHaveClass(/on/);
+    await expect(page.locator(".injection-site-map")).toBeVisible();
+    await expect(page.locator(".injection-site-point")).toHaveCount(2);
+    await expect(page.locator(".injection-site-chip")).toHaveCount(4);
+    await expect(page.locator(".injection-site-disclaimer")).toContainText("não avalia a pele");
+    // Aguarda a transição de tema já usada pelos demais testes de contraste.
+    await page.waitForTimeout(400);
+
+    const mapAccessibility = await new AxeBuilder({ page })
+      .include("#retro-log-modal")
+      .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+      .analyze();
+    expect(mapAccessibility.violations).toEqual([]);
+
+    const rightAbdomen = page.getByRole("button", { name: "Selecionar Abdômen (Direito)", exact: true });
+    const leftAbdomen = page.getByRole("button", { name: "Selecionar Abdômen (Esquerdo)", exact: true });
+    await expect(rightAbdomen).toHaveAttribute("aria-pressed", "true");
+
+    const pointBox = await rightAbdomen.boundingBox();
+    expect(pointBox?.width).toBeGreaterThanOrEqual(44);
+    expect(pointBox?.height).toBeGreaterThanOrEqual(44);
+
+    await leftAbdomen.click();
+    await expect(leftAbdomen).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator("#retro-site-select")).toHaveValue("Abdômen (Esquerdo)");
+
+    runtime.assertCleanRuntime();
+  });
+
+  test("onboarding carrega as três ilustrações locais sem erro", async ({ page }) => {
+    const runtime = trackPageRuntime(page);
+    await seedStorage(page, { skipOnboarding: false, peptides: [] });
+
+    await page.goto("/");
+    await page.waitForLoadState("domcontentloaded");
+
+    const onboardingAccessibility = await new AxeBuilder({ page })
+      .include("#onboarding-overlay")
+      .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+      .analyze();
+    expect(onboardingAccessibility.violations).toEqual([]);
+
+    for (let step = 0; step < 3; step++) {
+      const image = page.locator(".onboarding-art img");
+      await expect(image).toBeVisible();
+      await expect.poll(
+        () => image.evaluate((element) => element.complete ? element.naturalWidth : 0)
+      ).toBeGreaterThan(0);
+
+      if (step < 2) {
+        await page.locator("#onboarding-next").click();
+      }
+    }
+
+    runtime.assertCleanRuntime();
+  });
+
   test("calculadora calcula unidades U-100 e exibe bloco de conferencia dos dados", async ({ page }) => {
     const runtime = trackPageRuntime(page);
     await seedStorage(page, { skipOnboarding: true, peptides: [] });

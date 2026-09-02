@@ -9,6 +9,30 @@ import { escapeHtml } from "./dom.js";
 export const ONBOARDING_VERSION = "1";
 export const ONBOARDING_KEY = "pep_onboarding_version";
 
+export const ONBOARDING_SLIDES = Object.freeze([
+  Object.freeze({
+    image: "/assets/illustrations/onboarding-welcome.png",
+    imageAlt: "Ilustração amigável de organização e acompanhamento pessoal",
+    title: "Bem-vindo ao Protocolo PEP",
+    subtitle: "Acompanhamento e organização de protocolos",
+    content: "Uma ferramenta prática desenvolvida para facilitar o registro pessoal diário de aplicações e cálculos matemáticos de reconstituição de peptídeos."
+  }),
+  Object.freeze({
+    image: "/assets/illustrations/onboarding-private.png",
+    imageAlt: "Celular protegido por um escudo e cadeado",
+    title: "100% Local & Desconectado",
+    subtitle: "Privacidade e soberania dos seus dados",
+    content: "Nenhuma informação sai deste aparelho. O app não exige conta, não utiliza servidores em nuvem e não faz rastreamento. Você pode exportar e fazer backup dos seus dados quando desejar."
+  }),
+  Object.freeze({
+    image: "/assets/illustrations/onboarding-responsible.png",
+    imageAlt: "Calculadora, registro pessoal e balança representando uso responsável",
+    title: "Uso Pessoal & Não Prescrição",
+    subtitle: "Ferramenta matemática e de registro",
+    content: "O Protocolo PEP não realiza prescrições médicas nem indica dosagens terapêuticas. Todos os dados e cálculos inseridos são de sua responsabilidade exclusiva. Confirme doses e segurança com seu médico de confiança."
+  })
+]);
+
 export function shouldShowOnboarding() {
   try {
     const saved = localStorage.getItem(ONBOARDING_KEY);
@@ -32,26 +56,7 @@ export function showOnboarding({ onComplete, isReview = false } = {}) {
 
   let currentStep = 0;
 
-  const slides = [
-    {
-      icon: "🧪",
-      title: "Bem-vindo ao Protocolo PEP",
-      subtitle: "Acompanhamento e organização de protocolos",
-      content: "Uma ferramenta prática desenvolvida para facilitar o registro pessoal diário de aplicações e cálculos matemáticos de reconstituição de peptídeos."
-    },
-    {
-      icon: "🔒",
-      title: "100% Local & Desconectado",
-      subtitle: "Privacidade e soberania dos seus dados",
-      content: "Nenhuma informação sai deste aparelho. O app não exige conta, não utiliza servidores em nuvem e não faz rastreamento. Você pode exportar e fazer backup dos seus dados quando desejar."
-    },
-    {
-      icon: "⚖️",
-      title: "Uso Pessoal & Não Prescrição",
-      subtitle: "Ferramenta matemática e de registro",
-      content: "O Protocolo PEP não realiza prescrições médicas nem indica dosagens terapêuticas. Todos os dados e cálculos inseridos são de sua responsabilidade exclusiva. Confirme doses e segurança com seu médico de confiança."
-    }
-  ];
+  const slides = ONBOARDING_SLIDES;
 
   const overlay = document.createElement("div");
   overlay.id = "onboarding-overlay";
@@ -62,9 +67,11 @@ export function showOnboarding({ onComplete, isReview = false } = {}) {
     const isLast = currentStep === slides.length - 1;
 
     overlay.innerHTML = `
-      <div class="onboarding-card">
+      <div class="onboarding-card" aria-live="polite">
         <div class="onboarding-header">
-          <span class="onboarding-icon">${slide.icon}</span>
+          <div class="onboarding-art">
+            <img src="${escapeHtml(slide.image)}" alt="${escapeHtml(slide.imageAlt)}" decoding="async" />
+          </div>
           <div class="onboarding-title">${escapeHtml(slide.title)}</div>
           <div class="onboarding-sub">${escapeHtml(slide.subtitle)}</div>
         </div>

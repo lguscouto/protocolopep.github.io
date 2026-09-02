@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import {
   ONBOARDING_VERSION,
   ONBOARDING_KEY,
+  ONBOARDING_SLIDES,
   shouldShowOnboarding,
   markOnboardingAccepted
 } from "../../src/ui/onboarding.js";
@@ -37,5 +38,14 @@ describe("Onboarding & Termos de Uso (V01)", () => {
   it("deve manter versionamento canônico como string '1'", () => {
     expect(ONBOARDING_VERSION).toBe("1");
     expect(ONBOARDING_KEY).toBe("pep_onboarding_version");
+  });
+
+  it("deve usar ilustrações locais, acessíveis e sem dependência de rede", () => {
+    expect(ONBOARDING_SLIDES).toHaveLength(3);
+    for (const slide of ONBOARDING_SLIDES) {
+      expect(slide.image).toMatch(/^\/assets\/illustrations\/.+\.png$/);
+      expect(slide.imageAlt.length).toBeGreaterThan(12);
+      expect(slide.image).not.toMatch(/^https?:/);
+    }
   });
 });
