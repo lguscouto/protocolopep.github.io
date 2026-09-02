@@ -276,7 +276,7 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     runtime.assertCleanRuntime();
   });
 
-  test("semana renderiza tabela dentro de wrapper de rolagem com legenda e coluna fixa", async ({ page }) => {
+  test("semana renderiza linha do tempo visual com estados e ações preservadas", async ({ page }) => {
     const runtime = trackPageRuntime(page);
     const mockPeptides = [
       {
@@ -298,19 +298,99 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     const weekTab = page.locator("#tab-week, [data-tab='tab-week']");
     await weekTab.first().click();
 
-    // Wrapper de scroll deve existir
-    const scrollWrap = page.locator(".week-scroll");
-    await expect(scrollWrap).toBeVisible();
+    const timeline = page.locator(".week-timeline");
+    await expect(timeline).toBeVisible();
+    await expect(page.locator(".week-day")).toHaveCount(7);
+    await expect(page.locator(".week-day.is-today")).toHaveCount(1);
+    await expect(page.locator(".week-event-toggle")).toHaveCount(3);
+    await expect(page.locator(".week-event-edit")).toHaveCount(3);
 
-    // Tabela e legenda devem estar presentes
-    const table = page.locator("table.week-table");
-    await expect(table).toBeVisible();
-
-    const legend = page.locator(".week-legend");
+    const legend = page.locator(".timeline-legend");
     await expect(legend).toBeVisible();
     await expect(legend).toContainText("Aplicado");
     await expect(legend).toContainText("Pendente");
-    await expect(legend).toContainText("Não programado");
+    await expect(legend).toContainText("Dia sem aplicação");
+
+    const todayEvent = page.locator(".week-day.is-today .week-event-toggle").first();
+    if (await todayEvent.count() > 0) {
+      const eventBox = await todayEvent.boundingBox();
+      expect(eventBox?.height).toBeGreaterThanOrEqual(44);
+    }
+
+    const accessibilityScanResults = await new AxeBuilder({ page })
+      .include("#view-week")
+      .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+      .analyze();
+    expect(accessibilityScanResults.violations).toEqual([]);
+
+    runtime.assertCleanRuntime();
+  });
+
+  test("histórico organiza aplicações em linha do tempo por data", async ({ page }) => {
+    const runtime = trackPageRuntime(page);
+    const dateKey = (date) => {
+      const local = new Date(date);
+      local.setMinutes(local.getMinutes() - local.getTimezoneOffset());
+      return local.toISOString().slice(0, 10);
+    };
+    const today = new Date();
+    const todayKey = dateKey(today);
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayKey = dateKey(yesterday);
+    const mockPeptides = [{
+      id: "pep_history",
+      name: "Composto Histórico",
+      dose: "250 mcg",
+      ui: 10,
+      perDay: 1,
+      time: "08:00",
+      color: "#30D5C8",
+      days: null
+    }];
+    const logs = {
+      [yesterdayKey]: {
+        "pep_history": {
+          id: "history-yesterday",
+          peptideId: "pep_history",
+          scheduledDate: yesterdayKey,
+          time: "08:00",
+          dose: "250 mcg",
+          ui: 10,
+          site: "Abdômen (Direito)"
+        }
+      },
+      [todayKey]: {
+        "pep_history": [{
+          id: "history-today",
+          peptideId: "pep_history",
+          scheduledDate: todayKey,
+          time: "20:00",
+          dose: "250 mcg",
+          ui: 10,
+          site: "Coxa (Esquerda)"
+        }]
+      }
+    };
+
+    await seedStorage(page, { skipOnboarding: true, peptides: mockPeptides, logs });
+    await page.goto("/");
+    await page.waitForLoadState("domcontentloaded");
+    await page.locator("#tab-history").click();
+
+    await expect(page.locator(".history-timeline")).toBeVisible();
+    await expect(page.locator(".hist-day")).toHaveCount(2);
+    await expect(page.locator(".hist-day.is-today")).toHaveCount(1);
+    await expect(page.locator(".hist-item")).toHaveCount(2);
+    await expect(page.locator(".hist-item").first()).toContainText("Composto Histórico");
+    await expect(page.locator(".hist-item").first()).toContainText("📍");
+    await expect(page.locator(".hist-rm")).toHaveCount(2);
+
+    const accessibilityScanResults = await new AxeBuilder({ page })
+      .include("#view-history")
+      .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+      .analyze();
+    expect(accessibilityScanResults.violations).toEqual([]);
 
     runtime.assertCleanRuntime();
   });

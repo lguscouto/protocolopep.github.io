@@ -84,10 +84,27 @@ export const es = {
   week: {
     heading: "Visión Semanal",
     subheading: "Seguimiento y frecuencia de aplicaciones para los próximos 7 días",
-    dosesCount: "{count} aplicación(es) programada(s)"
+    timelineLabel: "Línea de tiempo de los próximos 7 días",
+    today: "Hoy",
+    dosesCount: "{count} aplicación(es) programada(s)",
+    dayCount: "{count} dosis",
+    dayProgress: "{taken} de {due} registradas",
+    applied: "Aplicada",
+    pending: "Pendiente",
+    record: "Registrar",
+    logged: "Registro",
+    restDay: "Sin aplicación",
+    legendLabel: "Leyenda de la línea de tiempo",
+    emptyTitle: "Tu semana comienza aquí",
+    emptyDesc: "Agrega un péptido al protocolo para ver las aplicaciones en orden cronológico."
   },
   history: {
     heading: "Historial de Aplicaciones",
+    timelineLabel: "Línea de tiempo de aplicaciones",
+    totalCount: "{count} registros guardados",
+    dosesCount: "{count} dosis",
+    retroactive: "Retroactiva",
+    deleteDose: "Eliminar dosis",
     filterAll: "Todos",
     filterConfirmed: "Confirmados",
     filterSkipped: "Omitidos",

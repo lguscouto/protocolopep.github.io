@@ -84,10 +84,27 @@ export const en = {
   week: {
     heading: "Weekly View",
     subheading: "Tracking and application schedule for the next 7 days",
-    dosesCount: "{count} scheduled application(s)"
+    timelineLabel: "Timeline for the next 7 days",
+    today: "Today",
+    dosesCount: "{count} scheduled application(s)",
+    dayCount: "{count} dose(s)",
+    dayProgress: "{taken} of {due} recorded",
+    applied: "Applied",
+    pending: "Pending",
+    record: "Record",
+    logged: "Log",
+    restDay: "No application",
+    legendLabel: "Timeline legend",
+    emptyTitle: "Your week starts here",
+    emptyDesc: "Add a peptide to your protocol to see applications in chronological order."
   },
   history: {
     heading: "Application History",
+    timelineLabel: "Application timeline",
+    totalCount: "{count} records logged",
+    dosesCount: "{count} dose(s)",
+    retroactive: "Retroactive",
+    deleteDose: "Delete dose",
     filterAll: "All",
     filterConfirmed: "Confirmed",
     filterSkipped: "Skipped",

@@ -10,7 +10,7 @@ import { theme } from "./services/theme.js";
 import { haptics } from "./services/haptics.js";
 import { notifications } from "./services/notifications.js";
 import { appBridge } from "./services/app-bridge.js";
-import { LIBRARY, PALETTE, DAY_FULL, DAY_W } from "./data/default-library.js";
+import { LIBRARY, PALETTE } from "./data/default-library.js";
 import { calculateReconstitution, convertDoseValue } from "./domain/calculator.js";
 import {
   dateToKey,
@@ -868,6 +868,18 @@ function undoSingleDose(id) {
   renderHistory();
 }
 
+function getTimelineDateParts(date) {
+  const locale = i18nService.getLocale();
+  const format = (options) => new Intl.DateTimeFormat(locale, options).format(date);
+  return {
+    dayNumber: format({ day: "2-digit" }),
+    monthShort: format({ month: "short" }).replace(/\.$/, ""),
+    weekdayShort: format({ weekday: "short" }).replace(/\.$/, ""),
+    weekdayLong: format({ weekday: "long" }),
+    fullDate: format({ day: "2-digit", month: "2-digit", year: "numeric" })
+  };
+}
+
 function renderWeek() {
   const container = document.getElementById("week-table-wrap") || document.getElementById("week-grid");
   if (!container) return;
@@ -875,101 +887,146 @@ function renderWeek() {
   const peptides = storage.getPeptides();
   const logs = storage.getLogs();
   const now = new Date();
-  const currentDow = now.getDay();
+  const todayKey = dateKey(now);
 
   const sunday = new Date(now);
-  sunday.setDate(now.getDate() - currentDow);
+  sunday.setHours(0, 0, 0, 0);
+  sunday.setDate(now.getDate() - now.getDay());
 
-  const weekDays = [];
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(sunday);
-    d.setDate(sunday.getDate() + i);
-    weekDays.push(d);
-  }
+  const weekDays = Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(sunday);
+    date.setDate(sunday.getDate() + index);
+    const dateKeyValue = dateKey(date);
+    const rec = logs[dateKeyValue] || {};
+    const entries = [];
 
-  let tableHtml = `
-    <div class="week-scroll">
-      <table class="week-table">
-        <thead>
-          <tr>
-            <th style="text-align:left;padding-left:8px;">Peptídeo</th>
-            ${weekDays.map((d, i) => `
-              <th class="${i === currentDow ? "today" : ""}">
-                <span class="dw">${DAY_W[i]}</span>
-                <span class="dn">${d.getDate()}</span>
-              </th>
-            `).join("")}
-          </tr>
-        </thead>
-        <tbody>`;
+    peptides.forEach((peptide) => {
+      const scheduled = isScheduledOnDate(peptide, date);
+      const taken = dosesTaken(rec, peptide.id);
+      if (!scheduled && taken === 0) return;
+
+      const due = scheduled ? Math.max(1, parseInt(peptide.perDay, 10) || 1) : Math.max(1, taken);
+      const recorded = Math.min(taken, due);
+      entries.push({
+        id: peptide.id,
+        name: peptide.name || i18nService.t("dashboard.genericCompound"),
+        accent: peptide.accent || peptide.color || "var(--primary)",
+        dose: peptide.dose || "",
+        ui: peptide.ui || 0,
+        time: peptide.time || (Array.isArray(peptide.times) && peptide.times[0]) || "08:00",
+        due,
+        recorded,
+        scheduled,
+        status: recorded >= due ? "done" : recorded > 0 ? "partial" : "pending"
+      });
+    });
+
+    entries.sort((a, b) => (a.time || "").localeCompare(b.time || "") || a.name.localeCompare(b.name));
+
+    return {
+      key: dateKeyValue,
+      date,
+      parts: getTimelineDateParts(date),
+      isToday: dateKeyValue === todayKey,
+      isPast: dateKeyValue < todayKey,
+      entries,
+      due: entries.reduce((sum, entry) => sum + (entry.scheduled ? entry.due : 0), 0),
+      recorded: entries.reduce((sum, entry) => sum + (entry.scheduled ? entry.recorded : 0), 0)
+    };
+  });
+
+  let html = `<div class="week-timeline"><div class="week-days" role="list" aria-label="${esc(i18nService.t("week.timelineLabel"))}">`;
 
   if (peptides.length === 0) {
-    tableHtml += `<tr><td colspan="8" class="empty-note">Nenhum peptídeo cadastrado no protocolo.</td></tr>`;
+    html += `
+      <div class="timeline-empty week-empty" role="listitem">
+        <div class="timeline-empty-icon" aria-hidden="true">✦</div>
+        <strong>${esc(i18nService.t("week.emptyTitle"))}</strong>
+        <p>${esc(i18nService.t("week.emptyDesc"))}</p>
+      </div>`;
   } else {
-    peptides.forEach((p) => {
-      tableHtml += `
-        <tr>
-          <td class="pep" data-id="${sanitizeId(p.id)}" style="color:${sanitizeColor(p.accent, "var(--primary)")};cursor:pointer;" title="Toque para editar ou excluir">${esc(p.name)}</td>
-          ${weekDays.map((d) => {
-            const dK = dateKey(d);
-            const isScheduled = isScheduledOnDate(p, d);
-            const rec = logs[dK] || {};
-            const taken = dosesTaken(rec, p.id) > 0;
+    weekDays.forEach((day) => {
+      const dayCount = day.entries.length;
+      const progress = day.due > 0
+        ? i18nService.t("week.dayProgress", { taken: day.recorded, due: day.due })
+        : i18nService.t("week.restDay");
+      const dayLabel = day.isToday ? i18nService.t("week.today") : day.parts.weekdayLong;
 
-            if (!isScheduled && !taken) {
-              return `<td class="${dK === dateKey(now) ? "col-today" : ""}"><span class="cell na" aria-label="Não programado">·</span></td>`;
-            }
-
-            return `
-              <td class="${dK === dateKey(now) ? "col-today" : ""}">
-                <span class="cell tap ${taken ? "" : "empty"}"
-                      data-pep="${sanitizeId(p.id)}"
-                      data-date="${sanitizeId(dK)}"
-                      role="button"
-                      tabindex="0"
-                      aria-label="${esc(p.name)} em ${fmtBR(dK)}: ${taken ? 'Dose aplicada' : 'Dose pendente'}"
-                      style="${taken ? `background:${sanitizeColor(p.accent, "var(--primary)")}` : ""}">
-                  ${taken ? "✓" : ""}
-                </span>
-              </td>`;
-          }).join("")}
-        </tr>`;
+      html += `
+        <article class="timeline-item week-day ${day.isToday ? "is-today" : ""} ${day.isPast ? "is-past" : ""}" role="listitem" data-date="${sanitizeId(day.key)}">
+          <div class="timeline-rail" aria-hidden="true">
+            <span class="timeline-marker">
+              <span class="timeline-marker-dow">${esc(day.parts.weekdayShort)}</span>
+              <strong>${esc(day.parts.dayNumber)}</strong>
+              <span class="timeline-marker-month">${esc(day.parts.monthShort)}</span>
+            </span>
+          </div>
+          <div class="timeline-content week-day-content">
+            <div class="week-day-head">
+              <div>
+                <div class="week-day-title">${esc(dayLabel)}</div>
+                <div class="week-day-date">${esc(day.parts.fullDate)}</div>
+              </div>
+              <div class="week-day-summary">
+                <span class="week-day-count">${esc(i18nService.t("week.dayCount", { count: dayCount }))}</span>
+                <span class="week-day-progress">${esc(progress)}</span>
+              </div>
+            </div>
+            <div class="week-day-events" role="list" aria-label="${esc(`${dayLabel} · ${day.parts.fullDate}`)}">
+              ${day.entries.length > 0 ? day.entries.map((entry) => {
+                const statusLabel = entry.status === "done"
+                  ? i18nService.t("week.applied")
+                  : entry.scheduled ? i18nService.t("week.record") : i18nService.t("week.logged");
+                const doseMeta = [entry.time, entry.dose, entry.ui ? `${entry.ui} UI` : ""].filter(Boolean).join(" · ");
+                const progressMeta = entry.due > 1 ? ` · ${entry.recorded}/${entry.due}` : "";
+                const ariaLabel = `${entry.name} · ${doseMeta || statusLabel} · ${statusLabel}`;
+                return `
+                  <div class="week-event ${entry.status} ${entry.scheduled ? "is-scheduled" : "is-extra"}" role="listitem">
+                    <button type="button" class="week-event-toggle" data-pep="${sanitizeId(entry.id)}" data-date="${sanitizeId(day.key)}" aria-label="${esc(ariaLabel)}">
+                      <span class="week-event-status" aria-hidden="true">${entry.status === "done" ? "✓" : "•"}</span>
+                      <span class="week-event-main">
+                        <strong>${esc(entry.name)}</strong>
+                        <span>${esc(doseMeta || statusLabel)}${esc(progressMeta)}</span>
+                      </span>
+                      <span class="week-event-action">${esc(statusLabel)}</span>
+                    </button>
+                    <button type="button" class="week-event-edit" data-pep="${sanitizeId(entry.id)}" aria-label="Editar ${esc(entry.name)}">✎</button>
+                  </div>`;
+              }).join("") : `
+                <div class="week-day-empty" role="listitem">
+                  <span aria-hidden="true">—</span>
+                  <span>${esc(i18nService.t("week.restDay"))}</span>
+                </div>`}
+            </div>
+          </div>
+        </article>`;
     });
   }
 
-  tableHtml += `</tbody></table></div>`;
+  html += `</div>`;
 
   if (peptides.length > 0) {
-    tableHtml += `
-      <div class="week-legend" aria-label="Legenda da grade semanal">
-        <div class="week-legend-item">
-          <span class="cell" style="background:var(--primary);width:20px;height:20px;font-size:10px;">✓</span>
-          <span>Aplicado</span>
-        </div>
-        <div class="week-legend-item">
-          <span class="cell empty" style="border:1px dashed var(--border2);width:20px;height:20px;"></span>
-          <span>Pendente</span>
-        </div>
-        <div class="week-legend-item">
-          <span class="cell na" style="width:20px;height:20px;">·</span>
-          <span>Não programado</span>
-        </div>
-      </div>
-    `;
+    html += `
+      <div class="timeline-legend" aria-label="${esc(i18nService.t("week.legendLabel"))}">
+        <span class="timeline-legend-item done"><i aria-hidden="true">✓</i>${esc(i18nService.t("week.applied"))}</span>
+        <span class="timeline-legend-item pending"><i aria-hidden="true">•</i>${esc(i18nService.t("week.pending"))}</span>
+        <span class="timeline-legend-item rest"><i aria-hidden="true">—</i>${esc(i18nService.t("week.restDay"))}</span>
+      </div>`;
   }
 
-  container.innerHTML = tableHtml;
+  html += `</div>`;
+  container.innerHTML = html;
 
-  container.querySelectorAll(".pep[data-id]").forEach((cell) => {
-    cell.addEventListener("click", () => {
-      openEditModal(cell.dataset.id);
+  container.querySelectorAll(".week-event-edit").forEach((button) => {
+    button.addEventListener("click", () => {
+      openEditModal(button.dataset.pep);
       haptics.light();
     });
   });
 
-  container.querySelectorAll(".cell.tap").forEach((cell) => {
-    cell.addEventListener("click", () => {
-      toggleDateLog(cell.dataset.pep, cell.dataset.date);
+  container.querySelectorAll(".week-event-toggle").forEach((button) => {
+    button.addEventListener("click", () => {
+      toggleDateLog(button.dataset.pep, button.dataset.date);
     });
   });
 }
@@ -1047,7 +1104,7 @@ function renderHistory() {
   const daysKeys = Object.keys(logs).sort().reverse();
 
   let totalDoses = 0;
-  let html = "";
+  let html = `<div class="history-timeline" role="list" aria-label="${esc(i18nService.t("history.timelineLabel"))}">`;
 
   daysKeys.forEach((dk) => {
     const rec = logs[dk];
@@ -1103,18 +1160,29 @@ function renderHistory() {
     if (pepEntries.length > 0) {
       const [y, m, d] = dk.split("-").map(Number);
       const dateObj = new Date(y, m - 1, d);
-      const dayName = DAY_FULL[dateObj.getDay()] || "";
-      const formattedDate = `${String(d).padStart(2, "0")}/${String(m).padStart(2, "0")}/${y}`;
+      const dateParts = getTimelineDateParts(dateObj);
+      const isToday = dk === dateKey(new Date());
 
       html += `
-        <div class="hist-day">
-          <div class="hist-date">
-            <span>${formattedDate} · ${dayName}</span>
-            <span class="hist-n">${pepEntries.length} dose${pepEntries.length > 1 ? "s" : ""}</span>
+        <article class="timeline-item hist-day ${isToday ? "is-today" : ""}" role="listitem" data-date="${sanitizeId(dk)}">
+          <div class="timeline-rail" aria-hidden="true">
+            <span class="timeline-marker hist-marker">
+              <span class="timeline-marker-dow">${esc(dateParts.weekdayShort)}</span>
+              <strong>${esc(dateParts.dayNumber)}</strong>
+              <span class="timeline-marker-month">${esc(dateParts.monthShort)}</span>
+            </span>
           </div>
-          <div class="hist-list">
+          <div class="timeline-content hist-day-content">
+            <div class="hist-date">
+              <div>
+                <strong>${esc(dateParts.weekdayLong)}</strong>
+                <span>${esc(dateParts.fullDate)}</span>
+              </div>
+              <span class="hist-n">${esc(i18nService.t("history.dosesCount", { count: pepEntries.length }))}</span>
+            </div>
+            <div class="hist-list">
             ${pepEntries.map((e) => `
-              <div class="hist-item">
+              <div class="hist-item" data-pep="${sanitizeId(e.id)}">
                 <span class="hist-dot" style="background:${sanitizeColor(e.accent, "var(--primary)")};"></span>
                 <div class="hist-info">
                   <div class="hist-name">${esc(e.name)}</div>
@@ -1125,22 +1193,28 @@ function renderHistory() {
                 </div>
                 <div class="hist-time">
                   <span>${esc(e.time)}</span>
-                  ${e.retroactive ? `<span class="badge-retro">Retroativo</span>` : ""}
+                  ${e.retroactive ? `<span class="badge-retro">${esc(i18nService.t("history.retroactive"))}</span>` : ""}
                 </div>
-                <button class="hist-rm" data-date="${sanitizeId(dk)}" data-pep="${sanitizeId(e.id)}" data-idx="${e.idx}" title="Excluir dose">✕</button>
+                <button type="button" class="hist-rm" data-date="${sanitizeId(dk)}" data-pep="${sanitizeId(e.id)}" data-idx="${e.idx}" title="${esc(i18nService.t("history.deleteDose"))}" aria-label="${esc(i18nService.t("history.deleteDose"))}">✕</button>
               </div>
             `).join("")}
+            </div>
           </div>
-        </div>`;
+        </article>`;
     }
   });
 
-  if (countEl) countEl.textContent = `${totalDoses} doses registradas`;
+  if (countEl) countEl.textContent = i18nService.t("history.totalCount", { count: totalDoses });
 
   if (totalDoses === 0) {
-    container.innerHTML = `<div class="empty-note">Nenhum registro de dose ainda.<br>Marque suas aplicações no <b>Dashboard</b>, <b>Semana</b> ou toque em <b>+ Dose Retroativa</b>.</div>`;
+    container.innerHTML = `
+      <div class="timeline-empty history-empty">
+        <div class="timeline-empty-icon" aria-hidden="true">◌</div>
+        <strong>${esc(i18nService.t("history.emptyTitle"))}</strong>
+        <p>${esc(i18nService.t("history.emptyDesc"))}</p>
+      </div>`;
   } else {
-    container.innerHTML = html;
+    container.innerHTML = `${html}</div>`;
   }
 
   if (measurementsUI && typeof measurementsUI.renderTrendSummary === "function") {

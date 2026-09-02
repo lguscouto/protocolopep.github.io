@@ -121,20 +121,23 @@
 
     <!-- ABA: SEMANA -->
     <section class="view" id="view-week" role="tabpanel" aria-labelledby="tab-week">
-      <div class="page-title-wrap" style="margin-bottom: 14px;">
-        <h2 class="page-title" data-i18n="week.heading">Semana</h2>
+      <div class="page-title-wrap week-title-wrap">
+        <div>
+          <h2 class="page-title" data-i18n="week.heading">Semana</h2>
+          <p class="page-subtitle" data-i18n="week.subheading">Acompanhamento e frequência das aplicações nos próximos 7 dias</p>
+        </div>
       </div>
-      <div class="panel" id="week-table-wrap" role="region" aria-label="Tabela de doses da semana"></div>
+      <div class="panel week-panel" id="week-table-wrap" role="region" data-i18n-aria="week.timelineLabel" aria-label="Linha do tempo dos próximos 7 dias"></div>
     </section>
 
     <!-- ABA: HISTÓRICO -->
     <section class="view" id="view-history" role="tabpanel" aria-labelledby="tab-history">
-      <div class="eyebrow-row" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:8px;flex-wrap:wrap;">
+      <div class="eyebrow-row history-title-row">
         <div>
-          <h2 class="page-title" style="margin:0;" data-i18n="history.heading">Histórico</h2>
-          <div class="hist-count" id="history-count" style="font-size:12.5px;color:var(--muted);font-weight:600;margin-top:2px;"></div>
+          <h2 class="page-title" data-i18n="history.heading">Histórico</h2>
+          <div class="hist-count" id="history-count"></div>
         </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <div class="history-actions">
           <button type="button" class="btn-primary" id="open-measurement-modal-btn" style="font-size:12px;padding:8px 12px;min-height:var(--tap-min);width:auto;" aria-label="Registrar peso, medidas ou sintomas">
             + Medidas / Sintomas
           </button>

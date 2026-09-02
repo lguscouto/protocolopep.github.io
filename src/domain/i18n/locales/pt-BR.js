@@ -84,10 +84,27 @@ export const ptBR = {
   week: {
     heading: "Visão Semanal",
     subheading: "Acompanhamento e frequência das aplicações nos próximos 7 dias",
-    dosesCount: "{count} aplicação(ões) programada(s)"
+    timelineLabel: "Linha do tempo dos próximos 7 dias",
+    today: "Hoje",
+    dosesCount: "{count} aplicação(ões) programada(s)",
+    dayCount: "{count} dose(s)",
+    dayProgress: "{taken} de {due} registradas",
+    applied: "Aplicado",
+    pending: "Pendente",
+    record: "Registrar",
+    logged: "Registro",
+    restDay: "Dia sem aplicação",
+    legendLabel: "Legenda da linha do tempo",
+    emptyTitle: "Sua semana começa aqui",
+    emptyDesc: "Adicione um peptídeo ao protocolo para visualizar as aplicações em ordem cronológica."
   },
   history: {
     heading: "Histórico de Aplicações",
+    timelineLabel: "Linha do tempo de aplicações",
+    totalCount: "{count} doses registradas",
+    dosesCount: "{count} dose(s)",
+    retroactive: "Retroativo",
+    deleteDose: "Excluir dose",
     filterAll: "Todos",
     filterConfirmed: "Confirmados",
     filterSkipped: "Não aplicados",
