@@ -127,6 +127,12 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     // O card hero de progresso deve estar visível
     const hero = page.locator("#dash-hero");
     await expect(hero).toBeVisible();
+    await expect(hero).toHaveAttribute("data-state", "pending");
+    await expect(page.locator(".dash-focus-eyebrow")).toContainText("Próxima ação");
+    await expect(page.locator(".dash-focus-title")).toHaveText("Composto Alfa");
+    await expect(page.locator("#dash-focus-action")).toHaveText(/Registrar aplicação/);
+    const focusActionBox = await page.locator("#dash-focus-action").boundingBox();
+    expect(focusActionBox?.height).toBeGreaterThanOrEqual(44);
 
     // Deve renderizar os 2 cards
     const cards = page.locator("#today-cards article.card");
@@ -136,12 +142,22 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     const upcomingSection = page.locator(".upcoming-section");
     await expect(upcomingSection).toBeVisible();
 
-    // Confirmar a primeira dose
-    const takeBtn = cards.first().locator("button.take");
-    await takeBtn.click();
+    // A ação principal registra a primeira dose e avança para a próxima pendência
+    await page.locator("#dash-focus-action").click();
 
     // Card deve estar com status de aplicado
     await expect(cards.first()).toHaveClass(/done/);
+    await expect(page.locator(".dash-focus-title")).toHaveText("Composto Beta");
+
+    // Ao concluir a última pendência, o hero muda para o estado de rotina em dia
+    await page.locator("#dash-focus-action").click();
+    await expect(hero).toHaveAttribute("data-state", "complete");
+    await expect(page.locator(".dash-focus-title")).toHaveText("Tudo registrado por hoje");
+
+    // O aviso longo saiu do dashboard; permanece apenas o lembrete local compacto
+    const compactNotice = page.locator(".dash-footer-disclaimer");
+    await expect(compactNotice).toContainText("Registro pessoal");
+    await expect(compactNotice).not.toContainText("Confirme doses");
 
     runtime.assertCleanRuntime();
   });

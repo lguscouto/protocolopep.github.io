@@ -42,34 +42,33 @@
   <main class="app" id="main-content">
     <!-- ABA: HOJE / DASHBOARD -->
     <section class="view on" id="view-today" role="tabpanel" aria-labelledby="tab-today">
-      <!-- Banner Informativo / Feedback -->
-      <div class="dash-banner" id="dash-banner">
-        <a href="mailto:lguscouto@gmail.com?subject=Protocolo%20PEP%20%E2%80%94%20Sugest%C3%A3o%20%2F%20Feedback&body=Ol%C3%A1%2C%0A%0AGostaria%20de%20enviar%20o%20seguinte%20feedback%20%2F%20sugest%C3%A3o%20para%20o%20Protocolo%20PEP%3A%0A%0A%0A---%0AVers%C3%A3o%20do%20App%3A%202.7.0%0ADispositivo%3A%20Android" class="dash-banner-content" id="dash-banner-link" target="_blank" rel="noopener noreferrer" title="Toque para enviar sugestões ou feedback por e-mail" aria-label="Enviar sugestão ou feedback por e-mail">
-          <span class="dash-banner-icon" aria-hidden="true">📢</span>
-          <span class="dash-banner-text" data-i18n-html="dashboard.bannerText">Toda opinião importa! <b>Fale conosco ou envie sugestões</b></span>
-        </a>
-        <button type="button" class="dash-banner-close" id="dash-banner-close" aria-label="Fechar banner">✕</button>
-      </div>
-
-      <div class="page-title-wrap" style="margin-bottom: 14px;">
+      <div class="page-title-wrap dash-title-wrap">
         <h2 class="page-title" id="today-heading" data-i18n="dashboard.heading">Hoje</h2>
+        <p class="dash-title-sub" data-i18n="dashboard.subtitle">Seu próximo registro, sem distrações.</p>
       </div>
       
-      <!-- Hero Card: Progresso & Estatísticas -->
-      <div class="dash-hero" id="dash-hero" aria-label="Progresso de doses do dia">
-        <div class="dash-hero-ring-wrap" aria-hidden="true">
-          <svg class="dash-ring" viewBox="0 0 44 44">
-            <circle class="dash-ring-bg" cx="22" cy="22" r="18" />
-            <circle class="dash-ring-circle" id="ring-circle" cx="22" cy="22" r="18" />
-          </svg>
-          <div class="dash-ring-pct" id="ring-pct">0%</div>
+      <!-- Hero: próxima ação; progresso é informação secundária -->
+      <section class="dash-hero" id="dash-hero" aria-live="polite" aria-label="Próxima ação do dia">
+        <div class="dash-focus-content" id="dash-focus-content"></div>
+        <div class="dash-focus-progress" aria-label="Progresso de registros do dia">
+          <div class="dash-hero-ring-wrap" aria-hidden="true">
+            <svg class="dash-ring" viewBox="0 0 44 44">
+              <circle class="dash-ring-bg" cx="22" cy="22" r="18" />
+              <circle class="dash-ring-circle" id="ring-circle" cx="22" cy="22" r="18" />
+            </svg>
+            <div class="dash-ring-pct" id="ring-pct">0%</div>
+          </div>
+          <div class="dash-hero-info">
+            <div class="dash-hero-count" id="ring-n">0 / 0</div>
+            <div class="dash-hero-label" data-i18n="dashboard.dosesTakenToday">registros hoje</div>
+          </div>
         </div>
-        <div class="dash-hero-info">
-          <div class="dash-hero-count" id="ring-n">0 / 0</div>
-          <div class="dash-hero-label" data-i18n="dashboard.dosesTakenToday">aplicados hoje</div>
-        </div>
-      </div>
+      </section>
 
+      <div class="dash-section-heading" id="today-list-heading">
+        <h3 data-i18n="dashboard.routineToday">Rotina de hoje</h3>
+        <span id="today-list-summary"></span>
+      </div>
       <div id="today-cards" role="region" aria-live="polite"></div>
 
       <button type="button" class="add-pep" id="add-pep-btn" aria-label="Adicionar Novo Peptídeo ao Protocolo">
@@ -77,8 +76,9 @@
       </button>
 
       <!-- Barra de Ações Rápidas do Dashboard -->
-      <div class="dash-actions-wrap" role="toolbar" aria-label="Ações Rápidas">
-        <div class="dash-actions-grid">
+      <div class="dash-actions-wrap">
+        <div class="dash-tools-heading" data-i18n="dashboard.tools">Ferramentas</div>
+        <div class="dash-actions-grid" role="toolbar" aria-label="Ferramentas" data-i18n-aria="dashboard.tools">
           <button type="button" class="dash-action-btn" id="dash-share-btn" aria-label="Compartilhar resumo do dia">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
             <span data-i18n="dashboard.share">Compartilhar</span>
@@ -102,10 +102,20 @@
         </div>
       </div>
 
-      <!-- Rodapé Informativo e Médico -->
-      <div class="dash-footer-disclaimer" data-i18n-html="dashboard.disclaimer">
-        Referência pessoal e informativa. Os cálculos são estimativas matemáticas e os registros ficam salvos apenas neste dispositivo.<br>
-        Confirme doses, diluição e segurança com um profissional de saúde.
+      <!-- Feedback preservado como ação terciária, fora do foco inicial -->
+      <div class="dash-banner" id="dash-banner">
+        <a href="mailto:lguscouto@gmail.com?subject=Protocolo%20PEP%20%E2%80%94%20Sugest%C3%A3o%20%2F%20Feedback&body=Ol%C3%A1%2C%0A%0AGostaria%20de%20enviar%20o%20seguinte%20feedback%20%2F%20sugest%C3%A3o%20para%20o%20Protocolo%20PEP%3A%0A%0A%0A---%0AVers%C3%A3o%20do%20App%3A%202.8.0%0ADispositivo%3A%20Android" class="dash-banner-content" id="dash-banner-link" target="_blank" rel="noopener noreferrer" title="Toque para enviar sugestões ou feedback por e-mail" aria-label="Enviar sugestão ou feedback por e-mail">
+          <span class="dash-banner-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M4 4h16v13H7l-3 3V4Z"/><path d="M8 9h8M8 13h5"/></svg>
+          </span>
+          <span class="dash-banner-text" data-i18n-html="dashboard.bannerText">Ajude a melhorar o PEP <b>Enviar sugestão</b></span>
+        </a>
+        <button type="button" class="dash-banner-close" id="dash-banner-close" aria-label="Fechar banner">✕</button>
+      </div>
+
+      <!-- Lembrete compacto; os avisos completos permanecem no onboarding e na calculadora -->
+      <div class="dash-footer-disclaimer" data-i18n="dashboard.disclaimer">
+        Registro pessoal · dados salvos neste aparelho
       </div>
     </section>
 

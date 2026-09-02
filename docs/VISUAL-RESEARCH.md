@@ -44,9 +44,20 @@ Evoluir o Protocolo PEP de uma interface predominantemente utilitária para uma 
 - Estados distintos para local selecionado, próximo na rotação e último registrado.
 - Fallback completo para os demais locais configurados pelo usuário.
 
+## Segunda entrega implementada — dashboard orientado à próxima ação
+
+- O primeiro elemento útil da tela passou a responder diretamente “o que vem agora?”.
+- O hero apresenta o próximo composto pendente por horário, os dados já configurados e um único CTA de registro.
+- Ao registrar uma aplicação, o hero avança automaticamente para a próxima pendência do dia.
+- Estados sem agenda e rotina concluída mostram a próxima ocorrência futura sem criar urgência clínica.
+- O progresso diário permanece visível, mas ocupa uma posição secundária.
+- Feedback, ferramentas e criação de protocolo foram preservados abaixo da rotina principal.
+- O aviso médico extenso saiu do dashboard e permanece nos contextos em que é necessário: onboarding e calculadora. No dashboard, ficou apenas o lembrete compacto de registro pessoal e armazenamento local.
+- Os novos textos estáticos e dinâmicos foram integrados aos idiomas português, inglês e espanhol.
+
 ## Próximas prioridades visuais
 
-1. Redesenhar o dashboard para destacar “próxima ação” e reduzir o peso dos avisos legais repetidos.
+1. ~~Redesenhar o dashboard para destacar “próxima ação” e reduzir o peso dos avisos legais repetidos.~~ Concluído.
 2. Transformar histórico e semana em uma linha do tempo mais visual.
 3. Criar estados vazios ilustrados menores para inventário, medidas e pesquisa.
 4. Padronizar campos hoje definidos com estilos inline em componentes reutilizáveis.

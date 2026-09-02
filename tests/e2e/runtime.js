@@ -42,10 +42,12 @@ export function trackPageRuntime(page) {
  * @param {boolean} [options.skipOnboarding=true]
  * @param {Array} [options.peptides=[]]
  * @param {Object} [options.logs={}]
+ * @param {string} [options.locale="pt-BR"]
  */
-export async function seedStorage(page, { skipOnboarding = true, peptides = [], logs = {} } = {}) {
-  await page.addInitScript(({ skipOnboarding, peptides, logs }) => {
+export async function seedStorage(page, { skipOnboarding = true, peptides = [], logs = {}, locale = "pt-BR" } = {}) {
+  await page.addInitScript(({ skipOnboarding, peptides, logs, locale }) => {
     localStorage.clear();
+    localStorage.setItem("pep_user_language", locale);
     if (skipOnboarding) {
       localStorage.setItem("pep_onboarding_version", "1");
     }
@@ -55,5 +57,5 @@ export async function seedStorage(page, { skipOnboarding = true, peptides = [], 
     if (logs && Object.keys(logs).length > 0) {
       localStorage.setItem("pep_logs_v2", JSON.stringify(logs));
     }
-  }, { skipOnboarding, peptides, logs });
+  }, { skipOnboarding, peptides, logs, locale });
 }

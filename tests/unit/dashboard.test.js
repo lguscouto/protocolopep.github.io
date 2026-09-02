@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { createDoseCardViewModel, renderEmptyDashboardHTML } from "../../src/ui/dashboard.js";
+import {
+  createDoseCardViewModel,
+  createDashboardFocusViewModel,
+  renderDashboardFocusHTML,
+  renderEmptyDashboardHTML
+} from "../../src/ui/dashboard.js";
 
 describe("Dashboard UI Module", () => {
   it("cria view model correta para dose pendente", () => {
@@ -59,5 +64,51 @@ describe("Dashboard UI Module", () => {
     expect(html).toContain("data-action=\"create-protocol\"");
     expect(html).not.toContain("0 / 0");
     expect(html).not.toContain("dash-ring");
+  });
+
+  it("prioriza a primeira aplicação pendente pelo horário", () => {
+    const model = createDashboardFocusViewModel({
+      todayItems: [
+        { id: "night", name: "Noturno", time: "20:00", perDay: 1, takenCount: 0 },
+        { id: "morning", name: "Matinal", time: "08:00", dose: "250 mcg", ui: 10, perDay: 1, takenCount: 0, nextSite: "Abdômen (Direito)" }
+      ]
+    });
+
+    expect(model).toMatchObject({
+      state: "pending",
+      title: "Matinal",
+      action: "toggle-dose",
+      actionLabel: "Registrar aplicação"
+    });
+    expect(renderDashboardFocusHTML(model)).toContain("Abdômen (Direito)");
+  });
+
+  it("avança para a próxima dose de um protocolo multidose", () => {
+    const model = createDashboardFocusViewModel({
+      todayItems: [{ id: "multi", name: "Multidose", perDay: 2, takenCount: 1 }]
+    });
+
+    expect(model).toMatchObject({ action: "add-dose", actionLabel: "Registrar próxima dose" });
+  });
+
+  it("exibe conclusão factual quando toda a rotina do dia foi registrada", () => {
+    const model = createDashboardFocusViewModel({
+      todayItems: [{ id: "done", name: "Concluído", perDay: 1, takenCount: 1 }],
+      upcoming: [{ dateKey: "2026-09-03", time: "08:00", name: "Concluído" }]
+    });
+
+    expect(model).toMatchObject({ state: "complete", action: "open-week" });
+    expect(model.schedule).toBe("Próxima: 03/09 às 08:00 · Concluído");
+  });
+
+  it("localiza a próxima ação para o idioma ativo", () => {
+    const model = createDashboardFocusViewModel({
+      locale: "en",
+      todayItems: [{ id: "item", name: "Morning compound", time: "08:00", perDay: 1, takenCount: 0 }]
+    });
+
+    expect(model.eyebrow).toBe("Next action");
+    expect(model.schedule).toBe("Scheduled for today at 08:00");
+    expect(model.actionLabel).toBe("Record application");
   });
 });

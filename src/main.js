@@ -21,7 +21,13 @@ import {
   getUpcomingOccurrences,
   calculateBackfillDates
 } from "./domain/schedule.js";
-import { createDoseCardViewModel, renderEmptyDashboardHTML, renderUpcomingHTML } from "./ui/dashboard.js";
+import {
+  createDoseCardViewModel,
+  createDashboardFocusViewModel,
+  renderDashboardFocusHTML,
+  renderEmptyDashboardHTML,
+  renderUpcomingHTML
+} from "./ui/dashboard.js";
 import { createPeptide, validatePeptide } from "./domain/protocol.js";
 import { escapeHtml, sanitizeColor, sanitizeId } from "./ui/dom.js";
 import { shouldShowOnboarding, showOnboarding } from "./ui/onboarding.js";
@@ -496,6 +502,9 @@ function renderToday() {
   const rec = logs[todayK] || {};
   const container = document.getElementById("today-cards");
   const heroEl = document.getElementById("dash-hero");
+  const focusContent = document.getElementById("dash-focus-content");
+  const listHeading = document.getElementById("today-list-heading");
+  const listSummary = document.getElementById("today-list-summary");
   const addPepBtn = document.getElementById("add-pep-btn");
   const actionsWrap = document.querySelector(".dash-actions-wrap");
 
@@ -504,6 +513,7 @@ function renderToday() {
 
   if (peptides.length === 0) {
     if (heroEl) heroEl.style.display = "none";
+    if (listHeading) listHeading.style.display = "none";
     if (addPepBtn) addPepBtn.style.display = "none";
     if (actionsWrap) actionsWrap.style.display = "none";
 
@@ -530,24 +540,44 @@ function renderToday() {
   if (actionsWrap) actionsWrap.style.display = "";
 
   const scheduledToday = getScheduledPeptides(peptides, now);
+  const configuredSites = storage.getSites();
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const upcoming = getUpcomingOccurrences(peptides, tomorrow, 3);
+  const dayProgress = calculateDayProgress(peptides, logs, now);
+  const todayItems = scheduledToday.map((peptide) => {
+    const lastUsed = getLastUsedSite(logs, peptide.id);
+    return {
+      ...peptide,
+      takenCount: dosesTaken(rec, peptide.id),
+      nextSite: getNextSite(configuredSites, lastUsed ? lastUsed.site : null)
+    };
+  });
+  const focusModel = createDashboardFocusViewModel({
+    todayItems,
+    upcoming,
+    locale: i18nService.getLocale()
+  });
 
-  if (scheduledToday.length === 0) {
-    const emptyDayCard = document.createElement("div");
-    emptyDayCard.className = "dash-empty-card";
-    emptyDayCard.style.padding = "24px 20px";
-    emptyDayCard.innerHTML = `
-      <div style="font-size: 28px; margin-bottom: 8px;">🌴</div>
-      <div style="font-weight: 700; font-size: 16px; margin-bottom: 4px;">Sem aplicações programadas para hoje</div>
-      <div style="font-size: 13px; color: var(--muted);">Acompanhe os próximos dias na aba <b>Semana</b> ou registre uma dose retroativa no Histórico.</div>
-    `;
-    container.appendChild(emptyDayCard);
-  } else {
+  if (heroEl) {
+    heroEl.dataset.state = focusModel.state;
+    heroEl.setAttribute("aria-label", `${focusModel.eyebrow}: ${focusModel.title}`);
+  }
+  if (focusContent) focusContent.innerHTML = renderDashboardFocusHTML(focusModel);
+  if (listHeading) listHeading.style.display = scheduledToday.length > 0 ? "" : "none";
+  if (listSummary) {
+    listSummary.textContent = i18nService.t("dashboard.recordedProgress", {
+      taken: dayProgress.scheduledTaken,
+      due: dayProgress.totalDue
+    });
+  }
+
+  if (scheduledToday.length > 0) {
     scheduledToday.forEach((p) => {
       const perDay = p.perDay || 1;
       const tomadas = dosesTaken(rec, p.id);
       const done = tomadas >= perDay;
 
-      const configuredSites = storage.getSites();
       const lastUsed = getLastUsedSite(storage.getLogs(), p.id);
       const nextSite = getNextSite(configuredSites, lastUsed ? lastUsed.site : null);
 
@@ -655,9 +685,6 @@ function renderToday() {
   }
 
   // Próximas ocorrências (a partir de amanhã)
-  const tomorrow = new Date(now);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const upcoming = getUpcomingOccurrences(peptides, tomorrow, 3);
   if (upcoming.length > 0) {
     const upcomingWrap = document.createElement("div");
     upcomingWrap.innerHTML = renderUpcomingHTML(upcoming);
@@ -665,7 +692,6 @@ function renderToday() {
   }
 
   // Cálculo canônico do anel diário
-  const dayProgress = calculateDayProgress(peptides, logs, now);
   const ringN = document.getElementById("ring-n");
   if (ringN) {
     ringN.textContent = `${dayProgress.totalTaken} / ${dayProgress.totalDue}`;
@@ -687,6 +713,18 @@ function renderToday() {
   container.querySelectorAll(".del").forEach((b) => {
     b.addEventListener("click", () => deletePeptide(b.dataset.id));
   });
+
+  const focusAction = document.getElementById("dash-focus-action");
+  if (focusAction) {
+    focusAction.addEventListener("click", () => {
+      const action = focusAction.dataset.action;
+      const peptideId = focusAction.dataset.peptideId;
+      if (action === "toggle-dose" && peptideId) toggleDose(peptideId);
+      if (action === "add-dose" && peptideId) addSingleDose(peptideId);
+      if (action === "open-week") switchTab("week");
+      if (action === "add-peptide") openEditModal();
+    });
+  }
 
   syncAppWidget();
 }
