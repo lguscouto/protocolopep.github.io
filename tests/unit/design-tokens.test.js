@@ -2,6 +2,15 @@ import { describe, expect, it } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 
+function sourceFiles(root) {
+  const entries = fs.readdirSync(root, { withFileTypes: true });
+  return entries.flatMap((entry) => {
+    const entryPath = path.join(root, entry.name);
+    if (entry.isDirectory()) return sourceFiles(entryPath);
+    return /\.(css|html|js)$/.test(entry.name) ? [entryPath] : [];
+  });
+}
+
 function channel(value) {
   const normalized = value / 255;
   return normalized <= 0.04045
@@ -26,6 +35,29 @@ describe("Design Tokens & Contrast", () => {
 
   it("define --tap-min de pelo menos 44px", () => {
     expect(css).toContain("--tap-min: 44px");
+  });
+
+  it("não usa tokens visuais sem definição", () => {
+    const definedTokens = new Set(
+      [...css.matchAll(/(--[a-z0-9-]+)\s*:/gi)].map((match) => match[1])
+    );
+    const dynamicTokens = new Set(["--acc"]);
+    const projectRoot = path.resolve(__dirname, "../..");
+    const files = [path.join(projectRoot, "index.html"), ...sourceFiles(path.join(projectRoot, "src"))];
+    const usages = files.flatMap((filePath) => {
+      const contents = fs.readFileSync(filePath, "utf-8");
+      return [...contents.matchAll(/var\(\s*(--[a-z0-9-]+)/gi)].map((match) => ({
+        token: match[1],
+        file: path.relative(projectRoot, filePath)
+      }));
+    });
+    const undefinedUsages = usages.filter(({ token }) => !definedTokens.has(token) && !dynamicTokens.has(token));
+
+    expect(undefinedUsages).toEqual([]);
+  });
+
+  it("define sombra pequena por tema", () => {
+    expect(css).toContain("--shadow-sm:");
   });
 
   it("define tokens de espaçamento e raios padronizados", () => {

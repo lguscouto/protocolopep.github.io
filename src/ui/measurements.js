@@ -177,7 +177,7 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
 
     trendSummaryEl.innerHTML = `
       <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));gap:10px;margin-bottom:12px;">
-        <div class="panel" style="padding:12px;text-align:center;border:1px solid var(--border);border-radius:10px;background:var(--card-bg);">
+        <div class="panel" style="padding:12px;text-align:center;border:1px solid var(--border);border-radius:10px;background:var(--surface);">
           <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">Último Peso</div>
           <div style="font-size:18px;font-weight:800;color:var(--primary);margin-top:4px;">
             ${stats.latestWeight !== null ? `${stats.latestWeight} kg` : "--"}
@@ -186,16 +186,16 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
           ${stats.minWeight !== null && stats.maxWeight !== null ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;">Faixa: ${stats.minWeight} - ${stats.maxWeight} kg</div>` : ""}
         </div>
 
-        <div class="panel" style="padding:12px;text-align:center;border:1px solid var(--border);border-radius:10px;background:var(--card-bg);">
+        <div class="panel" style="padding:12px;text-align:center;border:1px solid var(--border);border-radius:10px;background:var(--surface);">
           <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">Energia Média</div>
-          <div style="font-size:18px;font-weight:800;color:var(--accent);margin-top:4px;">
+          <div style="font-size:18px;font-weight:800;color:var(--warning);margin-top:4px;">
             ${stats.averageEnergy !== null ? `⚡ ${stats.averageEnergy} / 5` : "--"}
           </div>
           <div style="font-size:11px;color:var(--muted);margin-top:2px;">${stats.totalEntries} registro${stats.totalEntries > 1 ? "s" : ""}</div>
         </div>
 
         ${stats.mostFrequentSymptom ? `
-        <div class="panel" style="padding:12px;text-align:center;border:1px solid var(--border);border-radius:10px;background:var(--card-bg);">
+        <div class="panel" style="padding:12px;text-align:center;border:1px solid var(--border);border-radius:10px;background:var(--surface);">
           <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">Sintoma Frequente</div>
           <div style="font-size:14px;font-weight:700;color:var(--text);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${esc(stats.mostFrequentSymptom.symptom)}">
             ${esc(stats.mostFrequentSymptom.symptom)}
@@ -236,13 +236,13 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
             const fmtDate = y && mon && d ? `${d}/${mon}/${y}` : m.date;
 
             return `
-              <div class="panel" style="padding:12px 14px;background:var(--card-bg);border:1px solid var(--border);border-radius:10px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+              <div class="panel" style="padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
                 <div style="flex:1;min-width:0;">
                   <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;">
                     <span style="font-size:13.5px;font-weight:700;color:var(--text);">${esc(fmtDate)} · ${esc(m.time || "")}</span>
                     ${m.weightKg !== null ? `<span class="chip-acc" style="background:rgba(99,102,241,0.12);color:var(--primary);font-size:11.5px;font-weight:700;">⚖️ ${m.weightKg} kg</span>` : ""}
                     ${m.energyLevel ? `<span class="chip-acc" style="background:rgba(234,179,8,0.12);color:#ca8a04;font-size:11.5px;font-weight:700;">⚡ Energia ${m.energyLevel}/5</span>` : ""}
-                    ${m.moodLevel ? `<span class="chip-acc" style="background:rgba(14,133,128,0.12);color:var(--accent);font-size:11.5px;font-weight:700;">😊 Humor ${m.moodLevel}/5</span>` : ""}
+                    ${m.moodLevel ? `<span class="chip-acc" style="background:rgba(14,133,128,0.12);color:var(--aod);font-size:11.5px;font-weight:700;">😊 Humor ${m.moodLevel}/5</span>` : ""}
                     ${m.ownership === "external" ? `<span class="chip-acc" style="background:rgba(59,130,246,0.12);color:#3b82f6;font-size:11px;font-weight:600;">🔗 Health Connect</span>` : ""}
                   </div>
                   ${m.symptoms && m.symptoms.length > 0 ? `

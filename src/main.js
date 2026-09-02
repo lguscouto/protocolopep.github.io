@@ -636,7 +636,7 @@ function renderToday() {
       let vialBadgeHTML = "";
       if (vm.vialStatus) {
         const expAlert = vm.vialStatus.expStatus === "expired" ? " ⚠️ Vencido" : vm.vialStatus.expStatus === "expiring_soon" ? " ⏳ Vence em breve" : "";
-        vialBadgeHTML = `<span class="chip-acc" style="background:rgba(14,133,128,0.12);color:var(--accent);font-size:11px;font-weight:700;" title="Saldo no frasco ativo">🧪 ~${vm.vialStatus.remainingDoses} doses${expAlert}</span>`;
+        vialBadgeHTML = `<span class="chip-acc" style="background:rgba(14,133,128,0.12);color:var(--success);font-size:11px;font-weight:700;" title="Saldo no frasco ativo">🧪 ~${vm.vialStatus.remainingDoses} doses${expAlert}</span>`;
       }
 
       let siteBadgeHTML = "";

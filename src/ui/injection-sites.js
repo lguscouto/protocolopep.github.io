@@ -57,16 +57,16 @@ export function setupInjectionSitesUI({ storage, onSitesChange = () => {} }) {
       const isLast = index === sites.length - 1;
 
       return `
-        <div class="site-row-item" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;margin-bottom:6px;background:var(--card-bg);border:1px solid var(--border);border-radius:8px;gap:8px;">
+        <div class="site-row-item" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;margin-bottom:6px;background:var(--surface);border:1px solid var(--border);border-radius:8px;gap:8px;">
           <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">
             <span style="font-size:11px;font-weight:700;color:var(--muted);width:18px;text-align:right;">${index + 1}.</span>
             <span style="font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(site)}</span>
           </div>
           <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
-            <button type="button" class="btn-site-move-up" data-index="${index}" ${isFirst ? "disabled style='opacity:0.3;cursor:not-allowed;'" : ""} style="padding:4px 8px;font-size:11px;background:var(--input-bg);border:1px solid var(--border);border-radius:4px;color:var(--text);" aria-label="Subir ${escapeHtml(site)}">
+            <button type="button" class="btn-site-move-up" data-index="${index}" ${isFirst ? "disabled" : ""} style="padding:4px 8px;font-size:11px;background:var(--surface-2);border:1px solid var(--border);border-radius:4px;color:var(--text);" aria-label="Subir ${escapeHtml(site)}">
               ▲
             </button>
-            <button type="button" class="btn-site-move-down" data-index="${index}" ${isLast ? "disabled style='opacity:0.3;cursor:not-allowed;'" : ""} style="padding:4px 8px;font-size:11px;background:var(--input-bg);border:1px solid var(--border);border-radius:4px;color:var(--text);" aria-label="Descer ${escapeHtml(site)}">
+            <button type="button" class="btn-site-move-down" data-index="${index}" ${isLast ? "disabled" : ""} style="padding:4px 8px;font-size:11px;background:var(--surface-2);border:1px solid var(--border);border-radius:4px;color:var(--text);" aria-label="Descer ${escapeHtml(site)}">
               ▼
             </button>
             <button type="button" class="btn-site-remove" data-index="${index}" style="padding:4px 8px;font-size:11px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);border-radius:4px;color:#ef4444;" aria-label="Remover ${escapeHtml(site)}">

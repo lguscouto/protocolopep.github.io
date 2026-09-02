@@ -44,6 +44,7 @@
 - `--radius-md`: `14px`
 - `--radius-lg`: `18px`
 - `--radius-xl`: `24px`
+- `--shadow-sm`: sombra curta para cartões elevados, adaptada por tema
 - `--tap-min`: `44px`
 
 ## 4. Tipografia

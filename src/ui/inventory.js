@@ -104,26 +104,26 @@ export function setupInventoryUI({ storage, onInventoryChange }) {
     if (listEl) {
       const movements = [...(vial.movements || [])].reverse();
       if (movements.length === 0) {
-        listEl.innerHTML = `<div style="text-align:center;padding:24px;color:var(--text-muted);font-size:13px;">Nenhuma movimentação registrada.</div>`;
+        listEl.innerHTML = `<div style="text-align:center;padding:24px;color:var(--muted);font-size:13px;">Nenhuma movimentação registrada.</div>`;
       } else {
         listEl.innerHTML = movements.map((m) => {
           const typeLabel = m.type === "reconstitution" ? "Reconstituição Inicial" :
                             m.type === "dose" ? "Aplicação de Dose" :
                             m.type === "undo_dose" ? "Estorno de Dose" :
                             m.type === "adjustment" ? "Ajuste Manual" : m.type;
-          const badgeColor = m.amountMcg > 0 ? "var(--accent)" : "var(--primary)";
+          const badgeColor = m.amountMcg > 0 ? "var(--success)" : "var(--primary)";
           const formattedAmount = m.amountMcg > 0 ? `+${m.amountMcg} mcg` : `${m.amountMcg} mcg`;
           
           return `
-            <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:10px;">
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:10px;">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
                 <span style="font-weight:700;font-size:13px;color:var(--text);">${escapeHtml(typeLabel)}</span>
                 <span style="font-size:12px;font-weight:800;color:${badgeColor};">${escapeHtml(formattedAmount)}</span>
               </div>
-              <div style="font-size:11.5px;color:var(--text-muted);margin-bottom:4px;">
+              <div style="font-size:11.5px;color:var(--muted);margin-bottom:4px;">
                 📅 ${escapeHtml(m.date || "")} ${m.note ? `• ${escapeHtml(m.note)}` : ""}
               </div>
-              <div style="font-size:11px;color:var(--text-dim);font-weight:600;">
+              <div style="font-size:11px;color:var(--muted-2);font-weight:600;">
                 Saldo após movimentação: ${escapeHtml(m.balanceAfterMcg)} mcg
               </div>
             </div>
@@ -173,14 +173,14 @@ export function setupInventoryUI({ storage, onInventoryChange }) {
       const statusBadge = v.status === "finished" ? `<span style="background:rgba(239,68,68,0.12);color:var(--danger);font-size:11px;font-weight:800;padding:2px 8px;border-radius:6px;">Esgotado</span>` :
                           expStatus.status === "expired" ? `<span style="background:rgba(239,68,68,0.15);color:var(--danger);font-size:11px;font-weight:800;padding:2px 8px;border-radius:6px;">Vencido</span>` :
                           expStatus.status === "expiring_soon" ? `<span style="background:rgba(245,158,11,0.15);color:#d97706;font-size:11px;font-weight:800;padding:2px 8px;border-radius:6px;">Validade próxima</span>` :
-                          `<span style="background:rgba(16,185,129,0.12);color:var(--accent);font-size:11px;font-weight:800;padding:2px 8px;border-radius:6px;">Ativo</span>`;
+                          `<span style="background:rgba(16,185,129,0.12);color:var(--success);font-size:11px;font-weight:800;padding:2px 8px;border-radius:6px;">Ativo</span>`;
 
       return `
-        <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:var(--shadow-sm);">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:var(--shadow-sm);">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
             <div>
               <div style="font-weight:800;font-size:15px;color:var(--text);">${escapeHtml(v.peptideName)}</div>
-              <div style="font-size:11.5px;color:var(--text-muted);">
+              <div style="font-size:11.5px;color:var(--muted);">
                 ${escapeHtml(v.totalMg)} mg em ${escapeHtml(v.waterMl)} mL (${escapeHtml(v.concentrationMcgPerMl)} mcg/mL)
                 ${v.lotNumber ? `• Lote: ${escapeHtml(v.lotNumber)}` : ""}
               </div>
@@ -192,7 +192,7 @@ export function setupInventoryUI({ storage, onInventoryChange }) {
           <div style="margin:10px 0 6px;">
             <div style="display:flex;justify-content:space-between;font-size:11.5px;font-weight:700;margin-bottom:4px;">
               <span style="color:var(--text);">Saldo: ${escapeHtml(v.remainingMcg)} / ${escapeHtml(v.initialMcg)} mcg</span>
-              <span style="color:var(--text-muted);">${percent}%</span>
+              <span style="color:var(--muted);">${percent}%</span>
             </div>
             <div style="height:6px;background:var(--surface);border-radius:999px;overflow:hidden;border:1px solid var(--border);">
               <div style="height:100%;width:${percent}%;background:${percent < 20 ? 'var(--danger)' : 'var(--primary)'};border-radius:999px;transition:width 0.3s ease;"></div>
@@ -200,7 +200,7 @@ export function setupInventoryUI({ storage, onInventoryChange }) {
           </div>
 
           <!-- Informações de Dose e Validade -->
-          <div style="display:flex;justify-content:space-between;align-items:center;font-size:11.5px;color:var(--text-dim);margin-top:6px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:11.5px;color:var(--muted-2);margin-top:6px;">
             <div>
               ${remDoses !== null ? `🎯 <strong>~${remDoses} doses restantes</strong>` : `ℹ️ ${escapeHtml(expStatus.label)}`}
             </div>
