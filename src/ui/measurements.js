@@ -67,9 +67,9 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
       if (btnM) {
         if (selectedMood === i) {
           btnM.classList.add("selected");
-          btnM.style.background = "var(--accent)";
+          btnM.style.background = "var(--aod)";
           btnM.style.color = "#fff";
-          btnM.style.borderColor = "var(--accent)";
+          btnM.style.borderColor = "var(--aod)";
         } else {
           btnM.classList.remove("selected");
           btnM.style.background = "var(--surface2)";

@@ -76,7 +76,7 @@ Evoluir o Protocolo PEP de uma interface predominantemente utilitária para uma 
 2. ~~Transformar histórico e semana em uma linha do tempo mais visual.~~ Concluído.
 3. ~~Criar estados vazios ilustrados menores para inventário, medidas e pesquisa.~~ Concluído.
 4. ~~Padronizar campos hoje definidos com estilos inline em componentes reutilizáveis.~~ Concluído.
-5. Preparar screenshots de loja próprios, com linguagem de benefício sem imitar a campanha do OzemPro.
+5. ~~Preparar screenshots de loja próprios, com linguagem de benefício sem imitar a campanha do OzemPro.~~ Concluído.
 
 ## Quinta entrega implementada — campos de formulário reutilizáveis
 
@@ -84,3 +84,10 @@ Evoluir o Protocolo PEP de uma interface predominantemente utilitária para uma 
 - Labels, controles, grids de data/dose, intervalos de horário, grupos de escolha e chips agora usam classes semânticas, com foco, espaçamento e altura mínima de toque consistentes.
 - Os controles dinâmicos de horários extras também reutilizam o mesmo sistema, evitando que novos campos voltem a depender de estilos inline.
 - A mudança é exclusivamente visual: IDs, eventos, persistência local e validações existentes foram preservados.
+
+## Sexta entrega implementada — screenshots próprios para loja
+
+- Quatro peças verticais em 1080 × 1920 px foram geradas a partir dos fluxos reais do app: próxima ação, mapa de aplicação, linha do tempo e acompanhamento pessoal.
+- A direção usa fundo escuro, turquesa de assinatura, mockup de telefone e mensagens factuais de benefício, sem mascote, roxo dominante ou promessas clínicas.
+- Os dados exibidos são sintéticos, as imagens ficam no repositório e o gerador local é reproduzível em `tools/generate-store-screenshots.mjs`.
+- A especificação de uso e os textos de cada peça estão em `docs/store-screenshots/README.md`.
