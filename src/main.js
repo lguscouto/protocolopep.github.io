@@ -1832,9 +1832,9 @@ function openEditModal(pepId, prefillData = null) {
     for (let i = 2; i <= pd; i++) {
       const val = existingTimes[i - 1] || "";
       html += `
-        <div style="flex:1;min-width:120px;">
-          <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:3px;">Horário Dose ${i}</label>
-          <input type="time" class="txt edit-extra-time" data-index="${i}" value="${esc(val)}" style="width:100%;padding:6px 8px;font-size:12.5px;" />
+        <div class="form-field-interval">
+          <label class="form-field-label form-field-label--subtle">Horário Dose ${i}</label>
+          <input type="time" class="form-field-control form-field-control--compact edit-extra-time" data-index="${i}" value="${esc(val)}" />
         </div>
       `;
     }

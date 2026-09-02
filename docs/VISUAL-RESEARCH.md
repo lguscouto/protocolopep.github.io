@@ -75,5 +75,12 @@ Evoluir o Protocolo PEP de uma interface predominantemente utilitária para uma 
 1. ~~Redesenhar o dashboard para destacar “próxima ação” e reduzir o peso dos avisos legais repetidos.~~ Concluído.
 2. ~~Transformar histórico e semana em uma linha do tempo mais visual.~~ Concluído.
 3. ~~Criar estados vazios ilustrados menores para inventário, medidas e pesquisa.~~ Concluído.
-4. Padronizar campos hoje definidos com estilos inline em componentes reutilizáveis.
+4. ~~Padronizar campos hoje definidos com estilos inline em componentes reutilizáveis.~~ Concluído.
 5. Preparar screenshots de loja próprios, com linguagem de benefício sem imitar a campanha do OzemPro.
+
+## Quinta entrega implementada — campos de formulário reutilizáveis
+
+- Os campos dos modais de edição de peptídeo, registro retroativo, inventário de frascos e medições passaram a compartilhar uma linguagem visual definida em `primitives.css`.
+- Labels, controles, grids de data/dose, intervalos de horário, grupos de escolha e chips agora usam classes semânticas, com foco, espaçamento e altura mínima de toque consistentes.
+- Os controles dinâmicos de horários extras também reutilizam o mesmo sistema, evitando que novos campos voltem a depender de estilos inline.
+- A mudança é exclusivamente visual: IDs, eventos, persistência local e validações existentes foram preservados.

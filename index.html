@@ -526,30 +526,30 @@
       </div>
       <div class="sheet-body">
         <!-- Seção de Busca na Biblioteca (Exibida no modo Adicionar) -->
-        <div class="modal-lib-section" id="modal-lib-section" style="margin-bottom:14px;">
-          <label for="lib-search-input" style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:6px;">Biblioteca de Peptídeos (Busca rápida)</label>
-          <input type="text" class="txt lib-search-input" id="lib-search-input" placeholder="🔍 Buscar peptídeo ou categoria..." autocomplete="off" />
+        <div class="modal-lib-section form-field form-field--large" id="modal-lib-section">
+          <label for="lib-search-input" class="form-field-label">Biblioteca de Peptídeos (Busca rápida)</label>
+          <input type="text" class="form-field-control lib-search-input" id="lib-search-input" placeholder="🔍 Buscar peptídeo ou categoria..." autocomplete="off" />
           <div class="lib-list" id="modal-lib-list" role="listbox" aria-label="Sugestões de peptídeos"></div>
         </div>
 
-        <div style="margin-bottom:12px;">
-          <label for="edit-name" style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;">Nome do Peptídeo</label>
-          <input type="text" class="txt" id="edit-name" placeholder="ex: BPC-157" />
+        <div class="form-field">
+          <label for="edit-name" class="form-field-label">Nome do Peptídeo</label>
+          <input type="text" class="form-field-control" id="edit-name" placeholder="ex: BPC-157" />
         </div>
 
-        <div style="margin-bottom:12px;">
-          <label for="edit-sub" style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;">Subtítulo / Categoria</label>
-          <input type="text" class="txt" id="edit-sub" placeholder="ex: reparo tecidual" />
+        <div class="form-field">
+          <label for="edit-sub" class="form-field-label">Subtítulo / Categoria</label>
+          <input type="text" class="form-field-control" id="edit-sub" placeholder="ex: reparo tecidual" />
         </div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
-          <div>
-            <label for="edit-dose" style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;">Dose (mg/mcg)</label>
-            <input type="text" class="txt" id="edit-dose" placeholder="ex: 250 mcg" />
+        <div class="form-field-grid">
+          <div class="form-field">
+            <label for="edit-dose" class="form-field-label">Dose (mg/mcg)</label>
+            <input type="text" class="form-field-control" id="edit-dose" placeholder="ex: 250 mcg" />
           </div>
-          <div>
-            <label for="edit-ui" style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;">Unidades (UI)</label>
-            <input type="number" class="num" id="edit-ui" placeholder="ex: 10" />
+          <div class="form-field">
+            <label for="edit-ui" class="form-field-label">Unidades (UI)</label>
+            <input type="number" class="form-field-control" id="edit-ui" placeholder="ex: 10" />
           </div>
         </div>
 
@@ -560,8 +560,8 @@
         </div>
 
         <!-- Período: Por dia / Por semana -->
-        <div style="margin-bottom:12px;">
-          <label style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:6px;">Período</label>
+        <div class="form-field">
+          <label class="form-field-label">Período</label>
           <div class="seg-control" id="edit-period-toggle" role="group" aria-label="Frequência periódica">
             <button type="button" class="on" data-per="dia">Por dia</button>
             <button type="button" data-per="semana">Por semana</button>
@@ -569,9 +569,9 @@
         </div>
 
         <!-- Frequência: Todos os dias / Dias específicos / A cada X dias -->
-        <div style="margin-bottom:12px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-            <label style="font-size:12.5px;font-weight:600;color:var(--muted);">Frequência</label>
+        <div class="form-field">
+          <div class="form-field-heading">
+            <label class="form-field-label">Frequência</label>
             <div class="days-preview-txt" id="edit-freq-preview">Todos os dias</div>
           </div>
           <div class="seg-control" id="edit-freq-type-toggle" role="group" aria-label="Tipo de agendamento">
@@ -596,27 +596,27 @@
           <!-- Seletor de Intervalo (A cada X dias) -->
           <div id="edit-interval-wrap" style="display:none;">
             <div class="interval-box">
-              <div style="flex:1;">
-                <label for="edit-interval-val" style="display:block;font-size:11.5px;color:var(--muted2);font-weight:600;margin-bottom:4px;">A cada</label>
-                <div style="display:flex;align-items:center;gap:6px;">
-                  <input type="number" class="num" id="edit-interval-val" value="2" min="2" max="30" style="width:70px;" />
-                  <span style="font-size:13px;color:var(--muted);font-weight:600;">dias</span>
+              <div class="form-field-interval">
+                <label for="edit-interval-val" class="form-field-label form-field-label--subtle">A cada</label>
+                <div class="form-field-inline">
+                  <input type="number" class="form-field-control form-field-control--compact form-field-control--interval" id="edit-interval-val" value="2" min="2" max="30" />
+                  <span class="form-field-suffix">dias</span>
                 </div>
               </div>
-              <div style="flex:1.2;">
-                <label for="edit-start-date" style="display:block;font-size:11.5px;color:var(--muted2);font-weight:600;margin-bottom:4px;">A partir de</label>
-                <input type="date" class="txt" id="edit-start-date" style="padding:8px 10px;font-size:12px;" />
+              <div class="form-field-interval form-field-interval--date">
+                <label for="edit-start-date" class="form-field-label form-field-label--subtle">A partir de</label>
+                <input type="date" class="form-field-control form-field-control--compact" id="edit-start-date" />
               </div>
             </div>
           </div>
         </div>
 
         <!-- Data da Primeira Dose / Início do Protocolo -->
-        <div style="margin-bottom:12px;">
-          <label for="edit-protocol-start-date" style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;">
+        <div class="form-field">
+          <label for="edit-protocol-start-date" class="form-field-label">
             Data da Primeira Dose / Início
           </label>
-          <input type="date" class="txt" id="edit-protocol-start-date" style="padding:8px 12px;font-size:13px;" />
+          <input type="date" class="form-field-control" id="edit-protocol-start-date" />
 
           <!-- Box de Prévia de Preenchimento Retroativo -->
           <div id="edit-backfill-wrap" style="display:none;margin-top:8px;padding:10px 12px;background:rgba(44,197,192,0.08);border:1px solid rgba(44,197,192,0.25);border-radius:10px;">
@@ -632,15 +632,15 @@
           </div>
         </div>
 
-        <div style="margin-bottom:12px;">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-            <div>
-              <label for="edit-perday" style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;">Doses por Dia</label>
-              <input type="number" class="num" id="edit-perday" value="1" min="1" max="6" />
+        <div class="form-field">
+          <div class="form-field-grid form-field-grid--flush">
+            <div class="form-field">
+              <label for="edit-perday" class="form-field-label">Doses por Dia</label>
+              <input type="number" class="form-field-control" id="edit-perday" value="1" min="1" max="6" />
             </div>
-            <div>
-              <label for="edit-time" style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;">Horário Principal</label>
-              <input type="time" class="txt" id="edit-time" />
+            <div class="form-field">
+              <label for="edit-time" class="form-field-label">Horário Principal</label>
+              <input type="time" class="form-field-control" id="edit-time" />
             </div>
           </div>
           <!-- Horários adicionais se doses/dia > 1 -->
@@ -650,13 +650,13 @@
           </div>
         </div>
 
-        <div style="margin-bottom:14px;">
-          <label for="edit-note" style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;">Observações</label>
-          <input type="text" class="txt" id="edit-note" placeholder="ex: em jejum pela manhã" />
+        <div class="form-field form-field--large">
+          <label for="edit-note" class="form-field-label">Observações</label>
+          <input type="text" class="form-field-control" id="edit-note" placeholder="ex: em jejum pela manhã" />
         </div>
 
-        <div style="margin-bottom:16px;">
-          <label style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:8px;">Cor de Identificação</label>
+        <div class="form-field form-field--last">
+          <label class="form-field-label">Cor de Identificação</label>
           <div class="swatches" id="modal-swatches" role="group" aria-label="Seletor de cor"></div>
         </div>
       </div>
@@ -737,9 +737,9 @@
         <button type="button" class="sheet-x" id="retro-close" aria-label="Fechar registro de aplicação">✕</button>
       </div>
       <div class="sheet-body">
-        <div style="margin-bottom:12px;">
-          <label for="retro-pep-select" style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;">Peptídeo</label>
-          <select class="txt" id="retro-pep-select" style="width:100%;"></select>
+        <div class="form-field">
+          <label for="retro-pep-select" class="form-field-label">Peptídeo</label>
+          <select class="form-field-control" id="retro-pep-select"></select>
         </div>
 
         <div class="retro-site-field">
@@ -748,31 +748,31 @@
           <div id="retro-site-picker" aria-labelledby="retro-site-label"></div>
         </div>
 
-        <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:10px;margin-bottom:12px;">
-          <div>
-            <label for="retro-date-input" style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;">Data da Aplicação</label>
-            <input type="date" class="txt" id="retro-date-input" style="padding:8px 10px;font-size:13px;" />
+        <div class="form-field-grid form-field-grid--date">
+          <div class="form-field">
+            <label for="retro-date-input" class="form-field-label">Data da Aplicação</label>
+            <input type="date" class="form-field-control form-field-control--compact" id="retro-date-input" />
           </div>
-          <div>
-            <label for="retro-time-input" style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;">Horário</label>
-            <input type="time" class="txt" id="retro-time-input" style="padding:8px 10px;font-size:13px;" />
-          </div>
-        </div>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
-          <div>
-            <label for="retro-dose-input" style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;">Dose</label>
-            <input type="text" class="txt" id="retro-dose-input" placeholder="ex: 250 mcg" />
-          </div>
-          <div>
-            <label for="retro-ui-input" style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;">Unidades (UI)</label>
-            <input type="number" class="num" id="retro-ui-input" placeholder="ex: 10" />
+          <div class="form-field">
+            <label for="retro-time-input" class="form-field-label">Horário</label>
+            <input type="time" class="form-field-control form-field-control--compact" id="retro-time-input" />
           </div>
         </div>
 
-        <div style="margin-bottom:14px;">
-          <label for="retro-note-input" style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;">Observações / Motivo</label>
-          <input type="text" class="txt" id="retro-note-input" placeholder="ex: esqueci de anotar ontem" />
+        <div class="form-field-grid">
+          <div class="form-field">
+            <label for="retro-dose-input" class="form-field-label">Dose</label>
+            <input type="text" class="form-field-control" id="retro-dose-input" placeholder="ex: 250 mcg" />
+          </div>
+          <div class="form-field">
+            <label for="retro-ui-input" class="form-field-label">Unidades (UI)</label>
+            <input type="number" class="form-field-control" id="retro-ui-input" placeholder="ex: 10" />
+          </div>
+        </div>
+
+        <div class="form-field form-field--large">
+          <label for="retro-note-input" class="form-field-label">Observações / Motivo</label>
+          <input type="text" class="form-field-control" id="retro-note-input" placeholder="ex: esqueci de anotar ontem" />
         </div>
 
         <div id="retro-audit-hint" style="margin-bottom:14px;padding:9px 12px;background:rgba(44,197,192,0.08);border:1px solid rgba(44,197,192,0.2);border-radius:10px;font-size:11.5px;color:var(--muted);line-height:1.4;">
@@ -927,41 +927,41 @@
       </div>
       <form id="vial-form">
         <div class="sheet-body">
-          <div style="margin-bottom:12px;">
-            <label for="vial-name-input" style="display:block;font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;">Nome do Peptídeo / Composto *</label>
-            <input type="text" class="txt" id="vial-name-input" placeholder="Ex: BPC-157, Tirzepatida..." required />
+          <div class="form-field">
+            <label for="vial-name-input" class="form-field-label form-field-label--strong">Nome do Peptídeo / Composto *</label>
+            <input type="text" class="form-field-control" id="vial-name-input" placeholder="Ex: BPC-157, Tirzepatida..." required />
           </div>
 
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
-            <div>
-              <label for="vial-mg-input" style="display:block;font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;">Massa Total (mg) *</label>
-              <input type="number" step="any" class="txt" id="vial-mg-input" placeholder="Ex: 5" required />
+          <div class="form-field-grid">
+            <div class="form-field">
+              <label for="vial-mg-input" class="form-field-label form-field-label--strong">Massa Total (mg) *</label>
+              <input type="number" step="any" class="form-field-control" id="vial-mg-input" placeholder="Ex: 5" required />
             </div>
-            <div>
-              <label for="vial-water-input" style="display:block;font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;">Diluente (mL) *</label>
-              <input type="number" step="any" class="txt" id="vial-water-input" placeholder="Ex: 2" required />
-            </div>
-          </div>
-
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
-            <div>
-              <label for="vial-recon-date" style="display:block;font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;">Data Reconstituição</label>
-              <input type="date" class="txt" id="vial-recon-date" style="padding:8px 10px;font-size:12.5px;" />
-            </div>
-            <div>
-              <label for="vial-expiry-date" style="display:block;font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;">Data de Validade</label>
-              <input type="date" class="txt" id="vial-expiry-date" style="padding:8px 10px;font-size:12.5px;" />
+            <div class="form-field">
+              <label for="vial-water-input" class="form-field-label form-field-label--strong">Diluente (mL) *</label>
+              <input type="number" step="any" class="form-field-control" id="vial-water-input" placeholder="Ex: 2" required />
             </div>
           </div>
 
-          <div style="margin-bottom:12px;">
-            <label for="vial-lot-input" style="display:block;font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;">Lote / Código (Opcional)</label>
-            <input type="text" class="txt" id="vial-lot-input" placeholder="Ex: LOT-2026-A" />
+          <div class="form-field-grid">
+            <div class="form-field">
+              <label for="vial-recon-date" class="form-field-label form-field-label--strong">Data Reconstituição</label>
+              <input type="date" class="form-field-control form-field-control--compact" id="vial-recon-date" />
+            </div>
+            <div class="form-field">
+              <label for="vial-expiry-date" class="form-field-label form-field-label--strong">Data de Validade</label>
+              <input type="date" class="form-field-control form-field-control--compact" id="vial-expiry-date" />
+            </div>
           </div>
 
-          <div style="margin-bottom:12px;">
-            <label for="vial-notes-input" style="display:block;font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;">Observações</label>
-            <textarea class="txt" id="vial-notes-input" rows="2" placeholder="Ex: Armazenar sob refrigeração de 2°C a 8°C" style="resize:none;font-size:12px;width:100%;box-sizing:border-box;"></textarea>
+          <div class="form-field">
+            <label for="vial-lot-input" class="form-field-label form-field-label--strong">Lote / Código (Opcional)</label>
+            <input type="text" class="form-field-control" id="vial-lot-input" placeholder="Ex: LOT-2026-A" />
+          </div>
+
+          <div class="form-field">
+            <label for="vial-notes-input" class="form-field-label form-field-label--strong">Observações</label>
+            <textarea class="form-field-control form-field-control--compact form-field-control--fixed" id="vial-notes-input" rows="2" placeholder="Ex: Armazenar sob refrigeração de 2°C a 8°C"></textarea>
           </div>
         </div>
         <div class="sheet-foot" style="display:flex;gap:10px;">
@@ -1032,66 +1032,66 @@
         </div>
         <button type="button" class="sheet-x" id="measurement-modal-close" aria-label="Fechar modal de medições">✕</button>
       </div>
-      <form id="measurement-form" style="margin:0;">
-        <div class="sheet-body" style="max-height:65vh;overflow-y:auto;padding-bottom:16px;">
+      <form id="measurement-form" class="form-shell">
+        <div class="sheet-body form-sheet-body--measurement">
           <!-- Data e Hora -->
-          <div style="display:flex;gap:10px;margin-bottom:14px;">
-            <div style="flex:1;">
-              <label for="meas-date-input" style="display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:4px;">Data</label>
-              <input type="date" id="meas-date-input" required style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--surface2);color:var(--text);font-size:13px;">
+          <div class="form-field-row">
+            <div class="form-field form-field--date">
+              <label for="meas-date-input" class="form-field-label form-field-label--strong">Data</label>
+              <input type="date" id="meas-date-input" class="form-field-control" required>
             </div>
-            <div style="width:110px;">
-              <label for="meas-time-input" style="display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:4px;">Hora</label>
-              <input type="time" id="meas-time-input" style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--surface2);color:var(--text);font-size:13px;">
+            <div class="form-field form-field--time">
+              <label for="meas-time-input" class="form-field-label form-field-label--strong">Hora</label>
+              <input type="time" id="meas-time-input" class="form-field-control">
             </div>
           </div>
 
           <!-- Peso Corporal -->
-          <div style="margin-bottom:14px;">
-            <label for="meas-weight-input" style="display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:4px;">Peso Corporal (kg)</label>
-            <input type="number" id="meas-weight-input" step="0.1" min="20" max="400" placeholder="Ex: 82.5 (opcional)" style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--surface2);color:var(--text);font-size:13.5px;">
+          <div class="form-field form-field--large">
+            <label for="meas-weight-input" class="form-field-label form-field-label--strong">Peso Corporal (kg)</label>
+            <input type="number" id="meas-weight-input" class="form-field-control" step="0.1" min="20" max="400" placeholder="Ex: 82.5 (opcional)">
           </div>
 
           <!-- Nível de Energia (1 a 5) -->
-          <div style="margin-bottom:14px;">
-            <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;">Nível de Energia (1 = Muito baixa, 5 = Excelente)</div>
-            <div style="display:flex;gap:8px;" role="radiogroup" aria-label="Nível de energia">
-              <button type="button" class="btn-subtle" id="meas-energy-1" style="flex:1;padding:8px 4px;font-size:13px;border-radius:8px;">1 😫</button>
-              <button type="button" class="btn-subtle" id="meas-energy-2" style="flex:1;padding:8px 4px;font-size:13px;border-radius:8px;">2 🥱</button>
-              <button type="button" class="btn-subtle" id="meas-energy-3" style="flex:1;padding:8px 4px;font-size:13px;border-radius:8px;">3 😐</button>
-              <button type="button" class="btn-subtle" id="meas-energy-4" style="flex:1;padding:8px 4px;font-size:13px;border-radius:8px;">4 ⚡</button>
-              <button type="button" class="btn-subtle" id="meas-energy-5" style="flex:1;padding:8px 4px;font-size:13px;border-radius:8px;">5 🔥</button>
+          <div class="form-field form-field--large">
+            <div class="form-field-label form-field-label--strong">Nível de Energia (1 = Muito baixa, 5 = Excelente)</div>
+            <div class="form-choice-row" role="radiogroup" aria-label="Nível de energia">
+              <button type="button" class="btn-subtle form-choice-btn" id="meas-energy-1">1 😫</button>
+              <button type="button" class="btn-subtle form-choice-btn" id="meas-energy-2">2 🥱</button>
+              <button type="button" class="btn-subtle form-choice-btn" id="meas-energy-3">3 😐</button>
+              <button type="button" class="btn-subtle form-choice-btn" id="meas-energy-4">4 ⚡</button>
+              <button type="button" class="btn-subtle form-choice-btn" id="meas-energy-5">5 🔥</button>
             </div>
           </div>
 
           <!-- Nível de Humor (1 a 5) -->
-          <div style="margin-bottom:14px;">
-            <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;">Humor / Bem-estar (1 = Ruim, 5 = Excelente)</div>
-            <div style="display:flex;gap:8px;" role="radiogroup" aria-label="Nível de humor">
-              <button type="button" class="btn-subtle" id="meas-mood-1" style="flex:1;padding:8px 4px;font-size:13px;border-radius:8px;">1 😞</button>
-              <button type="button" class="btn-subtle" id="meas-mood-2" style="flex:1;padding:8px 4px;font-size:13px;border-radius:8px;">2 😕</button>
-              <button type="button" class="btn-subtle" id="meas-mood-3" style="flex:1;padding:8px 4px;font-size:13px;border-radius:8px;">3 😐</button>
-              <button type="button" class="btn-subtle" id="meas-mood-4" style="flex:1;padding:8px 4px;font-size:13px;border-radius:8px;">4 😊</button>
-              <button type="button" class="btn-subtle" id="meas-mood-5" style="flex:1;padding:8px 4px;font-size:13px;border-radius:8px;">5 🤩</button>
+          <div class="form-field form-field--large">
+            <div class="form-field-label form-field-label--strong">Humor / Bem-estar (1 = Ruim, 5 = Excelente)</div>
+            <div class="form-choice-row" role="radiogroup" aria-label="Nível de humor">
+              <button type="button" class="btn-subtle form-choice-btn" id="meas-mood-1">1 😞</button>
+              <button type="button" class="btn-subtle form-choice-btn" id="meas-mood-2">2 😕</button>
+              <button type="button" class="btn-subtle form-choice-btn" id="meas-mood-3">3 😐</button>
+              <button type="button" class="btn-subtle form-choice-btn" id="meas-mood-4">4 😊</button>
+              <button type="button" class="btn-subtle form-choice-btn" id="meas-mood-5">5 🤩</button>
             </div>
           </div>
 
           <!-- Sintomas e Observações Rápidas -->
-          <div style="margin-bottom:14px;">
-            <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;">Sintomas & Efeitos Autorrelatados</div>
-            <div id="meas-symptoms-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;"></div>
-            <div style="display:flex;gap:8px;">
-              <input type="text" id="meas-custom-symptom-input" placeholder="Outro sintoma / observação..." style="flex:1;padding:8px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--surface2);color:var(--text);font-size:12.5px;" maxlength="60">
-              <button type="button" class="btn-sec" id="meas-add-symptom-btn" style="width:auto;padding:8px 14px;font-size:12px;white-space:nowrap;">
+          <div class="form-field form-field--large">
+            <div class="form-field-label form-field-label--strong">Sintomas & Efeitos Autorrelatados</div>
+            <div id="meas-symptoms-chips" class="form-chip-list"></div>
+            <div class="form-field-inline">
+              <input type="text" id="meas-custom-symptom-input" class="form-field-control form-field-control--compact" placeholder="Outro sintoma / observação..." maxlength="60">
+              <button type="button" class="btn-sec form-field-inline-action" id="meas-add-symptom-btn">
                 + Incluir
               </button>
             </div>
           </div>
 
           <!-- Observações Livres -->
-          <div style="margin-bottom:8px;">
-            <label for="meas-notes-input" style="display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:4px;">Notas Adicionais</label>
-            <textarea id="meas-notes-input" rows="2" placeholder="Ex: Treino pesado, hidratação normal, sono de 8h..." style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--surface2);color:var(--text);font-size:13px;resize:vertical;" maxlength="500"></textarea>
+          <div class="form-field form-field--last">
+            <label for="meas-notes-input" class="form-field-label form-field-label--strong">Notas Adicionais</label>
+            <textarea id="meas-notes-input" class="form-field-control" rows="2" placeholder="Ex: Treino pesado, hidratação normal, sono de 8h..." maxlength="500"></textarea>
           </div>
         </div>
 
