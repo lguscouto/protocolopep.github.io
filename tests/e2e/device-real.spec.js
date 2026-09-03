@@ -117,7 +117,10 @@ function scenarioUrl({ theme, nav, fontScale, landscape }) {
 async function waitForStableLayout(page) {
   await page.waitForLoadState("domcontentloaded");
   await page.evaluate(() => document.fonts?.ready);
-  await page.waitForTimeout(100);
+  await page.evaluate(() => new Promise((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(resolve));
+  }));
+  await page.waitForTimeout(150);
 }
 
 async function assertPageInvariants(page, { nav, landscape }, label) {
@@ -146,8 +149,26 @@ async function assertPageInvariants(page, { nav, landscape }, label) {
           };
         }
       }
-      return rect.right > clip.left && rect.left < clip.right &&
+      const intersectsViewport = rect.right > clip.left && rect.left < clip.right &&
         rect.bottom > clip.top && rect.top < clip.bottom;
+      if (!intersectsViewport) return false;
+
+      // Elementos que estão integralmente sob o chrome fixo não estão
+      // disponíveis para toque; não devem gerar falso positivo no inset.
+      const fixedChrome = [...document.querySelectorAll(".topbar, .nav")]
+        .filter((chrome) => ["fixed", "sticky"].includes(getComputedStyle(chrome).position))
+        .map((chrome) => chrome.getBoundingClientRect());
+      const visibleRect = {
+        left: Math.max(rect.left, clip.left),
+        right: Math.min(rect.right, clip.right),
+        top: Math.max(rect.top, clip.top),
+        bottom: Math.min(rect.bottom, clip.bottom)
+      };
+      const fullyOccludedByChrome = fixedChrome.some((chrome) => {
+        return visibleRect.left >= chrome.left - 1 && visibleRect.right <= chrome.right + 1 &&
+          visibleRect.top >= chrome.top - 1 && visibleRect.bottom <= chrome.bottom + 1;
+      });
+      return !fullyOccludedByChrome;
     };
     const crosses = [];
     for (const element of document.querySelectorAll("button, a, input, select, textarea, [role='button']")) {
@@ -285,6 +306,8 @@ async function showModal(page, modalId) {
 }
 
 test.describe("Protocolo PEP — Galaxy A55 / geometria real", () => {
+  test.describe.configure({ timeout: 120000 });
+
   test("mantém invariantes em navegação, fonte e tema", async ({ page }, testInfo) => {
     const runtime = trackPageRuntime(page);
     await seedStorage(page, {

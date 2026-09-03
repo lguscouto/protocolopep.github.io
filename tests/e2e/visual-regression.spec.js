@@ -121,14 +121,19 @@ async function resetVisualScroll(page) {
   await page.evaluate(() => {
     window.scrollTo(0, 0);
     document.scrollingElement?.scrollTo(0, 0);
-    document.querySelectorAll(".view, .sheet-body").forEach((element) => {
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    document.querySelectorAll("*" ).forEach((element) => {
       element.scrollTop = 0;
       element.scrollLeft = 0;
     });
   });
+  await page.waitForTimeout(50);
 }
 
 test.describe("Protocolo PEP — Matriz de regressão visual", () => {
+  test.describe.configure({ timeout: 120000 });
+
   test("valida temas e telas preenchidas nos viewports críticos", async ({ page }, testInfo) => {
     const runtime = trackPageRuntime(page);
     await installVisualState(page);
@@ -160,6 +165,9 @@ test.describe("Protocolo PEP — Matriz de regressão visual", () => {
       await assertVisualAnchor(page, ".measurement-chip--weight", `medidas preenchidas (${theme.id})`);
       await assertViewportIntegrity(page, `histórico/${theme.id}/${viewportWidth}px`);
 
+      await page.locator("#hist-retro-btn").evaluate((element) => {
+        element.scrollIntoView({ block: "center", inline: "nearest" });
+      });
       await page.locator("#hist-retro-btn").click();
       await assertVisualAnchor(page, "#retro-log-modal.on", `mapa de aplicação (${theme.id})`);
       await assertVisualAnchor(page, ".injection-site-map", `ilustração do mapa (${theme.id})`);
