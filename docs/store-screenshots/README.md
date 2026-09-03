@@ -21,6 +21,13 @@ Com o servidor Vite rodando em `http://127.0.0.1:3000/`:
 node tools/generate-store-screenshots.mjs
 ```
 
+Se a porta padrão estiver ocupada, inicie o Vite em outra porta e informe a URL local ao gerador. Exemplo no PowerShell:
+
+```powershell
+$env:PEP_SCREENSHOT_URL = 'http://127.0.0.1:4175/'
+node tools/generate-store-screenshots.mjs
+```
+
 O gerador abre os fluxos reais em um navegador local, aplica uma moldura editorial própria e salva os PNGs nesta pasta. Não há chamadas de rede nem dependência de dados pessoais.
 
 ## Validação visual
