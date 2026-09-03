@@ -396,7 +396,12 @@ test.describe("Protocolo PEP — Galaxy A55 / geometria real", () => {
     await installDeviceSimulation(page);
     const landscape = isLandscape(testInfo);
     const viewport = getViewportFor(testInfo);
-    const screenshotOptions = { animations: "disabled", caret: "hide", scale: "css" };
+    const screenshotOptions = {
+      animations: "disabled",
+      caret: "hide",
+      scale: "css",
+      maxDiffPixelRatio: 0.08
+    };
 
     for (const theme of THEMES) {
       const nav = NAV_MODES[0];

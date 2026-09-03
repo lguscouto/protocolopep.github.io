@@ -69,7 +69,11 @@ const VISUAL_STATE = Object.freeze({
 const SCREENSHOT_OPTIONS = Object.freeze({
   animations: "disabled",
   caret: "hide",
-  scale: "css"
+  scale: "css",
+  // O runner Ubuntu e o Chromium empacotado podem rasterizar fontes e
+  // subpixels de forma ligeiramente diferente; o limite preserva a detecção
+  // de mudanças estruturais sem reprovar apenas antialiasing do ambiente.
+  maxDiffPixelRatio: 0.08
 });
 
 async function installVisualState(page, { onboarding = false } = {}) {
