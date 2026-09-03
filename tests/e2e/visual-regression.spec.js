@@ -66,6 +66,12 @@ const VISUAL_STATE = Object.freeze({
   }]
 });
 
+const SCREENSHOT_OPTIONS = Object.freeze({
+  animations: "disabled",
+  caret: "hide",
+  scale: "css"
+});
+
 async function installVisualState(page, { onboarding = false } = {}) {
   await page.addInitScript(({ state, onboarding: showOnboarding }) => {
     const params = new URLSearchParams(window.location.search);
@@ -111,6 +117,17 @@ async function assertViewportIntegrity(page, label) {
   expect(metrics.navRight, `navegação saiu pela direita em ${label}`).toBeLessThanOrEqual(metrics.windowWidth + 1);
 }
 
+async function resetVisualScroll(page) {
+  await page.evaluate(() => {
+    window.scrollTo(0, 0);
+    document.scrollingElement?.scrollTo(0, 0);
+    document.querySelectorAll(".view, .sheet-body").forEach((element) => {
+      element.scrollTop = 0;
+      element.scrollLeft = 0;
+    });
+  });
+}
+
 test.describe("Protocolo PEP — Matriz de regressão visual", () => {
   test("valida temas e telas preenchidas nos viewports críticos", async ({ page }, testInfo) => {
     const runtime = trackPageRuntime(page);
@@ -153,6 +170,11 @@ test.describe("Protocolo PEP — Matriz de regressão visual", () => {
       await assertVisualAnchor(page, ".edit-vial-btn", `inventário preenchido (${theme.id})`);
       await assertVisualAnchor(page, ".inventory-status--active", `status do inventário (${theme.id})`);
       await assertViewportIntegrity(page, `ajustes/${theme.id}/${viewportWidth}px`);
+      await resetVisualScroll(page);
+      await expect(page).toHaveScreenshot(
+        `filled-settings-${theme.id}-${viewportWidth}.png`,
+        SCREENSHOT_OPTIONS
+      );
 
       await page.locator("#tab-today").click();
       await page.locator("#dash-research-btn").click();
@@ -178,6 +200,11 @@ test.describe("Protocolo PEP — Matriz de regressão visual", () => {
       await expect(image).toBeVisible();
       await expect.poll(() => image.evaluate((element) => element.complete ? element.naturalWidth : 0)).toBeGreaterThan(0);
       await assertViewportIntegrity(page, `onboarding/${theme.id}`);
+      await resetVisualScroll(page);
+      await expect(page).toHaveScreenshot(
+        `onboarding-${theme.id}.png`,
+        SCREENSHOT_OPTIONS
+      );
     }
 
     runtime.assertCleanRuntime();
