@@ -118,3 +118,10 @@ Evoluir o Protocolo PEP de uma interface predominantemente utilitária para uma 
 - As cinco telas principais passaram a ter uma verificação E2E explícita de largura do documento, detectando regressões de overflow horizontal em telas móveis.
 - A navegação inferior é validada dentro dos limites da viewport em cada aba e nos três perfis de viewport usados pelo projeto.
 - A checagem roda junto da suíte existente, mantendo a auditoria visual reproduzível no CI e protegendo as próximas alterações de layout.
+
+## Décima primeira entrega implementada — matriz de regressão visual
+
+- A matriz E2E combina tema escuro, tema claro e alto contraste com os viewports de 360 px e 600 px; o perfil intermediário de 412 px continua sendo executado como cobertura adicional do Pixel 7.
+- Os estados preenchidos de dashboard, mapa de aplicação, semana, histórico, medidas, inventário, pesquisa e ajustes agora têm âncoras visuais verificadas por presença, área renderizada e integridade da viewport.
+- O onboarding ilustrado é revisitado nos três temas, validando carregamento das imagens locais e permanência do conteúdo dentro da viewport.
+- As assertions estão em `tests/e2e/visual-regression.spec.js` e funcionam como referência reproduzível para futuras mudanças; não dependem de snapshots frágeis nem de rede.

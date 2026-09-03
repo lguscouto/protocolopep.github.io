@@ -55,3 +55,19 @@
   - Título de Seção: `16px` - `18px` (Peso 600)
   - Corpo Normal: `14px` - `15px` (Peso 400/500)
   - Metadados / Legendas: `12.5px` - `13px` (com contraste reforçado ≥ 4.5:1)
+
+## 5. Matriz de Regressão Visual (Fase 6)
+
+A auditoria visual mínima é executada em `tests/e2e/visual-regression.spec.js` com dados sintéticos locais. Cada combinação verifica área renderizada, tema aplicado, ausência de overflow horizontal e navegação inferior dentro da viewport.
+
+| Dimensão | Cobertura |
+| --- | --- |
+| Tema escuro | `pep_theme_mode=preto` |
+| Tema claro | `pep_theme_mode=branco` |
+| Alto contraste | `pep_high_contrast=true` sobre tema escuro |
+| Viewport compacto | 360 × 800 px (`android-small`) |
+| Viewport amplo | 600 × 960 px (`wide-mobile`) |
+| Cobertura adicional | 412 × 915 px (`android-standard`) |
+| Estados críticos | Dashboard, mapa de aplicação, semana, histórico, medidas preenchidas, inventário preenchido, pesquisa, ajustes e onboarding |
+
+As imagens da loja continuam sendo referências editoriais estáticas; a matriz protege os estados reais do app contra regressões de layout sem transformar dados sintéticos em conteúdo clínico.

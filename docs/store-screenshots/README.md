@@ -22,3 +22,20 @@ node tools/generate-store-screenshots.mjs
 ```
 
 O gerador abre os fluxos reais em um navegador local, aplica uma moldura editorial própria e salva os PNGs nesta pasta. Não há chamadas de rede nem dependência de dados pessoais.
+
+## Validação visual
+
+As peças servem como referências editoriais dos principais estados visuais, enquanto a regressão do app é protegida por assertions executáveis em `tests/e2e/visual-regression.spec.js`.
+
+| Referência | Estado coberto na matriz |
+| --- | --- |
+| `01-proxima-acao.png` | Dashboard preenchido e ação principal |
+| `02-mapa-de-aplicacao.png` | Mapa de aplicação com local selecionável |
+| `03-linha-do-tempo.png` | Semana e histórico em linha do tempo |
+| `04-acompanhamento-pessoal.png` | Medidas preenchidas e acompanhamento pessoal |
+
+A matriz combina temas escuro, claro e alto contraste com viewports de 360 px e 600 px, além do perfil intermediário de 412 px. Para executar apenas essa validação:
+
+```bash
+npm run test:e2e -- tests/e2e/visual-regression.spec.js --retries=0
+```
