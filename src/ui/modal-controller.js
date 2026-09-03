@@ -1,4 +1,6 @@
 const OPEN_MODAL_SELECTOR = ".modal.on";
+const FIRST_FIELD_SELECTOR =
+  'input:not([type="hidden"]):not([disabled]), select:not([disabled]), textarea:not([disabled]), [contenteditable="true"]';
 
 function nextFrame(windowRef, callback) {
   if (typeof windowRef?.requestAnimationFrame === "function") {
@@ -13,6 +15,88 @@ function cancelFrame(windowRef, frameId) {
     windowRef.cancelAnimationFrame(frameId);
   } else if (typeof windowRef?.clearTimeout === "function") {
     windowRef.clearTimeout(frameId);
+  }
+}
+
+function focusWithoutScroll(element) {
+  if (!element || typeof element.focus !== "function") return;
+  try {
+    element.focus({ preventScroll: true });
+  } catch {
+    element.focus();
+  }
+}
+
+function isVisibleField(element, windowRef) {
+  if (!element || element.disabled) return false;
+  if (element.getAttribute?.("aria-hidden") === "true") return false;
+
+  const style = typeof windowRef?.getComputedStyle === "function"
+    ? windowRef.getComputedStyle(element)
+    : null;
+  if (style && (style.display === "none" || style.visibility === "hidden")) return false;
+  if (typeof element.checkVisibility === "function" && !element.checkVisibility()) return false;
+  if (typeof element.getClientRects === "function" && element.getClientRects().length === 0) {
+    return false;
+  }
+  return true;
+}
+
+function resetScrollableElement(element) {
+  if (!element) return;
+  if (typeof element.scrollTop === "number") element.scrollTop = 0;
+  if (typeof element.scrollLeft === "number") element.scrollLeft = 0;
+}
+
+function keepElementVisible(element, scroller) {
+  if (!element || !scroller || typeof element.getBoundingClientRect !== "function") return;
+  const fieldRect = element.getBoundingClientRect();
+  const scrollerRect = typeof scroller.getBoundingClientRect === "function"
+    ? scroller.getBoundingClientRect()
+    : null;
+  if (!scrollerRect) return;
+
+  const visibleTop = scrollerRect.top + 12;
+  const visibleBottom = scrollerRect.bottom - 12;
+  let delta = 0;
+  if (fieldRect.bottom > visibleBottom) {
+    delta = fieldRect.bottom - visibleBottom;
+  } else if (fieldRect.top < visibleTop) {
+    delta = fieldRect.top - visibleTop;
+  }
+
+  if (delta !== 0 && typeof scroller.scrollBy === "function") {
+    scroller.scrollBy({ top: delta, behavior: "auto" });
+  }
+}
+
+/**
+ * Zera o estado de rolagem de um sheet e dos seus descendentes roláveis.
+ * Também alinha o primeiro campo visível dentro do corpo do sheet sem alterar
+ * o foco atual do usuário.
+ */
+export function resetModalScrollState(modal, { windowRef = typeof window !== "undefined" ? window : null } = {}) {
+  if (!modal || typeof modal.querySelector !== "function") return;
+
+  const sheet = modal.querySelector(".sheet");
+  if (!sheet) return;
+
+  const bodies = Array.from(sheet.querySelectorAll?.(".sheet-body") || []);
+  const scrollables = [sheet, ...Array.from(sheet.querySelectorAll?.("*") || [])];
+  scrollables.forEach(resetScrollableElement);
+
+  const firstField = Array.from(sheet.querySelectorAll?.(FIRST_FIELD_SELECTOR) || [])
+    .find((field) => isVisibleField(field, windowRef));
+  const firstBody = firstField?.closest?.(".sheet-body");
+  if (firstField && firstBody) {
+    keepElementVisible(firstField, firstBody);
+  }
+
+  // O foco que o trap de acessibilidade já definiu permanece no mesmo alvo,
+  // mas nunca deve causar a rolagem automática da página ao reabrir o modal.
+  const activeElement = modal.ownerDocument?.activeElement;
+  if (activeElement && activeElement.closest?.(OPEN_MODAL_SELECTOR) === modal) {
+    focusWithoutScroll(activeElement);
   }
 }
 
@@ -34,6 +118,7 @@ export function setupModalController({
   const body = documentRef.body;
   const viewport = windowRef.visualViewport || null;
   let modalOpen = false;
+  let activeModal = null;
   let savedScrollY = 0;
   let focusFrame = 0;
 
@@ -83,7 +168,12 @@ export function setupModalController({
   };
 
   const syncModalLock = () => {
-    const hasOpenModal = Boolean(documentRef.querySelector(OPEN_MODAL_SELECTOR));
+    const openModal = documentRef.querySelector(OPEN_MODAL_SELECTOR);
+    const hasOpenModal = Boolean(openModal);
+
+    if (openModal && (!modalOpen || openModal !== activeModal)) {
+      resetModalScrollState(openModal, { windowRef });
+    }
 
     if (hasOpenModal && !modalOpen) {
       savedScrollY = Number.isFinite(windowRef.scrollY) ? windowRef.scrollY : 0;
@@ -94,6 +184,7 @@ export function setupModalController({
     }
 
     modalOpen = hasOpenModal;
+    activeModal = openModal;
     root.classList.toggle("modal-open", modalOpen);
     body.classList.toggle("modal-open", modalOpen);
 
@@ -136,4 +227,3 @@ export function setupModalController({
     body.classList.remove("modal-open");
   };
 }
-

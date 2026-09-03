@@ -630,6 +630,77 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     runtime.assertCleanRuntime();
   });
 
+  test("rolar, fechar e reabrir um modal restaura o estado do sheet e das listas internas", async ({ page }) => {
+    const runtime = trackPageRuntime(page);
+    await seedStorage(page, {
+      skipOnboarding: true,
+      peptides: [{
+        id: "pep-modal-scroll",
+        name: "Composto para rolagem",
+        sub: "teste de estado do modal",
+        dose: "250 mcg",
+        ui: 10,
+        perDay: 1,
+        time: "08:00",
+        color: "#30D5C8",
+        days: null
+      }]
+    });
+
+    await page.goto("/");
+    await page.waitForLoadState("domcontentloaded");
+
+    const openEditor = page.locator("#today-cards .gear").first();
+    await expect(openEditor).toBeVisible();
+    await openEditor.click();
+
+    const modal = page.locator("#edit-modal");
+    const sheetBody = modal.locator(".sheet-body");
+    await expect(modal).toHaveClass(/on/);
+
+    const scrollState = await sheetBody.evaluate((element) => {
+      const spacer = document.createElement("div");
+      spacer.setAttribute("aria-hidden", "true");
+      spacer.style.height = "1200px";
+      element.appendChild(spacer);
+      element.scrollTop = element.scrollHeight;
+      const nestedList = element.querySelector(".lib-list, [role='listbox']");
+      if (nestedList) nestedList.scrollTop = 42;
+      return {
+        bodyScrollTop: element.scrollTop,
+        nestedScrollTop: nestedList?.scrollTop ?? 0
+      };
+    });
+    expect(scrollState.bodyScrollTop).toBeGreaterThan(0);
+
+    await modal.locator("#edit-close").click();
+    await expect(modal).not.toHaveClass(/on/);
+    await openEditor.click();
+    await expect(modal).toHaveClass(/on/);
+
+    await expect.poll(() => sheetBody.evaluate((element) => element.scrollTop)).toBe(0);
+    await expect.poll(() => sheetBody.evaluate((element) => {
+      const nestedList = element.querySelector(".lib-list, [role='listbox']");
+      return nestedList?.scrollTop ?? 0;
+    })).toBe(0);
+
+    const firstFieldVisibility = await sheetBody.evaluate((body) => {
+      const field = Array.from(body.querySelectorAll("input:not([type='hidden']):not([disabled]), select:not([disabled]), textarea:not([disabled])"))
+        .find((candidate) => getComputedStyle(candidate).display !== "none" && getComputedStyle(candidate).visibility !== "hidden" && candidate.getClientRects().length > 0);
+      if (!field) return null;
+      const fieldRect = field.getBoundingClientRect();
+      const bodyRect = body.getBoundingClientRect();
+      return {
+        fullyVisible: fieldRect.top >= bodyRect.top && fieldRect.bottom <= bodyRect.bottom,
+        focusedInsideModal: document.activeElement?.closest("#edit-modal") === document.getElementById("edit-modal")
+      };
+    });
+    expect(firstFieldVisibility?.fullyVisible).toBe(true);
+    expect(firstFieldVisibility?.focusedInsideModal).toBe(true);
+
+    runtime.assertCleanRuntime();
+  });
+
   test("mantém estados semânticos legíveis ao alternar tema e alto contraste", async ({ page }) => {
     const runtime = trackPageRuntime(page);
     await seedStorage(page, { skipOnboarding: true, peptides: [] });

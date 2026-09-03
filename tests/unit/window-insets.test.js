@@ -56,6 +56,10 @@ describe("Contrato de insets Android edge-to-edge", () => {
     expect(modalController).toContain("MutationObserver");
     expect(modalController).toContain("modal-open");
     expect(modalController).toContain("scrollBy");
+    expect(modalController).toContain("resetModalScrollState");
+    expect(modalController).toContain("scrollTop = 0");
+    expect(modalController).toContain("scrollLeft = 0");
+    expect(modalController).toContain("preventScroll");
   });
 
   it("centraliza variantes repetidas de sheets em classes reutilizáveis", () => {

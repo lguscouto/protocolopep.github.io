@@ -6,6 +6,15 @@
 const STORAGE_KEY_HIGH_CONTRAST = "pep_high_contrast";
 const FOCUSABLE_SELECTOR = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
+function focusWithoutScroll(element) {
+  if (!element || typeof element.focus !== "function") return;
+  try {
+    element.focus({ preventScroll: true });
+  } catch {
+    element.focus();
+  }
+}
+
 export class AccessibilityService {
   constructor({ storage = null, announcerEl = null } = {}) {
     this.storage = storage || (typeof window !== "undefined" ? window.localStorage : null);
@@ -119,7 +128,7 @@ export class AccessibilityService {
 
     const focusableElements = Array.from(element.querySelectorAll(FOCUSABLE_SELECTOR));
     if (focusableElements.length > 0) {
-      focusableElements[0].focus();
+      focusWithoutScroll(focusableElements[0]);
     }
 
     const handleKeyDown = (e) => {
@@ -166,11 +175,8 @@ export class AccessibilityService {
       this.activeTrapCleanup();
     }
     if (this.previousFocusedElement && typeof this.previousFocusedElement.focus === "function") {
-      try {
-        this.previousFocusedElement.focus();
-      } catch {
-        // Ignora caso elemento tenha sido removido do DOM
-      }
+      // Recoloca o foco no acionador sem deslocar a página ao fechar o modal.
+      focusWithoutScroll(this.previousFocusedElement);
       this.previousFocusedElement = null;
     }
   }

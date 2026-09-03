@@ -8,6 +8,15 @@
 
 import { haptics } from "./haptics.js";
 
+function focusWithoutScroll(element) {
+  if (!element || typeof element.focus !== "function") return;
+  try {
+    element.focus({ preventScroll: true });
+  } catch {
+    element.focus();
+  }
+}
+
 export class DialogService {
   /**
    * Exibe um modal de confirmação acessível (retorna Promise<boolean>)
@@ -66,11 +75,7 @@ export class DialogService {
         closeBtn?.removeEventListener("click", onCancel);
         window.removeEventListener("keydown", onKeyDown);
         if (previousActive && typeof previousActive.focus === "function") {
-          try {
-            previousActive.focus();
-          } catch (e) {
-            // ignore
-          }
+          focusWithoutScroll(previousActive);
         }
       };
 
@@ -121,9 +126,9 @@ export class DialogService {
 
       // Foco inicial seguro no botão de cancelar para evitar ações destrutivas acidentais
       if (cancelBtn && cancelBtn.style.display !== "none") {
-        cancelBtn.focus();
+        focusWithoutScroll(cancelBtn);
       } else if (okBtn) {
-        okBtn.focus();
+        focusWithoutScroll(okBtn);
       }
     });
   }
@@ -182,11 +187,7 @@ export class DialogService {
         closeBtn?.removeEventListener("click", onOk);
         window.removeEventListener("keydown", onKeyDown);
         if (previousActive && typeof previousActive.focus === "function") {
-          try {
-            previousActive.focus();
-          } catch (e) {
-            // ignore
-          }
+          focusWithoutScroll(previousActive);
         }
       };
 
@@ -230,7 +231,7 @@ export class DialogService {
       }
 
       if (okBtn) {
-        okBtn.focus();
+        focusWithoutScroll(okBtn);
       }
     });
   }
