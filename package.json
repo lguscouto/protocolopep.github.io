@@ -1,6 +1,6 @@
 {
   "name": "pep-protocol",
-  "version": "2.9.5",
+  "version": "2.9.8",
   "type": "module",
   "private": true,
   "description": "App Android Local-First para acompanhamento e cálculo de protocolos de peptídeos.",
