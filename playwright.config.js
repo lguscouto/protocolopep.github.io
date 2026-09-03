@@ -1,5 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
+const REAL_DEVICE_TEST = /device-real\.spec\.js/;
+
 export default defineConfig({
   testDir: "tests/e2e",
   fullyParallel: false,
@@ -18,8 +20,32 @@ export default defineConfig({
     timeout: 30000
   },
   projects: [
-    { name: "android-small", use: { ...devices["Pixel 5"], viewport: { width: 360, height: 800 } } },
-    { name: "android-standard", use: { ...devices["Pixel 7"] } },
-    { name: "wide-mobile", use: { viewport: { width: 600, height: 960 } } }
+    { name: "android-small", testIgnore: REAL_DEVICE_TEST, use: { ...devices["Pixel 5"], viewport: { width: 360, height: 800 } } },
+    { name: "android-standard", testIgnore: REAL_DEVICE_TEST, use: { ...devices["Pixel 7"] } },
+    { name: "wide-mobile", testIgnore: REAL_DEVICE_TEST, use: { viewport: { width: 600, height: 960 } } },
+    {
+      name: "galaxy-a55",
+      testMatch: REAL_DEVICE_TEST,
+      use: {
+        ...devices["Pixel 7"],
+        viewport: { width: 412, height: 915 },
+        screen: { width: 412, height: 915 },
+        deviceScaleFactor: 2.625,
+        isMobile: true,
+        hasTouch: true
+      }
+    },
+    {
+      name: "galaxy-a55-landscape",
+      testMatch: REAL_DEVICE_TEST,
+      use: {
+        ...devices["Pixel 7"],
+        viewport: { width: 915, height: 412 },
+        screen: { width: 915, height: 412 },
+        deviceScaleFactor: 2.625,
+        isMobile: true,
+        hasTouch: true
+      }
+    }
   ]
 });

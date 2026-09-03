@@ -8,9 +8,9 @@
   -webkit-backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--border);
   padding: 14px 18px 12px;
-  padding-top: calc(14px + var(--app-safe-top));
-  padding-left: calc(18px + var(--app-safe-left));
-  padding-right: calc(18px + var(--app-safe-right));
+  padding-top: calc(14px + var(--safe-area-inset-top));
+  padding-left: calc(18px + var(--safe-area-inset-left));
+  padding-right: calc(18px + var(--safe-area-inset-right));
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -2254,7 +2254,7 @@ body.light .btn-sec {
   -webkit-backdrop-filter: blur(18px);
   border-top: 1px solid var(--border);
   display: flex;
-  padding: 8px calc(8px + var(--app-safe-right)) calc(8px + var(--app-safe-bottom)) calc(8px + var(--app-safe-left));
+  padding: 8px calc(8px + var(--safe-area-inset-right)) calc(8px + var(--safe-area-inset-bottom)) calc(8px + var(--safe-area-inset-left));
   max-width: 640px;
   margin: 0 auto;
 }
@@ -2347,7 +2347,7 @@ body.modal-open {
 .sheet {
   width: 100%;
   max-width: 640px;
-  max-height: min(92dvh, calc(var(--app-viewport-height, 100dvh) - var(--app-safe-top) - 8px));
+  max-height: min(92dvh, calc(var(--app-viewport-height, 100dvh) - var(--safe-area-inset-top) - 8px));
   min-height: 0;
   background: var(--surface);
   border: 1px solid var(--border);
@@ -2464,12 +2464,13 @@ body.modal-open {
 
 .sheet-body--confirm {
   padding: 18px 20px;
+  padding-bottom: calc(18px + var(--safe-area-inset-bottom));
 }
 
 .sheet-foot {
   flex: 0 0 auto;
   padding: 12px 16px;
-  padding-bottom: calc(12px + var(--app-safe-bottom)) !important;
+  padding-bottom: calc(12px + var(--safe-area-inset-bottom, var(--app-safe-bottom))) !important;
   background: var(--surface);
   border-top: 1px solid var(--border);
 }
