@@ -660,16 +660,16 @@
           <div class="swatches" id="modal-swatches" role="group" aria-label="Seletor de cor"></div>
         </div>
       </div>
-      <div class="sheet-foot" style="display:flex;gap:10px;">
-        <button type="button" class="btn-danger" id="edit-del-btn" style="display:none;flex:1;">Excluir</button>
-        <button type="button" class="btn-primary" id="edit-save" style="flex:2;">Salvar Peptídeo</button>
+      <div class="sheet-foot sheet-foot--actions sheet-foot--primary-wide">
+        <button type="button" class="btn-danger" id="edit-del-btn" style="display:none;">Excluir</button>
+        <button type="button" class="btn-primary" id="edit-save">Salvar Peptídeo</button>
       </div>
     </div>
   </div>
 
   <!-- Modal: Notificações e Lembretes (V05) -->
   <div class="modal" id="notif-modal" role="dialog" aria-modal="true" aria-labelledby="notif-modal-title">
-    <div class="sheet" style="max-width:480px;">
+    <div class="sheet sheet--standard">
       <div class="sheet-head">
         <div class="sheet-title" id="notif-modal-title">Lembretes & Alarmes Locais</div>
         <button type="button" class="sheet-x" id="notif-close" aria-label="Fechar lembretes">✕</button>
@@ -714,9 +714,9 @@
 
         <button type="button" class="btn-primary" id="nf-enable" style="width:100%;margin-bottom:10px;">Ativar Lembretes</button>
         
-        <div style="display:flex;gap:10px;margin-bottom:12px;">
-          <button type="button" class="btn-subtle" id="nf-test" style="flex:1;">Testar Alerta</button>
-          <button type="button" class="btn-subtle" id="nf-reschedule" style="flex:1;">Reagendar</button>
+        <div class="action-row action-row--equal action-row--modal">
+          <button type="button" class="btn-subtle" id="nf-test">Testar Alerta</button>
+          <button type="button" class="btn-subtle" id="nf-reschedule">Reagendar</button>
         </div>
 
         <div style="font-size:11px;color:var(--muted);line-height:1.4;">
@@ -731,7 +731,7 @@
 
   <!-- Modal: Registro de Dose Retroativo / Auditável (V03) -->
   <div class="modal" id="retro-log-modal" role="dialog" aria-modal="true" aria-labelledby="retro-modal-title">
-    <div class="sheet" style="max-width:460px;">
+    <div class="sheet sheet--narrow">
       <div class="sheet-head">
         <div class="sheet-title" id="retro-modal-title">Registrar Aplicação</div>
         <button type="button" class="sheet-x" id="retro-close" aria-label="Fechar registro de aplicação">✕</button>
@@ -779,16 +779,16 @@
           🕒 <b>Registro Auditável:</b> Aplicações marcadas em datas passadas recebem automaticamente a marcação de auditoria <i>Retroativo</i>.
         </div>
       </div>
-      <div class="sheet-foot" style="display:flex;gap:10px;">
-        <button type="button" class="btn-subtle" id="retro-cancel" style="flex:1;">Cancelar</button>
-        <button type="button" class="btn-primary" id="retro-save" style="flex:2;">Salvar Registro</button>
+      <div class="sheet-foot sheet-foot--actions sheet-foot--primary-wide">
+        <button type="button" class="btn-subtle" id="retro-cancel">Cancelar</button>
+        <button type="button" class="btn-primary" id="retro-save">Salvar Registro</button>
       </div>
     </div>
   </div>
 
   <!-- Modal: Prévia de Compartilhamento Seguro (V04) -->
   <div class="modal" id="share-preview-modal" role="dialog" aria-modal="true" aria-labelledby="share-preview-title">
-    <div class="sheet" style="max-width:480px;">
+    <div class="sheet sheet--standard">
       <div class="sheet-head">
         <div class="sheet-title" id="share-preview-title">Compartilhar Progresso</div>
         <button type="button" class="sheet-x" id="share-close" aria-label="Fechar compartilhamento">✕</button>
@@ -815,16 +815,16 @@
           🔒 O texto é gerado exclusivamente neste dispositivo antes de ser enviado para qualquer outro app.
         </div>
       </div>
-      <div class="sheet-foot" style="display:flex;gap:10px;">
-        <button type="button" class="btn-subtle" id="share-copy-btn" style="flex:1;">Copiar Texto</button>
-        <button type="button" class="btn-primary" id="share-native-btn" style="flex:1.5;">Compartilhar...</button>
+      <div class="sheet-foot sheet-foot--actions sheet-foot--balanced">
+        <button type="button" class="btn-subtle" id="share-copy-btn">Copiar Texto</button>
+        <button type="button" class="btn-primary" id="share-native-btn">Compartilhar...</button>
       </div>
     </div>
   </div>
 
   <!-- Modal: Prévia de Backup e Restauração (V06) -->
   <div class="modal" id="backup-preview-modal" role="dialog" aria-modal="true" aria-labelledby="backup-preview-title">
-    <div class="sheet" style="max-width:480px;">
+    <div class="sheet sheet--standard">
       <div class="sheet-head">
         <div class="sheet-title" id="backup-preview-title">Restaurar Backup Local</div>
         <button type="button" class="sheet-x" id="backup-preview-close" aria-label="Fechar restauração">✕</button>
@@ -832,16 +832,16 @@
       <div class="sheet-body">
         <div id="backup-preview-content"></div>
       </div>
-      <div class="sheet-foot" style="display:flex;gap:10px;">
-        <button type="button" class="btn-subtle" id="backup-preview-cancel" style="flex:1;">Cancelar</button>
-        <button type="button" class="btn-primary" id="backup-preview-confirm" style="flex:2;">Substituir & Restaurar</button>
+      <div class="sheet-foot sheet-foot--actions sheet-foot--primary-wide">
+        <button type="button" class="btn-subtle" id="backup-preview-cancel">Cancelar</button>
+        <button type="button" class="btn-primary" id="backup-preview-confirm">Substituir & Restaurar</button>
       </div>
     </div>
   </div>
 
   <!-- Modal: Relatório de Aplicações (V08) -->
   <div class="modal" id="report-modal" role="dialog" aria-modal="true" aria-labelledby="report-modal-title">
-    <div class="sheet" style="max-width:480px;">
+    <div class="sheet sheet--standard">
       <div class="sheet-head">
         <div class="sheet-title" id="report-modal-title">Relatório de Aplicações</div>
         <button type="button" class="sheet-x" id="report-close" aria-label="Fechar relatório">✕</button>
@@ -889,16 +889,16 @@
           ⚠️ <b>Uso Pessoal:</b> Relatório gerado localmente neste dispositivo para fins de acompanhamento individual.
         </div>
       </div>
-      <div class="sheet-foot" style="display:flex;gap:10px;">
-        <button type="button" class="btn-subtle" id="report-export-csv" style="flex:1;">Exportar CSV</button>
-        <button type="button" class="btn-primary" id="report-print-pdf" style="flex:1.3;">Imprimir / PDF</button>
+      <div class="sheet-foot sheet-foot--actions sheet-foot--primary-medium">
+        <button type="button" class="btn-subtle" id="report-export-csv">Exportar CSV</button>
+        <button type="button" class="btn-primary" id="report-print-pdf">Imprimir / PDF</button>
       </div>
     </div>
   </div>
 
   <!-- Modal: Diagnósticos do Sistema (V09) -->
   <div class="modal" id="diag-modal" role="dialog" aria-modal="true" aria-labelledby="diag-modal-title">
-    <div class="sheet" style="max-width:480px;">
+    <div class="sheet sheet--standard">
       <div class="sheet-head">
         <div class="sheet-title" id="diag-modal-title">Diagnósticos do Sistema</div>
         <button type="button" class="sheet-x" id="diag-close" aria-label="Fechar diagnósticos">✕</button>
@@ -911,16 +911,16 @@
           <pre id="diag-json-preview" style="background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:12px;font-size:11.5px;line-height:1.45;color:var(--text);font-family:monospace;max-height:220px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;"></pre>
         </div>
       </div>
-      <div class="sheet-foot" style="display:flex;gap:10px;">
-        <button type="button" class="btn-subtle" id="diag-copy-btn" style="flex:1;">Copiar JSON</button>
-        <button type="button" class="btn-primary" id="diag-export-btn" style="flex:1.2;">Exportar Arquivo</button>
+      <div class="sheet-foot sheet-foot--actions sheet-foot--primary-narrow">
+        <button type="button" class="btn-subtle" id="diag-copy-btn">Copiar JSON</button>
+        <button type="button" class="btn-primary" id="diag-export-btn">Exportar Arquivo</button>
       </div>
     </div>
   </div>
 
   <!-- Modal: Cadastro e Edição de Frasco (V10) -->
   <div class="modal" id="vial-modal" role="dialog" aria-modal="true" aria-labelledby="vial-modal-title">
-    <div class="sheet" style="max-width:480px;">
+    <div class="sheet sheet--standard">
       <div class="sheet-head">
         <div class="sheet-title" id="vial-modal-title">Novo Frasco de Peptídeo</div>
         <button type="button" class="sheet-x" id="vial-modal-close" aria-label="Fechar modal de frasco">✕</button>
@@ -964,9 +964,9 @@
             <textarea class="form-field-control form-field-control--compact form-field-control--fixed" id="vial-notes-input" rows="2" placeholder="Ex: Armazenar sob refrigeração de 2°C a 8°C"></textarea>
           </div>
         </div>
-        <div class="sheet-foot" style="display:flex;gap:10px;">
-          <button type="button" class="btn-danger" id="vial-delete-btn" style="display:none;flex:1;">Excluir</button>
-          <button type="submit" class="btn-primary" id="vial-save-btn" style="flex:2;">Salvar Frasco</button>
+        <div class="sheet-foot sheet-foot--actions sheet-foot--primary-wide">
+          <button type="button" class="btn-danger" id="vial-delete-btn" style="display:none;">Excluir</button>
+          <button type="submit" class="btn-primary" id="vial-save-btn">Salvar Frasco</button>
         </div>
       </form>
     </div>
@@ -974,7 +974,7 @@
 
   <!-- Modal: Histórico de Movimentações do Frasco (V10) -->
   <div class="modal" id="vial-history-modal" role="dialog" aria-modal="true" aria-labelledby="vial-history-title">
-    <div class="sheet" style="max-width:480px;">
+    <div class="sheet sheet--standard">
       <div class="sheet-head">
         <div class="sheet-title" id="vial-history-title">Movimentações do Frasco</div>
         <button type="button" class="sheet-x" id="vial-history-close" aria-label="Fechar histórico de movimentações">✕</button>
@@ -983,7 +983,7 @@
         <div id="vial-history-list" style="max-height:300px;overflow-y:auto;"></div>
       </div>
       <div class="sheet-foot">
-        <button type="button" class="btn-primary" onclick="document.getElementById('vial-history-modal').classList.remove('on')" style="width:100%;">
+        <button type="button" class="btn-primary" onclick="document.getElementById('vial-history-modal').classList.remove('on')">
           Fechar
         </button>
       </div>
@@ -992,7 +992,7 @@
 
   <!-- Modal: Configuração de Sítios de Aplicação (V11) -->
   <div class="modal" id="sites-modal" role="dialog" aria-modal="true" aria-labelledby="sites-modal-title">
-    <div class="sheet" style="max-width:480px;">
+    <div class="sheet sheet--standard">
       <div class="sheet-head">
         <div>
           <div class="sheet-title" id="sites-modal-title">Rotação de Sítios</div>
@@ -1000,7 +1000,7 @@
         </div>
         <button type="button" class="sheet-x" id="sites-modal-close" aria-label="Fechar configuração de sítios">✕</button>
       </div>
-      <div class="sheet-body" style="max-height:60vh;overflow-y:auto;">
+      <div class="sheet-body sheet-body--sites">
         <div id="sites-manage-list" style="margin-bottom:16px;"></div>
 
         <div style="font-size:12px;font-weight:700;margin-bottom:6px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">Adicionar Novo Sítio</div>
@@ -1011,7 +1011,7 @@
           </button>
         </div>
       </div>
-      <div class="sheet-foot" style="display:flex;justify-content:space-between;gap:8px;">
+      <div class="sheet-foot sheet-foot--split">
         <button type="button" class="btn-subtle" id="sites-reset-btn" style="font-size:12px;padding:8px 12px;width:auto;">
           Restaurar Padrão
         </button>
@@ -1024,7 +1024,7 @@
 
   <!-- Modal: Registro de Medições e Sintomas (V12) -->
   <div class="modal" id="measurement-modal" role="dialog" aria-modal="true" aria-labelledby="measurement-modal-title">
-    <div class="sheet" style="max-width:500px;">
+    <div class="sheet sheet--form">
       <div class="sheet-head">
         <div>
           <div class="sheet-title" id="measurement-modal-title">Registro Corporal / Sintomas</div>
@@ -1095,11 +1095,11 @@
           </div>
         </div>
 
-        <div class="sheet-foot" style="display:flex;justify-content:space-between;gap:10px;">
+        <div class="sheet-foot sheet-foot--measurement">
           <button type="button" class="btn-danger" id="measurement-delete-btn" style="display:none;width:auto;font-size:12px;padding:8px 14px;">
             Excluir
           </button>
-          <div style="display:flex;gap:8px;margin-left:auto;">
+          <div class="sheet-foot-actions">
             <button type="button" class="btn-subtle" onclick="document.getElementById('measurement-modal').classList.remove('on')" style="width:auto;font-size:12px;padding:8px 16px;">
               Cancelar
             </button>
@@ -1128,7 +1128,7 @@
 
   <!-- Modal: Base de Pesquisa Científica Local (V17) -->
   <div class="modal" id="research-modal" role="dialog" aria-modal="true" aria-labelledby="research-modal-title">
-    <div class="sheet" style="max-width:540px;height:90vh;max-height:800px;display:flex;flex-direction:column;">
+    <div class="sheet sheet--wide sheet--research">
       <div class="sheet-head">
         <div>
           <div class="sheet-title" id="research-modal-title" data-i18n="research.title">Base de Pesquisa Científica</div>
@@ -1148,10 +1148,10 @@
       </div>
 
       <!-- Lista de Compostos -->
-      <div class="sheet-body" id="research-results-list" style="flex:1;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:10px;"></div>
+      <div class="sheet-body sheet-body--research-results" id="research-results-list"></div>
 
       <!-- Rodapé com Aviso de Governança -->
-      <div class="sheet-foot" style="padding:10px 16px;font-size:11px;color:var(--muted);background:var(--surface);border-top:1px solid var(--border);text-align:center;line-height:1.4;" data-i18n="research.disclaimer">
+      <div class="sheet-foot sheet-foot--disclaimer" data-i18n="research.disclaimer">
         Conteúdo estritamente educacional e científico. O Protocolo PEP não recomenda nem prescreve dosagens terapêuticas.
       </div>
     </div>
@@ -1159,7 +1159,7 @@
 
   <!-- Modal: Ficha Técnica Detalhada do Composto (V17) -->
   <div class="modal" id="compound-detail-modal" role="dialog" aria-modal="true" aria-labelledby="compound-detail-title">
-    <div class="sheet" style="max-width:540px;height:88vh;max-height:760px;display:flex;flex-direction:column;">
+    <div class="sheet sheet--wide sheet--detail">
       <div class="sheet-head">
         <div>
           <div class="sheet-title" id="compound-detail-title">BPC-157</div>
@@ -1168,7 +1168,7 @@
         <button type="button" class="sheet-x" id="compound-detail-close" aria-label="Fechar detalhes">✕</button>
       </div>
 
-      <div class="sheet-body" style="flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:16px;">
+      <div class="sheet-body sheet-body--detail">
         <div style="display:flex;justify-content:space-between;align-items:center;">
           <span class="badge badge-primary badge-primary--large" id="compound-detail-category">Reparação Tecidual</span>
           <span class="badge badge-neutral" style="font-size:11px;" data-i18n="research.badgeEducation">PESQUISA CIENTÍFICA</span>
@@ -1215,11 +1215,11 @@
       </div>
 
       <!-- Ações no Rodapé do Modal -->
-      <div class="sheet-foot" style="display:flex;gap:10px;padding:12px 16px;background:var(--surface);border-top:1px solid var(--border);">
-        <button type="button" class="btn-sec" id="compound-detail-calc-btn" style="flex:1;font-size:12.5px;padding:10px;" data-i18n="research.openInCalculator">
+      <div class="sheet-foot sheet-foot--actions sheet-foot--balanced">
+        <button type="button" class="btn-sec" id="compound-detail-calc-btn" data-i18n="research.openInCalculator">
           Calcular Reconstituição
         </button>
-        <button type="button" class="btn-primary" id="compound-detail-protocol-btn" style="flex:1;font-size:12.5px;padding:10px;" data-i18n="research.addToProtocol">
+        <button type="button" class="btn-primary" id="compound-detail-protocol-btn" data-i18n="research.addToProtocol">
           Adicionar ao Protocolo
         </button>
       </div>
@@ -1228,16 +1228,16 @@
 
   <!-- Modal: Confirmação de Ação In-App -->
   <div class="modal" id="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
-    <div class="sheet" style="max-width:440px;">
+    <div class="sheet sheet--compact">
       <div class="sheet-head">
         <div class="sheet-title" id="confirm-title">Confirmar Ação</div>
         <button type="button" class="sheet-x" id="confirm-close" aria-label="Fechar confirmação">✕</button>
       </div>
-      <div class="sheet-body" style="padding:18px 20px;">
+      <div class="sheet-body sheet-body--confirm">
         <p id="confirm-message" style="color:var(--text);font-size:14.5px;line-height:1.5;margin:0 0 20px;"></p>
-        <div style="display:flex;gap:10px;">
-          <button type="button" class="btn-subtle" id="confirm-cancel" style="flex:1;">Cancelar</button>
-          <button type="button" class="btn-danger" id="confirm-ok" style="flex:1;">Confirmar</button>
+        <div class="action-row action-row--equal">
+          <button type="button" class="btn-subtle" id="confirm-cancel">Cancelar</button>
+          <button type="button" class="btn-danger" id="confirm-ok">Confirmar</button>
         </div>
       </div>
     </div>

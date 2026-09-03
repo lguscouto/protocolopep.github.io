@@ -224,6 +224,15 @@ body.theme-light .btn-primary {
   width: 100%;
 }
 
+.action-row--equal > * {
+  flex: 1;
+  min-width: 0;
+}
+
+.action-row--modal {
+  margin-bottom: 12px;
+}
+
 /* --- Campos de formulário reutilizáveis --- */
 .form-field {
   margin-bottom: 12px;
@@ -277,8 +286,6 @@ body.theme-light .btn-primary {
 }
 
 .form-sheet-body--measurement {
-  max-height: 65vh;
-  overflow-y: auto;
   padding-bottom: 16px;
 }
 

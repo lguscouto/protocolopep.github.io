@@ -72,6 +72,8 @@
   --app-safe-right: var(--safe-area-inset-right);
   --app-safe-bottom: var(--safe-area-inset-bottom);
   --app-safe-left: var(--safe-area-inset-left);
+  --app-viewport-height: 100dvh;
+  --app-viewport-offset-top: 0px;
 }
 
 body.theme-light, body.light {

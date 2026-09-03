@@ -57,6 +57,7 @@ import { researchService } from "./services/research.js";
 import { setupResearchUI } from "./ui/research.js";
 import { AccessibilityService, accessibilityService } from "./services/accessibility.js";
 import { setupAccessibilityUI } from "./ui/accessibility.js";
+import { setupModalController } from "./ui/modal-controller.js";
 import { DoseService } from "./services/dose-service.js";
 import { openRetroLogModal as openRetroModal, saveRetroLog as saveRetro } from "./ui/retro-log.js";
 
@@ -130,6 +131,7 @@ async function initApp() {
   storage.init();
   await notifications.init();
   initAnimatedBg();
+  setupModalController();
 
   appBridge.init(
     () => {
