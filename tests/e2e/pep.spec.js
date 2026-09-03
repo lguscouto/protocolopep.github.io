@@ -66,6 +66,39 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     runtime.assertCleanRuntime();
   });
 
+  test("homologa as cinco telas sem overflow horizontal e com navegação ancorada", async ({ page }) => {
+    const runtime = trackPageRuntime(page);
+    await seedStorage(page, { skipOnboarding: true, peptides: [] });
+    await page.addInitScript(() => localStorage.setItem("pep_theme_mode", "preto"));
+
+    await page.goto("/");
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(400);
+
+    for (const tabId of ["today", "week", "history", "calc", "settings"]) {
+      await page.locator(`[data-tab="${tabId}"]`).click();
+      await page.waitForTimeout(120);
+
+      const metrics = await page.evaluate(() => {
+        const nav = document.querySelector(".nav");
+        const navBox = nav?.getBoundingClientRect();
+        return {
+          documentWidth: document.documentElement.scrollWidth,
+          viewportWidth: document.documentElement.clientWidth,
+          navLeft: navBox?.left ?? 0,
+          navRight: navBox?.right ?? 0,
+          windowWidth: window.innerWidth
+        };
+      });
+
+      expect(metrics.documentWidth, `overflow horizontal na aba ${tabId}`).toBeLessThanOrEqual(metrics.viewportWidth + 1);
+      expect(metrics.navLeft, `navegação saiu pela esquerda na aba ${tabId}`).toBeGreaterThanOrEqual(-1);
+      expect(metrics.navRight, `navegação saiu pela direita na aba ${tabId}`).toBeLessThanOrEqual(metrics.windowWidth + 1);
+    }
+
+    runtime.assertCleanRuntime();
+  });
+
   test("dashboard vazio exibe boas-vindas e oculta anel de progresso", async ({ page }) => {
     const runtime = trackPageRuntime(page);
     await seedStorage(page, { skipOnboarding: true, peptides: [] });

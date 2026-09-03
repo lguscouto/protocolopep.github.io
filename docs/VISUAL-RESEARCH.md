@@ -112,3 +112,9 @@ Evoluir o Protocolo PEP de uma interface predominantemente utilitária para uma 
 - Badges de idioma, acessibilidade, widget, segurança, Health Connect, inventário, medições e relatório deixaram de depender de cores semânticas fixas em HTML ou JavaScript.
 - Seletores de energia/humor, variação de peso, chips de medição e estados selecionados da biblioteca/semana agora preservam contraste e legibilidade pela mesma linguagem de componentes.
 - A suíte de design tokens valida a presença dos estados nos quatro contextos de tema e seus pares de contraste AA; a suíte E2E alterna os três modos e executa Axe no DOM estabilizado.
+
+## Décima entrega implementada — homologação visual responsiva
+
+- As cinco telas principais passaram a ter uma verificação E2E explícita de largura do documento, detectando regressões de overflow horizontal em telas móveis.
+- A navegação inferior é validada dentro dos limites da viewport em cada aba e nos três perfis de viewport usados pelo projeto.
+- A checagem roda junto da suíte existente, mantendo a auditoria visual reproduzível no CI e protegendo as próximas alterações de layout.
