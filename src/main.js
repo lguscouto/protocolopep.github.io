@@ -82,7 +82,7 @@ function showToast(msg) {
   toast.textContent = msg;
   toast.style.cssText = `
     position: fixed;
-    bottom: 80px;
+    bottom: calc(80px + var(--app-safe-bottom));
     left: 50%;
     transform: translateX(-50%);
     background: var(--surface3);
