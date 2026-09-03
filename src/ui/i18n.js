@@ -86,17 +86,9 @@ export function setupI18nUI({ i18nService, onLocaleChange = () => {} }) {
         if (isActive) {
           btn.classList.add("active");
           btn.setAttribute("aria-pressed", "true");
-          btn.style.border = "1.5px solid var(--primary)";
-          btn.style.background = "var(--primary-dim)";
-          btn.style.color = "var(--text)";
-          btn.style.fontWeight = "700";
         } else {
           btn.classList.remove("active");
           btn.setAttribute("aria-pressed", "false");
-          btn.style.border = "1.5px solid transparent";
-          btn.style.background = "var(--surface2)";
-          btn.style.color = "var(--muted)";
-          btn.style.fontWeight = "500";
         }
       });
     }

@@ -98,3 +98,10 @@ Evoluir o Protocolo PEP de uma interface predominantemente utilitária para uma 
 - Chips de calculadora, filtros de pesquisa, sintomas, seletores segmentados, dias da semana, idiomas, unidades e cores agora preservam área mínima de toque de 44 × 44 px.
 - Ícones e swatches mantêm conteúdo visual compacto dentro da área interativa ampliada, evitando crescimento desnecessário dos elementos.
 - A suíte E2E passou a verificar os fluxos compactos nos três perfis de viewport, incluindo a tolerância de subpixel dos navegadores móveis.
+
+## Oitava entrega implementada — componentes de ação e estados de interação
+
+- Ações recorrentes de histórico, calculadora, inventário e ajustes passaram a compartilhar variantes CSS semânticas, reduzindo estilos inline nos controles de maior uso.
+- Estados de hover e foco para botões de superfície agora seguem a mesma resposta de borda, fundo e contraste, sem interferir nos estados ativos de idioma ou favorito.
+- O atalho de pesquisa da calculadora e o botão de limpar pesquisa foram alinhados à mesma altura mínima dos demais controles.
+- Favoritos da pesquisa passaram a expor estado por `aria-pressed` e classe visual, mantendo a cor de atenção como token do tema.

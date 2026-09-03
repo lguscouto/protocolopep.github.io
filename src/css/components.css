@@ -613,6 +613,10 @@ body.theme-light .dash-focus-action {
   transition: all 0.15s ease;
 }
 
+.dash-action-btn--wide {
+  grid-column: 1 / -1;
+}
+
 .dash-action-btn svg {
   width: 16px;
   height: 16px;
@@ -624,6 +628,30 @@ body.theme-light .dash-focus-action {
   transform: scale(0.97);
   background: var(--surface2);
   border-color: var(--primary);
+}
+
+.calc-actions {
+  margin-top: 16px;
+  display: flex;
+  gap: 10px;
+}
+
+.calc-actions > .btn-primary,
+.calc-actions > .btn-sec {
+  flex: 1;
+  padding: 13px;
+  font-size: 13px;
+}
+
+.btn-sec.calc-research-button {
+  width: 100%;
+  min-height: var(--tap-min);
+  margin-top: 10px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
 
 .dash-footer-disclaimer {
@@ -837,6 +865,21 @@ body.theme-light .dash-focus-action {
   color: var(--text);
   font-size: 16px;
   font-weight: 700;
+}
+
+.research-card .fav-btn {
+  width: var(--tap-min);
+  height: var(--tap-min);
+  min-width: var(--tap-min);
+  min-height: var(--tap-min);
+  flex-shrink: 0;
+  padding: 6px;
+}
+
+.research-card .fav-btn.is-favorite,
+.research-card .fav-btn.is-favorite:hover,
+.research-card .fav-btn.is-favorite:focus-visible {
+  color: var(--warning);
 }
 
 #compound-detail-modal {
@@ -1597,6 +1640,15 @@ body.light .week-event.partial .week-event-action {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
+}
+
+.history-actions .btn-primary,
+.history-actions .btn-ghost {
+  min-height: var(--tap-min);
+  width: auto;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
 }
 
 .history-timeline {
@@ -2902,8 +2954,32 @@ body.theme-light .day-chip.on {
 }
 
 .lang-select-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
   min-height: var(--tap-min);
+  padding: 8px 6px;
+  border: 1.5px solid transparent;
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
   touch-action: manipulation;
+}
+
+.lang-select-btn.active {
+  border-color: var(--primary);
+  background: var(--primary-dim);
+  color: var(--text);
+  font-weight: 700;
+}
+
+.lang-select-btn:hover,
+.lang-select-btn:focus-visible {
+  border-color: var(--primary);
 }
 
 .seg-control button {
@@ -2961,6 +3037,41 @@ body.theme-light .day-chip.on {
 
 .research-clear-button {
   right: 4px;
+}
+
+.settings-header-action {
+  width: auto;
+  min-height: var(--tap-min);
+  padding: 8px 12px;
+  font-size: 11.5px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.btn-ghost--compact {
+  min-height: var(--tap-min);
+  padding: 8px 10px;
+  font-size: 11.5px;
+}
+
+/* Estados de interação compartilhados pelos botões de superfície. */
+.btn-primary:hover:not(:disabled) {
+  filter: brightness(1.04);
+}
+
+.btn-sec:not(.lang-select-btn):hover:not(:disabled),
+.btn-sec:not(.lang-select-btn):focus-visible,
+.btn-subtle:hover:not(:disabled),
+.btn-subtle:focus-visible,
+.btn-ghost:hover:not(:disabled),
+.btn-ghost:focus-visible {
+  border-color: var(--primary);
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.btn-danger:hover:not(:disabled) {
+  filter: brightness(1.04);
 }
 
 .btn-ghost:active {

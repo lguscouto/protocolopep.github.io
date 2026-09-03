@@ -95,7 +95,7 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="16" y1="14" x2="16" y2="18"/><path d="M16 10h.01M12 10h.01M8 10h.01M12 14h.01M8 14h.01M12 18h.01M8 18h.01"/></svg>
             <span data-i18n="dashboard.calculator">Calculadora</span>
           </button>
-          <button type="button" class="dash-action-btn open-research-modal-btn" id="dash-research-btn" aria-label="Abrir base de pesquisa científica" style="grid-column: 1 / -1;">
+          <button type="button" class="dash-action-btn dash-action-btn--wide open-research-modal-btn" id="dash-research-btn" aria-label="Abrir base de pesquisa científica">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><path d="M11 8v6M8 11h6"/></svg>
             <span data-i18n="research.openResearchBtn">Base de Pesquisa Científica</span>
           </button>
@@ -138,13 +138,13 @@
           <div class="hist-count" id="history-count"></div>
         </div>
         <div class="history-actions">
-          <button type="button" class="btn-primary" id="open-measurement-modal-btn" style="font-size:12px;padding:8px 12px;min-height:var(--tap-min);width:auto;" aria-label="Registrar peso, medidas ou sintomas">
+          <button type="button" class="btn-primary" id="open-measurement-modal-btn" aria-label="Registrar peso, medidas ou sintomas">
             + Medidas / Sintomas
           </button>
-          <button type="button" class="btn-ghost" id="hist-retro-btn" style="font-size:12px;padding:8px 12px;min-height:var(--tap-min);border:1px solid var(--border2);border-radius:8px;" aria-label="Adicionar registro de dose retroativo">
+          <button type="button" class="btn-ghost" id="hist-retro-btn" aria-label="Adicionar registro de dose retroativo">
             + Dose Retroativa
           </button>
-          <button type="button" class="btn-ghost" id="hist-report-btn" style="font-size:12px;padding:8px 12px;min-height:var(--tap-min);border:1px solid var(--border2);border-radius:8px;" aria-label="Gerar relatório de aplicações">
+          <button type="button" class="btn-ghost" id="hist-report-btn" aria-label="Gerar relatório de aplicações">
             📄 Relatório
           </button>
         </div>
@@ -247,16 +247,16 @@
           <div class="calc-audit-trail" id="calc-audit-trail">--</div>
         </div>
 
-        <div style="margin-top:16px;display:flex;gap:10px;">
-          <button type="button" class="btn-primary" id="calc-use-btn" style="flex:1;padding:13px;font-size:13px;" disabled>
+        <div class="calc-actions">
+          <button type="button" class="btn-primary" id="calc-use-btn" disabled>
             + Usar no Protocolo
           </button>
-          <button type="button" class="btn-sec" id="calc-save-vial-btn" style="flex:1;padding:13px;font-size:13px;" disabled>
+          <button type="button" class="btn-sec" id="calc-save-vial-btn" disabled>
             🧪 Salvar Frasco
           </button>
         </div>
 
-        <button type="button" class="btn-sec open-research-modal-btn" id="calc-research-btn" style="margin-top:10px;width:100%;font-size:12.5px;padding:10px 14px;display:flex;align-items:center;justify-content:center;gap:6px;">
+        <button type="button" class="btn-sec calc-research-button open-research-modal-btn" id="calc-research-btn">
           <span aria-hidden="true">🔬</span> <span data-i18n="research.openResearchBtn">Consultar Base Científica</span>
         </button>
 
@@ -286,13 +286,13 @@
             <span class="badge badge-neutral" id="current-lang-badge" style="background:rgba(16,185,129,0.15);color:#10b981;">PORTUGUÊS (BRASIL)</span>
           </div>
           <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:8px;margin-top:10px;" role="group" aria-label="Seletor de Idioma">
-            <button type="button" class="btn-sec lang-select-btn" id="lang-btn-pt" data-lang="pt-BR" style="font-size:12.5px;padding:8px 6px;display:flex;align-items:center;justify-content:center;gap:4px;border:1.5px solid transparent;border-radius:10px;cursor:pointer;">
+            <button type="button" class="btn-sec lang-select-btn" id="lang-btn-pt" data-lang="pt-BR">
               <span>🇧🇷</span> <span>Português</span>
             </button>
-            <button type="button" class="btn-sec lang-select-btn" id="lang-btn-en" data-lang="en" style="font-size:12.5px;padding:8px 6px;display:flex;align-items:center;justify-content:center;gap:4px;border:1.5px solid transparent;border-radius:10px;cursor:pointer;">
+            <button type="button" class="btn-sec lang-select-btn" id="lang-btn-en" data-lang="en">
               <span>🇺🇸</span> <span>English</span>
             </button>
-            <button type="button" class="btn-sec lang-select-btn" id="lang-btn-es" data-lang="es" style="font-size:12.5px;padding:8px 6px;display:flex;align-items:center;justify-content:center;gap:4px;border:1.5px solid transparent;border-radius:10px;cursor:pointer;">
+            <button type="button" class="btn-sec lang-select-btn" id="lang-btn-es" data-lang="es">
               <span>🇪🇸</span> <span>Español</span>
             </button>
           </div>
@@ -383,7 +383,7 @@
               <div style="font-size:14px;font-weight:700;">Inventário de Frascos</div>
               <div style="font-size:12px;color:var(--muted);">Controle de reconstituição, saldo e validade</div>
             </div>
-            <button type="button" class="btn-primary" id="open-new-vial-btn" style="width:auto;font-size:11.5px;padding:6px 12px;white-space:nowrap;flex-shrink:0;">
+            <button type="button" class="btn-primary settings-header-action" id="open-new-vial-btn">
               + Novo Frasco
             </button>
           </div>
@@ -397,7 +397,7 @@
               <div style="font-size:14px;font-weight:700;" data-i18n="settings.siteRotationTitle">Locais de Aplicação</div>
               <div style="font-size:12px;color:var(--muted);" id="sites-summary-text">Sequência de locais para alternância</div>
             </div>
-            <button type="button" class="btn-primary" id="open-sites-settings-btn" style="width:auto;font-size:11.5px;padding:6px 12px;white-space:nowrap;flex-shrink:0;">
+            <button type="button" class="btn-primary settings-header-action" id="open-sites-settings-btn">
               ⚙ Configurar
             </button>
           </div>
@@ -461,10 +461,10 @@
               <div style="font-size:12px;color:var(--muted);">Versão 2.9.0 · Local-First Edition</div>
             </div>
             <div style="display:flex;gap:6px;flex-wrap:wrap;">
-              <button type="button" class="btn-ghost" id="open-diag-btn" style="font-size:11.5px;padding:6px 10px;min-height:var(--tap-min);" aria-label="Abrir diagnósticos do sistema" data-i18n="settings.diagnosticsBtn">
+              <button type="button" class="btn-ghost btn-ghost--compact" id="open-diag-btn" aria-label="Abrir diagnósticos do sistema" data-i18n="settings.diagnosticsBtn">
                 Diagnósticos
               </button>
-              <button type="button" class="btn-ghost" id="reopen-onboarding-btn" style="font-size:11.5px;padding:6px 10px;min-height:var(--tap-min);" data-i18n="settings.termsBtn">
+              <button type="button" class="btn-ghost btn-ghost--compact" id="reopen-onboarding-btn" data-i18n="settings.termsBtn">
                 Termos & Privacidade
               </button>
             </div>

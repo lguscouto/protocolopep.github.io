@@ -253,6 +253,10 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     await assertTouchTargets("#research-clear-btn, #research-category-chips .chip", "controles da pesquisa");
     await page.locator("#research-modal-close").click();
 
+    await page.locator("#tab-calc").click();
+    await assertTouchTargets("#calc-research-btn", "atalho de pesquisa da calculadora");
+
+    await page.locator("#tab-today").click();
     await page.locator(".gear").first().click();
     await assertTouchTargets("#edit-period-toggle button, #edit-freq-type-toggle button, #modal-swatches button", "controles do protocolo");
     await page.locator('#edit-freq-type-toggle button[data-type="especificos"]').click();
