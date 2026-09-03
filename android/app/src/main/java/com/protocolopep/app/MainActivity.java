@@ -62,7 +62,7 @@ public class MainActivity extends BridgeActivity {
 
         String script = String.format(
             Locale.US,
-            "(function(){var s=document.documentElement.style;s.setProperty('--safe-area-inset-top','%.2fpx');s.setProperty('--safe-area-inset-right','%.2fpx');s.setProperty('--safe-area-inset-bottom','%.2fpx');s.setProperty('--safe-area-inset-left','%.2fpx');})();",
+            "(function(){var d=document.documentElement;if(!d)return;var s=d.style;s.setProperty('--safe-area-inset-top','%.2fpx');s.setProperty('--safe-area-inset-right','%.2fpx');s.setProperty('--safe-area-inset-bottom','%.2fpx');s.setProperty('--safe-area-inset-left','%.2fpx');})();",
             latestSystemInsets.top / density,
             latestSystemInsets.right / density,
             latestSystemInsets.bottom / density,
