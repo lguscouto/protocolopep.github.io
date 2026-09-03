@@ -73,6 +73,7 @@ const SCREENSHOT_OPTIONS = Object.freeze({
 });
 
 async function installVisualState(page, { onboarding = false } = {}) {
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await page.addInitScript(({ state, onboarding: showOnboarding }) => {
     const params = new URLSearchParams(window.location.search);
     localStorage.clear();

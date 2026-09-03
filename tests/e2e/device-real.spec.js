@@ -45,6 +45,7 @@ function getViewportFor(testInfo) {
 }
 
 async function installDeviceSimulation(page) {
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await page.addInitScript(() => {
     const applyProfile = () => {
       const params = new URLSearchParams(window.location.search);
@@ -184,11 +185,26 @@ async function assertPageInvariants(page, { nav, landscape }, label) {
       }
     }
     const scrollables = [document.documentElement, ...document.querySelectorAll(".sheet-body, .view.on")];
-    const overflow = scrollables.map((element) => ({
-      selector: element === document.documentElement ? "document" : `.${element.className}`,
-      scrollWidth: element.scrollWidth,
-      clientWidth: element.clientWidth
-    })).filter(({ scrollWidth, clientWidth }) => scrollWidth > clientWidth + 1);
+    const overflow = scrollables.map((element) => {
+      const rect = element.getBoundingClientRect?.();
+      const descendants = [...(element.querySelectorAll?.("*") || [])]
+        .map((child) => ({ child, rect: child.getBoundingClientRect() }))
+        .filter(({ rect: childRect }) => rect && childRect.right > rect.right + 1)
+        .sort((a, b) => b.rect.right - a.rect.right)
+        .slice(0, 3)
+        .map(({ child, rect: childRect }) => ({
+          selector: child.id ? `#${child.id}` : `.${child.className || child.tagName.toLowerCase()}`,
+          left: Math.round(childRect.left),
+          right: Math.round(childRect.right),
+          width: Math.round(childRect.width)
+        }));
+      return {
+        selector: element === document.documentElement ? "document" : `.${element.className}`,
+        scrollWidth: element.scrollWidth,
+        clientWidth: element.clientWidth,
+        descendants
+      };
+    }).filter(({ scrollWidth, clientWidth }) => scrollWidth > clientWidth + 1);
     return {
       crosses,
       overflow,
