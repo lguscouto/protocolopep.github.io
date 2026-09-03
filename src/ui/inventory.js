@@ -170,10 +170,10 @@ export function setupInventoryUI({ storage, onInventoryChange }) {
       const expStatus = getExpirationStatus(v);
 
       const percent = v.initialMcg > 0 ? Math.round((v.remainingMcg / v.initialMcg) * 100) : 0;
-      const statusBadge = v.status === "finished" ? `<span style="background:rgba(239,68,68,0.12);color:var(--danger);font-size:11px;font-weight:800;padding:2px 8px;border-radius:6px;">Esgotado</span>` :
-                          expStatus.status === "expired" ? `<span style="background:rgba(239,68,68,0.15);color:var(--danger);font-size:11px;font-weight:800;padding:2px 8px;border-radius:6px;">Vencido</span>` :
-                          expStatus.status === "expiring_soon" ? `<span style="background:rgba(245,158,11,0.15);color:#d97706;font-size:11px;font-weight:800;padding:2px 8px;border-radius:6px;">Validade próxima</span>` :
-                          `<span style="background:rgba(16,185,129,0.12);color:var(--success);font-size:11px;font-weight:800;padding:2px 8px;border-radius:6px;">Ativo</span>`;
+      const statusBadge = v.status === "finished" ? `<span class="inventory-status inventory-status--depleted">Esgotado</span>` :
+                          expStatus.status === "expired" ? `<span class="inventory-status inventory-status--expired">Vencido</span>` :
+                          expStatus.status === "expiring_soon" ? `<span class="inventory-status inventory-status--expiring">Validade próxima</span>` :
+                          `<span class="inventory-status inventory-status--active">Ativo</span>`;
 
       return `
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:var(--shadow-sm);">

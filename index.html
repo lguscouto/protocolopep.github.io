@@ -283,7 +283,7 @@
               <div style="font-size:14px;font-weight:700;" data-i18n="settings.languageTitle">Idioma do Aplicativo</div>
               <div style="font-size:12px;color:var(--muted);" data-i18n="settings.languageDesc">Selecione o idioma de exibição do Protocolo PEP</div>
             </div>
-            <span class="badge badge-neutral" id="current-lang-badge" style="background:rgba(16,185,129,0.15);color:#10b981;">PORTUGUÊS (BRASIL)</span>
+            <span class="badge badge-success" id="current-lang-badge">PORTUGUÊS (BRASIL)</span>
           </div>
           <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:8px;margin-top:10px;" role="group" aria-label="Seletor de Idioma">
             <button type="button" class="btn-sec lang-select-btn" id="lang-btn-pt" data-lang="pt-BR">
@@ -305,7 +305,7 @@
               <div style="font-size:14px;font-weight:700;" data-i18n="settings.accessibilityTitle">Acessibilidade & Visão</div>
               <div style="font-size:12px;color:var(--muted);" data-i18n="settings.accessibilityDesc">Otimizações para alto contraste e navegação assistiva</div>
             </div>
-            <span class="badge badge-neutral" style="background:rgba(56,189,248,0.15);color:var(--primary);" data-i18n="settings.wcagBadge">WCAG 2.1 AA</span>
+            <span class="badge badge-info" data-i18n="settings.wcagBadge">WCAG 2.1 AA</span>
           </div>
           <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--surface2);border-radius:10px;">
             <label for="high-contrast-toggle" style="font-size:13px;font-weight:600;color:var(--text);cursor:pointer;flex:1;">
@@ -358,7 +358,7 @@
               <div style="font-size:14px;font-weight:700;" data-i18n="settings.widgetTitle">Widget da Tela Inicial</div>
               <div style="font-size:12px;color:var(--muted);">Acompanhamento rápido de aplicações</div>
             </div>
-            <span class="badge badge-neutral" style="background:rgba(99,102,241,0.12);color:#818cf8;" data-i18n="settings.widgetBadge">WIDGET 3X2</span>
+            <span class="badge badge-accent" data-i18n="settings.widgetBadge">WIDGET 3X2</span>
           </div>
           <div style="font-size:12.5px;color:var(--muted);line-height:1.5;margin-bottom:12px;" data-i18n="settings.widgetDesc">
             Adicione o widget na tela inicial do Android tocando e segurando no fundo da tela e selecionando <strong>Protocolo PEP</strong>.
@@ -410,7 +410,7 @@
               <div style="font-size:14px;font-weight:700;" data-i18n="settings.healthConnectTitle">Health Connect (Android)</div>
               <div style="font-size:12px;color:var(--muted);" id="hc-status-desc" data-i18n="settings.healthConnectDesc">Sincronização de peso e medidas corporais</div>
             </div>
-            <span class="badge-status off" id="hc-status-badge" style="background:var(--surface2);color:var(--muted);">DESATIVADO</span>
+            <span class="badge-status off" id="hc-status-badge">DESATIVADO</span>
           </div>
           <div style="font-size:12.5px;color:var(--muted);line-height:1.5;margin-bottom:12px;" data-i18n="settings.healthConnectHelp">
             Integração opcional e privada com o subsistema de saúde do Android para sincronizar registros de peso corporal.
@@ -1056,11 +1056,11 @@
           <div class="form-field form-field--large">
             <div class="form-field-label form-field-label--strong">Nível de Energia (1 = Muito baixa, 5 = Excelente)</div>
             <div class="form-choice-row" role="radiogroup" aria-label="Nível de energia">
-              <button type="button" class="btn-subtle form-choice-btn" id="meas-energy-1">1 😫</button>
-              <button type="button" class="btn-subtle form-choice-btn" id="meas-energy-2">2 🥱</button>
-              <button type="button" class="btn-subtle form-choice-btn" id="meas-energy-3">3 😐</button>
-              <button type="button" class="btn-subtle form-choice-btn" id="meas-energy-4">4 ⚡</button>
-              <button type="button" class="btn-subtle form-choice-btn" id="meas-energy-5">5 🔥</button>
+              <button type="button" class="btn-subtle form-choice-btn form-choice-btn--energy" id="meas-energy-1">1 😫</button>
+              <button type="button" class="btn-subtle form-choice-btn form-choice-btn--energy" id="meas-energy-2">2 🥱</button>
+              <button type="button" class="btn-subtle form-choice-btn form-choice-btn--energy" id="meas-energy-3">3 😐</button>
+              <button type="button" class="btn-subtle form-choice-btn form-choice-btn--energy" id="meas-energy-4">4 ⚡</button>
+              <button type="button" class="btn-subtle form-choice-btn form-choice-btn--energy" id="meas-energy-5">5 🔥</button>
             </div>
           </div>
 
@@ -1068,11 +1068,11 @@
           <div class="form-field form-field--large">
             <div class="form-field-label form-field-label--strong">Humor / Bem-estar (1 = Ruim, 5 = Excelente)</div>
             <div class="form-choice-row" role="radiogroup" aria-label="Nível de humor">
-              <button type="button" class="btn-subtle form-choice-btn" id="meas-mood-1">1 😞</button>
-              <button type="button" class="btn-subtle form-choice-btn" id="meas-mood-2">2 😕</button>
-              <button type="button" class="btn-subtle form-choice-btn" id="meas-mood-3">3 😐</button>
-              <button type="button" class="btn-subtle form-choice-btn" id="meas-mood-4">4 😊</button>
-              <button type="button" class="btn-subtle form-choice-btn" id="meas-mood-5">5 🤩</button>
+              <button type="button" class="btn-subtle form-choice-btn form-choice-btn--mood" id="meas-mood-1">1 😞</button>
+              <button type="button" class="btn-subtle form-choice-btn form-choice-btn--mood" id="meas-mood-2">2 😕</button>
+              <button type="button" class="btn-subtle form-choice-btn form-choice-btn--mood" id="meas-mood-3">3 😐</button>
+              <button type="button" class="btn-subtle form-choice-btn form-choice-btn--mood" id="meas-mood-4">4 😊</button>
+              <button type="button" class="btn-subtle form-choice-btn form-choice-btn--mood" id="meas-mood-5">5 🤩</button>
             </div>
           </div>
 
@@ -1170,7 +1170,7 @@
 
       <div class="sheet-body" style="flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:16px;">
         <div style="display:flex;justify-content:space-between;align-items:center;">
-          <span class="badge" id="compound-detail-category" style="background:rgba(44,197,192,0.15);font-weight:700;font-size:12px;">Reparação Tecidual</span>
+          <span class="badge badge-primary badge-primary--large" id="compound-detail-category">Reparação Tecidual</span>
           <span class="badge badge-neutral" style="font-size:11px;" data-i18n="research.badgeEducation">PESQUISA CIENTÍFICA</span>
         </div>
 

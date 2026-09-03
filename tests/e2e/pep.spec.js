@@ -597,6 +597,59 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     runtime.assertCleanRuntime();
   });
 
+  test("mantém estados semânticos legíveis ao alternar tema e alto contraste", async ({ page }) => {
+    const runtime = trackPageRuntime(page);
+    await seedStorage(page, { skipOnboarding: true, peptides: [] });
+    await page.addInitScript(() => localStorage.setItem("pep_theme_mode", "preto"));
+
+    await page.goto("/");
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(400);
+    await page.locator("#tab-settings").click();
+
+    const languageBadge = page.locator("#current-lang-badge");
+    await expect(languageBadge).toBeVisible();
+
+    const readBadgeStyle = () => languageBadge.evaluate((element) => {
+      const styles = getComputedStyle(element);
+      return {
+        background: styles.backgroundColor,
+        color: styles.color,
+        border: styles.borderTopColor
+      };
+    });
+
+    const darkStyle = await readBadgeStyle();
+    expect(darkStyle.background).not.toBe("rgba(0, 0, 0, 0)");
+    expect(darkStyle.color).not.toBe("rgba(0, 0, 0, 0)");
+    const assertA11y = async (mode) => {
+      const accessibilityScanResults = await new AxeBuilder({ page })
+        .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+        .analyze();
+      expect(accessibilityScanResults.violations, `Violações no ${mode}`).toEqual([]);
+    };
+    await assertA11y("tema escuro");
+
+    await page.locator("#theme-btn").click();
+    await expect(page.locator("body")).toHaveClass(/theme-light/);
+    await page.waitForTimeout(400);
+    const lightStyle = await readBadgeStyle();
+    expect(lightStyle.background).not.toBe(darkStyle.background);
+    expect(lightStyle.color).not.toBe(darkStyle.color);
+    await assertA11y("tema claro");
+
+    await page.locator("#high-contrast-toggle").check();
+    await expect(page.locator("html")).toHaveClass(/high-contrast/);
+    await page.waitForTimeout(400);
+    const highContrastStyle = await readBadgeStyle();
+    expect(highContrastStyle.background).not.toBe("rgba(0, 0, 0, 0)");
+    expect(highContrastStyle.color).not.toBe("rgba(0, 0, 0, 0)");
+    expect(highContrastStyle.border).not.toBe(lightStyle.border);
+    await assertA11y("alto contraste");
+
+    runtime.assertCleanRuntime();
+  });
+
   // ─── P2 (CODEX v2.5.0 Item 20): Acessibilidade Automatizada com Axe ───
 
   test("avalia acessibilidade WCAG 2.1 AA com Axe no Dashboard", async ({ page }) => {

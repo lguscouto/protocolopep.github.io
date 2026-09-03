@@ -94,7 +94,7 @@ export function setupReportModal(storage) {
           </div>
           <div style="text-align:right;">
             <div style="font-weight:600;color:var(--text);">${esc(dateFmt)} · ${esc(e.time)}</div>
-            <span style="font-size:10px;padding:1px 5px;border-radius:4px;background:${e.retroactive ? "rgba(245,158,11,0.15);color:var(--warning)" : "rgba(44,197,192,0.15);color:var(--primary)"}">${esc(e.type)}</span>
+            <span class="report-entry-type ${e.retroactive ? "report-entry-type--retroactive" : "report-entry-type--applied"}">${esc(e.type)}</span>
           </div>
         </div>
       `;

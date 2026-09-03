@@ -50,32 +50,24 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
     for (let i = 1; i <= 5; i++) {
       const btnE = document.getElementById(`meas-energy-${i}`);
       if (btnE) {
-        if (selectedEnergy === i) {
+        const isSelected = selectedEnergy === i;
+        if (isSelected) {
           btnE.classList.add("selected");
-          btnE.style.background = "var(--primary)";
-          btnE.style.color = "#fff";
-          btnE.style.borderColor = "var(--primary)";
         } else {
           btnE.classList.remove("selected");
-          btnE.style.background = "var(--surface2)";
-          btnE.style.color = "var(--text)";
-          btnE.style.borderColor = "var(--border)";
         }
+        btnE.setAttribute("aria-pressed", isSelected ? "true" : "false");
       }
 
       const btnM = document.getElementById(`meas-mood-${i}`);
       if (btnM) {
-        if (selectedMood === i) {
+        const isSelected = selectedMood === i;
+        if (isSelected) {
           btnM.classList.add("selected");
-          btnM.style.background = "var(--aod)";
-          btnM.style.color = "#fff";
-          btnM.style.borderColor = "var(--aod)";
         } else {
           btnM.classList.remove("selected");
-          btnM.style.background = "var(--surface2)";
-          btnM.style.color = "var(--text)";
-          btnM.style.borderColor = "var(--border)";
         }
+        btnM.setAttribute("aria-pressed", isSelected ? "true" : "false");
       }
     }
   }
@@ -171,8 +163,8 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
       const isDown = stats.weightDelta < 0;
       const isUp = stats.weightDelta > 0;
       const deltaSign = isUp ? "+" : "";
-      const deltaColor = isDown ? "#10b981" : isUp ? "#f59e0b" : "var(--muted)";
-      weightDeltaBadge = `<span style="font-size:12px;font-weight:700;color:${deltaColor};margin-left:6px;">(${deltaSign}${stats.weightDelta} kg)</span>`;
+      const deltaClass = isDown ? "measurement-delta--down" : isUp ? "measurement-delta--up" : "measurement-delta--steady";
+      weightDeltaBadge = `<span class="measurement-delta ${deltaClass}">(${deltaSign}${stats.weightDelta} kg)</span>`;
     }
 
     trendSummaryEl.innerHTML = `
@@ -240,14 +232,14 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
                 <div style="flex:1;min-width:0;">
                   <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;">
                     <span style="font-size:13.5px;font-weight:700;color:var(--text);">${esc(fmtDate)} · ${esc(m.time || "")}</span>
-                    ${m.weightKg !== null ? `<span class="chip-acc" style="background:rgba(99,102,241,0.12);color:var(--primary);font-size:11.5px;font-weight:700;">⚖️ ${m.weightKg} kg</span>` : ""}
-                    ${m.energyLevel ? `<span class="chip-acc" style="background:rgba(234,179,8,0.12);color:#ca8a04;font-size:11.5px;font-weight:700;">⚡ Energia ${m.energyLevel}/5</span>` : ""}
-                    ${m.moodLevel ? `<span class="chip-acc" style="background:rgba(14,133,128,0.12);color:var(--aod);font-size:11.5px;font-weight:700;">😊 Humor ${m.moodLevel}/5</span>` : ""}
-                    ${m.ownership === "external" ? `<span class="chip-acc" style="background:rgba(59,130,246,0.12);color:#3b82f6;font-size:11px;font-weight:600;">🔗 Health Connect</span>` : ""}
+                    ${m.weightKg !== null ? `<span class="chip-acc measurement-chip measurement-chip--weight">⚖️ ${m.weightKg} kg</span>` : ""}
+                    ${m.energyLevel ? `<span class="chip-acc measurement-chip measurement-chip--energy">⚡ Energia ${m.energyLevel}/5</span>` : ""}
+                    ${m.moodLevel ? `<span class="chip-acc measurement-chip measurement-chip--mood">😊 Humor ${m.moodLevel}/5</span>` : ""}
+                    ${m.ownership === "external" ? `<span class="chip-acc measurement-chip measurement-chip--external">🔗 Health Connect</span>` : ""}
                   </div>
                   ${m.symptoms && m.symptoms.length > 0 ? `
                     <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;">
-                      ${m.symptoms.map((s) => `<span style="font-size:11px;padding:2px 8px;border-radius:12px;background:var(--surface2);color:var(--muted);border:1px solid var(--border2);">${esc(s)}</span>`).join("")}
+                      ${m.symptoms.map((s) => `<span class="measurement-symptom-tag">${esc(s)}</span>`).join("")}
                     </div>` : ""}
                   ${m.notes ? `<div style="font-size:12px;color:var(--muted);margin-top:6px;">💬 ${esc(m.notes)}</div>` : ""}
                 </div>

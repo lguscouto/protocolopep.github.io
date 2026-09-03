@@ -41,8 +41,6 @@ export function setupHealthConnectUI({
     if (!isEnabled) {
       statusBadge.textContent = "DESATIVADO";
       statusBadge.className = "badge-status off";
-      statusBadge.style.background = "var(--surface2)";
-      statusBadge.style.color = "var(--muted)";
       if (syncBtn) syncBtn.style.display = "none";
       if (settingsBtn) settingsBtn.style.display = "none";
       return;
@@ -51,9 +49,7 @@ export function setupHealthConnectUI({
     const avail = await healthConnectService.checkAvailability();
     if (!avail.available) {
       statusBadge.textContent = getHealthConnectStatusLabel(avail.status).toUpperCase();
-      statusBadge.className = "badge-status off";
-      statusBadge.style.background = "rgba(245,158,11,0.15)";
-      statusBadge.style.color = "#f59e0b";
+      statusBadge.className = "badge-status pending";
       if (syncBtn) syncBtn.style.display = "none";
       if (settingsBtn) settingsBtn.style.display = "inline-flex";
       return;
@@ -62,9 +58,7 @@ export function setupHealthConnectUI({
     const perm = await healthConnectService.checkPermissions();
     if (!perm.granted) {
       statusBadge.textContent = getHealthConnectStatusLabel(perm.status).toUpperCase();
-      statusBadge.className = "badge-status off";
-      statusBadge.style.background = "rgba(245,158,11,0.15)";
-      statusBadge.style.color = "#f59e0b";
+      statusBadge.className = "badge-status pending";
       if (syncBtn) syncBtn.style.display = "none";
       if (settingsBtn) settingsBtn.style.display = "inline-flex";
       return;
@@ -72,8 +66,6 @@ export function setupHealthConnectUI({
 
     statusBadge.textContent = "CONECTADO";
     statusBadge.className = "badge-status on";
-    statusBadge.style.background = "rgba(16,185,129,0.15)";
-    statusBadge.style.color = "#10b981";
     if (syncBtn) syncBtn.style.display = "inline-flex";
     if (settingsBtn) settingsBtn.style.display = "inline-flex";
   }

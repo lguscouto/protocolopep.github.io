@@ -60,13 +60,9 @@ export function setupAppLockUI({ appLockService, onUnlock = () => {} }) {
       if (isEnabled) {
         statusBadge.textContent = "ATIVADO";
         statusBadge.className = "badge-status on";
-        statusBadge.style.background = "rgba(16,185,129,0.15)";
-        statusBadge.style.color = "#10b981";
       } else {
         statusBadge.textContent = "DESATIVADO";
         statusBadge.className = "badge-status off";
-        statusBadge.style.background = "var(--surface2)";
-        statusBadge.style.color = "var(--muted)";
       }
     }
 

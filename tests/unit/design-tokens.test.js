@@ -68,6 +68,36 @@ describe("Design Tokens & Contrast", () => {
     expect(css).toContain("--space-4: 16px");
   });
 
+  it("define tokens semânticos para estados visuais em todos os temas", () => {
+    const semanticTokens = [
+      "--success-bg", "--success-text", "--success-border",
+      "--warning-bg", "--warning-text", "--warning-border",
+      "--danger-bg", "--danger-text", "--danger-border",
+      "--info-bg", "--info-text", "--info-border",
+      "--accent-bg", "--accent-text", "--accent-border",
+      "--neutral-bg", "--neutral-text", "--neutral-border",
+      "--on-primary", "--primary-dim-text"
+    ];
+
+    semanticTokens.forEach((token) => {
+      expect((css.match(new RegExp(`${token}:`, "g")) || []).length).toBeGreaterThanOrEqual(4);
+    });
+  });
+
+  it("garante contraste AA para os estados semânticos usados nos badges", () => {
+    const pairs = [
+      ["#7EE7C3", "#12352B"], ["#FFD48A", "#3A2A12"], ["#FFB3BE", "#3A1920"],
+      ["#8DD8FF", "#102D40"], ["#BFC6FF", "#242341"], ["#FFC29C", "#402515"],
+      ["#30D5C8", "#164E4C"],
+      ["#047857", "#D1FAE5"], ["#92400E", "#FEF3C7"], ["#991B1B", "#FEE2E2"],
+      ["#075985", "#E0F2FE"], ["#3730A3", "#E0E7FF"], ["#9A3412", "#FFEDD5"]
+    ];
+
+    pairs.forEach(([foreground, background]) => {
+      expect(contrast(foreground, background), `${foreground} sobre ${background}`).toBeGreaterThanOrEqual(4.5);
+    });
+  });
+
   it("garante contraste WCAG AA (>= 4.5:1) nos pares essenciais escuros", () => {
     // Texto primário sobre fundo escuro
     expect(contrast("#F1F5F9", "#070B10")).toBeGreaterThanOrEqual(4.5);

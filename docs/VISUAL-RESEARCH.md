@@ -105,3 +105,10 @@ Evoluir o Protocolo PEP de uma interface predominantemente utilitária para uma 
 - Estados de hover e foco para botões de superfície agora seguem a mesma resposta de borda, fundo e contraste, sem interferir nos estados ativos de idioma ou favorito.
 - O atalho de pesquisa da calculadora e o botão de limpar pesquisa foram alinhados à mesma altura mínima dos demais controles.
 - Favoritos da pesquisa passaram a expor estado por `aria-pressed` e classe visual, mantendo a cor de atenção como token do tema.
+
+## Nona entrega implementada — contraste semântico e auditoria de temas
+
+- Estados de sucesso, alerta, erro, informação, destaque e neutro passaram a usar tokens de fundo, texto e borda nos temas escuro, claro e alto contraste.
+- Badges de idioma, acessibilidade, widget, segurança, Health Connect, inventário, medições e relatório deixaram de depender de cores semânticas fixas em HTML ou JavaScript.
+- Seletores de energia/humor, variação de peso, chips de medição e estados selecionados da biblioteca/semana agora preservam contraste e legibilidade pela mesma linguagem de componentes.
+- A suíte de design tokens valida a presença dos estados nos quatro contextos de tema e seus pares de contraste AA; a suíte E2E alterna os três modos e executa Axe no DOM estabilizado.

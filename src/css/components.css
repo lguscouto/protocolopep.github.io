@@ -1752,20 +1752,15 @@ body.light .week-event.partial .week-event-action {
 }
 
 .badge-retro {
-  background: rgba(245, 158, 11, 0.12);
-  color: #f59e0b;
-  border: 1px solid rgba(245, 158, 11, 0.3);
+  background: var(--warning-bg);
+  color: var(--warning-text);
+  border: 1px solid var(--warning-border);
   font-size: 9.5px;
   font-weight: 700;
   padding: 1px 5px;
   border-radius: 4px;
   text-transform: uppercase;
   letter-spacing: 0.4px;
-}
-
-body.theme-light .badge-retro,
-body.light .badge-retro {
-  color: #92400E;
 }
 
 .hist-note {
@@ -1804,9 +1799,9 @@ body.light .badge-retro {
 }
 
 .hist-rm:hover, .hist-rm:active {
-  color: var(--danger);
-  border-color: var(--danger);
-  background: rgba(239, 68, 68, 0.1);
+  color: var(--danger-text);
+  border-color: var(--danger-border);
+  background: var(--danger-bg);
 }
 
 .btn-subtle {
@@ -1839,27 +1834,203 @@ body.light .badge-retro {
 }
 
 .badge-success {
-  background: rgba(16, 185, 129, 0.12);
-  color: #10b981;
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  background: var(--success-bg);
+  color: var(--success-text);
+  border: 1px solid var(--success-border);
 }
 
 .badge-danger {
-  background: rgba(239, 68, 68, 0.12);
-  color: #ef4444;
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: var(--danger-bg);
+  color: var(--danger-text);
+  border: 1px solid var(--danger-border);
 }
 
 .badge-warning {
-  background: rgba(245, 158, 11, 0.12);
-  color: #f59e0b;
-  border: 1px solid rgba(245, 158, 11, 0.3);
+  background: var(--warning-bg);
+  color: var(--warning-text);
+  border: 1px solid var(--warning-border);
 }
 
 .badge-neutral {
-  background: rgba(148, 163, 184, 0.12);
+  background: var(--neutral-bg);
+  color: var(--neutral-text);
+  border: 1px solid var(--neutral-border);
+}
+
+.badge-info {
+  background: var(--info-bg);
+  color: var(--info-text);
+  border: 1px solid var(--info-border);
+}
+
+.badge-accent {
+  background: var(--accent-bg);
+  color: var(--accent-text);
+  border: 1px solid var(--accent-border);
+}
+
+.badge-primary {
+  background: var(--primary-dim);
+  color: var(--primary-dim-text);
+  border: 1px solid var(--primary);
+}
+
+.badge-primary--large {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* Estados compactos de integração e segurança. As cores vêm dos tokens do tema. */
+.badge-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.badge-status.on {
+  background: var(--success-bg);
+  color: var(--success-text);
+  border: 1px solid var(--success-border);
+}
+
+.badge-status.off {
+  background: var(--neutral-bg);
+  color: var(--neutral-text);
+  border: 1px solid var(--neutral-border);
+}
+
+.badge-status.pending {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+  border: 1px solid var(--warning-border);
+}
+
+.inventory-status {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.inventory-status--depleted,
+.inventory-status--expired {
+  background: var(--danger-bg);
+  color: var(--danger-text);
+  border: 1px solid var(--danger-border);
+}
+
+.inventory-status--expiring {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+  border: 1px solid var(--warning-border);
+}
+
+.inventory-status--active {
+  background: var(--success-bg);
+  color: var(--success-text);
+  border: 1px solid var(--success-border);
+}
+
+.measurement-chip {
+  border: 1px solid transparent;
+}
+
+.measurement-chip--weight {
+  background: var(--accent-bg);
+  color: var(--accent-text);
+  border-color: var(--accent-border);
+  font-size: 11.5px;
+}
+
+.measurement-chip--energy {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+  border-color: var(--warning-border);
+  font-size: 11.5px;
+}
+
+.measurement-chip--mood {
+  background: var(--mood-bg);
+  color: var(--mood-text);
+  border-color: var(--mood-border);
+  font-size: 11.5px;
+}
+
+.measurement-chip--external {
+  background: var(--info-bg);
+  color: var(--info-text);
+  border-color: var(--info-border);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.measurement-delta {
+  font-size: 12px;
+  font-weight: 700;
+  margin-left: 6px;
+}
+
+.measurement-delta--down {
+  color: var(--success-text);
+}
+
+.measurement-delta--up {
+  color: var(--warning-text);
+}
+
+.measurement-delta--steady {
   color: var(--muted);
-  border: 1px solid var(--border2);
+}
+
+.measurement-symptom-tag {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: var(--neutral-bg);
+  color: var(--neutral-text);
+  border: 1px solid var(--neutral-border);
+}
+
+.form-choice-btn--energy.selected {
+  background: var(--primary);
+  color: var(--on-primary);
+  border-color: var(--primary);
+}
+
+.form-choice-btn--mood.selected {
+  background: var(--mood-bg);
+  color: var(--mood-text);
+  border-color: var(--mood-border);
+}
+
+.report-entry-type {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.report-entry-type--retroactive {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+  border: 1px solid var(--warning-border);
+}
+
+.report-entry-type--applied {
+  background: var(--primary-dim);
+  color: var(--primary-dim-text);
+  border: 1px solid var(--primary);
 }
 
 /* ---------- Reconstitution Calculator ---------- */
@@ -2001,31 +2172,7 @@ body.light .btn-sec {
   color: #415465;
 }
 
-body.theme-light .badge-success,
-body.light .badge-success,
-body.theme-light #current-lang-badge,
-body.light #current-lang-badge {
-  background: #D1FAE5 !important;
-  color: #047857 !important;
-}
-
-body.theme-light .badge-danger,
-body.light .badge-danger {
-  background: #FEE2E2;
-  color: #991B1B;
-}
-
-body.theme-light .badge-warning,
-body.light .badge-warning {
-  background: #FEF3C7;
-  color: #92400E;
-}
-
-body.theme-light [data-i18n="settings.widgetBadge"],
-body.light [data-i18n="settings.widgetBadge"] {
-  background: #E0E7FF !important;
-  color: #3730A3 !important;
-}
+/* Os badges semânticos usam os mesmos tokens nos temas claro, escuro e alto contraste. */
 
 .result {
   background: linear-gradient(155deg, var(--surface2), var(--surface));
@@ -2415,8 +2562,8 @@ body.theme-light .daypick button.on {
 }
 
 .lib-item.selected {
-  background: rgba(44, 197, 192, 0.12);
-  border-color: rgba(44, 197, 192, 0.4);
+  background: var(--primary-dim);
+  border-color: var(--primary);
 }
 
 .lib-item-name {
@@ -2426,7 +2573,7 @@ body.theme-light .daypick button.on {
 }
 
 .lib-item.selected .lib-item-name {
-  color: var(--primary);
+  color: var(--primary-dim-text);
 }
 
 .lib-item-sub {
@@ -2514,16 +2661,10 @@ body.theme-light .daypick button.on {
 }
 
 .day-chip.on {
-  background: rgba(44, 197, 192, 0.12);
+  background: var(--primary-dim);
   border-color: var(--primary);
-  color: var(--primary);
-  box-shadow: 0 0 0 1px rgba(44, 197, 192, 0.2);
-}
-
-body.theme-light .day-chip.on {
-  background: rgba(44, 197, 192, 0.15);
-  border-color: var(--primary);
-  color: #0E8580;
+  color: var(--primary-dim-text);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--primary) 24%, transparent);
 }
 
 .days-preview-txt {
