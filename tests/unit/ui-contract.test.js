@@ -19,7 +19,7 @@ describe("UI Contract & CSS Integrity", () => {
     expect(primitivesCss).toContain(".section-title");
     expect(primitivesCss).toContain(".icon-button");
     expect(primitivesCss).toContain(".action-row");
-    expect(primitivesCss).toContain(".settings-group");
+    expect(primitivesCss).toContain(".settings-section");
   });
 
   it("não possui múltiplas definições duplicadas de .btn-primary em components.css", () => {

@@ -295,6 +295,34 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     await page.locator('#edit-freq-type-toggle button[data-type="especificos"]').click();
     await assertTouchTargets("#edit-days-grid .day-chip", "dias da semana");
 
+    const daysLayout = await page.locator("#edit-days-grid").evaluate((element) => ({
+      columns: getComputedStyle(element).gridTemplateColumns.split(" ").length,
+      clientWidth: element.clientWidth,
+      scrollWidth: element.scrollWidth
+    }));
+    const viewportWidth = page.viewportSize()?.width ?? 0;
+    expect(daysLayout.columns).toBe(viewportWidth <= 380 ? 4 : 7);
+    expect(daysLayout.scrollWidth).toBeLessThanOrEqual(daysLayout.clientWidth + 1);
+
+    const previewBounds = await page.locator("#edit-freq-preview").evaluate((element) => {
+      element.textContent = "Qui / Quinta-feira / Quinta-feira";
+      const box = element.getBoundingClientRect();
+      const sheetBox = element.closest(".sheet").getBoundingClientRect();
+      return { left: box.left, right: box.right, sheetLeft: sheetBox.left, sheetRight: sheetBox.right };
+    });
+    expect(previewBounds.left).toBeGreaterThanOrEqual(previewBounds.sheetLeft - 1);
+    expect(previewBounds.right).toBeLessThanOrEqual(previewBounds.sheetRight + 1);
+
+    const titleLayout = await page.locator("#modal-title").evaluate((element) => {
+      element.textContent = "Editar protocolo com um título responsivo deliberadamente muito longo";
+      const titleBox = element.getBoundingClientRect();
+      const closeBox = document.querySelector("#edit-close").getBoundingClientRect();
+      const lineHeight = Number.parseFloat(getComputedStyle(element).lineHeight);
+      return { titleHeight: titleBox.height, titleRight: titleBox.right, closeLeft: closeBox.left, lineHeight };
+    });
+    expect(titleLayout.titleHeight).toBeLessThanOrEqual(titleLayout.lineHeight * 2 + 1);
+    expect(titleLayout.titleRight).toBeLessThanOrEqual(titleLayout.closeLeft);
+
     runtime.assertCleanRuntime();
   });
 
@@ -543,13 +571,23 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     await settingsTab.first().click();
 
     // Deve conter os 4 grupos de ajustes
-    const groups = page.locator("#view-settings .settings-group");
+    const groups = page.locator("#view-settings .settings-section");
     await expect(groups).toHaveCount(4);
 
     await expect(page.locator("#settings-group-appearance")).toContainText("Aparência");
     await expect(page.locator("#settings-group-security")).toContainText("Segurança");
     await expect(page.locator("#settings-group-data")).toContainText("Dados");
     await expect(page.locator("#settings-group-about")).toContainText("Sobre");
+
+    if ((page.viewportSize()?.width ?? 0) <= 460) {
+      const actionLayout = await page.locator("#export-btn, #import-btn").evaluateAll((buttons) =>
+        buttons.map((button) => {
+          const box = button.getBoundingClientRect();
+          return { top: box.top, bottom: box.bottom };
+        })
+      );
+      expect(actionLayout[1].top).toBeGreaterThanOrEqual(actionLayout[0].bottom);
+    }
 
     // Trocar idioma para English
     const enBtn = page.locator("#lang-btn-en");
@@ -620,6 +658,15 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
 
     const notifModal = page.locator("#notif-modal");
     await expect(notifModal).toHaveClass(/on/);
+
+    if ((page.viewportSize()?.width ?? 0) <= 460) {
+      const summaryLayout = await page.locator(".settings-summary-row").evaluate((element) => {
+        const copyBox = element.querySelector(".settings-summary-copy").getBoundingClientRect();
+        const timeBox = element.querySelector(".settings-summary-time").getBoundingClientRect();
+        return { copyBottom: copyBox.bottom, timeTop: timeBox.top };
+      });
+      expect(summaryLayout.timeTop).toBeGreaterThanOrEqual(summaryLayout.copyBottom - 1);
+    }
 
     const closeBtn = page.locator("#notif-close, #nf-done");
     if (await closeBtn.count() > 0) {

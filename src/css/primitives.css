@@ -21,10 +21,155 @@
   line-height: 1.3;
 }
 
-/* Títulos que encabeçam grupos de configurações precisam respirar dentro do contêiner. */
-.settings-group > .section-title {
-  padding: 14px 18px 10px;
+/* Seções estáticas de Ajustes: o título fica fora dos cards para evitar bordas duplicadas. */
+.settings-section {
+  min-width: 0;
+  margin: 0 0 20px;
+}
+
+.settings-section:last-child {
+  margin-bottom: 0;
+}
+
+.settings-section-title {
+  padding: 0 4px 8px;
   overflow-wrap: anywhere;
+}
+
+.settings-section > .settings-card {
+  margin-bottom: 12px;
+}
+
+.settings-section > .settings-card:last-child {
+  margin-bottom: 0;
+}
+
+.settings-card,
+.settings-card > *,
+.settings-card-header > *,
+.settings-toggle-row > *,
+.settings-actions > *,
+.settings-summary-row > * {
+  min-width: 0;
+}
+
+.settings-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-bottom: 8px;
+}
+
+.settings-card-copy {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+
+.settings-card-title {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.settings-card-header > .settings-card-copy {
+  overflow-wrap: anywhere;
+}
+
+.settings-card-header > .badge,
+.settings-card-header > .badge-status {
+  flex: 0 1 auto;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+
+.settings-toggle-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--surface2);
+  border-radius: 10px;
+}
+
+.settings-toggle-row--spaced {
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.settings-toggle-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+.settings-language-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.settings-actions {
+  display: flex;
+  min-width: 0;
+}
+
+.settings-actions--pair {
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.settings-actions--pair > * {
+  flex: 1 1 180px;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.settings-actions--health-connect {
+  gap: 8px;
+}
+
+.settings-card-actions {
+  display: flex;
+  flex: 1 1 180px;
+  min-width: 0;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.settings-summary-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  min-width: 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--border2);
+}
+
+.settings-summary-copy {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.settings-summary-time {
+  flex: 0 1 110px;
+  width: 110px;
+  max-width: 100%;
+  padding: 6px 8px;
+  font-size: 12.5px;
 }
 
 .eyebrow {
@@ -219,14 +364,17 @@ body.theme-light .btn-primary {
 /* --- Layout & Grupos --- */
 .action-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 10px;
   width: 100%;
 }
 
 .action-row--equal > * {
-  flex: 1;
+  flex: 1 1 180px;
   min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .action-row--modal {
@@ -415,43 +563,4 @@ textarea.form-field-control--fixed {
   padding: 8px 14px;
   font-size: 12px;
   white-space: nowrap;
-}
-
-.settings-group {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  margin-bottom: 16px;
-}
-
-.settings-group summary {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-height: 52px;
-  padding: 14px 18px;
-  cursor: pointer;
-  font-weight: 600;
-  color: var(--text);
-  list-style: none;
-  user-select: none;
-  transition: background 0.15s ease;
-}
-
-.settings-group summary::-webkit-details-marker {
-  display: none;
-}
-
-.settings-group summary:hover,
-.settings-group summary:focus-visible {
-  background: var(--surface-2);
-}
-
-.settings-group[open] summary {
-  border-bottom: 1px solid var(--border);
-}
-
-.settings-group-content {
-  padding: 16px 18px;
 }

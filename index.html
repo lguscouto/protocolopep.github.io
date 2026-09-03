@@ -273,19 +273,19 @@
       </div>
 
       <!-- GRUPO 1: APARÊNCIA E ACESSIBILIDADE -->
-      <section class="settings-group" aria-labelledby="settings-group-appearance">
-        <h3 class="section-title" id="settings-group-appearance">Aparência e Acessibilidade</h3>
+      <section class="settings-section" aria-labelledby="settings-group-appearance">
+        <h3 class="section-title settings-section-title" id="settings-group-appearance">Aparência e Acessibilidade</h3>
         
         <!-- Card de Seleção de Idioma / i18n -->
-        <div class="panel" style="margin-bottom:14px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:12px;">
-            <div>
+        <div class="panel settings-card">
+          <div class="settings-card-header">
+            <div class="settings-card-copy">
               <div style="font-size:14px;font-weight:700;" data-i18n="settings.languageTitle">Idioma do Aplicativo</div>
               <div style="font-size:12px;color:var(--muted);" data-i18n="settings.languageDesc">Selecione o idioma de exibição do Protocolo PEP</div>
             </div>
             <span class="badge badge-success" id="current-lang-badge">PORTUGUÊS (BRASIL)</span>
           </div>
-          <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:8px;margin-top:10px;" role="group" aria-label="Seletor de Idioma">
+          <div class="settings-language-grid" role="group" aria-label="Seletor de Idioma">
             <button type="button" class="btn-sec lang-select-btn" id="lang-btn-pt" data-lang="pt-BR">
               <span>🇧🇷</span> <span>Português</span>
             </button>
@@ -299,16 +299,16 @@
         </div>
 
         <!-- Card de Acessibilidade & Alto Contraste -->
-        <div class="panel" style="margin-bottom:14px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:12px;">
-            <div>
+        <div class="panel settings-card">
+          <div class="settings-card-header">
+            <div class="settings-card-copy">
               <div style="font-size:14px;font-weight:700;" data-i18n="settings.accessibilityTitle">Acessibilidade & Visão</div>
               <div style="font-size:12px;color:var(--muted);" data-i18n="settings.accessibilityDesc">Otimizações para alto contraste e navegação assistiva</div>
             </div>
             <span class="badge badge-info" data-i18n="settings.wcagBadge">WCAG 2.1 AA</span>
           </div>
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--surface2);border-radius:10px;">
-            <label for="high-contrast-toggle" style="font-size:13px;font-weight:600;color:var(--text);cursor:pointer;flex:1;">
+          <div class="settings-toggle-row">
+            <label for="high-contrast-toggle" class="settings-toggle-label">
               <span data-i18n="settings.highContrastToggle">👁️ Modo de Alto Contraste</span>
             </label>
             <input type="checkbox" id="high-contrast-toggle" style="width:20px;height:20px;accent-color:var(--primary);cursor:pointer;" aria-checked="false">
@@ -317,20 +317,20 @@
       </section>
 
       <!-- GRUPO 2: SEGURANÇA E NOTIFICAÇÕES -->
-      <section class="settings-group" aria-labelledby="settings-group-security">
-        <h3 class="section-title" id="settings-group-security">Segurança e Notificações</h3>
+      <section class="settings-section" aria-labelledby="settings-group-security">
+        <h3 class="section-title settings-section-title" id="settings-group-security">Segurança e Notificações</h3>
 
         <!-- Card de Bloqueio Biométrico / PIN -->
-        <div class="panel" style="margin-bottom:14px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:12px;">
-            <div>
+        <div class="panel settings-card">
+          <div class="settings-card-header">
+            <div class="settings-card-copy">
               <div style="font-size:14px;font-weight:700;" data-i18n="settings.securityTitle">Segurança & Privacidade</div>
               <div style="font-size:12px;color:var(--muted);" id="app-lock-status-desc" data-i18n="settings.securityDesc">Exigir biometria ou PIN ao abrir o app</div>
             </div>
             <span class="badge badge-neutral" id="app-lock-status-badge">DESATIVADO</span>
           </div>
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--surface2);border-radius:10px;margin-top:10px;">
-            <label for="app-lock-toggle" style="font-size:13px;font-weight:600;color:var(--text);cursor:pointer;flex:1;">
+          <div class="settings-toggle-row settings-toggle-row--spaced">
+            <label for="app-lock-toggle" class="settings-toggle-label">
               <span data-i18n="settings.securityToggle">🔒 Bloqueio por Biometria / PIN</span>
             </label>
             <input type="checkbox" id="app-lock-toggle" style="width:20px;height:20px;accent-color:var(--primary);cursor:pointer;">
@@ -338,9 +338,9 @@
         </div>
 
         <!-- Card de Lembretes & Notificações -->
-        <div class="panel" style="margin-bottom:14px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-            <div style="font-size:14px;font-weight:700;" data-i18n="settings.remindersTitle">Lembretes & Notificações</div>
+        <div class="panel settings-card">
+          <div class="settings-card-header">
+            <div class="settings-card-copy settings-card-title" data-i18n="settings.remindersTitle">Lembretes & Notificações</div>
             <span class="badge badge-neutral" id="settings-notif-badge">Desativado</span>
           </div>
           <div style="font-size:12.5px;color:var(--muted);line-height:1.5;margin-bottom:14px;" id="settings-notif-msg">
@@ -352,9 +352,9 @@
         </div>
 
         <!-- Card de Widget da Tela Inicial -->
-        <div class="panel" style="margin-bottom:14px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:12px;">
-            <div>
+        <div class="panel settings-card">
+          <div class="settings-card-header">
+            <div class="settings-card-copy">
               <div style="font-size:14px;font-weight:700;" data-i18n="settings.widgetTitle">Widget da Tela Inicial</div>
               <div style="font-size:12px;color:var(--muted);">Acompanhamento rápido de aplicações</div>
             </div>
@@ -363,8 +363,8 @@
           <div style="font-size:12.5px;color:var(--muted);line-height:1.5;margin-bottom:12px;" data-i18n="settings.widgetDesc">
             Adicione o widget na tela inicial do Android tocando e segurando no fundo da tela e selecionando <strong>Protocolo PEP</strong>.
           </div>
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--surface2);border-radius:10px;">
-            <label for="widget-discrete-toggle" style="font-size:13px;font-weight:600;color:var(--text);cursor:pointer;flex:1;">
+          <div class="settings-toggle-row">
+            <label for="widget-discrete-toggle" class="settings-toggle-label">
               <span data-i18n="settings.widgetDiscreteToggle">👁️ Modo Discreto (ocultar nomes de peptídeos)</span>
             </label>
             <input type="checkbox" id="widget-discrete-toggle" style="width:20px;height:20px;accent-color:var(--primary);cursor:pointer;">
@@ -373,13 +373,13 @@
       </section>
 
       <!-- GRUPO 3: DADOS E INVENTÁRIO -->
-      <section class="settings-group" aria-labelledby="settings-group-data">
-        <h3 class="section-title" id="settings-group-data">Dados e Inventário</h3>
+      <section class="settings-section" aria-labelledby="settings-group-data">
+        <h3 class="section-title settings-section-title" id="settings-group-data">Dados e Inventário</h3>
 
         <!-- Card de Inventário de Frascos -->
-        <div class="panel" style="margin-bottom:14px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:12px;">
-            <div>
+        <div class="panel settings-card">
+          <div class="settings-card-header">
+            <div class="settings-card-copy">
               <div style="font-size:14px;font-weight:700;">Inventário de Frascos</div>
               <div style="font-size:12px;color:var(--muted);">Controle de reconstituição, saldo e validade</div>
             </div>
@@ -391,9 +391,9 @@
         </div>
 
         <!-- Card de Locais de Aplicação -->
-        <div class="panel" style="margin-bottom:14px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:12px;">
-            <div>
+        <div class="panel settings-card">
+          <div class="settings-card-header">
+            <div class="settings-card-copy">
               <div style="font-size:14px;font-weight:700;" data-i18n="settings.siteRotationTitle">Locais de Aplicação</div>
               <div style="font-size:12px;color:var(--muted);" id="sites-summary-text">Sequência de locais para alternância</div>
             </div>
@@ -404,9 +404,9 @@
         </div>
 
         <!-- Card de Health Connect Android -->
-        <div class="panel" style="margin-bottom:14px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:12px;">
-            <div>
+        <div class="panel settings-card">
+          <div class="settings-card-header">
+            <div class="settings-card-copy">
               <div style="font-size:14px;font-weight:700;" data-i18n="settings.healthConnectTitle">Health Connect (Android)</div>
               <div style="font-size:12px;color:var(--muted);" id="hc-status-desc" data-i18n="settings.healthConnectDesc">Sincronização de peso e medidas corporais</div>
             </div>
@@ -415,33 +415,33 @@
           <div style="font-size:12.5px;color:var(--muted);line-height:1.5;margin-bottom:12px;" data-i18n="settings.healthConnectHelp">
             Integração opcional e privada com o subsistema de saúde do Android para sincronizar registros de peso corporal.
           </div>
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--surface2);border-radius:10px;margin-bottom:10px;">
-            <label for="hc-enable-toggle" style="font-size:13px;font-weight:600;color:var(--text);cursor:pointer;flex:1;">
+          <div class="settings-toggle-row settings-toggle-row--spaced">
+            <label for="hc-enable-toggle" class="settings-toggle-label">
               <span data-i18n="settings.healthConnectToggle">🩺 Sincronizar com Health Connect</span>
             </label>
             <input type="checkbox" id="hc-enable-toggle" style="width:20px;height:20px;accent-color:var(--primary);cursor:pointer;">
           </div>
-          <div style="display:flex;gap:8px;">
-            <button type="button" class="btn-primary" id="hc-sync-btn" style="display:none;flex:1;font-size:12.5px;padding:8px 12px;" data-i18n="settings.healthConnectSyncBtn">
+          <div class="settings-actions settings-actions--pair settings-actions--health-connect">
+            <button type="button" class="btn-primary" id="hc-sync-btn" style="display:none;font-size:12.5px;padding:8px 12px;" data-i18n="settings.healthConnectSyncBtn">
               🔄 Sincronizar Agora
             </button>
-            <button type="button" class="btn-sec" id="hc-settings-btn" style="display:none;flex:1;font-size:12.5px;padding:8px 12px;" data-i18n="settings.healthConnectSettingsBtn">
+            <button type="button" class="btn-sec" id="hc-settings-btn" style="display:none;font-size:12.5px;padding:8px 12px;" data-i18n="settings.healthConnectSettingsBtn">
               ⚙️ Configurações
             </button>
           </div>
         </div>
 
         <!-- Card de Backup JSON Local-First -->
-        <div class="panel" style="margin-bottom:14px;">
+        <div class="panel settings-card">
           <div style="font-size:14px;font-weight:700;margin-bottom:6px;" data-i18n="settings.localFirstTitle">Arquitetura 100% Local-First</div>
           <div style="font-size:12.5px;color:var(--muted);line-height:1.5;margin-bottom:14px;" data-i18n="settings.localFirstDesc">
             Todos os seus dados de protocolo e histórico estão salvos diretamente na memória do seu dispositivo, funcionando offline com máxima privacidade e velocidade.
           </div>
-          <div style="display:flex;gap:10px;">
-            <button class="btn-primary" id="export-btn" style="flex:1;" data-i18n="settings.exportBackupBtn">
+          <div class="settings-actions settings-actions--pair">
+            <button class="btn-primary" id="export-btn" data-i18n="settings.exportBackupBtn">
               Exportar Backup JSON
             </button>
-            <button class="btn-sec" id="import-btn" style="flex:1;" data-i18n="settings.importBackupBtn">
+            <button class="btn-sec" id="import-btn" data-i18n="settings.importBackupBtn">
               Importar Backup
             </button>
             <input type="file" id="import-file" accept=".json" style="display:none;" />
@@ -451,16 +451,16 @@
       </section>
 
       <!-- GRUPO 4: SOBRE O APP E AJUDA -->
-      <section class="settings-group" aria-labelledby="settings-group-about">
-        <h3 class="section-title" id="settings-group-about">Sobre o App e Ajuda</h3>
+      <section class="settings-section" aria-labelledby="settings-group-about">
+        <h3 class="section-title settings-section-title" id="settings-group-about">Sobre o App e Ajuda</h3>
 
-        <div class="panel">
-          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
-            <div>
+        <div class="panel settings-card">
+          <div class="settings-card-header settings-card-header--about">
+            <div class="settings-card-copy">
               <div style="font-weight:700;font-family:var(--display);" data-i18n="settings.appInfo">Protocolo PEP Android</div>
               <div style="font-size:12px;color:var(--muted);">Versão 2.9.5 · Local-First Edition</div>
             </div>
-            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <div class="settings-card-actions">
               <button type="button" class="btn-ghost btn-ghost--compact" id="open-diag-btn" aria-label="Abrir diagnósticos do sistema" data-i18n="settings.diagnosticsBtn">
                 Diagnósticos
               </button>
@@ -675,9 +675,9 @@
         <button type="button" class="sheet-x" id="notif-close" aria-label="Fechar lembretes">✕</button>
       </div>
       <div class="sheet-body">
-        <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:12px;padding:12px 14px;margin-bottom:14px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-            <div style="font-size:12.5px;font-weight:700;color:var(--text);">Estado do Sistema</div>
+        <div class="modal-status-card" style="background:var(--surface2);border:1px solid var(--border2);border-radius:12px;padding:12px 14px;margin-bottom:14px;">
+          <div class="modal-status-header">
+            <div class="modal-status-title" style="font-size:12.5px;font-weight:700;color:var(--text);">Estado do Sistema</div>
             <span class="badge badge-neutral" id="nf-status-badge">Desativado</span>
           </div>
           <div style="font-size:12px;color:var(--muted);line-height:1.45;" id="nf-status-msg">
@@ -703,12 +703,12 @@
             </div>
           </label>
 
-          <div style="padding-top:8px;border-top:1px solid var(--border2);display:flex;justify-content:space-between;align-items:center;">
-            <div>
+          <div class="settings-summary-row">
+            <div class="settings-summary-copy">
               <label for="nf-summary-time" style="font-size:12.5px;font-weight:600;color:var(--text);display:block;">Resumo Diário da Manhã</label>
               <div style="font-size:11px;color:var(--muted);">Lembrete geral das doses do dia</div>
             </div>
-            <input type="time" class="txt" id="nf-summary-time" style="width:110px;padding:6px 8px;font-size:12.5px;" />
+            <input type="time" class="txt settings-summary-time" id="nf-summary-time" />
           </div>
         </div>
 
