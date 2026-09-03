@@ -87,7 +87,7 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
     chipsContainer.innerHTML = allAvailable.map((symptom) => {
       const isSelected = selectedSymptoms.has(symptom);
       return `
-        <button type="button" class="symptom-chip-btn ${isSelected ? "active" : ""}" data-symptom="${esc(symptom)}" style="padding:5px 10px;font-size:12px;border-radius:16px;border:1px solid ${isSelected ? "var(--primary)" : "var(--border2)"};background:${isSelected ? "rgba(99,102,241,0.15)" : "var(--surface2)"};color:${isSelected ? "var(--primary)" : "var(--text)"};cursor:pointer;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;">
+        <button type="button" class="symptom-chip-btn ${isSelected ? "active" : ""}" data-symptom="${esc(symptom)}">
           ${isSelected ? "✓ " : "+ "}${esc(symptom)}
         </button>
       `;
@@ -251,7 +251,7 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
                     </div>` : ""}
                   ${m.notes ? `<div style="font-size:12px;color:var(--muted);margin-top:6px;">💬 ${esc(m.notes)}</div>` : ""}
                 </div>
-                <button type="button" class="btn-meas-edit" data-id="${sanitizeId(m.id)}" style="padding:6px 10px;font-size:11.5px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);cursor:pointer;flex-shrink:0;">
+                <button type="button" class="btn-compact-action btn-meas-edit" data-id="${sanitizeId(m.id)}">
                   Editar
                 </button>
               </div>

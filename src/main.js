@@ -1781,7 +1781,7 @@ function renderColorSwatches() {
   if (!cont) return;
 
   cont.innerHTML = PALETTE.map((color) => `
-    <button type="button" data-color="${color}" style="background:${color};" class="${color === selectedColor ? "on" : ""}"></button>
+    <button type="button" data-color="${color}" style="--swatch-color:${color};" class="${color === selectedColor ? "on" : ""}" aria-label="Selecionar cor ${color}"></button>
   `).join("");
 
   cont.querySelectorAll("button").forEach((b) => {

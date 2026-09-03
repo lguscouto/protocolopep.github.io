@@ -41,7 +41,7 @@ describe("Design Tokens & Contrast", () => {
     const definedTokens = new Set(
       [...css.matchAll(/(--[a-z0-9-]+)\s*:/gi)].map((match) => match[1])
     );
-    const dynamicTokens = new Set(["--acc"]);
+    const dynamicTokens = new Set(["--acc", "--swatch-color"]);
     const projectRoot = path.resolve(__dirname, "../..");
     const files = [path.join(projectRoot, "index.html"), ...sourceFiles(path.join(projectRoot, "src"))];
     const usages = files.flatMap((filePath) => {

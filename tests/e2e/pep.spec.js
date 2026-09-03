@@ -162,6 +162,105 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     runtime.assertCleanRuntime();
   });
 
+  test("controles compactos preservam área de toque mínima em cada fluxo visual", async ({ page }) => {
+    const runtime = trackPageRuntime(page);
+    const today = new Date().toISOString().slice(0, 10);
+    await seedStorage(page, {
+      skipOnboarding: true,
+      peptides: [{
+        id: "pep-touch-audit",
+        name: "Composto de toque",
+        sub: "auditoria visual",
+        dose: "500 mcg",
+        ui: 10,
+        perDay: 2,
+        time: "08:00",
+        color: "#30D5C8",
+        days: null
+      }],
+      logs: [{
+        id: "log-touch-audit",
+        peptideId: "pep-touch-audit",
+        date: today,
+        time: "08:00",
+        dose: "500 mcg",
+        site: "Abdômen"
+      }]
+    });
+    await page.addInitScript(({ today }) => {
+      localStorage.setItem("pep_inventory_v2", JSON.stringify([{
+        id: "vial-touch-audit",
+        peptideId: "pep-touch-audit",
+        peptideName: "Composto de toque",
+        totalMg: 5,
+        waterMl: 2,
+        concentrationMcgPerMl: 2500,
+        initialMcg: 5000,
+        remainingMcg: 5000,
+        reconstitutionDate: today,
+        expirationDate: null,
+        status: "active",
+        movements: []
+      }]));
+      localStorage.setItem("pep_measurements_v2", JSON.stringify([{
+        id: "measure-touch-audit",
+        date: today,
+        time: "08:00",
+        weightKg: 82.4,
+        energyLevel: 4,
+        moodLevel: 4,
+        symptoms: ["Fadiga"],
+        notes: "",
+        source: "local",
+        ownership: "pep"
+      }]));
+    }, { today });
+
+    await page.goto("/");
+    await page.waitForLoadState("domcontentloaded");
+
+    const assertTouchTargets = async (selector, label) => {
+      const targets = page.locator(selector);
+      const count = await targets.count();
+      expect(count, `${label} deve renderizar ao menos um controle`).toBeGreaterThan(0);
+      for (let i = 0; i < count; i++) {
+        const box = await targets.nth(i).boundingBox();
+        // Playwright pode devolver 43.9999px por arredondamento de escala do dispositivo.
+        const width = Math.round((box?.width || 0) * 10) / 10;
+        const height = Math.round((box?.height || 0) * 10) / 10;
+        expect(width, `${label} largura`).toBeGreaterThanOrEqual(44);
+        expect(height, `${label} altura`).toBeGreaterThanOrEqual(44);
+      }
+    };
+
+    await assertTouchTargets(".take, .dose-add, .dose-undo", "ações de dose");
+
+    await page.locator("#tab-history").click();
+    await assertTouchTargets(".btn-meas-edit", "edição de medidas");
+    await page.locator("#open-measurement-modal-btn").click();
+    await assertTouchTargets(".symptom-chip-btn", "chips de sintomas");
+    await page.locator("#measurement-modal-close").click();
+
+    await page.locator("#tab-settings").click();
+    await assertTouchTargets(".lang-select-btn", "seletor de idioma");
+    await assertTouchTargets(".edit-vial-btn, .view-vial-history-btn", "ações de inventário");
+    await page.locator("#open-sites-settings-btn").click();
+    await assertTouchTargets(".site-control", "controles de sítios");
+    await page.locator("#sites-modal-close").click();
+
+    await page.locator("#tab-today").click();
+    await page.locator("#dash-research-btn").click();
+    await assertTouchTargets("#research-clear-btn, #research-category-chips .chip", "controles da pesquisa");
+    await page.locator("#research-modal-close").click();
+
+    await page.locator(".gear").first().click();
+    await assertTouchTargets("#edit-period-toggle button, #edit-freq-type-toggle button, #modal-swatches button", "controles do protocolo");
+    await page.locator('#edit-freq-type-toggle button[data-type="especificos"]').click();
+    await assertTouchTargets("#edit-days-grid .day-chip", "dias da semana");
+
+    runtime.assertCleanRuntime();
+  });
+
   test("registro de aplicação usa mapa visual acessível e preserva os demais locais", async ({ page }) => {
     const runtime = trackPageRuntime(page);
     const mockPeptides = [

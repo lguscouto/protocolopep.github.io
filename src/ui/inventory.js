@@ -205,10 +205,10 @@ export function setupInventoryUI({ storage, onInventoryChange }) {
               ${remDoses !== null ? `🎯 <strong>~${remDoses} doses restantes</strong>` : `ℹ️ ${escapeHtml(expStatus.label)}`}
             </div>
             <div style="display:flex;gap:6px;">
-              <button type="button" class="btn-ghost edit-vial-btn" data-vial-id="${escapeHtml(v.id)}" style="font-size:11px;padding:4px 8px;">
+              <button type="button" class="btn-compact-action edit-vial-btn" data-vial-id="${escapeHtml(v.id)}">
                 Editar
               </button>
-              <button type="button" class="btn-ghost view-vial-history-btn" data-vial-id="${escapeHtml(v.id)}" style="font-size:11px;padding:4px 8px;">
+              <button type="button" class="btn-compact-action view-vial-history-btn" data-vial-id="${escapeHtml(v.id)}">
                 Histórico
               </button>
             </div>

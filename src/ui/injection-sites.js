@@ -63,13 +63,13 @@ export function setupInjectionSitesUI({ storage, onSitesChange = () => {} }) {
             <span style="font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(site)}</span>
           </div>
           <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
-            <button type="button" class="btn-site-move-up" data-index="${index}" ${isFirst ? "disabled" : ""} style="padding:4px 8px;font-size:11px;background:var(--surface-2);border:1px solid var(--border);border-radius:4px;color:var(--text);" aria-label="Subir ${escapeHtml(site)}">
+            <button type="button" class="icon-button site-control btn-site-move-up" data-index="${index}" ${isFirst ? "disabled" : ""} aria-label="Subir ${escapeHtml(site)}">
               ▲
             </button>
-            <button type="button" class="btn-site-move-down" data-index="${index}" ${isLast ? "disabled" : ""} style="padding:4px 8px;font-size:11px;background:var(--surface-2);border:1px solid var(--border);border-radius:4px;color:var(--text);" aria-label="Descer ${escapeHtml(site)}">
+            <button type="button" class="icon-button site-control btn-site-move-down" data-index="${index}" ${isLast ? "disabled" : ""} aria-label="Descer ${escapeHtml(site)}">
               ▼
             </button>
-            <button type="button" class="btn-site-remove" data-index="${index}" style="padding:4px 8px;font-size:11px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);border-radius:4px;color:#ef4444;" aria-label="Remover ${escapeHtml(site)}">
+            <button type="button" class="icon-button site-control site-control--danger btn-site-remove" data-index="${index}" aria-label="Remover ${escapeHtml(site)}">
               ✕
             </button>
           </div>

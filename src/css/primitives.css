@@ -136,6 +136,80 @@ body.theme-light .btn-primary {
   transform: scale(0.95);
 }
 
+/* Ações textuais compactas continuam confortáveis no toque. */
+.btn-compact-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--tap-min);
+  min-height: var(--tap-min);
+  padding: 8px 12px;
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+.btn-compact-action:hover,
+.btn-compact-action:focus-visible {
+  border-color: var(--primary);
+  background: var(--surface-3);
+}
+
+.btn-compact-action:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.btn-compact-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+/* Chips de escolha são controles, não apenas etiquetas decorativas. */
+.symptom-chip-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: var(--tap-min);
+  min-height: var(--tap-min);
+  padding: 8px 12px;
+  border: 1px solid var(--border2);
+  border-radius: 16px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 12px;
+  line-height: 1.2;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+  white-space: nowrap;
+}
+
+.symptom-chip-btn:hover,
+.symptom-chip-btn:focus-visible {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 8%, var(--surface-2));
+}
+
+.symptom-chip-btn:active {
+  transform: scale(0.97);
+}
+
+.symptom-chip-btn.active {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 15%, var(--surface-2));
+  color: var(--primary);
+}
+
 /* --- Layout & Grupos --- */
 .action-row {
   display: flex;

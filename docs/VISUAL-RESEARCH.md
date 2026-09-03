@@ -91,3 +91,10 @@ Evoluir o Protocolo PEP de uma interface predominantemente utilitária para uma 
 - A direção usa fundo escuro, turquesa de assinatura, mockup de telefone e mensagens factuais de benefício, sem mascote, roxo dominante ou promessas clínicas.
 - Os dados exibidos são sintéticos, as imagens ficam no repositório e o gerador local é reproduzível em `tools/generate-store-screenshots.mjs`.
 - A especificação de uso e os textos de cada peça estão em `docs/store-screenshots/README.md`.
+
+## Sétima entrega implementada — ergonomia dos controles compactos
+
+- Ações de dose, edição de medidas, inventário, sítios e limpeza da pesquisa passaram a usar primitivas visuais reutilizáveis, sem estilos inline de dimensão.
+- Chips de calculadora, filtros de pesquisa, sintomas, seletores segmentados, dias da semana, idiomas, unidades e cores agora preservam área mínima de toque de 44 × 44 px.
+- Ícones e swatches mantêm conteúdo visual compacto dentro da área interativa ampliada, evitando crescimento desnecessário dos elementos.
+- A suíte E2E passou a verificar os fluxos compactos nos três perfis de viewport, incluindo a tolerância de subpixel dos navegadores móveis.
