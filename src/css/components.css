@@ -3054,6 +3054,9 @@ body.theme-light .daypick button.on {
   width: 100%;
   height: 100%;
   transform: none;
+  object-fit: cover;
+  object-position: center center;
+  user-select: none;
 }
 
 .injection-site-skin-start {
@@ -3110,33 +3113,33 @@ body.theme-light .daypick button.on {
 }
 
 .injection-site-point.abdomen-upper-right {
-  top: 29%;
-  left: calc(50% - 42px);
+  top: 35%;
+  left: 37%;
 }
 
 .injection-site-point.abdomen-upper-left {
-  top: 29%;
-  left: calc(50% + 42px);
+  top: 35%;
+  left: 63%;
 }
 
 .injection-site-point.abdomen-lower-right {
   top: 72%;
-  left: calc(50% - 50px);
+  left: 38%;
 }
 
 .injection-site-point.abdomen-lower-left {
   top: 72%;
-  left: calc(50% + 50px);
+  left: 62%;
 }
 
 .injection-site-point.flank-right {
-  top: 52%;
-  left: calc(50% - 104px);
+  top: 62%;
+  left: 23%;
 }
 
 .injection-site-point.flank-left {
-  top: 52%;
-  left: calc(50% + 104px);
+  top: 62%;
+  left: 77%;
 }
 
 .injection-site-point.abdomen-right {
@@ -3199,13 +3202,13 @@ body.theme-light .daypick button.on {
 }
 
 .injection-site-point.abdomen-lower-right .injection-site-point-number {
-  right: -16px;
   bottom: -17px;
+  left: -16px;
 }
 
 .injection-site-point.abdomen-lower-left .injection-site-point-number {
   bottom: -17px;
-  left: -16px;
+  right: -16px;
 }
 
 .injection-site-point.is-last {

@@ -5,6 +5,8 @@
  * Ele não avalia a pele, não determina segurança e não recomenda onde aplicar.
  */
 
+import torsoImageUrl from "../assets/injection-site-torso.png";
+
 const VISUAL_POSITIONS = Object.freeze({
   "abdomen (superior direito)": Object.freeze({ placement: "abdomen-upper-right", order: 0 }),
   "abdomen (superior esquerdo)": Object.freeze({ placement: "abdomen-upper-left", order: 1 }),
@@ -73,58 +75,13 @@ export function createInjectionSitePickerModel(
 }
 
 function createTorsoIllustration() {
-  const svgNamespace = "http://www.w3.org/2000/svg";
-  const svg = document.createElementNS(svgNamespace, "svg");
-  svg.setAttribute("viewBox", "0 0 320 360");
-  svg.setAttribute("class", "injection-site-figure");
-  svg.setAttribute("aria-hidden", "true");
-  svg.setAttribute("focusable", "false");
-
-  const defs = document.createElementNS(svgNamespace, "defs");
-  const gradient = document.createElementNS(svgNamespace, "linearGradient");
-  gradient.setAttribute("id", "pep-abdomen-gradient");
-  gradient.setAttribute("x1", "0");
-  gradient.setAttribute("y1", "0");
-  gradient.setAttribute("x2", "1");
-  gradient.setAttribute("y2", "1");
-
-  const firstStop = document.createElementNS(svgNamespace, "stop");
-  firstStop.setAttribute("offset", "0");
-  firstStop.setAttribute("class", "injection-site-skin-start");
-  const secondStop = document.createElementNS(svgNamespace, "stop");
-  secondStop.setAttribute("offset", "1");
-  secondStop.setAttribute("class", "injection-site-skin-end");
-  gradient.append(firstStop, secondStop);
-  defs.appendChild(gradient);
-
-  const torso = document.createElementNS(svgNamespace, "path");
-  torso.setAttribute(
-    "d",
-    "M18 0C78 -2 115 1 160 8C205 1 242 -2 302 0c-6 43-16 86-27 127-10 38-10 71 1 111 9 34 18 73 21 122H22c3-49 12-88 21-122 11-40 11-73 1-111C34 86 24 43 18 0Z"
-  );
-  torso.setAttribute("class", "injection-site-torso");
-
-  const waistLeft = document.createElementNS(svgNamespace, "path");
-  waistLeft.setAttribute("d", "M76 82c19 36 28 86 16 145-7 34-13 59-21 79");
-  waistLeft.setAttribute("class", "injection-site-contour");
-  const waistRight = document.createElementNS(svgNamespace, "path");
-  waistRight.setAttribute("d", "M244 82c-19 36-28 86-16 145 7 34 13 59 21 79");
-  waistRight.setAttribute("class", "injection-site-contour");
-  const centerLine = document.createElementNS(svgNamespace, "path");
-  centerLine.setAttribute("d", "M160 28v302");
-  centerLine.setAttribute("class", "injection-site-centerline");
-  const quadrantLine = document.createElementNS(svgNamespace, "path");
-  quadrantLine.setAttribute("d", "M31 166h258");
-  quadrantLine.setAttribute("class", "injection-site-centerline");
-  const navel = document.createElementNS(svgNamespace, "ellipse");
-  navel.setAttribute("cx", "160");
-  navel.setAttribute("cy", "166");
-  navel.setAttribute("rx", "8");
-  navel.setAttribute("ry", "6");
-  navel.setAttribute("class", "injection-site-navel");
-
-  svg.append(defs, torso, waistLeft, waistRight, centerLine, quadrantLine, navel);
-  return svg;
+  const image = document.createElement("img");
+  image.className = "injection-site-figure";
+  image.src = torsoImageUrl;
+  image.alt = "";
+  image.setAttribute("aria-hidden", "true");
+  image.setAttribute("draggable", "false");
+  return image;
 }
 
 function createStatusLine(className, label, value) {
