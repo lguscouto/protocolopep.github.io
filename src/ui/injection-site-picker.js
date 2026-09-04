@@ -64,6 +64,7 @@ export function createInjectionSitePickerModel(
         index,
         placement: visualConfig?.placement || null,
         visualOrder: visualConfig?.order ?? Number.MAX_SAFE_INTEGER,
+        markerNumber: visualConfig && visualConfig.order < 6 ? visualConfig.order + 1 : null,
         selected: key === selectedKey,
         next: key === nextKey,
         last: key === lastKey
@@ -74,7 +75,7 @@ export function createInjectionSitePickerModel(
 function createTorsoIllustration() {
   const svgNamespace = "http://www.w3.org/2000/svg";
   const svg = document.createElementNS(svgNamespace, "svg");
-  svg.setAttribute("viewBox", "0 0 240 260");
+  svg.setAttribute("viewBox", "0 0 320 360");
   svg.setAttribute("class", "injection-site-figure");
   svg.setAttribute("aria-hidden", "true");
   svg.setAttribute("focusable", "false");
@@ -99,27 +100,27 @@ function createTorsoIllustration() {
   const torso = document.createElementNS(svgNamespace, "path");
   torso.setAttribute(
     "d",
-    "M54 20C74 8 92 8 120 8s46 0 66 12c18 11 27 29 25 53l-8 130c-2 30-20 49-44 49H81c-24 0-42-19-44-49L29 73c-2-24 7-42 25-53Z"
+    "M18 0C78 -2 115 1 160 8C205 1 242 -2 302 0c-6 43-16 86-27 127-10 38-10 71 1 111 9 34 18 73 21 122H22c3-49 12-88 21-122 11-40 11-73 1-111C34 86 24 43 18 0Z"
   );
   torso.setAttribute("class", "injection-site-torso");
 
   const waistLeft = document.createElementNS(svgNamespace, "path");
-  waistLeft.setAttribute("d", "M56 62c12 29 13 91 4 137");
+  waistLeft.setAttribute("d", "M76 82c19 36 28 86 16 145-7 34-13 59-21 79");
   waistLeft.setAttribute("class", "injection-site-contour");
   const waistRight = document.createElementNS(svgNamespace, "path");
-  waistRight.setAttribute("d", "M184 62c-12 29-13 91-4 137");
+  waistRight.setAttribute("d", "M244 82c-19 36-28 86-16 145 7 34 13 59 21 79");
   waistRight.setAttribute("class", "injection-site-contour");
   const centerLine = document.createElementNS(svgNamespace, "path");
-  centerLine.setAttribute("d", "M120 54v146");
+  centerLine.setAttribute("d", "M160 28v302");
   centerLine.setAttribute("class", "injection-site-centerline");
   const quadrantLine = document.createElementNS(svgNamespace, "path");
-  quadrantLine.setAttribute("d", "M67 137h106");
+  quadrantLine.setAttribute("d", "M31 166h258");
   quadrantLine.setAttribute("class", "injection-site-centerline");
   const navel = document.createElementNS(svgNamespace, "ellipse");
-  navel.setAttribute("cx", "120");
-  navel.setAttribute("cy", "137");
-  navel.setAttribute("rx", "5");
-  navel.setAttribute("ry", "3.5");
+  navel.setAttribute("cx", "160");
+  navel.setAttribute("cy", "166");
+  navel.setAttribute("rx", "8");
+  navel.setAttribute("ry", "6");
   navel.setAttribute("class", "injection-site-navel");
 
   svg.append(defs, torso, waistLeft, waistRight, centerLine, quadrantLine, navel);
@@ -163,6 +164,13 @@ function createSiteButton(item, onSelect, { compact = false } = {}) {
     dot.className = "injection-site-point-dot";
     dot.setAttribute("aria-hidden", "true");
     button.appendChild(dot);
+    if (item.markerNumber) {
+      const number = document.createElement("span");
+      number.className = "injection-site-point-number";
+      number.setAttribute("aria-hidden", "true");
+      number.textContent = String(item.markerNumber);
+      button.appendChild(number);
+    }
   }
 
   button.addEventListener("click", () => onSelect(item.label));

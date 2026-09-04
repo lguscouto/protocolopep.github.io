@@ -3038,58 +3038,58 @@ body.theme-light .daypick button.on {
 
 .injection-site-map {
   position: relative;
-  min-height: 240px;
+  min-height: 320px;
   overflow: hidden;
   border: 1px solid var(--border2);
   border-radius: var(--radius-lg);
   background:
-    radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--primary) 13%, transparent), transparent 48%),
-    linear-gradient(180deg, color-mix(in srgb, var(--surface-2) 92%, transparent), var(--surface));
+    radial-gradient(circle at 50% 45%, rgba(255, 255, 255, 0.96), rgba(247, 250, 250, 0.98) 66%, rgba(232, 239, 240, 0.96)),
+    var(--surface);
   isolation: isolate;
 }
 
 .injection-site-figure {
   position: absolute;
-  top: 4px;
-  left: 50%;
-  width: 192px;
-  height: 208px;
-  transform: translateX(-50%);
-  filter: drop-shadow(0 14px 20px rgba(0, 0, 0, 0.18));
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: none;
 }
 
 .injection-site-skin-start {
-  stop-color: color-mix(in srgb, var(--primary) 18%, #D7B39B);
+  stop-color: #f8ddc5;
 }
 
 .injection-site-skin-end {
-  stop-color: color-mix(in srgb, var(--surface-3) 28%, #9E7568);
+  stop-color: #efc8aa;
 }
 
 .injection-site-torso {
   fill: url(#pep-abdomen-gradient);
-  stroke: color-mix(in srgb, var(--primary) 36%, var(--border2));
-  stroke-width: 1.5;
+  stroke: rgba(179, 128, 92, 0.66);
+  stroke-width: 1.2;
 }
 
 .injection-site-contour,
 .injection-site-centerline {
   fill: none;
-  stroke: rgba(70, 45, 42, 0.22);
+  stroke: rgba(144, 104, 82, 0.3);
   stroke-linecap: round;
 }
 
 .injection-site-contour {
-  stroke-width: 2;
+  stroke-width: 1.7;
 }
 
 .injection-site-centerline {
-  stroke-width: 1;
-  stroke-dasharray: 4 7;
+  stroke-width: 1.1;
+  stroke-dasharray: 5 7;
 }
 
 .injection-site-navel {
-  fill: rgba(60, 39, 37, 0.46);
+  fill: rgba(139, 88, 59, 0.58);
+  stroke: rgba(123, 76, 51, 0.28);
+  stroke-width: 2;
 }
 
 .injection-site-point {
@@ -3110,60 +3110,111 @@ body.theme-light .daypick button.on {
 }
 
 .injection-site-point.abdomen-upper-right {
-  top: 24%;
-  left: calc(50% - 36px);
+  top: 29%;
+  left: calc(50% - 42px);
 }
 
 .injection-site-point.abdomen-upper-left {
-  top: 24%;
-  left: calc(50% + 36px);
+  top: 29%;
+  left: calc(50% + 42px);
 }
 
 .injection-site-point.abdomen-lower-right {
-  top: 66%;
-  left: calc(50% - 40px);
+  top: 72%;
+  left: calc(50% - 50px);
 }
 
 .injection-site-point.abdomen-lower-left {
-  top: 66%;
-  left: calc(50% + 40px);
+  top: 72%;
+  left: calc(50% + 50px);
 }
 
 .injection-site-point.flank-right {
-  top: 44%;
-  left: calc(50% - 70px);
+  top: 52%;
+  left: calc(50% - 104px);
 }
 
 .injection-site-point.flank-left {
-  top: 44%;
-  left: calc(50% + 70px);
+  top: 52%;
+  left: calc(50% + 104px);
 }
 
 .injection-site-point.abdomen-right {
-  top: 44%;
-  left: calc(50% - 38px);
+  top: 50%;
+  left: calc(50% - 42px);
 }
 
 .injection-site-point.abdomen-left {
-  top: 44%;
-  left: calc(50% + 38px);
+  top: 50%;
+  left: calc(50% + 42px);
 }
 
 .injection-site-point-dot {
   position: absolute;
   inset: 50% auto auto 50%;
-  width: 18px;
-  height: 18px;
+  width: 34px;
+  height: 34px;
   transform: translate(-50%, -50%);
-  border: 3px solid currentColor;
+  border: 5px solid currentColor;
   border-radius: 50%;
-  background: color-mix(in srgb, var(--surface) 90%, transparent);
-  box-shadow: 0 0 0 5px color-mix(in srgb, currentColor 13%, transparent);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 0 0 9px color-mix(in srgb, currentColor 16%, transparent);
   transition: transform 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+}
+
+.injection-site-point-number {
+  position: absolute;
+  z-index: 1;
+  display: grid;
+  width: 23px;
+  height: 23px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 2px 5px rgba(15, 74, 73, 0.22);
+}
+
+.injection-site-point.abdomen-upper-right .injection-site-point-number {
+  top: -16px;
+  left: -16px;
+}
+
+.injection-site-point.abdomen-upper-left .injection-site-point-number {
+  top: -16px;
+  right: -16px;
+}
+
+.injection-site-point.flank-right .injection-site-point-number {
+  top: -11px;
+  left: -33px;
+}
+
+.injection-site-point.flank-left .injection-site-point-number {
+  top: -11px;
+  right: -33px;
+}
+
+.injection-site-point.abdomen-lower-right .injection-site-point-number {
+  right: -16px;
+  bottom: -17px;
+}
+
+.injection-site-point.abdomen-lower-left .injection-site-point-number {
+  bottom: -17px;
+  left: -16px;
 }
 
 .injection-site-point.is-last {
   color: var(--warning);
+}
+
+.injection-site-point.is-last .injection-site-point-number {
+  background: var(--warning);
+  box-shadow: 0 2px 5px rgba(156, 88, 10, 0.24);
 }
 
 .injection-site-point.is-next .injection-site-point-dot {
@@ -3172,7 +3223,7 @@ body.theme-light .daypick button.on {
 
 .injection-site-point.is-selected .injection-site-point-dot {
   background: currentColor;
-  box-shadow: 0 0 0 6px color-mix(in srgb, currentColor 22%, transparent), 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 0 0 9px color-mix(in srgb, currentColor 26%, transparent), 0 4px 12px rgba(0, 0, 0, 0.2);
   transform: translate(-50%, -50%) scale(1.12);
 }
 
@@ -3186,9 +3237,9 @@ body.theme-light .daypick button.on {
 .injection-site-map-label {
   position: absolute;
   right: 12px;
-  bottom: 10px;
+  bottom: 8px;
   left: 12px;
-  color: var(--muted);
+  color: #5f686b;
   font-size: 11px;
   font-weight: 600;
   text-align: center;

@@ -25,6 +25,7 @@ describe("Seletor visual de locais de aplicação", () => {
     ]);
 
     expect(model[0].placement).toBe("abdomen-upper-right");
+    expect(model[0].markerNumber).toBe(1);
     expect(model[1].placement).toBeNull();
     expect(model[2]).toMatchObject({ label: "Local personalizado", placement: null });
   });
@@ -53,5 +54,6 @@ describe("Seletor visual de locais de aplicação", () => {
 
     expect(model[0]).toMatchObject({ selected: false, next: false, last: true });
     expect(model[1]).toMatchObject({ selected: true, next: true, last: false });
+    expect(model[1].markerNumber).toBe(2);
   });
 });

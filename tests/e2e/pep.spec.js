@@ -353,6 +353,7 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     await expect(modal).toHaveClass(/on/);
     await expect(page.locator(".injection-site-map")).toBeVisible();
     await expect(page.locator(".injection-site-point")).toHaveCount(6);
+    await expect(page.locator(".injection-site-point-number")).toHaveCount(6);
     await expect(page.locator(".injection-site-chip")).toHaveCount(4);
     await expect(page.locator(".injection-site-disclaimer")).toContainText("não avalia a pele");
     // Aguarda a transição de tema já usada pelos demais testes de contraste.
