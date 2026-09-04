@@ -400,6 +400,17 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
       }
     }
 
+    const dotSizes = await page.locator(".injection-site-point-dot").evaluateAll((dots) => (
+      dots.map((dot) => ({
+        width: Number.parseFloat(getComputedStyle(dot).width),
+        height: Number.parseFloat(getComputedStyle(dot).height)
+      }))
+    ));
+    dotSizes.forEach((dotSize) => {
+      expect(dotSize.width).toBeCloseTo(30, 2);
+      expect(dotSize.height).toBeCloseTo(30, 2);
+    });
+
     const pointPositions = await page.locator(".injection-site-point").evaluateAll((points) => Object.fromEntries(
       points.map((point) => {
         const placement = [...point.classList].find((className) => (

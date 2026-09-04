@@ -3155,13 +3155,13 @@ body.theme-light .daypick button.on {
 .injection-site-point-dot {
   position: absolute;
   inset: 50% auto auto 50%;
-  width: 34px;
-  height: 34px;
+  width: 30px;
+  height: 30px;
   transform: translate(-50%, -50%);
-  border: 5px solid currentColor;
+  border: 4px solid currentColor;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 0 0 9px color-mix(in srgb, currentColor 16%, transparent);
+  box-shadow: 0 0 0 7px color-mix(in srgb, currentColor 16%, transparent);
   transition: transform 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
 }
 
@@ -3226,8 +3226,8 @@ body.theme-light .daypick button.on {
 
 .injection-site-point.is-selected .injection-site-point-dot {
   background: currentColor;
-  box-shadow: 0 0 0 9px color-mix(in srgb, currentColor 26%, transparent), 0 4px 12px rgba(0, 0, 0, 0.2);
-  transform: translate(-50%, -50%) scale(1.12);
+  box-shadow: 0 0 0 7px color-mix(in srgb, currentColor 26%, transparent), 0 4px 12px rgba(0, 0, 0, 0.2);
+  transform: translate(-50%, -50%) scale(1.08);
 }
 
 .injection-site-point:focus-visible,
@@ -3317,8 +3317,8 @@ body.theme-light .daypick button.on {
 }
 
 @keyframes injectionSitePulse {
-  0%, 100% { box-shadow: 0 0 0 5px color-mix(in srgb, currentColor 13%, transparent); }
-  50% { box-shadow: 0 0 0 10px color-mix(in srgb, currentColor 3%, transparent); }
+  0%, 100% { box-shadow: 0 0 0 4px color-mix(in srgb, currentColor 13%, transparent); }
+  50% { box-shadow: 0 0 0 8px color-mix(in srgb, currentColor 3%, transparent); }
 }
 
 @media (prefers-reduced-motion: reduce) {
