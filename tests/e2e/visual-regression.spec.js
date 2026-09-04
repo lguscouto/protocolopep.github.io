@@ -34,7 +34,7 @@ const VISUAL_STATE = Object.freeze({
         time: "08:00",
         dose: "250 mcg",
         ui: 10,
-        site: "Abdômen (Direito)"
+        site: "Abdômen (Superior Direito)"
       }]
     }
   },

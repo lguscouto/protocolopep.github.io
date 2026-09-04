@@ -130,6 +130,32 @@ describe("Migrations Domain", () => {
     expect(v6.healthConnectState.tombstones[1].clientRecordId).toBeNull();
   });
 
+  it("migrateAppState atualiza a lista padrão legada sem romper o schema V6", () => {
+    const migrated = migrateAppState({
+      version: 6,
+      sites: [
+        "Abdômen (Direito)",
+        "Abdômen (Esquerdo)",
+        "Coxa (Direita)",
+        "Coxa (Esquerda)",
+        "Deltoide (Direito)",
+        "Deltoide (Esquerdo)"
+      ]
+    });
+
+    expect(migrated.version).toBe(6);
+    expect(migrated.sites).toHaveLength(10);
+    expect(migrated.sites).toContain("Flanco (Direito)");
+    expect(migrated.sites).toContain("Abdômen (Inferior Esquerdo)");
+  });
+
+  it("migrateAppState preserva locais personalizados e sua ordem", () => {
+    const customSites = ["Local personalizado", "Abdômen (Direito)"];
+    const migrated = migrateAppState({ version: 6, sites: customSites });
+
+    expect(migrated.sites).toEqual(customSites);
+  });
+
   it("CURRENT_SCHEMA_VERSION é 6", () => {
     expect(CURRENT_SCHEMA_VERSION).toBe(6);
   });

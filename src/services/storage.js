@@ -9,21 +9,22 @@ import {
 } from "../domain/migrations.js";
 import { validateAndParseBackup, createBackupPayload } from "../domain/backup.js";
 import { debitVialDose, creditVialDose } from "../domain/inventory.js";
-import { getDefaultSites } from "../domain/injection-sites.js";
+import { getDefaultSites, migrateLegacyDefaultSites } from "../domain/injection-sites.js";
 import { createMeasurementEntry, validateMeasurementEntry } from "../domain/measurements.js";
 
 const KEYS = {
   PROTOCOL: "pep_protocol_v2",
   LOGS: "pep_logs_v2",
   INVENTORY: "pep_inventory_v2",
-  SITES: "pep_sites_v2",
+  SITES: "pep_sites_v3",
   MEASUREMENTS: "pep_measurements_v2",
   TOMBSTONES: "pep_hc_tombstones_v2",
   HIDDEN_MEASUREMENTS: "pep_hidden_measurements_v2",
   SETTINGS: "pep_settings_v2",
   ROLLBACK_SNAPSHOT: "pep_rollback_snapshot",
   LEGACY_PROTO: "peptideos-protocolo-v1",
-  LEGACY_LOGS: "peptideos-registro-v1"
+  LEGACY_LOGS: "peptideos-registro-v1",
+  LEGACY_SITES: "pep_sites_v2"
 };
 
 export function deepClone(data) {
@@ -115,7 +116,16 @@ export class StorageService {
           this.sites = getDefaultSites();
         }
       } else {
-        this.sites = getDefaultSites();
+        const legacySites = localStorage.getItem(KEYS.LEGACY_SITES);
+        if (legacySites) {
+          try {
+            this.sites = migrateLegacyDefaultSites(JSON.parse(legacySites));
+          } catch (e) {
+            this.sites = getDefaultSites();
+          }
+        } else {
+          this.sites = getDefaultSites();
+        }
         this.saveSites();
       }
 

@@ -352,7 +352,7 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     const modal = page.locator("#retro-log-modal");
     await expect(modal).toHaveClass(/on/);
     await expect(page.locator(".injection-site-map")).toBeVisible();
-    await expect(page.locator(".injection-site-point")).toHaveCount(2);
+    await expect(page.locator(".injection-site-point")).toHaveCount(6);
     await expect(page.locator(".injection-site-chip")).toHaveCount(4);
     await expect(page.locator(".injection-site-disclaimer")).toContainText("não avalia a pele");
     // Aguarda a transição de tema já usada pelos demais testes de contraste.
@@ -364,17 +364,56 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
       .analyze();
     expect(mapAccessibility.violations).toEqual([]);
 
-    const rightAbdomen = page.getByRole("button", { name: "Selecionar Abdômen (Direito)", exact: true });
-    const leftAbdomen = page.getByRole("button", { name: "Selecionar Abdômen (Esquerdo)", exact: true });
-    await expect(rightAbdomen).toHaveAttribute("aria-pressed", "true");
+    const upperRightAbdomen = page.getByRole("button", { name: "Selecionar Abdômen (Superior Direito)", exact: true });
+    const lowerLeftAbdomen = page.getByRole("button", { name: "Selecionar Abdômen (Inferior Esquerdo)", exact: true });
+    const rightFlank = page.getByRole("button", { name: "Selecionar Flanco (Direito)", exact: true });
+    await expect(upperRightAbdomen).toHaveAttribute("aria-pressed", "true");
 
-    const pointBox = await rightAbdomen.boundingBox();
-    expect(pointBox?.width).toBeGreaterThanOrEqual(44);
-    expect(pointBox?.height).toBeGreaterThanOrEqual(44);
+    const mapBox = await page.locator(".injection-site-map").boundingBox();
+    const pointBoxes = await page.locator(".injection-site-point").evaluateAll((points) => points.map((point) => {
+      const box = point.getBoundingClientRect();
+      return { left: box.left, right: box.right, top: box.top, bottom: box.bottom, width: box.width, height: box.height };
+    }));
+    expect(mapBox).not.toBeNull();
+    const mapEdges = {
+      left: mapBox.x,
+      right: mapBox.x + mapBox.width,
+      top: mapBox.y,
+      bottom: mapBox.y + mapBox.height
+    };
+    pointBoxes.forEach((pointBox) => {
+      expect(pointBox.width).toBeGreaterThanOrEqual(44);
+      expect(pointBox.height).toBeGreaterThanOrEqual(44);
+      expect(pointBox.left).toBeGreaterThanOrEqual(mapEdges.left);
+      expect(pointBox.right).toBeLessThanOrEqual(mapEdges.right);
+      expect(pointBox.top).toBeGreaterThanOrEqual(mapEdges.top);
+      expect(pointBox.bottom).toBeLessThanOrEqual(mapEdges.bottom);
+    });
+    for (let i = 0; i < pointBoxes.length; i += 1) {
+      for (let j = i + 1; j < pointBoxes.length; j += 1) {
+        const overlapWidth = Math.min(pointBoxes[i].right, pointBoxes[j].right)
+          - Math.max(pointBoxes[i].left, pointBoxes[j].left);
+        const overlapHeight = Math.min(pointBoxes[i].bottom, pointBoxes[j].bottom)
+          - Math.max(pointBoxes[i].top, pointBoxes[j].top);
+        expect(overlapWidth > 0 && overlapHeight > 0).toBe(false);
+      }
+    }
 
-    await leftAbdomen.click();
-    await expect(leftAbdomen).toHaveAttribute("aria-pressed", "true");
-    await expect(page.locator("#retro-site-select")).toHaveValue("Abdômen (Esquerdo)");
+    await lowerLeftAbdomen.click();
+    await expect(lowerLeftAbdomen).toHaveAttribute("aria-pressed", "true");
+    await expect(lowerLeftAbdomen).toBeFocused();
+    await expect(page.locator("#retro-site-select")).toHaveValue("Abdômen (Inferior Esquerdo)");
+
+    await rightFlank.click();
+    await expect(rightFlank).toHaveAttribute("aria-pressed", "true");
+    await expect(rightFlank).toBeFocused();
+    await expect(page.locator("#retro-site-select")).toHaveValue("Flanco (Direito)");
+    await expect(page.locator(".injection-site-map-label")).toHaveText("Selecionado: Flanco (Direito)");
+
+    const noSiteButton = page.getByRole("button", { name: "Não especificar local", exact: true });
+    await noSiteButton.click();
+    await expect(noSiteButton).toHaveAttribute("aria-pressed", "true");
+    await expect(noSiteButton).toBeFocused();
 
     runtime.assertCleanRuntime();
   });

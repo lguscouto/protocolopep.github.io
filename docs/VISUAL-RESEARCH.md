@@ -31,7 +31,7 @@ Evoluir o Protocolo PEP de uma interface predominantemente utilitária para uma 
 - Manter o turquesa como assinatura e trocar emojis por ilustrações consistentes.
 - Usar fundos escuros profundos, superfícies azul-petróleo e pequenos acentos âmbar para histórico/atenção.
 - Fazer a tela de registro começar pelo contexto: composto, próximo local na rotação e último local registrado.
-- Usar uma barriga desenhada com pontos interativos. O desenho é decorativo; os pontos são botões HTML de 44 × 44 px com `aria-pressed`.
+- Usar um torso desenhado com quatro quadrantes do abdômen e os dois flancos como pontos interativos. O desenho é decorativo; os pontos são botões HTML de 44 × 44 px com `aria-pressed`.
 - Tratar o mapa como memória visual, nunca como recomendação clínica. Texto obrigatório: “O mapa apenas registra sua escolha. Ele não avalia a pele nem indica onde aplicar.”
 - Manter coxa, deltoide e locais personalizados como alternativas textuais acessíveis.
 - Reservar ilustrações raster para onboarding e estados vazios. Ícones, gráficos e elementos interativos continuam vetoriais/code-native.
@@ -43,6 +43,14 @@ Evoluir o Protocolo PEP de uma interface predominantemente utilitária para uma 
 - Seletor visual de abdômen no fluxo “Registrar Aplicação”.
 - Estados distintos para local selecionado, próximo na rotação e último registrado.
 - Fallback completo para os demais locais configurados pelo usuário.
+
+## Extensão implementada — quadrantes e flancos
+
+- O abdômen foi subdividido em superior direito/esquerdo e inferior direito/esquerdo.
+- Os flancos direito e esquerdo passaram a integrar o mapa como pontos visuais.
+- A direita anatômica permanece à esquerda de quem observa a figura frontal.
+- A lista padrão anterior é atualizada automaticamente, enquanto listas personalizadas permanecem intactas.
+- Registros históricos com rótulos abdominais genéricos não são reinterpretados como superior ou inferior; quando não pertencem ao catálogo atual, a rotação recomeça no primeiro local configurado.
 
 ## Segunda entrega implementada — dashboard orientado à próxima ação
 

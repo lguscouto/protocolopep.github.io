@@ -20,6 +20,48 @@ describe("Storage Service", () => {
     const res = storageInstance.init();
     expect(res.peptides).toBeDefined();
     expect(res.logs).toEqual({});
+    expect(res.sites).toHaveLength(10);
+    expect(res.sites).toContain("Flanco (Esquerdo)");
+  });
+
+  it("atualiza e persiste a lista padrão legada sem alterar listas personalizadas", () => {
+    mockStore.pep_sites_v2 = JSON.stringify([
+      "Abdômen (Direito)",
+      "Abdômen (Esquerdo)",
+      "Coxa (Direita)",
+      "Coxa (Esquerda)",
+      "Deltoide (Direito)",
+      "Deltoide (Esquerdo)"
+    ]);
+
+    const migrated = storageInstance.init();
+    expect(migrated.sites).toHaveLength(10);
+    expect(JSON.parse(mockStore.pep_sites_v3)).toEqual(migrated.sites);
+
+    const reloadedStorage = new StorageService();
+    expect(reloadedStorage.init().sites).toEqual(migrated.sites);
+
+    const customSites = ["Abdômen (Direito)", "Local personalizado"];
+    delete mockStore.pep_sites_v3;
+    mockStore.pep_sites_v2 = JSON.stringify(customSites);
+    const customStorage = new StorageService();
+    expect(customStorage.init().sites).toEqual(customSites);
+    expect(JSON.parse(mockStore.pep_sites_v3)).toEqual(customSites);
+  });
+
+  it("preserva uma sequência legada definida deliberadamente no catálogo atual", () => {
+    storageInstance.init();
+    const legacySites = [
+      "Abdômen (Direito)",
+      "Abdômen (Esquerdo)",
+      "Coxa (Direita)",
+      "Coxa (Esquerda)",
+      "Deltoide (Direito)",
+      "Deltoide (Esquerdo)"
+    ];
+
+    expect(storageInstance.setSites(legacySites).sites).toEqual(legacySites);
+    expect(new StorageService().init().sites).toEqual(legacySites);
   });
 
   it("retorna { success: true } ao salvar peptídeos com sucesso", () => {

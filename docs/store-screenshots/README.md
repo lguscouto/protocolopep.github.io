@@ -7,7 +7,7 @@ Conjunto inicial de quatro peças verticais para apresentação do app em lojas 
 | Arquivo | Mensagem principal | Fluxo mostrado |
 | --- | --- | --- |
 | `01-proxima-acao.png` | A próxima ação fica clara. | Dashboard com próxima ação e CTA de registro |
-| `02-mapa-de-aplicacao.png` | Registre o local com clareza. | Mapa visual do local de aplicação |
+| `02-mapa-de-aplicacao.png` | Registre o local com clareza. | Mapa visual com quadrantes do abdômen e flancos |
 | `03-linha-do-tempo.png` | Sua semana, em uma linha do tempo. | Visão semanal com estados aplicado/pendente |
 | `04-acompanhamento-pessoal.png` | Acompanhe no seu ritmo. | Registro de medidas, energia, humor e observações |
 
@@ -28,6 +28,13 @@ $env:PEP_SCREENSHOT_URL = 'http://127.0.0.1:4175/'
 node tools/generate-store-screenshots.mjs
 ```
 
+Para atualizar somente uma peça:
+
+```powershell
+$env:PEP_SCREENSHOT_ONLY = '02-mapa-de-aplicacao.png'
+node tools/generate-store-screenshots.mjs
+```
+
 O gerador abre os fluxos reais em um navegador local, aplica uma moldura editorial própria e salva os PNGs nesta pasta. Não há chamadas de rede nem dependência de dados pessoais.
 
 ## Validação visual
@@ -37,7 +44,7 @@ As peças servem como referências editoriais dos principais estados visuais, en
 | Referência | Estado coberto na matriz |
 | --- | --- |
 | `01-proxima-acao.png` | Dashboard preenchido e ação principal |
-| `02-mapa-de-aplicacao.png` | Mapa de aplicação com local selecionável |
+| `02-mapa-de-aplicacao.png` | Mapa de aplicação com quatro quadrantes e dois flancos selecionáveis |
 | `03-linha-do-tempo.png` | Semana e histórico em linha do tempo |
 | `04-acompanhamento-pessoal.png` | Medidas preenchidas e acompanhamento pessoal |
 

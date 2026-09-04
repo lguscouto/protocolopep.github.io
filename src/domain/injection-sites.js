@@ -8,6 +8,19 @@
  */
 
 export const DEFAULT_INJECTION_SITES = Object.freeze([
+  "Abdômen (Superior Direito)",
+  "Abdômen (Superior Esquerdo)",
+  "Abdômen (Inferior Direito)",
+  "Abdômen (Inferior Esquerdo)",
+  "Flanco (Direito)",
+  "Flanco (Esquerdo)",
+  "Coxa (Direita)",
+  "Coxa (Esquerda)",
+  "Deltoide (Direito)",
+  "Deltoide (Esquerdo)"
+]);
+
+export const LEGACY_DEFAULT_INJECTION_SITES = Object.freeze([
   "Abdômen (Direito)",
   "Abdômen (Esquerdo)",
   "Coxa (Direita)",
@@ -22,6 +35,23 @@ export const DEFAULT_INJECTION_SITES = Object.freeze([
  */
 export function getDefaultSites() {
   return [...DEFAULT_INJECTION_SITES];
+}
+
+/**
+ * Atualiza somente a lista padrão legada, sem sobrescrever listas personalizadas.
+ * A comparação exata preserva remoções, inclusões e reordenações feitas pelo usuário.
+ *
+ * @param {any} sites
+ * @returns {string[]}
+ */
+export function migrateLegacyDefaultSites(sites) {
+  const validation = validateSitesList(sites);
+  if (!validation.valid || validation.sites.length === 0) return getDefaultSites();
+
+  const isLegacyDefault = validation.sites.length === LEGACY_DEFAULT_INJECTION_SITES.length
+    && validation.sites.every((site, index) => site === LEGACY_DEFAULT_INJECTION_SITES[index]);
+
+  return isLegacyDefault ? getDefaultSites() : validation.sites;
 }
 
 /**

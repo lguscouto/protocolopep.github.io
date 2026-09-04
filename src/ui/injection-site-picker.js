@@ -6,9 +6,24 @@
  */
 
 const VISUAL_POSITIONS = Object.freeze({
-  "abdomen (direito)": Object.freeze({ placement: "abdomen-right", order: 0 }),
-  "abdomen (esquerdo)": Object.freeze({ placement: "abdomen-left", order: 1 })
+  "abdomen (superior direito)": Object.freeze({ placement: "abdomen-upper-right", order: 0 }),
+  "abdomen (superior esquerdo)": Object.freeze({ placement: "abdomen-upper-left", order: 1 }),
+  "abdomen (inferior direito)": Object.freeze({ placement: "abdomen-lower-right", order: 2 }),
+  "abdomen (inferior esquerdo)": Object.freeze({ placement: "abdomen-lower-left", order: 3 }),
+  "flanco (direito)": Object.freeze({ placement: "flank-right", order: 4 }),
+  "flanco (esquerdo)": Object.freeze({ placement: "flank-left", order: 5 }),
+  "abdomen (direito)": Object.freeze({ placement: "abdomen-right", order: 6 }),
+  "abdomen (esquerdo)": Object.freeze({ placement: "abdomen-left", order: 7 })
 });
+
+const MODERN_RIGHT_ABDOMEN_KEYS = Object.freeze([
+  "abdomen (superior direito)",
+  "abdomen (inferior direito)"
+]);
+const MODERN_LEFT_ABDOMEN_KEYS = Object.freeze([
+  "abdomen (superior esquerdo)",
+  "abdomen (inferior esquerdo)"
+]);
 
 function normalizeSiteName(value) {
   if (typeof value !== "string") return "";
@@ -32,13 +47,18 @@ export function createInjectionSitePickerModel(
   const selectedKey = normalizeSiteName(selectedSite);
   const nextKey = normalizeSiteName(nextSite);
   const lastKey = normalizeSiteName(lastSite);
+  const configuredKeys = new Set(sites.map(normalizeSiteName));
+  const hasModernRightAbdomen = MODERN_RIGHT_ABDOMEN_KEYS.some((key) => configuredKeys.has(key));
+  const hasModernLeftAbdomen = MODERN_LEFT_ABDOMEN_KEYS.some((key) => configuredKeys.has(key));
 
   return sites
     .filter((site) => typeof site === "string" && site.trim())
     .map((site, index) => {
       const label = site.trim();
       const key = normalizeSiteName(label);
-      const visualConfig = VISUAL_POSITIONS[key] || null;
+      const hideLegacyPlacement = (key === "abdomen (direito)" && hasModernRightAbdomen)
+        || (key === "abdomen (esquerdo)" && hasModernLeftAbdomen);
+      const visualConfig = hideLegacyPlacement ? null : (VISUAL_POSITIONS[key] || null);
       return {
         label,
         index,
@@ -51,7 +71,7 @@ export function createInjectionSitePickerModel(
     });
 }
 
-function createAbdomenIllustration() {
+function createTorsoIllustration() {
   const svgNamespace = "http://www.w3.org/2000/svg";
   const svg = document.createElementNS(svgNamespace, "svg");
   svg.setAttribute("viewBox", "0 0 240 260");
@@ -92,6 +112,9 @@ function createAbdomenIllustration() {
   const centerLine = document.createElementNS(svgNamespace, "path");
   centerLine.setAttribute("d", "M120 54v146");
   centerLine.setAttribute("class", "injection-site-centerline");
+  const quadrantLine = document.createElementNS(svgNamespace, "path");
+  quadrantLine.setAttribute("d", "M67 137h106");
+  quadrantLine.setAttribute("class", "injection-site-centerline");
   const navel = document.createElementNS(svgNamespace, "ellipse");
   navel.setAttribute("cx", "120");
   navel.setAttribute("cy", "137");
@@ -99,7 +122,7 @@ function createAbdomenIllustration() {
   navel.setAttribute("ry", "3.5");
   navel.setAttribute("class", "injection-site-navel");
 
-  svg.append(defs, torso, waistLeft, waistRight, centerLine, navel);
+  svg.append(defs, torso, waistLeft, waistRight, centerLine, quadrantLine, navel);
   return svg;
 }
 
@@ -173,6 +196,9 @@ export function renderInjectionSitePicker({
       nextSite,
       lastSite
     });
+    const selectedButton = [...container.querySelectorAll("[data-site]")]
+      .find((button) => button.dataset.site === siteName);
+    selectedButton?.focus({ preventScroll: true });
   };
 
   const fragment = document.createDocumentFragment();
@@ -195,13 +221,16 @@ export function renderInjectionSitePicker({
     const map = document.createElement("div");
     map.className = "injection-site-map";
     map.setAttribute("role", "group");
-    map.setAttribute("aria-label", "Locais do abdômen");
-    map.appendChild(createAbdomenIllustration());
+    map.setAttribute("aria-label", "Locais do abdômen e flancos");
+    map.appendChild(createTorsoIllustration());
     visualItems.forEach((item) => map.appendChild(createSiteButton(item, selectSite)));
 
     const mapLabel = document.createElement("div");
     mapLabel.className = "injection-site-map-label";
-    mapLabel.textContent = "Toque em um lado do abdômen";
+    const selectedVisualItem = visualItems.find((item) => item.selected);
+    mapLabel.textContent = selectedVisualItem
+      ? `Selecionado: ${selectedVisualItem.label}`
+      : "Toque em um ponto do abdômen ou flanco";
     map.appendChild(mapLabel);
     fragment.appendChild(map);
   }
@@ -228,6 +257,7 @@ export function renderInjectionSitePicker({
   const noSiteButton = document.createElement("button");
   noSiteButton.type = "button";
   noSiteButton.className = "injection-site-none";
+  noSiteButton.dataset.site = "";
   if (!selectedSite) noSiteButton.classList.add("is-selected");
   noSiteButton.setAttribute("aria-pressed", selectedSite ? "false" : "true");
   noSiteButton.textContent = "Não especificar local";

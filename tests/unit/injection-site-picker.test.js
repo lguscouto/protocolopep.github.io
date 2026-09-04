@@ -5,31 +5,49 @@ import {
 } from "../../src/ui/injection-site-picker.js";
 
 describe("Seletor visual de locais de aplicação", () => {
-  it("mapeia os lados anatômicos do abdômen para pontos visuais estáveis", () => {
+  it("mapeia quadrantes do abdômen e flancos para pontos visuais estáveis", () => {
+    expect(getVisualSitePlacement("Abdômen (Superior Direito)")).toBe("abdomen-upper-right");
+    expect(getVisualSitePlacement("Abdômen (Superior Esquerdo)")).toBe("abdomen-upper-left");
+    expect(getVisualSitePlacement("Abdômen (Inferior Direito)")).toBe("abdomen-lower-right");
+    expect(getVisualSitePlacement("Abdômen (Inferior Esquerdo)")).toBe("abdomen-lower-left");
+    expect(getVisualSitePlacement("Flanco (Direito)")).toBe("flank-right");
+    expect(getVisualSitePlacement("Flanco (Esquerdo)")).toBe("flank-left");
     expect(getVisualSitePlacement("Abdômen (Direito)")).toBe("abdomen-right");
-    expect(getVisualSitePlacement("Abdômen (Esquerdo)")).toBe("abdomen-left");
+    expect(getVisualSitePlacement("Abdomen (Esquerdo)")).toBe("abdomen-left");
     expect(getVisualSitePlacement("Coxa (Direita)")).toBeNull();
   });
 
   it("mantém locais customizados disponíveis como alternativas textuais", () => {
     const model = createInjectionSitePickerModel([
-      "Abdômen (Direito)",
+      "Abdômen (Superior Direito)",
       "Coxa (Direita)",
       "Local personalizado"
     ]);
 
-    expect(model[0].placement).toBe("abdomen-right");
+    expect(model[0].placement).toBe("abdomen-upper-right");
     expect(model[1].placement).toBeNull();
     expect(model[2]).toMatchObject({ label: "Local personalizado", placement: null });
   });
 
+  it("evita sobrepor pontos legados quando a lista também possui quadrantes novos", () => {
+    const model = createInjectionSitePickerModel([
+      "Abdômen (Superior Direito)",
+      "Abdômen (Direito)",
+      "Abdômen (Esquerdo)"
+    ]);
+
+    expect(model[0].placement).toBe("abdomen-upper-right");
+    expect(model[1].placement).toBeNull();
+    expect(model[2].placement).toBe("abdomen-left");
+  });
+
   it("distingue seleção, próximo da rotação e último registro", () => {
     const model = createInjectionSitePickerModel(
-      ["Abdômen (Direito)", "Abdômen (Esquerdo)", "Coxa (Direita)"],
+      ["Abdômen (Superior Direito)", "Abdômen (Superior Esquerdo)", "Coxa (Direita)"],
       {
-        selectedSite: "Abdômen (Esquerdo)",
-        nextSite: "Abdômen (Esquerdo)",
-        lastSite: "Abdômen (Direito)"
+        selectedSite: "Abdômen (Superior Esquerdo)",
+        nextSite: "Abdômen (Superior Esquerdo)",
+        lastSite: "Abdômen (Superior Direito)"
       }
     );
 

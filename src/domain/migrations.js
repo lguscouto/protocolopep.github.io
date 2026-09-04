@@ -1,7 +1,11 @@
 import { createPeptide } from "./protocol.js";
 import { normalizeDoseEntry } from "./dose-log.js";
 import { createVial } from "./inventory.js";
-import { validateSitesList, getDefaultSites } from "./injection-sites.js";
+import {
+  validateSitesList,
+  getDefaultSites,
+  migrateLegacyDefaultSites
+} from "./injection-sites.js";
 import { createMeasurementEntry } from "./measurements.js";
 import { isValidDateKey, isValidTime } from "./schedule.js";
 import {
@@ -248,7 +252,7 @@ export function migrateAppState(state = {}) {
     protocol: migratePeptides(rawProtocol),
     logs: migrateLogs(rawLogs),
     inventory: migrateInventory(rawInventory),
-    sites: migrateSites(rawSites),
+    sites: migrateLegacyDefaultSites(rawSites),
     measurements: migrateMeasurements(rawMeasurements),
     healthConnectState: sanitizeHealthConnectState(current.healthConnectState),
     theme: current.theme === "white" || current.theme === "light" ? "white" : "black"

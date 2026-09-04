@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 const baseUrl = process.env.PEP_SCREENSHOT_URL || "http://127.0.0.1:3000/";
+const screenshotOnly = process.env.PEP_SCREENSHOT_ONLY || "";
 const outputDir = path.resolve("docs/store-screenshots");
 const today = new Date();
 
@@ -60,7 +61,7 @@ function doseLog(id, peptideId, scheduledDate, time, site, retroactive = false) 
 
 const logs = {
   [beforeYesterdayKey]: {
-    "pep_alpha": [doseLog("shot-before", "pep_alpha", beforeYesterdayKey, "08:00", "Abdômen (Esquerdo)", true)]
+    "pep_alpha": [doseLog("shot-before", "pep_alpha", beforeYesterdayKey, "08:00", "Abdômen (Superior Esquerdo)", true)]
   },
   [yesterdayKey]: {
     "pep_beta": [doseLog("shot-yesterday", "pep_beta", yesterdayKey, "20:00", "Coxa (Direita)", true)]
@@ -207,6 +208,7 @@ const marketingPage = await context.newPage();
 try {
   for (let i = 0; i < shots.length; i += 1) {
     const shot = shots[i];
+    if (screenshotOnly && shot.filename !== screenshotOnly) continue;
     const appPng = await captureApp(appPage, shot.setup);
     const imageBase64 = appPng.toString("base64");
     await marketingPage.setViewportSize({ width: 1080, height: 1920 });
@@ -218,4 +220,5 @@ try {
   await browser.close();
 }
 
-console.log(`Generated ${shots.length} store screenshots in ${outputDir}`);
+const generatedCount = screenshotOnly ? shots.filter((shot) => shot.filename === screenshotOnly).length : shots.length;
+console.log(`Generated ${generatedCount} store screenshot(s) in ${outputDir}`);

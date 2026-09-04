@@ -1,7 +1,9 @@
 import { describe, it, expect } from "vitest";
 import {
   DEFAULT_INJECTION_SITES,
+  LEGACY_DEFAULT_INJECTION_SITES,
   getDefaultSites,
+  migrateLegacyDefaultSites,
   formatSiteLabel,
   validateSitesList,
   getNextSite,
@@ -12,9 +14,24 @@ describe("Módulo de Domínio: Rotação de Sítios de Aplicação (V11)", () =>
   it("deve fornecer a lista padrão de sítios de aplicação", () => {
     const defaults = getDefaultSites();
     expect(Array.isArray(defaults)).toBe(true);
-    expect(defaults.length).toBe(6);
-    expect(defaults[0]).toBe("Abdômen (Direito)");
+    expect(defaults.length).toBe(10);
+    expect(defaults.slice(0, 6)).toEqual([
+      "Abdômen (Superior Direito)",
+      "Abdômen (Superior Esquerdo)",
+      "Abdômen (Inferior Direito)",
+      "Abdômen (Inferior Esquerdo)",
+      "Flanco (Direito)",
+      "Flanco (Esquerdo)"
+    ]);
     expect(defaults).toEqual(DEFAULT_INJECTION_SITES);
+  });
+
+  it("migra apenas a lista padrão legada e preserva configurações personalizadas", () => {
+    expect(migrateLegacyDefaultSites(LEGACY_DEFAULT_INJECTION_SITES)).toEqual(DEFAULT_INJECTION_SITES);
+    expect(migrateLegacyDefaultSites(DEFAULT_INJECTION_SITES)).toEqual(DEFAULT_INJECTION_SITES);
+
+    const custom = ["Abdômen (Direito)", "Local personalizado"];
+    expect(migrateLegacyDefaultSites(custom)).toEqual(custom);
   });
 
   it("deve sanitizar e limitar nomes de sítios com formatSiteLabel", () => {
@@ -65,6 +82,7 @@ describe("Módulo de Domínio: Rotação de Sítios de Aplicação (V11)", () =>
 
     // Sítio removido ou não pertencente à lista -> recomeça do primeiro
     expect(getNextSite(sites, "Sítio X Inexistente")).toBe("Sítio A");
+    expect(getNextSite(getDefaultSites(), "Abdômen (Direito)")).toBe(getDefaultSites()[0]);
 
     // Lista vazia -> null
     expect(getNextSite([], "Sítio A")).toBeNull();
