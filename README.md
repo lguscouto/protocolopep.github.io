@@ -1,11 +1,24 @@
 # 🧪 Protocolo PEP · App Android (Local-First)
 
-![Version](https://img.shields.io/badge/version-2.9.9-2CC5C0)
+![Version](https://img.shields.io/badge/version-3.0.0-2CC5C0)
 ![Android](https://img.shields.io/badge/Android-8.0%2B-green)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![CI](https://github.com/lguscouto/protocolopep.github.io/actions/workflows/ci.yml/badge.svg)
 
 Aplicativo Android nativo para acompanhamento de protocolos de peptídeos, cálculo de reconstituição e registro diário de doses, construído com arquitetura **100% Local-First**, segurança matemática auditável e suporte aos **temas Branco e Preto OLED**.
+
+---
+
+## 🚀 Novidades da Versão 3.0.0 (Exportação Nativa e Backup Confiável)
+
+- **Release Android versionada:** `versionName 3.0.0` e `versionCode 24`, com APK instalável publicado no GitHub Releases.
+- **Exportação nativa 100% Local-First:** backups JSON, relatórios CSV e diagnósticos agora são gravados diretamente em `Downloads/ProtocoloPEP` no Android via MediaStore, sem dependência de rede; na Web, o app usa “Salvar como” quando disponível e mantém um fallback de download local.
+- **Compartilhamento integrado:** após uma exportação confirmada, o app pode abrir a folha nativa de compartilhamento para enviar o arquivo a outro aplicativo, preservando o fluxo offline e a confirmação fail-closed antes de exibir sucesso.
+- **Rastreabilidade dos backups:** o status da última exportação registra e exibe data, hora e local seguro do arquivo, com sanitização do caminho apresentado na interface.
+- **Restauração de tema corrigida:** backups aceitam aliases compatíveis de tema claro/escuro, persistem o valor canônico, aplicam o tema restaurado e atualizam corretamente o fundo animado; a prévia fecha de forma acessível e registra a restauração concluída.
+- **Diálogos e notificações refinados:** mensagens com múltiplas linhas preservam a formatação, e o modal de notificações volta a responder aos botões de fechar/concluir com restauração de foco.
+- **Cobertura de regressão ampliada:** novos testes unitários e E2E cobrem exportação nativa/Web, falhas fail-closed, compartilhamento, normalização de tema e o fluxo completo de restauração de backup.
+- **Validação da release:** 351 testes unitários e 82 cenários E2E aprovados (1 cenário intencionalmente ignorado), além de build Web/Android, testes Kotlin, lint e instalação do APK no emulador.
 
 ---
 
