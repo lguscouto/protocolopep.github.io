@@ -1,11 +1,20 @@
 # 🧪 Protocolo PEP · App Android (Local-First)
 
-![Version](https://img.shields.io/badge/version-2.9.8-2CC5C0)
+![Version](https://img.shields.io/badge/version-2.9.9-2CC5C0)
 ![Android](https://img.shields.io/badge/Android-8.0%2B-green)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![CI](https://github.com/lguscouto/protocolopep.github.io/actions/workflows/ci.yml/badge.svg)
 
 Aplicativo Android nativo para acompanhamento de protocolos de peptídeos, cálculo de reconstituição e registro diário de doses, construído com arquitetura **100% Local-First**, segurança matemática auditável e suporte aos **temas Branco e Preto OLED**.
+
+---
+
+## 🚀 Novidades da Versão 2.9.9 (Mapa de Aplicação Refinado)
+
+- **Release Android versionada:** `versionName 2.9.9` e `versionCode 23`, com APK instalável publicado no GitHub Releases.
+- **Mapa baseado na imagem de referência:** pontos 1–4 aproximados do umbigo e pontos 5–6 reposicionados nas laterais inferiores dos flancos.
+- **Marcadores mais discretos:** círculos de aplicação reduzidos visualmente, preservando a área de toque mínima de 44 px, numeração, seleção e estados de rotação.
+- **Validação concluída:** 329 testes unitários, 79 cenários E2E aprovados, build web/Android, lint e APK instalado no emulador.
 
 ---
 
