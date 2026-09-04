@@ -400,6 +400,31 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
       }
     }
 
+    const pointPositions = await page.locator(".injection-site-point").evaluateAll((points) => Object.fromEntries(
+      points.map((point) => {
+        const placement = [...point.classList].find((className) => (
+          className.startsWith("abdomen-") || className.startsWith("flank-")
+        ));
+        const map = point.parentElement.getBoundingClientRect();
+        const style = getComputedStyle(point);
+        return [placement, {
+          left: Number.parseFloat(style.left) / map.width,
+          top: Number.parseFloat(style.top) / map.height
+        }];
+      })
+    ));
+    expect(pointPositions["abdomen-upper-right"].left).toBeCloseTo(0.4, 2);
+    expect(pointPositions["abdomen-upper-left"].left).toBeCloseTo(0.6, 2);
+    expect(pointPositions["abdomen-upper-right"].top).toBeCloseTo(0.4, 2);
+    expect(pointPositions["abdomen-lower-right"].left).toBeCloseTo(0.4, 2);
+    expect(pointPositions["abdomen-lower-left"].left).toBeCloseTo(0.6, 2);
+    expect(pointPositions["abdomen-lower-right"].top).toBeCloseTo(0.64, 2);
+    expect(pointPositions["abdomen-lower-left"].top).toBeCloseTo(0.64, 2);
+    expect(pointPositions["flank-right"].top).toBeCloseTo(0.68, 2);
+    expect(pointPositions["flank-left"].top).toBeCloseTo(0.68, 2);
+    expect(pointPositions["flank-right"].top).toBeGreaterThan(pointPositions["abdomen-lower-right"].top);
+    expect(pointPositions["flank-left"].top).toBeGreaterThan(pointPositions["abdomen-lower-left"].top);
+
     await lowerLeftAbdomen.click();
     await expect(lowerLeftAbdomen).toHaveAttribute("aria-pressed", "true");
     await expect(lowerLeftAbdomen).toBeFocused();

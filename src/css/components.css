@@ -3113,32 +3113,32 @@ body.theme-light .daypick button.on {
 }
 
 .injection-site-point.abdomen-upper-right {
-  top: 35%;
-  left: 37%;
+  top: 40%;
+  left: 40%;
 }
 
 .injection-site-point.abdomen-upper-left {
-  top: 35%;
-  left: 63%;
+  top: 40%;
+  left: 60%;
 }
 
 .injection-site-point.abdomen-lower-right {
-  top: 72%;
-  left: 38%;
+  top: 64%;
+  left: 40%;
 }
 
 .injection-site-point.abdomen-lower-left {
-  top: 72%;
-  left: 62%;
+  top: 64%;
+  left: 60%;
 }
 
 .injection-site-point.flank-right {
-  top: 62%;
+  top: 68%;
   left: 23%;
 }
 
 .injection-site-point.flank-left {
-  top: 62%;
+  top: 68%;
   left: 77%;
 }
 
