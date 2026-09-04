@@ -75,20 +75,36 @@ export function setupNotificationListeners(storage) {
   const soundToggle = document.getElementById("nf-sound-toggle");
   const summaryInput = document.getElementById("nf-summary-time");
 
+  const notifModal = document.getElementById("notif-modal");
+  const closeNotifModal = () => {
+    if (notifModal) {
+      notifModal.classList.remove("on");
+      notifModal.setAttribute("aria-hidden", "true");
+    }
+    if (accessibilityService) {
+      accessibilityService.restoreFocus();
+    }
+    haptics.light();
+  };
+
   const openNotifModalBtns = document.querySelectorAll("#notif-btn, #open-notif-modal-btn");
   openNotifModalBtns.forEach((btn) => {
     btn.addEventListener("click", () => {
       haptics.light();
-      const modal = document.getElementById("notif-modal");
-      if (modal) {
-        modal.classList.add("on");
-        modal.setAttribute("aria-hidden", "false");
+      if (notifModal) {
+        notifModal.classList.add("on");
+        notifModal.setAttribute("aria-hidden", "false");
         if (accessibilityService) {
-          accessibilityService.trapFocus(modal);
+          accessibilityService.trapFocus(notifModal);
         }
       }
       updateNotificationUI(storage.getPeptides());
     });
+  });
+
+  const closeNotifModalBtns = document.querySelectorAll("#notif-close, #nf-done");
+  closeNotifModalBtns.forEach((btn) => {
+    btn.addEventListener("click", closeNotifModal);
   });
 
   if (discreteToggle) {
