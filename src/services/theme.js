@@ -3,9 +3,14 @@ import { Capacitor } from "@capacitor/core";
 
 const THEME_KEY = "pep_theme_mode";
 
-class ThemeService {
+export class ThemeService {
   constructor() {
     this.currentTheme = "preto"; // padrão preto/dark
+  }
+
+  normalizeTheme(themeName) {
+    const normalized = String(themeName || "").trim().toLowerCase();
+    return ["branco", "white", "light"].includes(normalized) ? "branco" : "preto";
   }
 
   async init() {
@@ -41,13 +46,35 @@ class ThemeService {
 
   async toggleTheme() {
     const next = this.currentTheme === "branco" ? "preto" : "branco";
-    this.applyTheme(next);
-    localStorage.setItem(THEME_KEY, next);
+    await this.setTheme(next);
     return next;
   }
 
+  /**
+   * Aplica um tema vindo da interface ou de um backup e persiste a escolha.
+   * O serviço mantém os nomes internos em português, enquanto o schema de
+   * backup usa os valores canônicos "white"/"black".
+   */
+  async setTheme(themeName) {
+    await this.applyTheme(themeName);
+    try {
+      localStorage.setItem(THEME_KEY, this.currentTheme);
+    } catch (err) {
+      console.warn("[Theme] Falha ao persistir tema:", err);
+    }
+    return this.currentTheme;
+  }
+
+  getBackupTheme() {
+    return this.currentTheme === "branco" ? "white" : "black";
+  }
+
+  isLight() {
+    return this.currentTheme === "branco";
+  }
+
   async applyTheme(themeName) {
-    this.currentTheme = (themeName === "branco" || themeName === "light") ? "branco" : "preto";
+    this.currentTheme = this.normalizeTheme(themeName);
     const isLight = this.currentTheme === "branco";
 
     if (isLight) {

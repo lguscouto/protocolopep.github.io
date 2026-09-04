@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { validateAndParseBackup, createBackupPayload, MAX_BACKUP_SIZE_BYTES } from "../../src/domain/backup.js";
+import {
+  validateAndParseBackup,
+  createBackupPayload,
+  normalizeBackupTheme,
+  MAX_BACKUP_SIZE_BYTES
+} from "../../src/domain/backup.js";
 
 describe("Backup Domain", () => {
   it("cria payload de backup completo e serializado", () => {
@@ -12,6 +17,18 @@ describe("Backup Domain", () => {
     expect(parsed.app).toBe("protocolo-pep");
     expect(parsed.protocol).toHaveLength(1);
     expect(parsed.logs["2026-08-28"]).toBeDefined();
+  });
+
+  it.each([
+    ["white", "white"],
+    ["branco", "white"],
+    ["light", "white"],
+    ["black", "black"],
+    ["preto", "black"],
+    ["dark", "black"]
+  ])("normaliza o tema %s para o schema %s", (input, expected) => {
+    expect(normalizeBackupTheme(input)).toBe(expected);
+    expect(JSON.parse(createBackupPayload([], {}, input)).theme).toBe(expected);
   });
 
   it("preserva hidden IDs e tombstones PEP no schema V6", () => {

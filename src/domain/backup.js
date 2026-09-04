@@ -6,6 +6,11 @@ import { migrateAppState, CURRENT_SCHEMA_VERSION, sanitizeHealthConnectState } f
 
 export const MAX_BACKUP_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 
+export function normalizeBackupTheme(theme) {
+  const normalized = String(theme || "").trim().toLowerCase();
+  return ["white", "branco", "light"].includes(normalized) ? "white" : "black";
+}
+
 export function createBackupPayload(
   protocol = [],
   logs = {},
@@ -25,7 +30,7 @@ export function createBackupPayload(
     sites: Array.isArray(sites) ? sites : [],
     measurements: Array.isArray(measurements) ? measurements : [],
     healthConnectState: sanitizeHealthConnectState(healthConnectState),
-    theme: theme === "white" ? "white" : "black"
+    theme: normalizeBackupTheme(theme)
   };
 
   return JSON.stringify(payload, null, 2);

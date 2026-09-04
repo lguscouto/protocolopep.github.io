@@ -130,25 +130,41 @@ export function setupBackupPreview({
   }
 
   if (confirmBtn) {
-    confirmBtn.addEventListener("click", () => {
+    confirmBtn.addEventListener("click", async () => {
       if (!pendingBackupString || !pendingStats) return;
 
+      confirmBtn.disabled = true;
       const res = storage.importBackup(pendingBackupString);
       if (res.success) {
+        let themeError = null;
+        try {
+          if (res.theme && theme) {
+            await theme.setTheme(res.theme);
+          }
+        } catch (err) {
+          themeError = err;
+          console.warn("[Backup] Tema do backup não pôde ser aplicado:", err);
+        }
+
         recordBackupRestore(pendingStats);
         renderBackupStatusUI();
 
-        if (res.theme && theme) theme.setTheme(res.theme);
-        if (onStateRestored) onStateRestored();
-        if (notifications) notifications.schedulePeptideReminders(storage.getPeptides());
+        try {
+          if (onStateRestored) onStateRestored();
+        } catch (err) {
+          console.warn("[Backup] Falha ao atualizar a interface após restauração:", err);
+        }
+        if (notifications) void notifications.schedulePeptideReminders(storage.getPeptides());
 
-        if (modal) modal.classList.remove("on");
+        closeModal();
         haptics.success();
+        const themeNotice = themeError ? "\n\nO tema anterior foi mantido." : "";
         void dialogService.alert({
           title: "Backup restaurado",
-          message: `Backup restaurado com sucesso! ✓\n• Peptídeos: ${res.stats.peptideCount}\n• Dias registrados: ${res.stats.logDaysCount}\n• Total de doses: ${res.stats.totalDosesCount}`
+          message: `Backup restaurado com sucesso! ✓\n• Peptídeos: ${res.stats.peptideCount}\n• Dias registrados: ${res.stats.logDaysCount}\n• Total de doses: ${res.stats.totalDosesCount}${themeNotice}`
         });
       } else {
+        confirmBtn.disabled = false;
         haptics.warning();
         void dialogService.alert({ title: "Erro ao importar", message: "Erro ao importar backup: " + (res.error || "Formato incompatível"), isDanger: true });
       }
@@ -156,7 +172,10 @@ export function setupBackupPreview({
   }
 
   const closeModal = () => {
-    if (modal) modal.classList.remove("on");
+    if (modal) {
+      modal.classList.remove("on");
+      modal.setAttribute("aria-hidden", "true");
+    }
     pendingBackupString = null;
     pendingStats = null;
   };

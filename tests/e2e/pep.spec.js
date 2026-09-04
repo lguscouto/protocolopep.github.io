@@ -566,6 +566,70 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     runtime.assertCleanRuntime();
   });
 
+  test("restaura backup com tema, fecha a prévia e registra a operação", async ({ page }) => {
+    const runtime = trackPageRuntime(page);
+    await seedStorage(page, { skipOnboarding: true, peptides: [] });
+
+    await page.goto("/");
+    await page.waitForLoadState("domcontentloaded");
+    await page.locator("#tab-settings").click();
+
+    const backup = JSON.stringify({
+      app: "protocolo-pep",
+      version: 6,
+      exportedAt: "2026-09-04T12:00:00.000Z",
+      protocol: [{
+        id: "pep-imported",
+        name: "Composto Importado",
+        dose: "250 mcg",
+        ui: 10,
+        perDay: 1
+      }],
+      logs: {},
+      inventory: [],
+      sites: [],
+      measurements: [],
+      healthConnectState: { tombstones: [], hiddenMeasurementIds: [] },
+      theme: "white"
+    });
+
+    await page.locator("#import-file").setInputFiles({
+      name: "protocolo-pep-backup.json",
+      mimeType: "application/json",
+      buffer: Buffer.from(backup)
+    });
+
+    await expect(page.locator("#backup-preview-modal")).toHaveClass(/on/);
+    await expect(page.locator("#backup-preview-confirm")).toBeEnabled();
+    await page.locator("#backup-preview-confirm").click();
+
+    await expect(page.locator("#backup-preview-modal")).not.toHaveClass(/on/);
+    await expect(page.locator("#backup-preview-modal")).toHaveAttribute("aria-hidden", "true");
+    await expect(page.locator("#confirm-modal")).toHaveClass(/on/);
+    await expect(page.locator("#confirm-message")).toContainText("Backup restaurado com sucesso");
+    await page.locator("#confirm-ok").click();
+
+    await expect(page.locator("body")).toHaveClass(/theme-light/);
+    await expect.poll(() => page.evaluate(() => ({
+      theme: localStorage.getItem("pep_theme_mode"),
+      restore: localStorage.getItem("pep_last_backup_restore"),
+      protocol: localStorage.getItem("pep_protocol_v2")
+    }))).toMatchObject({ theme: "branco" });
+    const persisted = await page.evaluate(() => ({
+      restore: localStorage.getItem("pep_last_backup_restore"),
+      protocol: localStorage.getItem("pep_protocol_v2")
+    }));
+    expect(persisted.restore).not.toBeNull();
+    expect(persisted.protocol).toContain("Composto Importado");
+
+    const canvasFill = await page.evaluate(() => (
+      document.querySelector("#bg-molecules canvas")?.getContext("2d")?.fillStyle
+    ));
+    expect(canvasFill).toBe("rgba(14, 133, 128, 0.2)");
+
+    runtime.assertCleanRuntime();
+  });
+
   test("histórico organiza aplicações em linha do tempo por data", async ({ page }) => {
     const runtime = trackPageRuntime(page);
     const dateKey = (date) => {

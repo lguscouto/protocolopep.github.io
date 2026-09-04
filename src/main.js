@@ -332,7 +332,7 @@ function initAnimatedBg() {
 
   function animate() {
     ctx.clearRect(0, 0, w, h);
-    const isWhite = theme.getTheme() === "white";
+    const isWhite = theme.isLight();
     ctx.fillStyle = isWhite ? "rgba(14, 133, 128, 0.2)" : "rgba(44, 197, 192, 0.15)";
     ctx.strokeStyle = isWhite ? "rgba(14, 133, 128, 0.08)" : "rgba(44, 197, 192, 0.06)";
 
@@ -1484,7 +1484,7 @@ function setupModalsAndButtons() {
   const exportBtn = document.getElementById("export-btn");
   const handleExport = async () => {
     try {
-      const backupPayload = storage.exportBackup(theme.getTheme());
+      const backupPayload = storage.exportBackup(theme.getBackupTheme());
       const fileName = `protocolo-pep-backup-${dateKey(new Date())}.json`;
 
       const result = await exportFile({
