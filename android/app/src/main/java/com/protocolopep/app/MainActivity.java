@@ -16,6 +16,7 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(PepWidgetPlugin.class);
         registerPlugin(PepHealthConnectPlugin.class);
+        registerPlugin(PepFileExportPlugin.class);
         super.onCreate(savedInstanceState);
         configureWindowInsets();
     }

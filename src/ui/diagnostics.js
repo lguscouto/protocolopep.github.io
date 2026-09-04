@@ -3,7 +3,7 @@
  */
 
 import { generateDiagnosticReport } from "../services/diagnostics.js";
-import { downloadBlob } from "../services/export.js";
+import { exportFile, shareExportedFile } from "../services/export.js";
 import { haptics } from "../services/haptics.js";
 import { dialogService } from "../services/dialog.js";
 
@@ -74,12 +74,47 @@ export function setupDiagnosticsModal({ storage, getNotificationsActive, appVers
   }
 
   if (exportBtn) {
-    exportBtn.addEventListener("click", () => {
+    exportBtn.addEventListener("click", async () => {
       if (!currentReport) return;
       const jsonStr = JSON.stringify(currentReport, null, 2);
       const filename = `protocolo-pep-diag-${new Date().toISOString().slice(0, 10)}.json`;
-      downloadBlob(jsonStr, filename, "application/json;charset=utf-8;");
-      haptics.success();
+
+      try {
+        const result = await exportFile({
+          fileName: filename,
+          content: jsonStr,
+          mimeType: "application/json",
+          subDir: "ProtocoloPEP"
+        });
+
+        if (result.aborted) return;
+        if (!result.success) throw new Error(result.error || "Falha ao exportar");
+
+        haptics.success();
+        const userWantsShare = await dialogService.confirm({
+          title: "Diagnóstico Exportado ✓",
+          message: `Arquivo salvo com sucesso em:\n📁 ${result.path}\n\nDeseja compartilhar este relatório de diagnóstico?`,
+          confirmText: "Compartilhar",
+          cancelText: "OK",
+          isDanger: false
+        });
+
+        if (userWantsShare) {
+          await shareExportedFile({
+            fileName: filename,
+            content: jsonStr,
+            mimeType: "application/json",
+            title: "Diagnóstico Protocolo PEP"
+          });
+        }
+      } catch (err) {
+        haptics.warning();
+        void dialogService.alert({
+          title: "Erro na Exportação",
+          message: "Não foi possível salvar o diagnóstico: " + (err.message || err),
+          isDanger: true
+        });
+      }
     });
   }
 }

@@ -37,6 +37,7 @@ import { generateDailySummary } from "./domain/daily-summary.js";
 import { updateNotificationUI, setupNotificationListeners } from "./ui/notification-settings.js";
 import { setupBackupPreview } from "./ui/backup-preview.js";
 import { recordBackupExport, renderBackupStatusUI } from "./ui/backup-status.js";
+import { exportFile, shareExportedFile } from "./services/export.js";
 import { setupReportModal } from "./ui/report-preview.js";
 import { setupDiagnosticsModal } from "./ui/diagnostics.js";
 import { setupInventoryUI } from "./ui/inventory.js";
@@ -1481,18 +1482,55 @@ function setupModalsAndButtons() {
   }
 
   const exportBtn = document.getElementById("export-btn");
-  const handleExport = () => {
-    const backupPayload = storage.exportBackup(theme.getTheme());
-    const blob = new Blob([backupPayload], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `protocolo-pep-backup-${dateKey(new Date())}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    recordBackupExport();
-    renderBackupStatusUI();
-    haptics.success();
+  const handleExport = async () => {
+    try {
+      const backupPayload = storage.exportBackup(theme.getTheme());
+      const fileName = `protocolo-pep-backup-${dateKey(new Date())}.json`;
+
+      const result = await exportFile({
+        fileName,
+        content: backupPayload,
+        mimeType: "application/json",
+        subDir: "ProtocoloPEP"
+      });
+
+      if (result.aborted) {
+        return;
+      }
+
+      if (!result.success) {
+        throw new Error(result.error || "Falha ao salvar backup no dispositivo.");
+      }
+
+      recordBackupExport(result.path);
+      renderBackupStatusUI();
+      haptics.success();
+
+      const userWantsShare = await dialogService.confirm({
+        title: "Backup Exportado ✓",
+        message: `O backup foi exportado com sucesso!\n\n📁 Salvo em: ${result.path}\n\nDeseja também abrir opções de compartilhamento para enviar ou salvar no Google Drive / WhatsApp?`,
+        confirmText: "Compartilhar",
+        cancelText: "OK",
+        isDanger: false
+      });
+
+      if (userWantsShare) {
+        await shareExportedFile({
+          fileName,
+          content: backupPayload,
+          mimeType: "application/json",
+          title: "Backup Protocolo PEP"
+        });
+      }
+    } catch (err) {
+      console.error("[BackupExport] Falha ao exportar backup:", err);
+      haptics.warning();
+      void dialogService.alert({
+        title: "Erro ao Exportar Backup",
+        message: "Não foi possível gravar o arquivo de backup: " + (err.message || err),
+        isDanger: true
+      });
+    }
   };
 
   if (exportBtn) exportBtn.addEventListener("click", handleExport);

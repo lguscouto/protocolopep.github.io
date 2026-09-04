@@ -1,14 +1,17 @@
 /**
- * Módulo de Status e Histórico de Operações de Backup (V06)
+ * Módulo de Status e Histórico de Operações de Backup (V15)
  */
+
+import { escapeHtml } from "./dom.js";
 
 const LAST_EXPORT_KEY = "pep_last_backup_export";
 const LAST_RESTORE_KEY = "pep_last_backup_restore";
 
-export function recordBackupExport() {
+export function recordBackupExport(path = null) {
   try {
     const payload = {
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      path: path ? String(path) : null
     };
     localStorage.setItem(LAST_EXPORT_KEY, JSON.stringify(payload));
   } catch (e) {}
@@ -55,6 +58,9 @@ export function renderBackupStatusUI() {
     if (lastExport) {
       const d = new Date(lastExport.timestamp);
       html += `<div>📤 <b>Último backup exportado:</b> ${d.toLocaleDateString("pt-BR")} às ${d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</div>`;
+      if (lastExport.path) {
+        html += `<div style="margin-top:2px;font-size:11px;color:var(--muted);word-break:break-all;">📁 <b>Local:</b> ${escapeHtml(lastExport.path)}</div>`;
+      }
     }
     if (lastRestore) {
       const d = new Date(lastRestore.timestamp);

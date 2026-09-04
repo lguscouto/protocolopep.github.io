@@ -3,7 +3,7 @@
  */
 
 import { buildReportData, generateReportCSV, generateReportHTML } from "../domain/report.js";
-import { downloadBlob, printReportHTML } from "../services/export.js";
+import { exportFile, shareExportedFile, printReportHTML } from "../services/export.js";
 import { haptics } from "../services/haptics.js";
 import { dialogService } from "../services/dialog.js";
 import { escapeHtml } from "./dom.js";
@@ -129,15 +129,50 @@ export function setupReportModal(storage) {
   if (notesCheckbox) notesCheckbox.addEventListener("change", updatePreview);
 
   if (csvBtn) {
-    csvBtn.addEventListener("click", () => {
+    csvBtn.addEventListener("click", async () => {
       if (currentEntries.length === 0) {
         void dialogService.alert({ title: "Sem dados", message: "Nenhum dado encontrado para exportação no período selecionado." });
         return;
       }
       const csv = generateReportCSV(currentEntries);
       const filename = `protocolo-pep-relatorio-${new Date().toISOString().slice(0, 10)}.csv`;
-      downloadBlob(csv, filename, "text/csv;charset=utf-8;");
-      haptics.success();
+
+      try {
+        const result = await exportFile({
+          fileName: filename,
+          content: csv,
+          mimeType: "text/csv;charset=utf-8;",
+          subDir: "ProtocoloPEP"
+        });
+
+        if (result.aborted) return;
+        if (!result.success) throw new Error(result.error || "Falha ao exportar");
+
+        haptics.success();
+        const userWantsShare = await dialogService.confirm({
+          title: "Relatório Exportado ✓",
+          message: `Arquivo salvo com sucesso em:\n📁 ${result.path}\n\nDeseja compartilhar este relatório CSV?`,
+          confirmText: "Compartilhar",
+          cancelText: "OK",
+          isDanger: false
+        });
+
+        if (userWantsShare) {
+          await shareExportedFile({
+            fileName: filename,
+            content: csv,
+            mimeType: "text/csv",
+            title: "Relatório Protocolo PEP"
+          });
+        }
+      } catch (err) {
+        haptics.warning();
+        void dialogService.alert({
+          title: "Erro na Exportação",
+          message: "Não foi possível salvar o relatório: " + (err.message || err),
+          isDanger: true
+        });
+      }
     });
   }
 
