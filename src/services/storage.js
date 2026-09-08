@@ -12,6 +12,16 @@ import { debitVialDose, creditVialDose } from "../domain/inventory.js";
 import { getDefaultSites, migrateLegacyDefaultSites } from "../domain/injection-sites.js";
 import { createMeasurementEntry, validateMeasurementEntry } from "../domain/measurements.js";
 
+const LAST_DATA_CHANGE_KEY = "pep_last_data_change";
+
+function recordDataChange() {
+  try {
+    localStorage.setItem(LAST_DATA_CHANGE_KEY, new Date().toISOString());
+  } catch {
+    // O armazenamento pode estar indisponível; a operação principal continua fail-closed.
+  }
+}
+
 const KEYS = {
   PROTOCOL: "pep_protocol_v2",
   LOGS: "pep_logs_v2",
@@ -204,7 +214,7 @@ export class StorageService {
     } catch (error) {
       this.doseStateError = error.message || "Não foi possível ler doses e estoque.";
     }
-    this.notify();
+    this.notify(false);
     return {
       peptides: this.peptides,
       logs: this.logs,
@@ -709,7 +719,7 @@ export class StorageService {
 
       const doseCommit = this.commitDoseState({ logs: this.logs, inventory: this.inventory }, { notify: false, recover: true });
       if (!doseCommit.success) throw new Error(doseCommit.error);
-      this.notify();
+      this.notify(false);
       return {
         success: true,
         stats: validation.stats,
@@ -727,7 +737,8 @@ export class StorageService {
     return () => this.listeners.delete(listener);
   }
 
-  notify() {
+  notify(markChanged = true) {
+    if (markChanged) recordDataChange();
     const payload = {
       peptides: deepClone(this.peptides),
       logs: deepClone(this.logs),

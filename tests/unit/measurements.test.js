@@ -10,6 +10,12 @@ import {
 } from "../../src/domain/measurements.js";
 
 describe("Measurements Domain (V12)", () => {
+  it("preserva sintomas personalizados com intensidade opcional", () => {
+    const entry = createMeasurementEntry({ date: "2026-08-29", symptomDetails: [{ name: "Sintoma pessoal", intensity: "leve" }] });
+    expect(entry.symptoms).toEqual(["Sintoma pessoal"]);
+    expect(entry.symptomDetails).toEqual([{ name: "Sintoma pessoal", intensity: "leve" }]);
+    expect(createMeasurementEntry({ date: "2026-08-29", symptoms: ["Fadiga"] }).symptomDetails[0].intensity).toBeNull();
+  });
   it("possui lista padrão de sugestões de sintomas", () => {
     expect(Array.isArray(DEFAULT_SYMPTOM_SUGGESTIONS)).toBe(true);
     expect(DEFAULT_SYMPTOM_SUGGESTIONS.length).toBeGreaterThan(0);

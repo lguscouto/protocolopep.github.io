@@ -14,7 +14,7 @@ function shiftKey(key, days) {
 }
 
 test.describe("Fase 3 — relatório pessoal", () => {
-  test("exibe resumo do período e inclui medições somente após opt-in", async ({ page }) => {
+  test("exibe resumo do período e inclui medições no relatório completo", async ({ page }) => {
     const runtime = trackPageRuntime(page);
     const today = keyFor(new Date());
     const peptide = {
@@ -61,10 +61,8 @@ test.describe("Fase 3 — relatório pessoal", () => {
     const modal = page.locator("#report-modal");
     await expect(modal).toHaveClass(/on/);
     await expect(modal.locator("#report-preview-summary")).toContainText("aplicações registradas");
-    await expect(modal.locator("#report-entries-count")).toContainText("1 medições disponíveis");
-    await expect(modal.locator("#report-opt-measurements")).not.toBeChecked();
-
-    await modal.locator("#report-opt-measurements").check();
+    await expect(modal.locator("#report-opt-measurements")).toBeChecked();
+    await expect(modal.locator("#report-opt-measurements")).toBeDisabled();
     await expect(modal.locator("#report-preview-summary")).toContainText("1 medições incluídas");
     await expect(modal.locator("#report-entries-count")).toContainText("1 medições incluídas");
 

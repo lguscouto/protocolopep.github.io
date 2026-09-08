@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   exportFile,
   shareExportedFile,
+  saveReportPdf,
+  shareSavedFile,
   downloadBlob,
   setFileExportPlugin
 } from "../../src/services/export.js";
@@ -98,6 +100,20 @@ describe("Serviço de Exportação Local-First (export.js)", () => {
       mimeType: "application/json",
       title: "Meu Backup"
     });
+  });
+
+  it("salva o PDF nativo antes de compartilhar o URI persistido", async () => {
+    vi.spyOn(Capacitor, "isNativePlatform").mockReturnValue(true);
+    const mockPlugin = {
+      savePdf: vi.fn().mockResolvedValue({ success: true, path: "Downloads/ProtocoloPEP/r.pdf", uri: "content://pdf/1" }),
+      shareSavedFile: vi.fn().mockResolvedValue({ success: true })
+    };
+    setFileExportPlugin(mockPlugin);
+    const saved = await saveReportPdf({ fileName: "r.pdf", html: "<html></html>" });
+    expect(saved).toMatchObject({ success: true, uri: "content://pdf/1" });
+    const shared = await shareSavedFile({ uri: saved.uri });
+    expect(shared.success).toBe(true);
+    expect(mockPlugin.shareSavedFile).toHaveBeenCalledWith(expect.objectContaining({ uri: "content://pdf/1" }));
   });
 
   it("deve usar showSaveFilePicker na Web se disponível", async () => {

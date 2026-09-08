@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { recordBackupExport, recordBackupRestore, getBackupStatus, renderBackupStatusUI } from "../../src/ui/backup-status.js";
+import { recordBackupExport, recordBackupRestore, recordDataChange, getBackupStatus, renderBackupStatusUI } from "../../src/ui/backup-status.js";
 
 describe("Backup Status & Operations History (V15)", () => {
   let mockStore = {};
@@ -36,6 +36,14 @@ describe("Backup Status & Operations History (V15)", () => {
     expect(status.lastExport).toBeDefined();
     expect(status.lastExport.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T/);
     expect(status.lastExport.path).toBe("Downloads/ProtocoloPEP/protocolo-pep-backup-2026-09-04.json");
+  });
+
+  it("identifica alterações posteriores ao backup e não afirma disponibilidade do arquivo", () => {
+    recordBackupExport("Downloads/ProtocoloPEP/backup.json");
+    recordDataChange(new Date(Date.now() + 1000).toISOString());
+    const status = getBackupStatus();
+    expect(status.hasChangesAfterExport).toBe(true);
+    expect(status.lastExport.availableVerified).toBe(false);
   });
 
   it("deve registrar e recuperar estatísticas da última restauração", () => {

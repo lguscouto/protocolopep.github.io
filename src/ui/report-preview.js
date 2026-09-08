@@ -2,8 +2,8 @@
  * Módulo de Interface e Prévia de Relatórios (V08)
  */
 
-import { buildPersonalReport, generatePersonalReportCSV, generateReportHTML, getReportVialLabel, summarizeReportEntries } from "../domain/report.js";
-import { exportFile, shareExportedFile, printReportHTML } from "../services/export.js";
+import { buildPersonalReport, generateReportCSV, generateMeasurementsCSV, generateReportHTML, getReportVialLabel, summarizeReportEntries } from "../domain/report.js";
+import { exportFile, shareExportedFile, saveReportPdf, shareSavedFile } from "../services/export.js";
 import { haptics } from "../services/haptics.js";
 import { dialogService } from "../services/dialog.js";
 import { i18nService } from "../services/i18n.js";
@@ -13,7 +13,7 @@ const esc = escapeHtml;
 
 export function setupReportModal(storage) {
   const modal = document.getElementById("report-modal");
-  const openBtns = document.querySelectorAll("#hist-report-btn, #settings-report-btn");
+  const openBtns = document.querySelectorAll("#hist-report-btn, #settings-report-btn, #dash-report-btn");
   const closeBtn = document.getElementById("report-close");
   const periodSelect = document.getElementById("report-period-select");
   const customDateWrap = document.getElementById("report-custom-dates");
@@ -25,6 +25,7 @@ export function setupReportModal(storage) {
   const previewSummary = document.getElementById("report-preview-summary");
   const countEl = document.getElementById("report-entries-count");
   const csvBtn = document.getElementById("report-export-csv");
+  const measurementsCsvBtn = document.getElementById("report-export-measurements-csv");
   const pdfBtn = document.getElementById("report-print-pdf");
 
   let currentReport = {
@@ -71,7 +72,7 @@ export function setupReportModal(storage) {
   const updatePreview = () => {
     const { startDate, endDate } = getDateRange();
     const includeNotes = Boolean(notesCheckbox?.checked);
-    const includeMeasurements = Boolean(measurementsCheckbox?.checked);
+    const includeMeasurements = true;
     const measurements = typeof storage.getMeasurements === "function" ? storage.getMeasurements() : [];
 
     currentReport = buildPersonalReport({
@@ -113,41 +114,35 @@ export function setupReportModal(storage) {
 
     if (!previewList) return;
 
-    if (currentEntries.length === 0) {
-      previewList.innerHTML = includeMeasurements && currentReport.measurements.length > 0
-        ? `<div style="padding:18px;text-align:center;color:var(--muted);font-size:12.5px;">Nenhuma aplicação encontrada. As medições selecionadas serão incluídas no relatório.</div>`
-        : `<div style="padding:18px;text-align:center;color:var(--muted);font-size:12.5px;">Nenhum registro de aplicação encontrado no período selecionado.</div>`;
+    const previewEvents = Array.isArray(currentReport.events) ? currentReport.events : [];
+    if (previewEvents.length === 0) {
+      previewList.innerHTML = `<div style="padding:18px;text-align:center;color:var(--muted);font-size:12.5px;">Nenhum evento encontrado no período selecionado. O relatório vazio ainda pode ser salvo.</div>`;
       return;
     }
 
-    // Exibir as primeiras 15 entradas na prévia rápida
-    const previewItems = currentEntries.slice(0, 15);
+    // Exibir os primeiros 15 eventos do mesmo modelo usado nas saídas
+    const previewItems = previewEvents.slice(0, 15);
     let html = previewItems.map((e) => {
       const [y, m, d] = (e.date || "").split("-");
       const dateFmt = d && m ? `${d}/${m}` : e.date;
-      const statusLabel = ["applied", "skipped", "missed"].includes(e.status)
-        ? i18nService.t(`phase1.${e.status}`) : e.statusLabel;
-      const vialLabel = getReportVialLabel(e);
+      const statusLabel = e.type === "application" ? i18nService.t(`phase1.${e.data.status}`) : e.type === "protocol" ? `Protocolo ${e.data.statusLabel.toLocaleLowerCase("pt-BR")}` : e.type === "symptom" ? "Sintoma" : "Medida";
       return `
         <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-bottom:1px solid var(--border2);font-size:12px;">
           <div>
-            <span style="font-weight:700;color:var(--text);">${esc(e.peptideName)}</span>
-            <span style="color:var(--muted);font-size:11px;margin-left:4px;">${esc(e.dose)} (${esc(e.ui ?? "--")} UI)</span>
-            ${e.historyIntegrity === "legacy" ? `<div style="font-size:11px;color:var(--muted);">${esc(i18nService.t("phase1.legacy"))}</div>` : ""}
-            ${e.site || vialLabel ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;">${esc([e.site, vialLabel].filter(Boolean).join(" · "))}</div>` : ""}
-            ${e.note ? `<div style="font-size:11px;color:var(--muted2);margin-top:2px;">💬 ${esc(e.note)}</div>` : ""}
-            ${e.statusReason ? `<div style="font-size:11px;color:var(--muted2);margin-top:2px;">Motivo: ${esc(e.statusReason)}</div>` : ""}
+            <span style="font-weight:700;color:var(--text);">${esc(e.title)}</span>
+            <span style="color:var(--muted);font-size:11px;margin-left:4px;">${esc(e.subtitle)}</span>
+            ${e.notes ? `<div style="font-size:11px;color:var(--muted2);margin-top:2px;">💬 ${esc(e.notes)}</div>` : ""}
           </div>
           <div style="text-align:right;">
             <div style="font-weight:600;color:var(--text);">${esc(dateFmt)} · ${esc(e.time)}</div>
-            <span class="report-entry-type ${e.status !== "applied" || e.retroactive ? "report-entry-type--retroactive" : "report-entry-type--applied"}">${esc(statusLabel)} · ${esc(e.type)}</span>
+            <span class="report-entry-type ${e.type === "application" && e.data.status === "applied" ? "report-entry-type--applied" : "report-entry-type--retroactive"}">${esc(statusLabel)} · ${esc(e.type)}</span>
           </div>
         </div>
       `;
     }).join("");
 
-    if (currentEntries.length > 15) {
-      html += `<div style="padding:8px;text-align:center;font-size:11px;color:var(--muted);">+ ${currentEntries.length - 15} outros registros incluídos no relatório final</div>`;
+    if (previewEvents.length > 15) {
+      html += `<div style="padding:8px;text-align:center;font-size:11px;color:var(--muted);">+ ${previewEvents.length - 15} outros eventos incluídos no relatório final</div>`;
     }
 
     previewList.innerHTML = html;
@@ -175,18 +170,10 @@ export function setupReportModal(storage) {
   if (notesCheckbox) notesCheckbox.addEventListener("change", updatePreview);
   if (measurementsCheckbox) measurementsCheckbox.addEventListener("change", updatePreview);
 
-  const hasReportContent = () => currentReport.entries.length > 0
-    || currentReport.measurements.length > 0
-    || Boolean(currentReport.adherence && currentReport.adherence.due > 0);
-
   if (csvBtn) {
     csvBtn.addEventListener("click", async () => {
-      if (!hasReportContent()) {
-        void dialogService.alert({ title: "Sem dados", message: "Nenhum dado encontrado para exportação no período selecionado." });
-        return;
-      }
-      const csv = generatePersonalReportCSV(currentReport);
-      const filename = `protocolo-pep-relatorio-${new Date().toISOString().slice(0, 10)}.csv`;
+      const csv = generateReportCSV(currentReport.entries);
+      const filename = `protocolo-pep-aplicacoes-${new Date().toISOString().slice(0, 10)}.csv`;
 
       try {
         const result = await exportFile({
@@ -201,7 +188,7 @@ export function setupReportModal(storage) {
 
         haptics.success();
         const userWantsShare = await dialogService.confirm({
-          title: "Relatório Exportado ✓",
+          title: "CSV de aplicações salvo",
           message: `Arquivo salvo com sucesso em:\n📁 ${result.path}\n\nDeseja compartilhar este relatório CSV?`,
           confirmText: "Compartilhar",
           cancelText: "OK",
@@ -227,22 +214,51 @@ export function setupReportModal(storage) {
     });
   }
 
-  if (pdfBtn) {
-    pdfBtn.addEventListener("click", () => {
-      if (!hasReportContent()) {
-        void dialogService.alert({ title: "Sem dados", message: "Nenhum dado encontrado para impressão no período selecionado." });
-        return;
+  if (measurementsCsvBtn) {
+    measurementsCsvBtn.addEventListener("click", async () => {
+      const csv = generateMeasurementsCSV(currentReport.measurements);
+      const filename = `protocolo-pep-medidas-${new Date().toISOString().slice(0, 10)}.csv`;
+      try {
+        const result = await exportFile({ fileName: filename, content: csv, mimeType: "text/csv;charset=utf-8;", subDir: "ProtocoloPEP" });
+        if (result.aborted) return;
+        if (!result.success) throw new Error(result.error || "Falha ao exportar");
+        haptics.success();
+        const share = await dialogService.confirm({ title: "CSV de medidas salvo", message: `Arquivo salvo em:\n${result.path}\n\nDeseja compartilhar este CSV?`, confirmText: "Compartilhar", cancelText: "OK" });
+        if (share) {
+          const shared = await shareExportedFile({ fileName: filename, content: csv, mimeType: "text/csv", title: "Medidas Protocolo PEP" });
+          if (!shared.success && !shared.aborted) void dialogService.alert({ title: "Compartilhamento indisponível", message: shared.error, isDanger: true });
+        }
+      } catch (error) {
+        void dialogService.alert({ title: "Erro na exportação", message: error.message || "Não foi possível salvar o CSV.", isDanger: true });
       }
+    });
+  }
+
+  if (pdfBtn) {
+    pdfBtn.addEventListener("click", async () => {
       const html = generateReportHTML(currentReport.entries, {
         startDate: currentReport.startDate,
         endDate: currentReport.endDate,
         adherenceSummary: currentReport.adherence,
         measurements: currentReport.measurements,
-        includeMeasurements: Boolean(measurementsCheckbox?.checked),
-        measurementStats: currentReport.measurementStats
+        includeMeasurements: true,
+        measurementStats: currentReport.measurementStats,
+        revisions: currentReport.revisions
       });
-      printReportHTML(html);
-      haptics.medium();
+      const fileName = `protocolo-pep-relatorio-${new Date().toISOString().slice(0, 10)}.pdf`;
+      const result = await saveReportPdf({ fileName, html });
+      if (result.aborted) return;
+      if (!result.success) {
+        void dialogService.alert({ title: "Erro ao gerar PDF", message: result.error || "Não foi possível criar o arquivo.", isDanger: true });
+        return;
+      }
+      haptics.success();
+      if (result.printDialog) return;
+      const share = await dialogService.confirm({ title: "PDF salvo", message: `Arquivo salvo em:\n${result.path}\n\nDeseja compartilhar este arquivo?`, confirmText: "Compartilhar", cancelText: "OK" });
+      if (share) {
+        const shared = await shareSavedFile({ uri: result.uri, title: "Relatório Protocolo PEP" });
+        if (!shared.success && !shared.aborted) void dialogService.alert({ title: "Compartilhamento indisponível", message: shared.error, isDanger: true });
+      }
     });
   }
 

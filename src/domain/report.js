@@ -4,7 +4,8 @@
 
 import { doseStatus, parseUnits, summarizeDoseEntries } from "./dose-state.js";
 import { calculateAdherenceSummary } from "./adherence.js";
-import { calculateMeasurementStats, filterMeasurements } from "./measurements.js";
+import { calculateMeasurementStats, filterMeasurements, normalizeSymptomDetails } from "./measurements.js";
+import { normalizeProtocolRevisions } from "./protocol-history.js";
 
 const hasValue = (value) => value !== undefined && value !== null && value !== "";
 const textValue = (value) => hasValue(value) ? String(value) : "";
@@ -71,7 +72,7 @@ export function buildReportData({
       const pInfo = pepMap[pepId];
       const rawList = Array.isArray(val) ? val : (val ? [val] : []);
 
-      rawList.forEach((entry) => {
+      rawList.forEach((entry, recordIndex) => {
         if (!entry || (typeof entry !== "string" && typeof entry !== "object")) return;
         const display = getDoseDisplayData(entry, pInfo);
         let time = "";
@@ -93,8 +94,14 @@ export function buildReportData({
         const status = doseStatus(entry);
 
         entries.push({
+          id: typeof entry === "object" ? textValue(entry.id) : `${dateStr}_${pepId}_${recordIndex}`,
+          recordIndex,
           date: dateStr,
           time: time || "--:--",
+          effectiveTime: time || "--:--",
+          scheduledTime: textValue(entry?.scheduledTime)
+            || textValue(entry?.protocolSnapshot?.time)
+            || (Array.isArray(entry?.protocolSnapshot?.times) ? textValue(entry.protocolSnapshot.times[0]) : ""),
           peptideId: pepId,
           peptideName: display.name,
           peptideSub: display.sub,
@@ -159,8 +166,82 @@ function sanitizeMeasurementForReport(entry, includeNotes = false) {
     symptoms: Array.isArray(measurement.symptoms)
       ? measurement.symptoms.map(textValue).filter(Boolean)
       : [],
+    symptomDetails: normalizeSymptomDetails(measurement.symptoms, measurement.symptomDetails),
     notes: includeNotes ? textValue(measurement.notes) : "",
     source: measurement.source === "health_connect" ? "Health Connect" : "Local"
+    ,ownership: measurement.ownership === "external" ? "external" : "pep"
+    ,id: textValue(measurement.id)
+  };
+}
+
+const normalizeSearch = (value) => String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR");
+
+function revisionLocalParts(iso) {
+  const date = new Date(iso);
+  if (!Number.isFinite(date.getTime())) return { date: "", time: "" };
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return { date: `${y}-${m}-${d}`, time: `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}` };
+}
+
+/** Modelo canônico compartilhado pela tela, prévia, CSVs e PDF. */
+export function buildReviewModel({
+  protocol = [], logs = {}, measurements = [], startDate = null, endDate = null,
+  compoundId = "all", eventType = "all", query = "", includeNotes = true
+} = {}) {
+  const applications = buildReportData({ protocol, logs, startDate, endDate, includeNotes })
+    .filter((entry) => compoundId === "all" || entry.peptideId === compoundId);
+  const measurementRecords = filterMeasurements(measurements, { startDate, endDate })
+    .map((entry) => sanitizeMeasurementForReport(entry, includeNotes));
+  const revisions = [];
+  (Array.isArray(protocol) ? protocol : []).forEach((item) => {
+    if (!item?.id || (compoundId !== "all" && item.id !== compoundId)) return;
+    normalizeProtocolRevisions(item.revisions).filter((revision) => !revision.legacy).forEach((revision) => {
+      const parts = revisionLocalParts(revision.effectiveFrom);
+      if ((startDate && parts.date < startDate) || (endDate && parts.date > endDate)) return;
+      revisions.push({
+        id: revision.id, date: parts.date, time: parts.time, peptideId: item.id,
+        peptideName: revision.config.name || item.name || "Protocolo sem identificação",
+        status: revision.status, statusLabel: revision.status === "ended" ? "Encerrado" : revision.status === "paused" ? "Pausado" : "Ativo",
+        effectiveFrom: revision.effectiveFrom, config: revision.config
+      });
+    });
+  });
+
+  const events = [];
+  applications.forEach((entry) => events.push({
+    id: `application_${entry.id || `${entry.date}_${entry.peptideId}_${entry.recordIndex}`}`,
+    type: "application", date: entry.date, time: entry.effectiveTime, title: entry.peptideName,
+    subtitle: `${entry.statusLabel} · ${entry.dose}${entry.ui !== null ? ` · ${entry.ui} UI` : ""}`,
+    notes: [entry.note, entry.statusReason].filter(Boolean).join(" · "), compoundId: entry.peptideId,
+    scheduledTime: entry.scheduledTime, effectiveTime: entry.effectiveTime, retroactive: entry.retroactive,
+    editableId: entry.id, recordIndex: entry.recordIndex, data: entry
+  }));
+  measurementRecords.forEach((entry) => {
+    const measures = [entry.weightKg !== null ? `${entry.weightKg} kg` : "", entry.energyLevel ? `Energia ${entry.energyLevel}/5` : "", entry.moodLevel ? `Humor ${entry.moodLevel}/5` : ""].filter(Boolean);
+    if (measures.length) events.push({ id: `measurement_${entry.id}`, type: "measurement", date: entry.date, time: entry.time, title: "Medição autorrelatada", subtitle: measures.join(" · "), notes: entry.notes, contextGeneral: compoundId !== "all", editableId: entry.id, data: entry });
+    if (entry.symptomDetails.length) events.push({ id: `symptom_${entry.id}`, type: "symptom", date: entry.date, time: entry.time, title: "Sintomas autorrelatados", subtitle: entry.symptomDetails.map((item) => `${item.name}${item.intensity ? ` (${item.intensity})` : ""}`).join(" · "), notes: entry.notes, contextGeneral: compoundId !== "all", editableId: entry.id, data: entry });
+  });
+  revisions.forEach((entry) => events.push({ id: `protocol_${entry.id}`, type: "protocol", date: entry.date, time: entry.time, title: entry.peptideName, subtitle: `Protocolo ${entry.statusLabel.toLocaleLowerCase("pt-BR")}`, notes: "", compoundId: entry.peptideId, data: entry }));
+
+  const needle = normalizeSearch(query);
+  const filteredEvents = events.filter((event) => {
+    if (eventType !== "all" && event.type !== eventType) return false;
+    return !needle || normalizeSearch([event.title, event.subtitle, event.notes].join(" ")).includes(needle);
+  }).sort((a, b) => `${b.date}T${b.time || "00:00"}`.localeCompare(`${a.date}T${a.time || "00:00"}`));
+  const stats = calculateMeasurementStats(measurementRecords);
+  const observationDates = [...new Set(measurementRecords.filter((entry) => entry.notes || entry.symptoms.length).map((entry) => entry.date))].sort();
+  const bounds = getReportDateBounds(applications, measurementRecords);
+  const rangeStart = startDate || bounds.startDate;
+  const rangeEnd = endDate || bounds.endDate;
+  return {
+    startDate: rangeStart, endDate: rangeEnd, compoundId, eventType, query,
+    events: filteredEvents, applications, measurements: measurementRecords, revisions,
+    adherence: rangeStart && rangeEnd ? calculateAdherenceSummary(protocol, logs, { startDate: rangeStart, endDate: rangeEnd }) : null,
+    measurementStats: stats,
+    observations: { count: observationDates.length, dates: observationDates },
+    summary: { ...summarizeReportEntries(applications), revisions: revisions.length, measurements: measurementRecords.length, symptoms: measurementRecords.filter((entry) => entry.symptoms.length).length }
   };
 }
 
@@ -178,26 +259,14 @@ export function buildPersonalReport({
   includeNotes = false,
   includeMeasurements = false
 } = {}) {
-  const entries = buildReportData({ protocol, logs, startDate, endDate, includeNotes });
-  const filteredMeasurements = filterMeasurements(measurements, { startDate, endDate });
-  const bounds = getReportDateBounds(entries, filteredMeasurements);
-  const summaryStart = startDate || bounds.startDate;
-  const summaryEnd = endDate || bounds.endDate;
-  const adherence = summaryStart && summaryEnd
-    ? calculateAdherenceSummary(protocol, logs, { startDate: summaryStart, endDate: summaryEnd })
-    : null;
-  const reportMeasurements = includeMeasurements
-    ? filteredMeasurements.map((entry) => sanitizeMeasurementForReport(entry, includeNotes))
-    : [];
-
+  const model = buildReviewModel({ protocol, logs, measurements, startDate, endDate, includeNotes });
+  const reportMeasurements = model.measurements.map(({ id: _internalId, ...entry }) => entry);
   return {
-    entries,
-    adherence,
-    measurements: reportMeasurements,
-    measurementCount: filteredMeasurements.length,
-    measurementStats: includeMeasurements ? calculateMeasurementStats(reportMeasurements) : null,
-    startDate: summaryStart,
-    endDate: summaryEnd
+    ...model,
+    entries: model.applications,
+    measurements: includeMeasurements ? reportMeasurements : [],
+    measurementCount: model.measurements.length,
+    measurementStats: includeMeasurements ? model.measurementStats : null
   };
 }
 
@@ -253,6 +322,17 @@ export function generateReportCSV(entries = []) {
   });
 
   return BOM + [headerLine, ...lines].join("\r\n");
+}
+
+export function generateMeasurementsCSV(measurements = []) {
+  const headers = ["Data", "Hora", "Peso (kg)", "Energia (1-5)", "Humor (1-5)", "Sintomas", "Intensidades", "Observações", "Origem", "Propriedade"];
+  const lines = measurements.map((entry) => [
+    formatReportDate(entry.date), entry.time, entry.weightKg, entry.energyLevel, entry.moodLevel,
+    (entry.symptoms || []).join(" · "),
+    (entry.symptomDetails || []).map((item) => `${item.name}: ${item.intensity || "não informada"}`).join(" · "),
+    entry.notes, entry.source, entry.ownership === "external" ? "Externa" : "PEP"
+  ].map(escapeCSV).join(";"));
+  return "\uFEFF" + [headers.map(escapeCSV).join(";"), ...lines].join("\r\n");
 }
 
 function getReportEntryCSVRow(e) {
@@ -355,7 +435,8 @@ export function generateReportHTML(entries = [], {
   adherenceSummary = null,
   measurements = [],
   includeMeasurements = false,
-  measurementStats = null
+  measurementStats = null,
+  revisions = []
 } = {}) {
   const dStr = escapeHTML(generatedAt.toLocaleDateString("pt-BR"));
   const tStr = escapeHTML(generatedAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }));
@@ -411,7 +492,7 @@ export function generateReportHTML(entries = [], {
         <td>${escapeHTML(measurement.weightKg ?? "--")}</td>
         <td>${escapeHTML(measurement.energyLevel ?? "--")}</td>
         <td>${escapeHTML(measurement.moodLevel ?? "--")}</td>
-        <td>${escapeHTML(Array.isArray(measurement.symptoms) && measurement.symptoms.length > 0 ? measurement.symptoms.join(" · ") : "--")}</td>
+        <td>${escapeHTML(Array.isArray(measurement.symptomDetails) && measurement.symptomDetails.length > 0 ? measurement.symptomDetails.map((item) => `${item.name}${item.intensity ? ` (${item.intensity})` : ""}`).join(" · ") : "--")}</td>
         <td>${escapeHTML(measurement.notes || "--")}</td>
         <td>${escapeHTML(measurement.source || "Local")}</td>
       </tr>
@@ -433,6 +514,8 @@ export function generateReportHTML(entries = [], {
     <p class="personal-summary-note">As medições são autorrelatadas e apresentadas sem correlação clínica com as aplicações.</p>
   </section>` : "";
 
+  const revisionsSection = `<section class="protocol-section"><h2>Revisões de protocolo</h2><table><thead><tr><th>Vigência</th><th>Composto</th><th>Estado</th><th>Configuração registrada</th></tr></thead><tbody>${(revisions || []).map((revision) => `<tr><td>${escapeHTML(formatReportDate(revision.date))} ${escapeHTML(revision.time)}</td><td>${escapeHTML(revision.peptideName)}</td><td>${escapeHTML(revision.statusLabel)}</td><td>${escapeHTML([revision.config?.dose, revision.config?.ui !== undefined ? `${revision.config.ui} UI` : "", revision.config?.per].filter(Boolean).join(" · ") || "Sem dose informada")}</td></tr>`).join("") || '<tr><td colspan="4">Nenhuma revisão no período.</td></tr>'}</tbody></table></section>`;
+
   return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -446,18 +529,20 @@ export function generateReportHTML(entries = [], {
     .stats { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 16px; background: #F8FAFC; padding: 10px 14px; border-radius: 8px; border: 1px solid #E2E8F0; }
     .stats-item { font-size: 12px; }
     .stats-item b { color: #0E8580; font-size: 14px; }
-    .personal-summary, .measurements-section { margin: 16px 0 20px; }
-    .personal-summary h2, .measurements-section h2 { font-size: 15px; color: #0E8580; margin: 0 0 8px; }
+    .personal-summary, .measurements-section, .protocol-section { margin: 16px 0 20px; }
+    .personal-summary h2, .measurements-section h2, .protocol-section h2 { font-size: 15px; color: #0E8580; margin: 0 0 8px; }
     .personal-summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; background: #F8FAFC; padding: 10px 12px; border: 1px solid #E2E8F0; border-radius: 8px; }
     .personal-summary-grid div { display: flex; flex-direction: column; gap: 2px; font-size: 11px; color: #64748B; }
     .personal-summary-grid b { color: #0F172A; font-size: 14px; }
     .personal-summary-note { color: #64748B; font-size: 11px; line-height: 1.4; margin: 8px 0 0; }
     table { width: 100%; border-collapse: collapse; text-align: left; margin-bottom: 20px; }
+    thead { display: table-header-group; } tr { break-inside: avoid; page-break-inside: avoid; }
     th { background: #F1F5F9; padding: 8px 10px; border-bottom: 2px solid #CBD5E1; font-weight: 700; font-size: 12px; color: #475569; }
     .disclaimer { font-size: 11px; color: #64748B; border-top: 1px solid #E2E8F0; padding-top: 10px; margin-top: 20px; line-height: 1.4; }
     @media print {
       body { margin: 10mm; }
       .no-print { display: none !important; }
+      @page { size: A4; margin: 12mm; }
     }
   </style>
 </head>
@@ -478,6 +563,8 @@ export function generateReportHTML(entries = [], {
   </div>
 
   ${adherenceSection}
+
+  ${revisionsSection}
 
   <table>
     <thead>

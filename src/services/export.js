@@ -176,6 +176,37 @@ export async function shareExportedFile({
   return { success: false, error: "Compartilhamento não suportado neste ambiente." };
 }
 
+export async function saveReportPdf({ fileName, html, subDir = "ProtocoloPEP" }) {
+  if (!fileName || !html) return { success: false, error: "Relatório PDF inválido." };
+  if (Capacitor && typeof Capacitor.isNativePlatform === "function" && Capacitor.isNativePlatform()) {
+    try {
+      const plugin = getFileExportPlugin();
+      if (!plugin || typeof plugin.savePdf !== "function") return { success: false, error: "Exportação PDF nativa indisponível." };
+      const result = await plugin.savePdf({ fileName, html: String(html), subDir });
+      return { success: Boolean(result?.success), path: result?.path, uri: result?.uri, error: result?.error };
+    } catch (error) {
+      return { success: false, aborted: error?.code === "CANCELED", error: error?.message || "Falha ao salvar o PDF." };
+    }
+  }
+  printReportHTML(html);
+  return { success: true, printDialog: true };
+}
+
+export async function shareSavedFile({ uri, mimeType = "application/pdf", title = "Compartilhar arquivo" }) {
+  if (!uri) return { success: false, error: "Arquivo salvo não identificado." };
+  if (Capacitor && typeof Capacitor.isNativePlatform === "function" && Capacitor.isNativePlatform()) {
+    try {
+      const plugin = getFileExportPlugin();
+      if (!plugin || typeof plugin.shareSavedFile !== "function") return { success: false, error: "Compartilhamento do arquivo salvo indisponível." };
+      const result = await plugin.shareSavedFile({ uri, mimeType, title });
+      return { success: Boolean(result?.success), aborted: Boolean(result?.aborted), error: result?.error };
+    } catch (error) {
+      return { success: false, aborted: error?.code === "CANCELED", error: error?.message || "Falha ao compartilhar o arquivo salvo." };
+    }
+  }
+  return { success: false, error: "Compartilhamento do arquivo salvo disponível no Android." };
+}
+
 /**
  * Cria um link temporário para download de Blob com limpeza postergada segura.
  */

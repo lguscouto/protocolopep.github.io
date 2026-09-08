@@ -74,6 +74,8 @@ export const DEFAULT_SYMPTOM_SUGGESTIONS = Object.freeze([
   "Recuperação muscular rápida"
 ]);
 
+export const SYMPTOM_INTENSITIES = Object.freeze(["leve", "moderada", "intensa"]);
+
 /**
  * Sanitiza e valida o formato de texto de um sintoma.
  * @param {string} symptom
@@ -82,6 +84,25 @@ export const DEFAULT_SYMPTOM_SUGGESTIONS = Object.freeze([
 export function formatSymptomLabel(symptom) {
   if (!symptom || typeof symptom !== "string") return "";
   return symptom.trim().slice(0, 60);
+}
+
+export function normalizeSymptomDetails(symptoms = [], symptomDetails = []) {
+  const detailMap = new Map();
+  if (Array.isArray(symptomDetails)) {
+    symptomDetails.forEach((item) => {
+      const name = formatSymptomLabel(item?.name);
+      const intensity = SYMPTOM_INTENSITIES.includes(item?.intensity) ? item.intensity : null;
+      if (name) detailMap.set(name.toLocaleLowerCase("pt-BR"), { name, intensity });
+    });
+  }
+  if (Array.isArray(symptoms)) {
+    symptoms.forEach((item) => {
+      const name = formatSymptomLabel(item);
+      const key = name.toLocaleLowerCase("pt-BR");
+      if (name && !detailMap.has(key)) detailMap.set(key, { name, intensity: null });
+    });
+  }
+  return [...detailMap.values()];
 }
 
 /**
@@ -122,6 +143,7 @@ export function createMeasurementEntry({
   energyLevel = null,
   moodLevel = null,
   symptoms = [],
+  symptomDetails = [],
   notes = "",
   source = "local",
   ownership = null,
@@ -185,11 +207,14 @@ export function createMeasurementEntry({
     throw new MeasurementValidationError("INVALID_SYMPTOMS", "A lista de sintomas deve ser um array.");
   }
 
-  const cleanedSymptoms = Array.isArray(symptoms)
-    ? symptoms.map(formatSymptomLabel).filter((s) => s.length > 0)
-    : [];
-
-  const uniqueSymptoms = [...new Set(cleanedSymptoms)];
+  if (symptomDetails !== undefined && !Array.isArray(symptomDetails)) {
+    throw new MeasurementValidationError("INVALID_SYMPTOM_DETAILS", "Os detalhes dos sintomas devem ser um array.");
+  }
+  if (Array.isArray(symptomDetails) && symptomDetails.some((item) => item?.intensity && !SYMPTOM_INTENSITIES.includes(item.intensity))) {
+    throw new MeasurementValidationError("INVALID_SYMPTOM_INTENSITY", "A intensidade deve ser leve, moderada, intensa ou não informada.");
+  }
+  const normalizedSymptomDetails = normalizeSymptomDetails(symptoms, symptomDetails);
+  const uniqueSymptoms = normalizedSymptomDetails.map((item) => item.name);
   const cleanDate = hasExplicitDate ? String(date) : currentLocalDateKey();
   const cleanTime = hasExplicitTime ? String(time) : "08:00";
   const version = Math.max(1, parseInt(syncVersion || clientRecordVersion, 10) || 1);
@@ -266,6 +291,7 @@ export function createMeasurementEntry({
     energyLevel: parsedEnergy,
     moodLevel: parsedMood,
     symptoms: uniqueSymptoms,
+    symptomDetails: normalizedSymptomDetails,
     notes: notes ? String(notes).trim().slice(0, 500) : "",
     source: source || "local",
     ownership: resolvedOwnership,
@@ -332,6 +358,11 @@ export function validateMeasurementEntry(entry) {
 
   if (entry.symptoms && !Array.isArray(entry.symptoms)) {
     errors.push("A lista de sintomas deve ser um array.");
+  }
+  if (entry.symptomDetails && !Array.isArray(entry.symptomDetails)) {
+    errors.push("Os detalhes dos sintomas devem ser um array.");
+  } else if (Array.isArray(entry.symptomDetails) && entry.symptomDetails.some((item) => item?.intensity && !SYMPTOM_INTENSITIES.includes(item.intensity))) {
+    errors.push("A intensidade deve ser leve, moderada, intensa ou não informada.");
   }
   const temporalAssessment = assessTemporalConsistency(entry);
   if (!temporalAssessment.valid && entry.temporalIntegrity !== "needs_review") {
@@ -484,6 +515,7 @@ export function haveMeasurementsChanged(oldList = [], newList = []) {
     energyLevel: entry?.energyLevel ?? null,
     moodLevel: entry?.moodLevel ?? null,
     symptoms: Array.isArray(entry?.symptoms) ? entry.symptoms : [],
+    symptomDetails: normalizeSymptomDetails(entry?.symptoms, entry?.symptomDetails),
     notes: entry?.notes || "",
     source: entry?.source || null,
     ownership: entry?.ownership || null,

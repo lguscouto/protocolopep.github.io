@@ -16,7 +16,7 @@ import {
   localDateTimeToIso
 } from "./time.js";
 
-export const CURRENT_SCHEMA_VERSION = 7;
+export const CURRENT_SCHEMA_VERSION = 8;
 
 function sanitizeHealthConnectId(value) {
   if (typeof value !== "string") return null;
@@ -228,6 +228,15 @@ export function migrateV6ToV7(state = {}) {
   };
 }
 
+/** V7 → V8: symptomDetails is additive; legacy symptom labels remain intact. */
+export function migrateV7ToV8(state = {}) {
+  return {
+    ...state,
+    version: 8,
+    measurements: migrateMeasurements(state.measurements || [])
+  };
+}
+
 export function migrateAppState(state = {}) {
   if (!state || typeof state !== "object") {
     state = {};
@@ -252,6 +261,9 @@ export function migrateAppState(state = {}) {
   }
   if (version < 7) {
     current = migrateV6ToV7(current);
+  }
+  if (version < 8) {
+    current = migrateV7ToV8(current);
   }
 
   const rawProtocol = current.protocol || current.peptides || [];

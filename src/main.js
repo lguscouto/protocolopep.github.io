@@ -31,7 +31,7 @@ import {
 import { createPeptide, validatePeptide } from "./domain/protocol.js";
 import { parseUnits, doseEntries, doseStatus, summarizeDoseEntries } from "./domain/dose-state.js";
 import { resolveProtocolAt, resolveProtocolForDay, reviseProtocol } from "./domain/protocol-history.js";
-import { getDoseDisplayData } from "./domain/report.js";
+import { getDoseDisplayData, buildReviewModel } from "./domain/report.js";
 import { renderProtocolList, renderProtocolControls, changeProtocolStatus } from "./ui/protocol-lifecycle.js";
 import { isValidDateKey, isValidTime } from "./domain/schedule.js";
 import { escapeHtml, sanitizeColor, sanitizeId } from "./ui/dom.js";
@@ -134,6 +134,7 @@ let healthConnectUI = null;
 let i18nUI = null;
 let researchUI = null;
 let adherencePeriodDays = 7;
+const historyFilters = { period: "30", compoundId: "all", eventType: "all", query: "", startDate: null, endDate: null };
 
 async function initApp() {
   await theme.init();
@@ -210,6 +211,7 @@ async function initApp() {
       }
     }
   });
+  setupHistoryFilters();
   appLockUI = setupAppLockUI({
     appLockService: appLock,
     onUnlock: () => {
@@ -1153,7 +1155,64 @@ async function saveRetroLog() {
   });
 }
 
-function renderHistory() {
+function historyDateRange() {
+  if (historyFilters.period === "all") return { startDate: null, endDate: null };
+  if (historyFilters.period === "custom") return { startDate: historyFilters.startDate, endDate: historyFilters.endDate };
+  const end = new Date();
+  const start = new Date(end);
+  start.setDate(start.getDate() - Number(historyFilters.period || 30) + 1);
+  return { startDate: dateKey(start), endDate: dateKey(end) };
+}
+
+function setupHistoryFilters() {
+  const bindings = [
+    ["history-period", "period"],
+    ["history-compound", "compoundId"], ["history-type", "eventType"],
+    ["history-search", "query"], ["history-start-date", "startDate"], ["history-end-date", "endDate"]
+  ];
+  bindings.forEach(([id, key]) => {
+    const element = document.getElementById(id);
+    if (!element) return;
+    const eventName = id === "history-search" ? "input" : "change";
+    element.addEventListener(eventName, () => {
+      historyFilters[key] = element.value || (key === "compoundId" || key === "eventType" ? "all" : null);
+      const custom = document.getElementById("history-custom-dates");
+      if (custom) custom.hidden = historyFilters.period !== "custom";
+      renderHistory();
+    });
+  });
+}
+
+function renderHistoryEvolution(model) {
+  const target = document.getElementById("measurements-trend-summary");
+  if (!target) return;
+  const stats = model.measurementStats;
+  const weightRecords = model.measurements.filter((entry) => entry.weightKg !== null);
+  const symptomRows = Object.entries(stats.symptomsFrequency).sort((a, b) => b[1] - a[1]);
+  if (model.measurements.length === 0) {
+    target.innerHTML = `<div class="empty-state-illustrated empty-state-illustrated--measurements"><img class="empty-state-illustration" src="/assets/illustrations/empty-measurements.png" alt="" aria-hidden="true"><div class="empty-state-title">Registre seu primeiro acompanhamento</div><div class="empty-state-description">Peso, medidas e sintomas ficam organizados no histórico local.</div><button type="button" class="btn-primary empty-state-action" id="empty-add-measurement-btn">+ Medidas / Sintomas</button></div>`;
+    document.getElementById("empty-add-measurement-btn")?.addEventListener("click", () => measurementsUI?.openMeasurementModal());
+    return;
+  }
+  target.innerHTML = `<section class="history-evolution" aria-labelledby="history-evolution-title">
+    <div class="history-section-heading"><h3 id="history-evolution-title">Evolução descritiva</h3><span>${model.observations.count} data${model.observations.count === 1 ? "" : "s"} com observações</span></div>
+    <div class="report-preview-summary-grid">
+      <span class="measurement-chip--weight"><b>${esc(String(stats.latestWeight ?? "—"))}${stats.latestWeight !== null ? " kg" : ""}</b> último peso</span>
+      <span><b>${stats.weightDelta === null ? "—" : `${stats.weightDelta > 0 ? "+" : ""}${esc(String(stats.weightDelta))} kg`}</b> variação entre registros</span>
+      <span><b>${esc(String(weightRecords.length))}</b> pesos registrados</span>
+      <span><b>${esc(String(symptomRows.reduce((sum, [, count]) => sum + count, 0)))}</b> relatos de sintomas</span>
+    </div>
+    ${weightRecords.length > 0 && weightRecords.length < 3 ? `<p class="history-context-note">Há poucos registros de peso. Os valores disponíveis são exibidos sem projeção de tendência.</p>` : ""}
+    ${symptomRows.length ? `<div class="history-symptom-frequency">${symptomRows.map(([name, count]) => `<span>${esc(name)} <b>${count}×</b></span>`).join("")}</div>` : ""}
+    <details class="history-data-table"><summary>Tabela textual dos dados utilizados</summary>
+      <div class="history-table-scroll"><table><thead><tr><th>Data</th><th>Hora</th><th>Peso</th><th>Energia</th><th>Humor</th><th>Sintomas</th><th>Origem</th></tr></thead><tbody>
+      ${model.measurements.map((entry) => `<tr><td>${esc(fmtBR(entry.date))}</td><td>${esc(entry.time || "—")}</td><td>${entry.weightKg ?? "—"}</td><td>${entry.energyLevel ?? "—"}</td><td>${entry.moodLevel ?? "—"}</td><td>${esc(entry.symptomDetails.map((item) => `${item.name}${item.intensity ? ` (${item.intensity})` : ""}`).join(" · ") || "—")}</td><td>${esc(entry.source)}</td></tr>`).join("") || `<tr><td colspan="7">Nenhum registro no período.</td></tr>`}
+      </tbody></table></div></details>
+    <p class="history-context-note">Dados descritivos autorrelatados. A falta de registro não significa ausência de sintomas e não há interpretação causal ou clínica.</p>
+  </section>`;
+}
+
+function renderHistoryLegacy() {
   const container = document.getElementById("history-list");
   const countEl = document.getElementById("history-count");
   if (!container) return;
@@ -1274,6 +1333,64 @@ function renderHistory() {
       }
     });
   });
+}
+
+function renderHistory() {
+  const container = document.getElementById("history-list");
+  if (!container) return;
+  const peptides = storage.getPeptides();
+  const compoundSelect = document.getElementById("history-compound");
+  if (compoundSelect) {
+    const selected = historyFilters.compoundId;
+    compoundSelect.innerHTML = `<option value="all">Todos os compostos</option>${peptides.map((item) => `<option value="${sanitizeId(item.id)}">${esc(item.name)}${item.lifecycleStatus === "ended" ? " (encerrado)" : ""}</option>`).join("")}`;
+    compoundSelect.value = peptides.some((item) => item.id === selected) ? selected : "all";
+    historyFilters.compoundId = compoundSelect.value;
+  }
+  const model = buildReviewModel({
+    protocol: peptides,
+    logs: storage.getLogs(),
+    measurements: storage.getMeasurements(),
+    ...historyDateRange(),
+    compoundId: historyFilters.compoundId,
+    eventType: historyFilters.eventType,
+    query: historyFilters.query,
+    includeNotes: true
+  });
+  const countEl = document.getElementById("history-count");
+  if (countEl) countEl.textContent = `${model.events.length} registro${model.events.length === 1 ? "" : "s"}`;
+  const contextNote = document.getElementById("history-context-note");
+  if (contextNote) contextNote.hidden = historyFilters.compoundId === "all";
+  const oldMeasurementList = document.getElementById("measurements-history-list");
+  if (oldMeasurementList) oldMeasurementList.innerHTML = "";
+  renderHistoryEvolution(model);
+  const typeLabel = { application: "Aplicação", measurement: "Medida", symptom: "Sintoma", protocol: "Protocolo" };
+  container.innerHTML = model.events.length ? `<div class="history-timeline history-timeline--integrated" role="list">${model.events.map((event) => {
+    const details = event.type === "application"
+      ? `<span>Previsto: <b>${esc(event.scheduledTime || "não informado")}</b></span><span>Efetivo: <b>${esc(event.effectiveTime || "não informado")}</b></span>${event.data.site ? `<span>Local: <b>${esc(event.data.site)}</b></span>` : ""}`
+      : event.type === "measurement" || event.type === "symptom"
+        ? `<span>Origem: <b>${esc(event.data.source)}</b></span>${event.data.ownership === "external" ? `<span>Propriedade: <b>Health Connect</b></span>` : ""}`
+        : `<span>Vigência: <b>${esc(fmtBR(event.date))} ${esc(event.time)}</b></span><span>Estado: <b>${esc(event.data.statusLabel)}</b></span>`;
+    return `<article class="history-event history-event--${event.type} ${event.type === "application" ? `hist-day hist-item ${event.date === dateKey(new Date()) ? "is-today" : ""}` : ""}" role="listitem">
+      <div class="history-event-head"><span class="history-event-type">${typeLabel[event.type]}</span><time datetime="${esc(event.date)}T${esc(event.time)}">${esc(fmtBR(event.date))} · ${esc(event.time || "—")}</time></div>
+      <div class="history-event-body"><strong class="${event.type === "application" ? "hist-name" : ""}">${esc(event.title)}</strong><p class="${event.type === "application" ? "hist-status" : ""}">${esc(event.type === "application" ? i18nService.t(`phase1.${event.data.status}`) : event.subtitle)}</p>${event.type === "application" ? `<p class="hist-dose">${esc(event.data.dose)}${event.data.ui !== null ? ` · ${esc(String(event.data.ui))} UI` : ""}${event.data.site ? ` · 📍 ${esc(event.data.site)}` : ""}</p>` : ""}${event.notes ? `<p class="hist-note">${esc(event.notes)}</p>` : ""}${event.retroactive ? `<span class="badge-retro">Retroativo</span>` : ""}${event.contextGeneral ? `<span class="history-context-badge">Contexto geral do período</span>` : ""}</div>
+      <details class="history-event-details"><summary>Ver detalhes</summary><div>${details}</div></details>
+      <div class="hist-actions">${event.type === "application" ? `<button type="button" class="hist-edit" data-date="${sanitizeId(event.date)}" data-pep="${sanitizeId(event.data.peptideId)}" data-idx="${event.data.recordIndex}">Corrigir</button><button type="button" class="hist-rm" data-date="${sanitizeId(event.date)}" data-pep="${sanitizeId(event.data.peptideId)}" data-idx="${event.data.recordIndex}">Excluir</button>` : event.type === "measurement" || event.type === "symptom" ? `<button type="button" class="history-measurement-edit btn-meas-edit" data-id="${sanitizeId(event.editableId)}">Corrigir</button>` : ""}</div>
+    </article>`;
+  }).join("")}</div>` : `<div class="timeline-empty history-empty"><div class="timeline-empty-icon" aria-hidden="true">◌</div><strong>Nenhum registro encontrado</strong><p>Ajuste o período, tipo ou busca para localizar outros registros.</p></div>`;
+  renderAdherenceSummary();
+  container.querySelectorAll(".hist-edit").forEach((btn) => btn.addEventListener("click", () => {
+    const log = doseEntries(storage.getLogs()[btn.dataset.date]?.[btn.dataset.pep])[Number(btn.dataset.idx)];
+    if (log) openRetroModal(btn.dataset.date, btn.dataset.pep, { storage, dateKey, editingLog: log });
+  }));
+  container.querySelectorAll(".history-measurement-edit").forEach((btn) => btn.addEventListener("click", () => {
+    const entry = storage.getMeasurements().find((item) => item.id === btn.dataset.id);
+    if (entry && measurementsUI) measurementsUI.openMeasurementModal(entry);
+  }));
+  container.querySelectorAll(".hist-rm").forEach((btn) => btn.addEventListener("click", async () => {
+    if (await showConfirmDialog({ title: "Excluir Registro", message: "Deseja realmente remover este registro de dose do histórico?", confirmText: "Excluir", isDanger: true })) {
+      deleteHistoryEntry(btn.dataset.date, btn.dataset.pep, Number(btn.dataset.idx));
+    }
+  }));
 }
 
 function deleteHistoryEntry(dKey, pId, idx) {
@@ -1502,7 +1619,9 @@ function setupModalsAndButtons() {
   const handleExport = async () => {
     try {
       const backupPayload = storage.exportBackup(theme.getBackupTheme());
-      const fileName = `protocolo-pep-backup-${dateKey(new Date())}.json`;
+      const now = new Date();
+      const stamp = `${dateKey(now)}-${String(now.getHours()).padStart(2, "0")}${String(now.getMinutes()).padStart(2, "0")}${String(now.getSeconds()).padStart(2, "0")}`;
+      const fileName = `protocolo-pep-backup-${stamp}.json`;
 
       const result = await exportFile({
         fileName,
@@ -1681,6 +1800,8 @@ function setupModalsAndButtons() {
       switchTab("calc");
     });
   }
+  const dashInventoryBtn = document.getElementById("dash-inventory-btn");
+  if (dashInventoryBtn) dashInventoryBtn.addEventListener("click", () => { haptics.light(); switchTab("settings"); setTimeout(() => document.getElementById("inventory-list")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0); });
 }
 
 function normalizeStr(str) {

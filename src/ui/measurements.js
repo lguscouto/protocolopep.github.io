@@ -13,7 +13,8 @@ import {
   validateMeasurementEntry,
   calculateMeasurementStats,
   DEFAULT_SYMPTOM_SUGGESTIONS,
-  formatSymptomLabel
+  formatSymptomLabel,
+  normalizeSymptomDetails
 } from "../domain/measurements.js";
 import { escapeHtml, sanitizeId } from "./dom.js";
 import { haptics } from "../services/haptics.js";
@@ -43,6 +44,7 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
 
   let editingEntryId = null;
   let selectedSymptoms = new Set();
+  let symptomIntensities = new Map();
   let selectedEnergy = null;
   let selectedMood = null;
 
@@ -76,12 +78,15 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
     if (!chipsContainer) return;
     const allAvailable = [...new Set([...DEFAULT_SYMPTOM_SUGGESTIONS, ...Array.from(selectedSymptoms)])];
 
-    chipsContainer.innerHTML = allAvailable.map((symptom) => {
+    chipsContainer.innerHTML = allAvailable.map((symptom, index) => {
       const isSelected = selectedSymptoms.has(symptom);
       return `
-        <button type="button" class="symptom-chip-btn ${isSelected ? "active" : ""}" data-symptom="${esc(symptom)}">
-          ${isSelected ? "✓ " : "+ "}${esc(symptom)}
-        </button>
+        <span class="symptom-chip-wrap">
+          <button type="button" class="symptom-chip-btn ${isSelected ? "active" : ""}" data-symptom="${esc(symptom)}">
+            ${isSelected ? "✓ " : "+ "}${esc(symptom)}
+          </button>
+          ${isSelected ? `<label class="sr-only" for="symptom-intensity-${index}">Definir intensidade de ${esc(symptom)}</label><select id="symptom-intensity-${index}" class="symptom-intensity-select" data-symptom="${esc(symptom)}"><option value="">Intensidade opcional</option><option value="leve" ${symptomIntensities.get(symptom) === "leve" ? "selected" : ""}>Leve</option><option value="moderada" ${symptomIntensities.get(symptom) === "moderada" ? "selected" : ""}>Moderada</option><option value="intensa" ${symptomIntensities.get(symptom) === "intensa" ? "selected" : ""}>Intensa</option></select>` : ""}
+        </span>
       `;
     }).join("");
   }
@@ -124,6 +129,7 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
     selectedEnergy = entry ? entry.energyLevel : null;
     selectedMood = entry ? entry.moodLevel : null;
     selectedSymptoms = new Set(entry && Array.isArray(entry.symptoms) ? entry.symptoms : []);
+    symptomIntensities = new Map(normalizeSymptomDetails(entry?.symptoms, entry?.symptomDetails).map((item) => [item.name, item.intensity]));
 
     if (customSymptomInput) customSymptomInput.value = "";
 
@@ -312,10 +318,18 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
         const sym = chip.dataset.symptom;
         if (selectedSymptoms.has(sym)) {
           selectedSymptoms.delete(sym);
+          symptomIntensities.delete(sym);
         } else {
           selectedSymptoms.add(sym);
+          symptomIntensities.set(sym, null);
         }
         renderSymptomChips();
+      }
+    });
+    chipsContainer.addEventListener("change", (e) => {
+      const select = e.target.closest(".symptom-intensity-select");
+      if (select && selectedSymptoms.has(select.dataset.symptom)) {
+        symptomIntensities.set(select.dataset.symptom, select.value || null);
       }
     });
   }
@@ -418,6 +432,7 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
         energyLevel: selectedEnergy,
         moodLevel: selectedMood,
         symptoms: Array.from(selectedSymptoms),
+        symptomDetails: Array.from(selectedSymptoms).map((name) => ({ name, intensity: symptomIntensities.get(name) || null })),
         notes: notesVal
       };
 

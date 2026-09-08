@@ -7,6 +7,7 @@ import { recordBackupRestore, renderBackupStatusUI } from "./backup-status.js";
 import { haptics } from "../services/haptics.js";
 import { dialogService } from "../services/dialog.js";
 import { escapeHtml } from "./dom.js";
+import { exportFile } from "../services/export.js";
 
 const esc = escapeHtml;
 
@@ -134,6 +135,19 @@ export function setupBackupPreview({
       if (!pendingBackupString || !pendingStats) return;
 
       confirmBtn.disabled = true;
+      const recoveryNow = new Date();
+      const recoveryStamp = `${recoveryNow.toISOString().slice(0, 10)}-${String(recoveryNow.getHours()).padStart(2, "0")}${String(recoveryNow.getMinutes()).padStart(2, "0")}${String(recoveryNow.getSeconds()).padStart(2, "0")}`;
+      const recoveryResult = await exportFile({
+        fileName: `protocolo-pep-recuperacao-antes-restauracao-${recoveryStamp}.json`,
+        content: storage.exportBackup(theme?.getBackupTheme?.() || "black"),
+        mimeType: "application/json",
+        subDir: "ProtocoloPEP/Recuperacao"
+      });
+      if (recoveryResult.aborted || !recoveryResult.success) {
+        confirmBtn.disabled = false;
+        void dialogService.alert({ title: "Restauração interrompida", message: recoveryResult.aborted ? "A cópia de recuperação foi cancelada; nenhum dado foi substituído." : `Não foi possível salvar a cópia de recuperação: ${recoveryResult.error || "falha local"}. Nenhum dado foi substituído.`, isDanger: true });
+        return;
+      }
       const res = storage.importBackup(pendingBackupString);
       if (res.success) {
         let themeError = null;
@@ -161,7 +175,7 @@ export function setupBackupPreview({
         const themeNotice = themeError ? "\n\nO tema anterior foi mantido." : "";
         void dialogService.alert({
           title: "Backup restaurado",
-          message: `Backup restaurado com sucesso! ✓\n• Peptídeos: ${res.stats.peptideCount}\n• Dias registrados: ${res.stats.logDaysCount}\n• Total de doses: ${res.stats.totalDosesCount}${themeNotice}`
+          message: `Backup restaurado com sucesso! ✓\n• Peptídeos: ${res.stats.peptideCount}\n• Dias registrados: ${res.stats.logDaysCount}\n• Total de doses: ${res.stats.totalDosesCount}\n\nCópia de recuperação anterior salva em:\n${recoveryResult.path}${themeNotice}`
         });
       } else {
         confirmBtn.disabled = false;

@@ -95,6 +95,12 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="16" y1="14" x2="16" y2="18"/><path d="M16 10h.01M12 10h.01M8 10h.01M12 14h.01M8 14h.01M12 18h.01M8 18h.01"/></svg>
             <span data-i18n="dashboard.calculator">Calculadora</span>
           </button>
+          <button type="button" class="dash-action-btn" id="dash-inventory-btn" aria-label="Abrir frascos e saldo">
+            <span aria-hidden="true">🧴</span><span>Frascos e saldo</span>
+          </button>
+          <button type="button" class="dash-action-btn" id="dash-report-btn" aria-label="Abrir relatório do histórico">
+            <span aria-hidden="true">📄</span><span>Relatório</span>
+          </button>
           <button type="button" class="dash-action-btn dash-action-btn--wide open-research-modal-btn" id="dash-research-btn" aria-label="Abrir base de pesquisa científica">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><path d="M11 8v6M8 11h6"/></svg>
             <span data-i18n="research.openResearchBtn">Base de Pesquisa Científica</span>
@@ -151,13 +157,27 @@
       </div>
 
       <!-- Resumo descritivo de consistência da rotina (Fase 2) -->
+      <div class="history-filter-panel" aria-label="Filtros do histórico">
+        <div class="history-filter-grid">
+          <label>Período<select id="history-period" class="txt"><option value="7">7 dias</option><option value="30" selected>30 dias</option><option value="90">90 dias</option><option value="all">Todo o histórico</option><option value="custom">Personalizado</option></select></label>
+          <label>Composto<select id="history-compound" class="txt"><option value="all">Todos os compostos</option></select></label>
+          <label>Tipo<select id="history-type" class="txt"><option value="all">Todos os registros</option><option value="application">Aplicações</option><option value="symptom">Sintomas</option><option value="measurement">Medidas</option><option value="protocol">Alterações de protocolo</option></select></label>
+          <label>Buscar<input id="history-search" class="txt" type="search" placeholder="Nome ou observação" autocomplete="off"></label>
+        </div>
+        <div id="history-custom-dates" class="history-custom-dates" hidden>
+          <label>Data inicial<input id="history-start-date" class="txt" type="date"></label>
+          <label>Data final<input id="history-end-date" class="txt" type="date"></label>
+        </div>
+        <p id="history-context-note" class="history-context-note" hidden>Sintomas e medidas são exibidos como contexto geral do período, sem atribuição ao composto filtrado.</p>
+      </div>
+
       <div id="adherence-summary"></div>
 
       <!-- Resumo de Tendências Autorrelatadas (V12) -->
       <div id="measurements-trend-summary"></div>
 
       <!-- Lista de Doses Aplicadas -->
-      <div id="history-list" role="region" aria-label="Lista de doses históricas"></div>
+      <div id="history-list" role="region" aria-label="Linha do tempo integrada do histórico"></div>
 
       <!-- Lista de Medições e Sintomas (V12) -->
       <div id="measurements-history-list"></div>
@@ -892,9 +912,9 @@
               <input type="checkbox" id="report-opt-notes" style="accent-color:var(--primary);width:16px;height:16px;" />
               <span>Incluir anotações e observações das aplicações</span>
             </label>
-            <label for="report-opt-measurements" style="display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--text);cursor:pointer;margin-top:8px;">
-              <input type="checkbox" id="report-opt-measurements" style="accent-color:var(--primary);width:16px;height:16px;flex:0 0 auto;margin-top:1px;" />
-              <span>Incluir medições autorrelatadas (peso, energia, humor e sintomas)</span>
+            <label for="report-opt-measurements" style="display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--text);margin-top:8px;">
+              <input type="checkbox" id="report-opt-measurements" checked disabled style="accent-color:var(--primary);width:16px;height:16px;flex:0 0 auto;margin-top:1px;" />
+              <span>Incluir medições e sintomas do período como dados descritivos</span>
             </label>
           </div>
         </div>
@@ -912,9 +932,10 @@
           ⚠️ <b>Uso Pessoal:</b> Relatório gerado localmente neste dispositivo para fins de acompanhamento individual.
         </div>
       </div>
-      <div class="sheet-foot sheet-foot--actions sheet-foot--primary-medium">
-        <button type="button" class="btn-subtle" id="report-export-csv">Exportar CSV</button>
-        <button type="button" class="btn-primary" id="report-print-pdf">Imprimir / PDF</button>
+      <div class="sheet-foot sheet-foot--actions report-export-actions">
+        <button type="button" class="btn-subtle" id="report-export-csv">CSV aplicações</button>
+        <button type="button" class="btn-subtle" id="report-export-measurements-csv">CSV medidas</button>
+        <button type="button" class="btn-primary" id="report-print-pdf">Salvar PDF</button>
       </div>
     </div>
   </div>
@@ -1103,6 +1124,7 @@
           <div class="form-field form-field--large">
             <div class="form-field-label form-field-label--strong">Sintomas & Efeitos Autorrelatados</div>
             <div id="meas-symptoms-chips" class="form-chip-list"></div>
+            <p class="form-field-hint">A intensidade é opcional e pode ser ajustada em cada sintoma selecionado.</p>
             <div class="form-field-inline">
               <input type="text" id="meas-custom-symptom-input" class="form-field-control form-field-control--compact" placeholder="Outro sintoma / observação..." maxlength="60">
               <button type="button" class="btn-sec form-field-inline-action" id="meas-add-symptom-btn">
