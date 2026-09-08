@@ -36,7 +36,8 @@ export async function exportFile({
   fileName,
   content,
   mimeType = "application/json",
-  subDir = "ProtocoloPEP"
+  subDir = "ProtocoloPEP",
+  preferDownload = false
 }) {
   if (!fileName || typeof fileName !== "string") {
     return { success: false, error: "Nome de arquivo inválido." };
@@ -72,7 +73,7 @@ export async function exportFile({
   }
 
   // 2. Navegador Web com File System Access API (Salvar Como...)
-  if (typeof window !== "undefined" && typeof window.showSaveFilePicker === "function") {
+  if (!preferDownload && typeof window !== "undefined" && typeof window.showSaveFilePicker === "function") {
     try {
       const ext = fileName.includes(".") ? `.${fileName.split(".").pop()}` : "";
       const handle = await window.showSaveFilePicker({

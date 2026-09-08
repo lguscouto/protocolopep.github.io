@@ -141,7 +141,8 @@ export function setupBackupPreview({
         fileName: `protocolo-pep-recuperacao-antes-restauracao-${recoveryStamp}.json`,
         content: storage.exportBackup(theme?.getBackupTheme?.() || "black"),
         mimeType: "application/json",
-        subDir: "ProtocoloPEP/Recuperacao"
+        subDir: "ProtocoloPEP/Recuperacao",
+        preferDownload: true
       });
       if (recoveryResult.aborted || !recoveryResult.success) {
         confirmBtn.disabled = false;
@@ -150,6 +151,10 @@ export function setupBackupPreview({
       }
       const res = storage.importBackup(pendingBackupString);
       if (res.success) {
+        // Feche a prévia assim que a substituição persistida for confirmada.
+        // Atualizações auxiliares (tema, histórico e notificações) não devem
+        // deixar o modal aparentando que a restauração ainda está pendente.
+        closeModal();
         let themeError = null;
         try {
           if (res.theme && theme) {
@@ -170,7 +175,6 @@ export function setupBackupPreview({
         }
         if (notifications) void notifications.schedulePeptideReminders(storage.getPeptides());
 
-        closeModal();
         haptics.success();
         const themeNotice = themeError ? "\n\nO tema anterior foi mantido." : "";
         void dialogService.alert({
