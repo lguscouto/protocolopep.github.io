@@ -7,7 +7,7 @@ import { exportFile, shareExportedFile } from "../services/export.js";
 import { haptics } from "../services/haptics.js";
 import { dialogService } from "../services/dialog.js";
 
-export function setupDiagnosticsModal({ storage, getNotificationsActive, appVersion = "3.0.1" }) {
+export function setupDiagnosticsModal({ storage, getNotificationsActive, appVersion = "3.0.2" }) {
   const modal = document.getElementById("diag-modal");
   const openBtn = document.getElementById("open-diag-btn");
   const closeBtn = document.getElementById("diag-close");
