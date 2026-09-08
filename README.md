@@ -9,7 +9,21 @@ Aplicativo Android nativo para acompanhamento de protocolos de peptídeos, cálc
 
 ---
 
-## 🚀 Novidades da Versão 3.0.1 (Validação do conjunto)\r\n\r\n- **Validação E2E ampliada:** suíte web completa e verificação do APK no emulador Pixel 8.\r\n- **Backup de recuperação:** restauração protegida por cópia local automática antes da substituição.\r\n\r\n## 🚀 Novidades da Versão 3.0.0 (Exportação Nativa e Backup Confiável)
+## 🚀 Novidades da Versão 3.0.1 (Fases 1 a 5)
+
+- **Integridade da rotina:** aplicações previstas, realizadas, puladas e esquecidas mantêm estados distintos; correções preservam o snapshot histórico e não debitam estoque em duplicidade.
+- **Adesão e acompanhamento:** resumo diário e semanal, taxa de cumprimento, pendências, backfill de registros e revisão futura de protocolo.
+- **Histórico integrado:** aplicações, sintomas, medidas e revisões de protocolo em linha do tempo, com filtros por período, composto e tipo, busca textual e acesso aos detalhes.
+- **Sintomas e medidas:** sintomas personalizados com intensidade opcional; medidas podem ser registradas isoladamente; ausência de registro não é interpretada como ausência de sintoma.
+- **Evolução descritiva:** períodos de 7, 30, 90 dias ou intervalo personalizado, peso registrado, variações, frequência de sintomas, datas e tabela textual equivalente aos gráficos.
+- **Relatório pessoal:** um único modelo alimenta prévia, CSV e PDF; aplicações e medidas são exportadas em arquivos CSV separados; o PDF Android é paginado, salvo localmente e compartilhável.
+- **Continuidade dos dados:** backup com data e hora no nome, indicação de alterações após o último export, lembrete discreto após 7 dias e prévia de restauração.
+- **Restauração protegida:** cópia de recuperação é salva antes de substituir os dados; cancelamentos e falhas não são apresentados como arquivos entregues nem como restaurações concluídas.
+- **Migração segura:** schema 8 com migração idempotente, preservando revisões de protocolo, frascos, sintomas, medidas e vínculos do Health Connect.
+- **Acesso rápido e consistência visual:** atalhos contextuais para inventário e relatório, cinco abas preservadas, onboarding, mapa de aplicação, idiomas e recursos técnicos mantidos.
+- **Validação:** 477 testes unitários, 109 cenários E2E aprovados, validação no emulador Pixel 8, build web e Android aprovados.
+
+## 🚀 Novidades da Versão 3.0.0 (Exportação Nativa e Backup Confiável)
 
 - **Release Android versionada:** `versionName 3.0.0` e `versionCode 24`, com APK instalável publicado no GitHub Releases.
 - **Exportação nativa 100% Local-First:** backups JSON, relatórios CSV e diagnósticos agora são gravados diretamente em `Downloads/ProtocoloPEP` no Android via MediaStore, sem dependência de rede; na Web, o app usa “Salvar como” quando disponível e mantém um fallback de download local.
