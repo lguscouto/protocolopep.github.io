@@ -13,23 +13,23 @@ export const ONBOARDING_SLIDES = Object.freeze([
   Object.freeze({
     image: "/assets/illustrations/onboarding-welcome.png",
     imageAlt: "Ilustração amigável de organização e acompanhamento pessoal",
-    title: "Bem-vindo ao Protocolo PEP",
-    subtitle: "Acompanhamento e organização de protocolos",
-    content: "Uma ferramenta prática desenvolvida para facilitar o registro pessoal diário de aplicações e cálculos matemáticos de reconstituição de peptídeos."
+    title: "Bem-vindo ao PEP",
+    subtitle: "Seu diário de aplicações",
+    content: "Registre cada aplicação em poucos toques, receba um lembrete no dia certo e saiba onde você aplicou por último."
   }),
   Object.freeze({
     image: "/assets/illustrations/onboarding-private.png",
     imageAlt: "Celular protegido por um escudo e cadeado",
-    title: "100% Local & Desconectado",
-    subtitle: "Privacidade e soberania dos seus dados",
-    content: "Nenhuma informação sai deste aparelho. O app não exige conta, não utiliza servidores em nuvem e não faz rastreamento. Você pode exportar e fazer backup dos seus dados quando desejar."
+    title: "Seus dados ficam com você",
+    subtitle: "Privacidade sem complicação",
+    content: "O PEP funciona no seu aparelho, sem conta e sem depender da internet. Você pode salvar uma cópia dos seus registros quando quiser."
   }),
   Object.freeze({
     image: "/assets/illustrations/onboarding-responsible.png",
     imageAlt: "Calculadora, registro pessoal e balança representando uso responsável",
-    title: "Uso Pessoal & Não Prescrição",
-    subtitle: "Ferramenta matemática e de registro",
-    content: "O Protocolo PEP não realiza prescrições médicas nem indica dosagens terapêuticas. Todos os dados e cálculos inseridos são de sua responsabilidade exclusiva. Confirme doses e segurança com seu médico de confiança."
+    title: "Um registro para sua rotina",
+    subtitle: "Organização pessoal, sem prescrições",
+    content: "O PEP registra o que você informa e não indica tratamentos ou doses. Confirme sua rotina e a segurança das aplicações com seu profissional de saúde."
   })
 ]);
 

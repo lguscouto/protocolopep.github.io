@@ -1,13 +1,15 @@
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { Capacitor } from "@capacitor/core";
 import { haptics } from "./haptics.js";
-import { isScheduledOnDate, isValidTime } from "../domain/schedule.js";
+import { dateToKey, isScheduledOnDate, isValidTime } from "../domain/schedule.js";
 import { normalizeProtocolRevisions, resolveProtocolAt } from "../domain/protocol-history.js";
 import { formatNotificationContent, getNotificationVisualState } from "../domain/notification-formatter.js";
 
 const NOTIF_CFG_KEY = "pep_notif_config";
 export const NOTIF_CHANNEL_ID = "pep_lembretes";
 export const NOTIF_CHANNEL_SILENT_ID = "pep_lembretes_silenciosos";
+export const NOTIFICATION_HORIZON_DAYS = 90;
+export const NOTIFICATION_ACTION_TYPE = "pep_application_actions";
 
 export class NotificationService {
   constructor() {
@@ -38,6 +40,18 @@ export class NotificationService {
           visibility: 1,
           vibration: true
         });
+        if (typeof LocalNotifications.registerActionTypes === "function") {
+          await LocalNotifications.registerActionTypes({
+            types: [{
+              id: NOTIFICATION_ACTION_TYPE,
+              actions: [
+                { id: "register", title: "Registrar" },
+                { id: "snooze", title: "Lembrar em 30 min" },
+                { id: "skip", title: "Marcar como não realizada", destructive: true }
+              ]
+            }]
+          });
+        }
         await LocalNotifications.createChannel({
           id: NOTIF_CHANNEL_SILENT_ID,
           name: "Lembretes Silenciosos",
@@ -54,6 +68,23 @@ export class NotificationService {
 
   getConfig() {
     return this.cfg;
+  }
+
+  setupActionListener({ onRegister = () => {}, onSnooze = () => {}, onSkip = () => {} } = {}) {
+    if (!Capacitor.isNativePlatform() || typeof LocalNotifications.addListener !== "function") return null;
+    return LocalNotifications.addListener("localNotificationActionPerformed", async (event) => {
+      const actionId = event?.actionId || event?.notification?.actionId;
+      const extra = event?.notification?.extra || {};
+      const payload = {
+        peptideId: extra.peptideId || "",
+        scheduledDate: extra.scheduledDate || "",
+        time: extra.time || ""
+      };
+      if (actionId === "register") return onRegister(payload);
+      if (actionId === "snooze") return onSnooze(payload);
+      if (actionId === "skip") return onSkip(payload);
+      return onRegister(payload);
+    });
   }
 
   isEnabled() {
@@ -171,7 +202,7 @@ export class NotificationService {
       permission,
       exactAlarm,
       pendingCount,
-      horizonDays: 14
+      horizonDays: NOTIFICATION_HORIZON_DAYS
     });
   }
 
@@ -243,6 +274,28 @@ export class NotificationService {
     }
   }
 
+  async snoozeNotification({ peptideId = "", scheduledDate = "", time = "" } = {}) {
+    if (!Capacitor.isNativePlatform()) return { success: false, reason: "not_native" };
+    try {
+      const at = new Date(Date.now() + 30 * 60 * 1000);
+      await LocalNotifications.schedule({ notifications: [{
+        id: Math.floor(Math.random() * 100000) + 200000,
+        title: "Lembrete adiado",
+        body: "Você pediu para ser lembrado novamente em 30 minutos.",
+        channelId: this.cfg.sound ? NOTIF_CHANNEL_ID : NOTIF_CHANNEL_SILENT_ID,
+        actionTypeId: NOTIFICATION_ACTION_TYPE,
+        schedule: { at },
+        smallIcon: "ic_stat_pep",
+        iconColor: "#2CC5C0",
+        extra: { peptideId, scheduledDate, time }
+      }] });
+      return { success: true };
+    } catch (error) {
+      console.warn("[Notif] Não foi possível adiar o lembrete:", error);
+      return { success: false, error: error.message };
+    }
+  }
+
   async cancelAllPepReminders() {
     if (Capacitor.isNativePlatform()) {
       try {
@@ -306,8 +359,8 @@ export class NotificationService {
         let notifId = 1000;
         const now = new Date();
 
-        // Agendar horizonte de 14 dias concretos baseados no motor puro de agenda
-        for (let dayOffset = 0; dayOffset < 14; dayOffset++) {
+        // Agendar um horizonte local amplo para que o usuário não precise abrir o app toda semana.
+        for (let dayOffset = 0; dayOffset < NOTIFICATION_HORIZON_DAYS; dayOffset++) {
           const targetDate = new Date(now);
           targetDate.setDate(now.getDate() + dayOffset);
 
@@ -343,18 +396,19 @@ export class NotificationService {
                     : { at: schedDate },
                   smallIcon: "ic_stat_pep",
                   iconColor: "#2CC5C0",
-                  extra: { peptideId: p.id }
+                  actionTypeId: NOTIFICATION_ACTION_TYPE,
+                  extra: { peptideId: p.id, scheduledDate: dateToKey(schedDate), time: tStr }
                 });
               }
             }
           }
         }
 
-        // Resumo diário nos próximos 14 dias
+        // Resumo diário no mesmo horizonte das aplicações
         if (this.cfg.summary) {
           const [sh, sm] = this.cfg.summary.split(":").map(Number);
           if (isValidTime(this.cfg.summary)) {
-            for (let dayOffset = 0; dayOffset < 14; dayOffset++) {
+            for (let dayOffset = 0; dayOffset < NOTIFICATION_HORIZON_DAYS; dayOffset++) {
               const sumDate = new Date(now);
               sumDate.setDate(now.getDate() + dayOffset);
               sumDate.setHours(sh, sm, 0, 0);

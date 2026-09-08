@@ -3860,3 +3860,38 @@ body.theme-light .daypick button.on {
 .report-export-actions { flex-wrap: wrap; }
 @media (max-width: 720px) { .history-filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 420px) { .history-filter-grid { grid-template-columns: 1fr; } .history-custom-dates { grid-template-columns: 1fr; } }
+.dash-actions-collapsible {
+  margin-top: 16px;
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  overflow: hidden;
+}
+
+.dash-tools-summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  list-style: none;
+}
+
+.dash-tools-summary::-webkit-details-marker { display: none; }
+.dash-tools-summary::after { content: "+"; color: var(--primary); font-size: 18px; }
+.dash-actions-collapsible[open] .dash-tools-summary::after { content: "−"; }
+.dash-actions-collapsible .dash-tools-heading { padding: 12px 14px 0; }
+.dash-actions-collapsible .dash-actions-grid { padding: 10px 14px 14px; }
+
+.chip-last-site {
+  background: color-mix(in srgb, var(--success) 14%, transparent);
+  color: var(--success);
+}
+
+.dash-focus-last-site {
+  color: var(--success);
+}

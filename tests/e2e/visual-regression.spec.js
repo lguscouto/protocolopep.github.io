@@ -199,6 +199,7 @@ test.describe("Protocolo PEP — Matriz de regressão visual", () => {
       );
 
       await page.locator("#tab-today").click();
+      await page.locator(".dash-actions-collapsible summary").click();
       await page.locator("#dash-research-btn").click();
       await assertVisualAnchor(page, "#research-modal.on", `pesquisa (${theme.id})`);
       await assertVisualAnchor(page, ".research-card", `resultado de pesquisa (${theme.id})`);

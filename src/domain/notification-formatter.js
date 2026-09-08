@@ -28,7 +28,7 @@ export function getNotificationVisualState({
   permission = "prompt", // "granted" | "denied" | "prompt"
   exactAlarm = "granted", // "granted" | "denied" | "not_applicable" | "unknown"
   pendingCount = 0,
-  horizonDays = 14
+  horizonDays = 90
 } = {}) {
   if (permission === "denied") {
     return {
@@ -57,7 +57,7 @@ export function getNotificationVisualState({
   if (permission === "granted") {
     const isExactDenied = exactAlarm === "denied" || exactAlarm === "unknown";
     const exactMsg = isExactDenied
-      ? ` (Alarmes exatos restritos no sistema; lembretes usarão janelas normais)`
+      ? ` (Alarmes exatos restritos; o Android usará uma janela aproximada)`
       : "";
 
     return {

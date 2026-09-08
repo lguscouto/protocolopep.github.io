@@ -68,6 +68,7 @@ import { setupModalController } from "./ui/modal-controller.js";
 import { DoseService } from "./services/dose-service.js";
 import { openRetroLogModal as openRetroModal, saveRetroLog as saveRetro } from "./ui/retro-log.js";
 import { renderAdherenceSummaryHTML } from "./ui/adherence.js";
+import { App } from "@capacitor/app";
 
 export { accessibilityService };
 export const doseService = new DoseService(storage);
@@ -141,6 +142,24 @@ async function initApp() {
   const storageState = storage.init();
   if (storageState.error) void dialogService.alert({ title: "Falha no armazenamento", message: storageState.error, isDanger: true });
   await notifications.init();
+  notifications.setupActionListener({
+    onRegister: ({ peptideId, scheduledDate }) => {
+      switchTab("today");
+      openRetroLogModal(scheduledDate || dateKey(new Date()), peptideId, { requireSiteSelection: true });
+    },
+    onSnooze: (payload) => notifications.snoozeNotification(payload),
+    onSkip: ({ peptideId, scheduledDate }) => {
+      switchTab("today");
+      openRetroLogModal(scheduledDate || dateKey(new Date()), peptideId, { initialStatus: "missed" });
+    }
+  });
+  if (typeof App.addListener === "function") {
+    App.addListener("appStateChange", ({ isActive }) => {
+      if (isActive && notifications.isEnabled()) {
+        void notifications.schedulePeptideReminders(storage.getPeptides());
+      }
+    });
+  }
   initAnimatedBg();
   setupModalController();
 
@@ -444,11 +463,11 @@ function switchTab(tabId) {
   });
 
   const tabLabels = {
-    today: "Dashboard de Aplicações",
-    week: "Visão Semanal",
+    today: "Hoje",
+    week: "Agenda",
     history: "Histórico de Aplicações",
-    calc: "Calculadora de Reconstituição",
-    settings: "Ajustes e Preferências"
+    calc: "Ferramentas",
+    settings: "Mais e Preferências"
   };
   accessibilityService.announce(`Aba ${tabLabels[tabId] || tabId} ativa.`);
 
@@ -538,7 +557,10 @@ function renderToday() {
 
     const emptyCalcBtn = container.querySelector('[data-action="open-calc"]');
     if (emptyCalcBtn) {
-      emptyCalcBtn.addEventListener("click", () => switchTab("calc"));
+      emptyCalcBtn.addEventListener("click", () => {
+        switchTab("settings");
+        setTimeout(() => document.getElementById("open-tools-btn")?.click(), 0);
+      });
     }
 
     drawRing(0, 0);
@@ -565,7 +587,8 @@ function renderToday() {
       resolvedCount: dosesResolved(rec, peptide.id),
       skippedCount: summarizeDoseEntries(rec[peptide.id]).skipped,
       missedCount: summarizeDoseEntries(rec[peptide.id]).missed,
-      nextSite: getNextSite(configuredSites, lastUsed ? lastUsed.site : null)
+      nextSite: getNextSite(configuredSites, lastUsed ? lastUsed.site : null),
+      lastSite: lastUsed ? lastUsed.site : null
     };
   });
   const focusModel = createDashboardFocusViewModel({
@@ -616,6 +639,7 @@ function renderToday() {
         skippedCount: states.skipped,
         missedCount: states.missed,
         nextSite,
+        lastSite: lastUsed ? lastUsed.site : null,
         vialStatus
       });
 
@@ -665,6 +689,9 @@ function renderToday() {
       let siteBadgeHTML = "";
       if (vm.nextSite) {
         siteBadgeHTML = `<span class="chip-acc" style="background:rgba(99,102,241,0.12);color:var(--primary);font-size:11px;font-weight:700;" title="Próximo sítio na sua rotação">📍 ${esc(vm.nextSite)}</span>`;
+      }
+      if (vm.lastSite) {
+        siteBadgeHTML += `<span class="chip-acc chip-last-site" title="Último local registrado">Último: ${esc(vm.lastSite)}</span>`;
       }
 
       const statusBadgeHTML = vm.isCompleted
@@ -726,10 +753,16 @@ function renderToday() {
   container.querySelectorAll(".dose-status").forEach(b => b.addEventListener("click", () => openRetroLogModal(todayK, b.dataset.id)));
 
   container.querySelectorAll(".take").forEach((b) => {
-    b.addEventListener("click", () => toggleDose(b.dataset.id));
+    b.addEventListener("click", () => {
+      if (b.classList.contains("done")) {
+        toggleDose(b.dataset.id);
+      } else {
+        openRetroLogModal(todayK, b.dataset.id, { requireSiteSelection: true });
+      }
+    });
   });
   container.querySelectorAll(".dose-add").forEach((b) => {
-    b.addEventListener("click", () => addSingleDose(b.dataset.id));
+    b.addEventListener("click", () => openRetroLogModal(todayK, b.dataset.id, { requireSiteSelection: true }));
   });
   container.querySelectorAll(".dose-undo").forEach((b) => {
     b.addEventListener("click", () => undoSingleDose(b.dataset.id));
@@ -746,8 +779,8 @@ function renderToday() {
     focusAction.addEventListener("click", () => {
       const action = focusAction.dataset.action;
       const peptideId = focusAction.dataset.peptideId;
-      if (action === "toggle-dose" && peptideId) toggleDose(peptideId);
-      if (action === "add-dose" && peptideId) addSingleDose(peptideId);
+      if (action === "toggle-dose" && peptideId) openRetroLogModal(todayK, peptideId, { requireSiteSelection: true });
+      if (action === "add-dose" && peptideId) openRetroLogModal(todayK, peptideId, { requireSiteSelection: true });
       if (action === "open-week") switchTab("week");
       if (action === "add-peptide") openEditModal();
     });
@@ -1138,8 +1171,8 @@ async function toggleDateLog(id, dKey, recordIndex = null) {
   openRetroLogModal(dKey, id);
 }
 
-function openRetroLogModal(prefillDate = null, prefillPepId = null) {
-  openRetroModal(prefillDate, prefillPepId, { storage, dateKey });
+function openRetroLogModal(prefillDate = null, prefillPepId = null, options = {}) {
+  openRetroModal(prefillDate, prefillPepId, { storage, dateKey, ...options });
 }
 
 async function saveRetroLog() {
@@ -1798,6 +1831,20 @@ function setupModalsAndButtons() {
     dashCalcBtn.addEventListener("click", () => {
       haptics.light();
       switchTab("calc");
+    });
+  }
+  const openToolsBtn = document.getElementById("open-tools-btn");
+  if (openToolsBtn) {
+    openToolsBtn.addEventListener("click", () => {
+      haptics.light();
+      switchTab("calc");
+    });
+  }
+  const calcBackBtn = document.getElementById("calc-back-btn");
+  if (calcBackBtn) {
+    calcBackBtn.addEventListener("click", () => {
+      haptics.light();
+      switchTab("settings");
     });
   }
   const dashInventoryBtn = document.getElementById("dash-inventory-btn");

@@ -225,7 +225,7 @@ export function renderInjectionSitePicker({
   noSiteButton.dataset.site = "";
   if (!selectedSite) noSiteButton.classList.add("is-selected");
   noSiteButton.setAttribute("aria-pressed", selectedSite ? "false" : "true");
-  noSiteButton.textContent = "Não especificar local";
+  noSiteButton.textContent = "Não lembro o local";
   noSiteButton.addEventListener("click", () => selectSite(""));
   fragment.appendChild(noSiteButton);
 

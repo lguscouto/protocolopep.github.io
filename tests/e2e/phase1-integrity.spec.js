@@ -141,6 +141,8 @@ test.describe("Fase 1 — integridade da rotina", () => {
   test("alterações de nome e dose preservam o snapshot do registro na semana e no histórico", async ({ page }) => {
     const runtime = await prepare(page, [{ ...BASE_PROTOCOL, perDay: 1, times: ["08:00"] }]);
     await page.locator("#dash-focus-action").click();
+    await page.locator("#retro-log-modal .injection-site-point").first().click();
+    await page.locator("#retro-save").click();
     await expect(page.locator("#dash-hero")).toHaveAttribute("data-state", "complete");
     const original = (await state(page)).logs[TODAY][BASE_PROTOCOL.id][0];
     expect(original.protocolSnapshot).toMatchObject({ name: BASE_PROTOCOL.name, dose: "62.5 mcg", ui: 2.5 });

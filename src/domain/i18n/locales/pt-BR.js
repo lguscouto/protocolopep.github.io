@@ -91,11 +91,11 @@ export const ptBR = {
     cm: "cm"
   },
   nav: {
-    dashboard: "Dashboard",
-    week: "Semana",
+    dashboard: "Hoje",
+    week: "Agenda",
     history: "Histórico",
-    calculator: "Calculadora",
-    settings: "Ajustes"
+    calculator: "Ferramentas",
+    settings: "Mais"
   },
   topbar: {
     title: "Protocolo PEP",
@@ -115,7 +115,7 @@ export const ptBR = {
     scheduledTodayAt: "Programado para hoje às {time}",
     scheduledToday: "Programado para hoje",
     nextSchedule: "Próxima: {date} às {time} · {name}",
-    noUpcoming: "Nenhuma aplicação programada nos próximos 14 dias.",
+    noUpcoming: "Nenhuma aplicação programada nos próximos 90 dias.",
     genericCompound: "Composto",
     registerApplication: "Registrar aplicação",
     registerNextDose: "Registrar próxima dose",
@@ -251,7 +251,7 @@ export const ptBR = {
     healthConnectSettingsBtn: "Configurações",
     remindersTitle: "Lembretes & Notificações",
     remindersStatus: "ATIVO & AGENDADO",
-    remindersDesc: "{count} lembretes agendados no sistema para os próximos 14 dias.",
+    remindersDesc: "{count} lembretes agendados no aparelho para os próximos 90 dias.",
     remindersConfigureBtn: "Configurar Lembretes",
     localFirstTitle: "Arquitetura 100% Local-First",
     localFirstDesc: "Todos os seus dados de protocolo e histórico estão salvos diretamente na memória do seu dispositivo, funcionando offline com máxima privacidade e velocidade.",

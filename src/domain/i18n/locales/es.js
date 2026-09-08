@@ -91,11 +91,11 @@ export const es = {
     cm: "cm"
   },
   nav: {
-    dashboard: "Dashboard",
-    week: "Semana",
+    dashboard: "Hoy",
+    week: "Agenda",
     history: "Historial",
-    calculator: "Calculadora",
-    settings: "Ajustes"
+    calculator: "Herramientas",
+    settings: "Más"
   },
   topbar: {
     title: "Protocolo PEP",

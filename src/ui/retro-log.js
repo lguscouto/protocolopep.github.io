@@ -16,9 +16,11 @@ const esc = escapeHtml;
 let editingContext = null;
 let saving = false;
 
-export function openRetroLogModal(prefillDate = null, prefillPepId = null, { storage, dateKey, editingLog = null }) {
+export function openRetroLogModal(prefillDate = null, prefillPepId = null, { storage, dateKey, editingLog = null, requireSiteSelection = false, initialStatus = "applied" }) {
   const modal = document.getElementById("retro-log-modal");
   if (!modal || saving) return;
+  if (!modal.dataset) modal.dataset = {};
+  modal.dataset.requireSiteSelection = requireSiteSelection && !editingLog ? "true" : "false";
 
   editingContext = editingLog?.id ? {
     log: JSON.parse(JSON.stringify(editingLog)),
@@ -93,7 +95,9 @@ export function openRetroLogModal(prefillDate = null, prefillPepId = null, { sto
         if (historicalSite && !configuredSites.includes(historicalSite)) configuredSites.push(historicalSite);
         const lastUsed = getLastUsedSite(storage.getLogs(), selectedId);
         const nextSite = getNextSite(configuredSites, lastUsed ? lastUsed.site : null);
-        const selectedSite = editingContext ? historicalSite : (nextSite || "");
+        const selectedSite = editingContext
+          ? historicalSite
+          : (requireSiteSelection ? "" : (nextSite || ""));
         siteSelect.innerHTML = `
           <option value="">-- Não especificado --</option>
           ${configuredSites.map((s) => `<option value="${esc(s)}" ${s === selectedSite ? "selected" : ""}>${esc(s)}</option>`).join("")}
@@ -120,7 +124,7 @@ export function openRetroLogModal(prefillDate = null, prefillPepId = null, { sto
   if (reasonInput) reasonInput.value = editingContext?.log.statusReason || "";
   if (statusSelect) {
     statusSelect.innerHTML = DOSE_STATUSES.map((status) => `<option value="${status}">${esc(i18nService.t(`phase1.${status}`))}</option>`).join("");
-    statusSelect.value = editingContext?.log.status || "applied";
+    statusSelect.value = editingContext?.log.status || initialStatus || "applied";
     const updateStatusFields = () => {
       const applied = statusSelect.value === "applied";
       const siteField = document.getElementById("retro-site-field");
@@ -181,10 +185,29 @@ export async function saveRetroLog({ doseService, dateKey, haptics, renderAll })
   const status = statusSelect ? statusSelect.value : "applied";
   const statusReason = status !== "applied" ? (reasonInput?.value || "").trim() : "";
 
+  const modal = document.getElementById("retro-log-modal");
+  if (status === "applied" && modal?.dataset.requireSiteSelection === "true" && !siteVal) {
+    void dialogService.alert({
+      title: "Escolha o local",
+      message: "Confirme onde você aplicou para manter seu histórico organizado. Se não souber, use o registro retroativo no Histórico.",
+      isDanger: false
+    });
+    return;
+  }
+
   if (!pepId) {
     dialogService.alert({
       title: "Campo Obrigatório",
       message: "Selecione um peptídeo da lista."
+    });
+    return;
+  }
+
+  if (!editingContext && status === "applied" && !doseVal) {
+    void dialogService.alert({
+      title: "Dose obrigatória",
+      message: "Informe a dose registrada antes de salvar a aplicação.",
+      isDanger: true
     });
     return;
   }

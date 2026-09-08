@@ -20,7 +20,7 @@ describe("Registro e correção auditável pela interface", () => {
   let dom, storage, doseService, haptics, renderAll;
   const dateKey = () => "2026-09-08";
   const save = () => saveRetroLog({ doseService, dateKey, haptics, renderAll });
-  const open = (editingLog = null) => openRetroLogModal("2026-09-07", "p1", { storage, dateKey, editingLog });
+  const open = (editingLog = null, options = {}) => openRetroLogModal("2026-09-07", "p1", { storage, dateKey, editingLog, ...options });
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -41,6 +41,17 @@ describe("Registro e correção auditável pela interface", () => {
     expect(doseService.registerDose).toHaveBeenCalledWith(expect.objectContaining({ ui: 2.5, status: "applied", site: "Coxa (Direita)", scheduledDate: "2026-09-07" }));
     expect(haptics.success).toHaveBeenCalledOnce();
     expect(dom["retro-log-modal"].classList.contains("on")).toBe(false);
+  });
+
+  it("exige confirmação explícita do local no registro rápido", async () => {
+    open(null, { requireSiteSelection: true });
+    dom["retro-ui-input"].value = "2,5";
+    await save();
+    expect(doseService.registerDose).not.toHaveBeenCalled();
+    expect(dialogService.alert).toHaveBeenCalledWith(expect.objectContaining({ title: "Escolha o local" }));
+    dom["retro-site-select"].value = "Coxa (Direita)";
+    await save();
+    expect(doseService.registerDose).toHaveBeenCalledWith(expect.objectContaining({ site: "Coxa (Direita)" }));
   });
 
   it.each(["NaN", "-1", "Infinity", "2.5x"])("rejeita UI inválida %s antes de gravar", async (ui) => {

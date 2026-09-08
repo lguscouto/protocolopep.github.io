@@ -28,8 +28,8 @@ describe("Acessibilidade e Navegação (WCAG 2.1 AA - V18)", () => {
     expect(htmlContent).toContain('data-tab="today" role="tab"');
     expect(htmlContent).toContain('data-tab="week" role="tab"');
     expect(htmlContent).toContain('data-tab="history" role="tab"');
-    expect(htmlContent).toContain('data-tab="calc" role="tab"');
     expect(htmlContent).toContain('data-tab="settings" role="tab"');
+    expect(htmlContent).toContain('id="open-tools-btn"');
   });
 
   it("deve conter role tabpanel em todas as seções de abas", () => {
@@ -135,4 +135,3 @@ describe("AccessibilityService (Serviço de Acessibilidade)", () => {
     expect(() => resilientService.setHighContrast(true)).not.toThrow();
   });
 });
-

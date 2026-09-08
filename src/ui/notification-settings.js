@@ -212,7 +212,7 @@ export function setupNotificationListeners(storage) {
       haptics.success();
       dialogService.alert({
         title: "Lembretes Reagendados",
-        message: `Lembretes reagendados com sucesso! (${res.scheduledCount} agendados para 14 dias)`
+        message: `Lembretes atualizados com sucesso! (${res.scheduledCount} próximos horários no aparelho)`
       });
     });
   }

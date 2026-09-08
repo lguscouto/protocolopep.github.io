@@ -11,7 +11,7 @@ const esc = escapeHtml;
 /**
  * Cria uma view model estruturada para o card de dose do dia.
  */
-export function createDoseCardViewModel({ peptide, takenCount = 0, resolvedCount = takenCount, skippedCount = 0, missedCount = 0, nextSite = null, vialStatus = null }) {
+export function createDoseCardViewModel({ peptide, takenCount = 0, resolvedCount = takenCount, skippedCount = 0, missedCount = 0, nextSite = null, lastSite = null, vialStatus = null }) {
   const dueCount = Math.max(1, Number.parseInt(peptide.perDay, 10) || 1);
   const isCompleted = resolvedCount >= dueCount;
 
@@ -32,6 +32,7 @@ export function createDoseCardViewModel({ peptide, takenCount = 0, resolvedCount
     status: isCompleted ? "completed" : "pending",
     isCompleted,
     nextSite: nextSite || null,
+    lastSite: lastSite || null,
     vialStatus: vialStatus || null
   };
 }
@@ -83,6 +84,7 @@ export function createDashboardFocusViewModel({ todayItems = [], upcoming = [], 
       dose: nextPending.dose || "",
       unitsUI: nextPending.ui || 0,
       nextSite: nextPending.nextSite || "",
+      lastSite: nextPending.lastSite || "",
       action: nextPending.dueCount > 1 ? "add-dose" : "toggle-dose",
       actionLabel: nextPending.dueCount > 1
         ? translate("dashboard.registerNextDose", {}, locale)
@@ -100,6 +102,7 @@ export function createDashboardFocusViewModel({ todayItems = [], upcoming = [], 
       dose: "",
       unitsUI: 0,
       nextSite: "",
+      lastSite: "",
       action: nextUpcoming ? "open-week" : "add-peptide",
       actionLabel: nextUpcoming
         ? translate("dashboard.viewWeek", {}, locale)
@@ -116,6 +119,7 @@ export function createDashboardFocusViewModel({ todayItems = [], upcoming = [], 
     dose: "",
     unitsUI: 0,
     nextSite: "",
+    lastSite: "",
     action: nextUpcoming ? "open-week" : "add-peptide",
     actionLabel: nextUpcoming
       ? translate("dashboard.viewWeek", {}, locale)
@@ -134,6 +138,7 @@ export function renderDashboardFocusHTML(viewModel) {
   if (viewModel.dose) detailItems.push(`<span>${esc(viewModel.dose)}</span>`);
   if (viewModel.unitsUI) detailItems.push(`<span>${esc(String(viewModel.unitsUI))} UI</span>`);
   if (viewModel.nextSite) detailItems.push(`<span class="dash-focus-site">${esc(viewModel.nextSite)}</span>`);
+  if (viewModel.lastSite) detailItems.push(`<span class="dash-focus-last-site">Último local: ${esc(viewModel.lastSite)}</span>`);
 
   const icon = viewModel.state === "complete"
     ? `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>`
@@ -169,7 +174,7 @@ export function renderEmptyDashboardHTML() {
           + Criar meu protocolo
         </button>
         <button type="button" class="btn-secondary" id="empty-calc-btn" data-action="open-calc">
-          Abrir calculadora
+          Abrir ferramentas
         </button>
       </div>
       <div class="dash-empty-privacy">
