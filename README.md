@@ -1,6 +1,6 @@
 # 🧪 Protocolo PEP · App Android (Local-First)
 
-![Version](https://img.shields.io/badge/version-3.0.0-2CC5C0)
+![Version](https://img.shields.io/badge/version-3.0.1-2CC5C0)
 ![Android](https://img.shields.io/badge/Android-8.0%2B-green)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![CI](https://github.com/lguscouto/protocolopep.github.io/actions/workflows/ci.yml/badge.svg)
@@ -9,7 +9,7 @@ Aplicativo Android nativo para acompanhamento de protocolos de peptídeos, cálc
 
 ---
 
-## 🚀 Novidades da Versão 3.0.0 (Exportação Nativa e Backup Confiável)
+## 🚀 Novidades da Versão 3.0.1 (Validação do conjunto)\r\n\r\n- **Validação E2E ampliada:** suíte web completa e verificação do APK no emulador Pixel 8.\r\n- **Backup de recuperação:** restauração protegida por cópia local automática antes da substituição.\r\n\r\n## 🚀 Novidades da Versão 3.0.0 (Exportação Nativa e Backup Confiável)
 
 - **Release Android versionada:** `versionName 3.0.0` e `versionCode 24`, com APK instalável publicado no GitHub Releases.
 - **Exportação nativa 100% Local-First:** backups JSON, relatórios CSV e diagnósticos agora são gravados diretamente em `Downloads/ProtocoloPEP` no Android via MediaStore, sem dependência de rede; na Web, o app usa “Salvar como” quando disponível e mantém um fallback de download local.
