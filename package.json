@@ -1,9 +1,9 @@
 {
   "name": "pep-protocol",
-  "version": "3.0.2",
+  "version": "3.0.3",
   "type": "module",
   "private": true,
-  "description": "App Android Local-First para acompanhamento e cálculo de protocolos de peptídeos.",
+  "description": "App Android/PWA Local-First para registrar aplicações de peptídeos, receber lembretes e consultar o histórico.",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

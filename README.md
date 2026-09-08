@@ -1,13 +1,23 @@
 # 🧪 Protocolo PEP · App Android (Local-First)
 
-![Version](https://img.shields.io/badge/version-3.0.2-2CC5C0)
+![Version](https://img.shields.io/badge/version-3.0.3-2CC5C0)
 ![Android](https://img.shields.io/badge/Android-8.0%2B-green)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![CI](https://github.com/lguscouto/protocolopep.github.io/actions/workflows/ci.yml/badge.svg)
 
-Aplicativo Android nativo para acompanhamento de protocolos de peptídeos, cálculo de reconstituição e registro diário de doses, construído com arquitetura **100% Local-First**, segurança matemática auditável e suporte aos **temas Branco e Preto OLED**.
+Aplicativo Android/PWA para registrar aplicações de peptídeos com poucos toques, receber lembretes no dia certo e lembrar o último local aplicado. O PEP funciona offline, sem conta e sem nuvem, com arquitetura **100% Local-First**, histórico preservado e ferramentas técnicas acessíveis somente quando necessárias.
 
 ---
+
+## 🚀 Novidades da Versão 3.0.3 (Aplicações em primeiro lugar)
+
+- **Navegação simples:** as áreas principais agora são **Hoje**, **Agenda**, **Histórico** e **Mais**. Calculadora, pesquisa, inventário e recursos avançados continuam disponíveis em **Mais → Ferramentas**.
+- **Registro rápido:** o painel **Hoje** destaca a próxima aplicação, dose, horário e o botão **Registrar aplicação**, com confirmação obrigatória do local aplicado.
+- **Último local visível:** cada peptídeo mostra o último local confirmado e mantém a rotação sugerida separada do local efetivamente registrado.
+- **Lembretes mais confiáveis:** o app agenda aplicações para os próximos 90 dias, refaz o agendamento ao voltar ao primeiro plano e oferece ações de registrar, adiar por 30 minutos ou marcar como não realizada.
+- **Onboarding cotidiano:** textos, rótulos, estados vazios e mensagens foram ajustados para quem quer apenas acompanhar sua rotina, preservando o aviso de que o PEP não prescreve tratamentos ou doses.
+- **Compatibilidade preservada:** registros antigos sem dose ou local continuam no histórico como dados incompletos; listas personalizadas, backups e dados locais não são substituídos.
+- **Validação da release:** 478 testes unitários, 109 cenários E2E aprovados e 1 cenário intencionalmente ignorado, build Web/Android, testes unitários Android e lint concluídos com sucesso.
 
 ## 🚀 Correções da Versão 3.0.2
 
