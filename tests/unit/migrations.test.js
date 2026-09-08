@@ -143,7 +143,7 @@ describe("Migrations Domain", () => {
       ]
     });
 
-    expect(migrated.version).toBe(6);
+    expect(migrated.version).toBe(7);
     expect(migrated.sites).toHaveLength(10);
     expect(migrated.sites).toContain("Flanco (Direito)");
     expect(migrated.sites).toContain("Abdômen (Inferior Esquerdo)");
@@ -156,8 +156,8 @@ describe("Migrations Domain", () => {
     expect(migrated.sites).toEqual(customSites);
   });
 
-  it("CURRENT_SCHEMA_VERSION é 6", () => {
-    expect(CURRENT_SCHEMA_VERSION).toBe(6);
+  it("CURRENT_SCHEMA_VERSION é 7", () => {
+    expect(CURRENT_SCHEMA_VERSION).toBe(7);
   });
 
   it("V5→V6 recalcula campos pela zona IANA e marca contradição sem contexto", () => {
@@ -192,7 +192,7 @@ describe("Migrations Domain", () => {
       ]
     };
     const result = migrateAppState(v1State);
-    expect(result.version).toBe(6);
+    expect(result.version).toBe(7);
     // Medição legada deve ter updatedAt após migração completa
     const m = result.measurements.find(x => x.date === "2026-08-01");
     expect(m).toBeDefined();

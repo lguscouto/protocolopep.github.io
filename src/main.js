@@ -29,11 +29,17 @@ import {
   renderUpcomingHTML
 } from "./ui/dashboard.js";
 import { createPeptide, validatePeptide } from "./domain/protocol.js";
+import { parseUnits, doseEntries, doseStatus, summarizeDoseEntries } from "./domain/dose-state.js";
+import { resolveProtocolAt, resolveProtocolForDay, reviseProtocol } from "./domain/protocol-history.js";
+import { getDoseDisplayData } from "./domain/report.js";
+import { renderProtocolList, renderProtocolControls, changeProtocolStatus } from "./ui/protocol-lifecycle.js";
+import { isValidDateKey, isValidTime } from "./domain/schedule.js";
 import { escapeHtml, sanitizeColor, sanitizeId } from "./ui/dom.js";
 import { shouldShowOnboarding, showOnboarding } from "./ui/onboarding.js";
 import { createCalculationSnapshot, formatAuditTrail } from "./domain/calculation-record.js";
 import { createDoseLog, validateDoseLog, normalizeDoseEntry } from "./domain/dose-log.js";
 import { generateDailySummary } from "./domain/daily-summary.js";
+import { calculateAdherenceSummary } from "./domain/adherence.js";
 import { updateNotificationUI, setupNotificationListeners } from "./ui/notification-settings.js";
 import { setupBackupPreview } from "./ui/backup-preview.js";
 import { recordBackupExport, renderBackupStatusUI } from "./ui/backup-status.js";
@@ -61,6 +67,7 @@ import { setupAccessibilityUI } from "./ui/accessibility.js";
 import { setupModalController } from "./ui/modal-controller.js";
 import { DoseService } from "./services/dose-service.js";
 import { openRetroLogModal as openRetroModal, saveRetroLog as saveRetro } from "./ui/retro-log.js";
+import { renderAdherenceSummaryHTML } from "./ui/adherence.js";
 
 export { accessibilityService };
 export const doseService = new DoseService(storage);
@@ -126,10 +133,12 @@ let appLockUI = null;
 let healthConnectUI = null;
 let i18nUI = null;
 let researchUI = null;
+let adherencePeriodDays = 7;
 
 async function initApp() {
   await theme.init();
-  storage.init();
+  const storageState = storage.init();
+  if (storageState.error) void dialogService.alert({ title: "Falha no armazenamento", message: storageState.error, isDanger: true });
   await notifications.init();
   initAnimatedBg();
   setupModalController();
@@ -484,17 +493,15 @@ function drawRing(taken, total) {
 }
 
 function dosesTaken(rec, id) {
-  const v = rec[id];
-  if (!v) return 0;
-  if (Array.isArray(v)) return v.length;
-  return 1;
+  return summarizeDoseEntries(rec[id]).applied;
 }
+
+function dosesResolved(rec, id) { return summarizeDoseEntries(rec[id]).resolved; }
 
 function doseTimes(rec, id) {
   const v = rec[id];
   if (!v) return [];
-  if (Array.isArray(v)) return v.map((x) => x.t || "");
-  return [v.t || ""];
+  return doseEntries(v).map(x => x.time || x.t || "");
 }
 
 function renderToday() {
@@ -553,6 +560,9 @@ function renderToday() {
     return {
       ...peptide,
       takenCount: dosesTaken(rec, peptide.id),
+      resolvedCount: dosesResolved(rec, peptide.id),
+      skippedCount: summarizeDoseEntries(rec[peptide.id]).skipped,
+      missedCount: summarizeDoseEntries(rec[peptide.id]).missed,
       nextSite: getNextSite(configuredSites, lastUsed ? lastUsed.site : null)
     };
   });
@@ -569,9 +579,12 @@ function renderToday() {
   if (focusContent) focusContent.innerHTML = renderDashboardFocusHTML(focusModel);
   if (listHeading) listHeading.style.display = scheduledToday.length > 0 ? "" : "none";
   if (listSummary) {
-    listSummary.textContent = i18nService.t("dashboard.recordedProgress", {
+    listSummary.textContent = i18nService.t("phase1.dayProgress", {
       taken: dayProgress.scheduledTaken,
-      due: dayProgress.totalDue
+      due: dayProgress.totalDue,
+      skipped: dayProgress.skippedCount,
+      missed: dayProgress.missedCount,
+      pending: dayProgress.pendingCount
     });
   }
 
@@ -579,7 +592,9 @@ function renderToday() {
     scheduledToday.forEach((p) => {
       const perDay = p.perDay || 1;
       const tomadas = dosesTaken(rec, p.id);
-      const done = tomadas >= perDay;
+      const states = summarizeDoseEntries(rec[p.id], perDay);
+      const records = doseEntries(rec[p.id]);
+      const resolved = states.resolved;
 
       const lastUsed = getLastUsedSite(storage.getLogs(), p.id);
       const nextSite = getNextSite(configuredSites, lastUsed ? lastUsed.site : null);
@@ -595,6 +610,9 @@ function renderToday() {
       const vm = createDoseCardViewModel({
         peptide: p,
         takenCount: tomadas,
+        resolvedCount: resolved,
+        skippedCount: states.skipped,
+        missedCount: states.missed,
         nextSite,
         vialStatus
       });
@@ -611,27 +629,27 @@ function renderToday() {
       if (perDay <= 1) {
         ctrlHTML = `
           <button type="button" class="take ${vm.isCompleted ? "done" : ""}" data-id="${sanitizeId(p.id)}" aria-label="${vm.isCompleted ? 'Desmarcar dose de ' + esc(p.name) : 'Confirmar dose de ' + esc(p.name)}">
-            <span>${vm.isCompleted ? i18nService.t("common.applied") : i18nService.t("common.apply")}</span>
+            <span>${vm.isCompleted ? i18nService.t(`phase1.${doseStatus(records[0])}`) : i18nService.t("common.apply")}</span>
             ${vm.isCompleted && lastTime ? `<span class="at">${esc(lastTime)}</span>` : ""}
           </button>`;
       } else {
         let boxes = "";
         for (let i = 0; i < perDay; i++) {
-          const marcada = i < tomadas;
+          const marcada = i < resolved;
           const hora = marcada && horarios[i] ? horarios[i] : "";
           boxes += `
             <div class="dosebox ${marcada ? "on" : ""}">
-              <span class="dosebox-ico">${marcada ? "✓" : i + 1}</span>
+              <span class="dosebox-ico" aria-label="${esc(marcada ? i18nService.t(`phase1.${doseStatus(records[i])}`) : i18nService.t("common.pending"))}">${marcada ? doseStatus(records[i]) === "applied" ? "✓" : "−" : i + 1}</span>
               ${hora ? `<span class="dosebox-t">${esc(hora)}</span>` : ""}
             </div>`;
         }
         ctrlHTML = `
           <div class="doses" data-id="${sanitizeId(p.id)}">
-            <div class="doses-count">${tomadas} de ${perDay}</div>
+            <div class="doses-count">${esc(i18nService.t("phase1.cardProgress", { taken: tomadas, due: perDay, skipped: states.skipped, missed: states.missed }))}</div>
             <div class="doses-boxes">${boxes}</div>
             <div class="doses-btns">
-              <button type="button" class="dose-add" data-id="${sanitizeId(p.id)}" ${tomadas >= perDay ? "disabled" : ""}>+ dose</button>
-              ${tomadas > 0 ? `<button type="button" class="dose-undo" data-id="${sanitizeId(p.id)}">desfazer</button>` : ""}
+              <button type="button" class="dose-add" data-id="${sanitizeId(p.id)}" ${resolved >= perDay ? "disabled" : ""}>+ dose</button>
+              ${resolved > 0 ? `<button type="button" class="dose-undo" data-id="${sanitizeId(p.id)}">desfazer</button>` : ""}
             </div>
           </div>`;
       }
@@ -648,7 +666,7 @@ function renderToday() {
       }
 
       const statusBadgeHTML = vm.isCompleted
-        ? `<span class="chip-acc" style="background:rgba(53,208,159,0.15);color:var(--success);font-weight:700;">✓ ${i18nService.t("common.applied")}</span>`
+        ? `<span class="chip-acc">${esc(i18nService.t(tomadas >= perDay ? "phase1.applied" : "phase1.resolved"))}</span>`
         : `<span class="chip-acc" style="background:rgba(245,183,91,0.15);color:var(--warning);font-weight:700;">⏳ ${i18nService.t("common.pending") || "Pendente"}</span>`;
 
       card.innerHTML = `
@@ -677,11 +695,12 @@ function renderToday() {
           <button type="button" class="gear" data-id="${sanitizeId(p.id)}" title="Editar">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
           </button>
-          <button type="button" class="del" data-id="${sanitizeId(p.id)}" title="Remover">
+          <button type="button" class="del" data-id="${sanitizeId(p.id)}" title="${esc(i18nService.t("phase1.end"))}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/></svg>
           </button>
         </div>
-        ${ctrlHTML}`;
+        ${ctrlHTML}
+        ${resolved < perDay ? `<button type="button" class="dose-status btn-secondary" data-id="${sanitizeId(p.id)}">${esc(i18nService.t("phase1.recordStatus"))}</button>` : ""}`;
 
       container.appendChild(card);
     });
@@ -694,12 +713,15 @@ function renderToday() {
     container.appendChild(upcomingWrap);
   }
 
+  renderProtocolList(container, peptides, openEditModal);
   // Cálculo canônico do anel diário
   const ringN = document.getElementById("ring-n");
   if (ringN) {
-    ringN.textContent = `${dayProgress.totalTaken} / ${dayProgress.totalDue}`;
+    ringN.textContent = `${dayProgress.scheduledTaken} / ${dayProgress.totalDue}`;
   }
-  drawRing(dayProgress.totalTaken, dayProgress.totalDue);
+  drawRing(dayProgress.scheduledTaken, dayProgress.totalDue);
+
+  container.querySelectorAll(".dose-status").forEach(b => b.addEventListener("click", () => openRetroLogModal(todayK, b.dataset.id)));
 
   container.querySelectorAll(".take").forEach((b) => {
     b.addEventListener("click", () => toggleDose(b.dataset.id));
@@ -737,10 +759,16 @@ async function toggleDose(id) {
   const logs = storage.getLogs();
   const todayK = dateKey(new Date());
   const rec = logs[todayK] || {};
-  const p = peptides.find((x) => x.id === id);
+  const p = resolveProtocolAt(peptides.find((x) => x.id === id));
   if (!p) return;
 
-  const isUndoing = dosesTaken(rec, id) > 0;
+  const recordedEntries = doseEntries(rec[id]);
+  const latestEntry = recordedEntries.at(-1);
+  if (latestEntry && doseStatus(latestEntry) !== "applied") {
+    openRetroModal(todayK, id, { storage, dateKey, editingLog: latestEntry });
+    return;
+  }
+  const isUndoing = dosesResolved(rec, id) > 0;
   if (isUndoing) {
     const res = doseService.undoDose({ peptideId: p.id, scheduledDate: todayK });
     if (!res.success) {
@@ -799,11 +827,11 @@ async function addSingleDose(id) {
   const logs = storage.getLogs();
   const todayK = dateKey(new Date());
   const rec = logs[todayK] || {};
-  const p = peptides.find((x) => x.id === id);
+  const p = resolveProtocolAt(peptides.find((x) => x.id === id));
   if (!p) return;
 
   const perDay = p.perDay || 1;
-  const takenCount = dosesTaken(rec, id);
+  const takenCount = dosesResolved(rec, id);
   if (takenCount >= perDay) return;
 
   const configuredSites = storage.getSites();
@@ -883,6 +911,30 @@ function getTimelineDateParts(date) {
   };
 }
 
+function renderAdherenceSummary() {
+  const host = document.getElementById("adherence-summary");
+  if (!host) return;
+
+  const summary = calculateAdherenceSummary(
+    storage.getPeptides(),
+    storage.getLogs(),
+    { days: adherencePeriodDays, endDate: dateKey(new Date()) }
+  );
+  host.innerHTML = renderAdherenceSummaryHTML(summary, {
+    periodDays: adherencePeriodDays,
+    locale: i18nService.getLocale()
+  });
+
+  host.querySelectorAll("[data-adherence-days]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const nextPeriod = Number.parseInt(button.dataset.adherenceDays, 10);
+      if (![7, 30].includes(nextPeriod) || nextPeriod === adherencePeriodDays) return;
+      adherencePeriodDays = nextPeriod;
+      renderAdherenceSummary();
+    });
+  });
+}
+
 function renderWeek() {
   const container = document.getElementById("week-table-wrap") || document.getElementById("week-grid");
   if (!container) return;
@@ -903,25 +955,49 @@ function renderWeek() {
     const rec = logs[dateKeyValue] || {};
     const entries = [];
 
-    peptides.forEach((peptide) => {
-      const scheduled = isScheduledOnDate(peptide, date);
-      const taken = dosesTaken(rec, peptide.id);
-      if (!scheduled && taken === 0) return;
+    const scheduled = getScheduledPeptides(peptides, date);
+    const ids = new Set([...scheduled.map((peptide) => peptide.id), ...Object.keys(rec)]);
+    ids.forEach((id) => {
+      const effective = scheduled.find((peptide) => peptide.id === id);
+      const current = peptides.find((peptide) => peptide.id === id);
+      const records = doseEntries(rec[id]);
+      const due = effective ? Math.max(1, parseInt(effective.perDay, 10) || 1) : 0;
+      const counts = summarizeDoseEntries(records, due);
 
-      const due = scheduled ? Math.max(1, parseInt(peptide.perDay, 10) || 1) : Math.max(1, taken);
-      const recorded = Math.min(taken, due);
-      entries.push({
-        id: peptide.id,
-        name: peptide.name || i18nService.t("dashboard.genericCompound"),
-        accent: peptide.accent || peptide.color || "var(--primary)",
-        dose: peptide.dose || "",
-        ui: peptide.ui || 0,
-        time: peptide.time || (Array.isArray(peptide.times) && peptide.times[0]) || "08:00",
-        due,
-        recorded,
-        scheduled,
-        status: recorded >= due ? "done" : recorded > 0 ? "partial" : "pending"
+      records.forEach((log, index) => {
+        const display = getDoseDisplayData(log, current);
+        entries.push({
+          id,
+          name: display.name,
+          accent: current?.accent || current?.color || "var(--primary)",
+          dose: display.dose,
+          ui: display.ui,
+          time: log.time || log.t || "",
+          recordIndex: index,
+          pendingCount: 0,
+          scheduled: Boolean(effective),
+          editableProtocol: Boolean(current),
+          legacy: display.historyIntegrity === "legacy",
+          status: doseStatus(log)
+        });
       });
+
+      if (effective && counts.pending > 0) {
+        entries.push({
+          id,
+          name: effective.name || i18nService.t("dashboard.genericCompound"),
+          accent: effective.accent || effective.color || "var(--primary)",
+          dose: effective.dose || "",
+          ui: effective.ui || 0,
+          time: effective.time || effective.times?.[0] || "08:00",
+          recordIndex: null,
+          pendingCount: counts.pending,
+          scheduled: true,
+          editableProtocol: true,
+          legacy: false,
+          status: "unrecorded"
+        });
+      }
     });
 
     entries.sort((a, b) => (a.time || "").localeCompare(b.time || "") || a.name.localeCompare(b.name));
@@ -933,14 +1009,13 @@ function renderWeek() {
       isToday: dateKeyValue === todayKey,
       isPast: dateKeyValue < todayKey,
       entries,
-      due: entries.reduce((sum, entry) => sum + (entry.scheduled ? entry.due : 0), 0),
-      recorded: entries.reduce((sum, entry) => sum + (entry.scheduled ? entry.recorded : 0), 0)
+      progress: calculateDayProgress(peptides, logs, date)
     };
   });
 
   let html = `<div class="week-timeline"><div class="week-days" role="list" aria-label="${esc(i18nService.t("week.timelineLabel"))}">`;
 
-  if (peptides.length === 0) {
+  if (peptides.length === 0 && weekDays.every((day) => day.entries.length === 0)) {
     html += `
       <div class="timeline-empty week-empty" role="listitem">
         <div class="timeline-empty-icon" aria-hidden="true">✦</div>
@@ -949,10 +1024,10 @@ function renderWeek() {
       </div>`;
   } else {
     weekDays.forEach((day) => {
-      const dayCount = day.entries.length;
-      const progress = day.due > 0
-        ? i18nService.t("week.dayProgress", { taken: day.recorded, due: day.due })
-        : i18nService.t("week.restDay");
+      const dayCount = day.entries.reduce((count, entry) => count + Math.max(1, entry.pendingCount), 0);
+      const progress = day.progress.totalDue > 0
+        ? i18nService.t("week.dayProgress", { taken: day.progress.scheduledTaken, due: day.progress.totalDue })
+        : day.entries.length ? i18nService.t("week.appliedCount", { count: day.progress.totalTaken }) : i18nService.t("week.restDay");
       const dayLabel = day.isToday ? i18nService.t("week.today") : day.parts.weekdayLong;
 
       html += `
@@ -977,23 +1052,24 @@ function renderWeek() {
             </div>
             <div class="week-day-events" role="list" aria-label="${esc(`${dayLabel} · ${day.parts.fullDate}`)}">
               ${day.entries.length > 0 ? day.entries.map((entry) => {
-                const statusLabel = entry.status === "done"
-                  ? i18nService.t("week.applied")
-                  : entry.scheduled ? i18nService.t("week.record") : i18nService.t("week.logged");
+                const statusKey = { applied: "applied", skipped: "skipped", missed: "missed", unrecorded: "unrecorded" }[entry.status] || "unknown";
+                const statusLabel = i18nService.t(`week.${statusKey}`);
+                const statusClass = entry.status === "applied" ? "done" : entry.status === "unrecorded" ? "pending" : "partial";
                 const doseMeta = [entry.time, entry.dose, entry.ui ? `${entry.ui} UI` : ""].filter(Boolean).join(" · ");
-                const progressMeta = entry.due > 1 ? ` · ${entry.recorded}/${entry.due}` : "";
+                const progressMeta = entry.pendingCount > 1 ? ` · ${i18nService.t("week.pendingCount", { count: entry.pendingCount })}` : "";
+                const legacyMeta = entry.legacy ? ` · ${i18nService.t("week.legacy")}` : "";
                 const ariaLabel = `${entry.name} · ${doseMeta || statusLabel} · ${statusLabel}`;
                 return `
-                  <div class="week-event ${entry.status} ${entry.scheduled ? "is-scheduled" : "is-extra"}" role="listitem">
-                    <button type="button" class="week-event-toggle" data-pep="${sanitizeId(entry.id)}" data-date="${sanitizeId(day.key)}" aria-label="${esc(ariaLabel)}">
-                      <span class="week-event-status" aria-hidden="true">${entry.status === "done" ? "✓" : "•"}</span>
+                  <div class="week-event ${statusClass} ${entry.scheduled ? "is-scheduled" : "is-extra"}" role="listitem" data-status="${esc(statusKey)}">
+                    <button type="button" class="week-event-toggle" data-pep="${sanitizeId(entry.id)}" data-date="${sanitizeId(day.key)}" data-log-index="${entry.recordIndex ?? ""}" aria-label="${esc(ariaLabel)}" ${day.key > todayKey ? "disabled" : ""}>
+                      <span class="week-event-status" aria-hidden="true">${entry.status === "applied" ? "✓" : entry.status === "unrecorded" ? "•" : "—"}</span>
                       <span class="week-event-main">
                         <strong>${esc(entry.name)}</strong>
-                        <span>${esc(doseMeta || statusLabel)}${esc(progressMeta)}</span>
+                        <span>${esc(doseMeta || statusLabel)}${esc(progressMeta)}${esc(legacyMeta)}</span>
                       </span>
                       <span class="week-event-action">${esc(statusLabel)}</span>
                     </button>
-                    <button type="button" class="week-event-edit" data-pep="${sanitizeId(entry.id)}" aria-label="Editar ${esc(entry.name)}">✎</button>
+                    ${entry.editableProtocol ? `<button type="button" class="week-event-edit" data-pep="${sanitizeId(entry.id)}" aria-label="Editar ${esc(entry.name)}">✎</button>` : ""}
                   </div>`;
               }).join("") : `
                 <div class="week-day-empty" role="listitem">
@@ -1008,11 +1084,12 @@ function renderWeek() {
 
   html += `</div>`;
 
-  if (peptides.length > 0) {
+  if (peptides.length > 0 || weekDays.some((day) => day.entries.length > 0)) {
     html += `
       <div class="timeline-legend" aria-label="${esc(i18nService.t("week.legendLabel"))}">
         <span class="timeline-legend-item done"><i aria-hidden="true">✓</i>${esc(i18nService.t("week.applied"))}</span>
-        <span class="timeline-legend-item pending"><i aria-hidden="true">•</i>${esc(i18nService.t("week.pending"))}</span>
+        <span class="timeline-legend-item partial"><i aria-hidden="true">—</i>${esc(i18nService.t("week.skipped"))} / ${esc(i18nService.t("week.missed"))}</span>
+        <span class="timeline-legend-item pending"><i aria-hidden="true">•</i>${esc(i18nService.t("week.unrecorded"))}</span>
         <span class="timeline-legend-item rest"><i aria-hidden="true">—</i>${esc(i18nService.t("week.restDay"))}</span>
       </div>`;
   }
@@ -1029,17 +1106,17 @@ function renderWeek() {
 
   container.querySelectorAll(".week-event-toggle").forEach((button) => {
     button.addEventListener("click", () => {
-      toggleDateLog(button.dataset.pep, button.dataset.date);
+      const index = button.dataset.logIndex === "" ? null : Number(button.dataset.logIndex);
+      toggleDateLog(button.dataset.pep, button.dataset.date, index);
     });
   });
 }
 
-async function toggleDateLog(id, dKey) {
+async function toggleDateLog(id, dKey, recordIndex = null) {
   const peptides = storage.getPeptides();
   const logs = storage.getLogs();
   const rec = { ...(logs[dKey] || {}) };
   const p = peptides.find((x) => x.id === id);
-  if (!p) return;
 
   const todayK = dateKey(new Date());
 
@@ -1048,36 +1125,15 @@ async function toggleDateLog(id, dKey) {
     return;
   }
 
-  if (dKey < todayK) {
-    if (dosesTaken(rec, id) > 0) {
-      const confirmed = await showConfirmDialog({
-        title: "Remover Dose Passada",
-        message: `Deseja remover a aplicação de ${p.name} registrada em ${fmtBR(dKey)}?`,
-        confirmText: "Remover",
-        isDanger: true
-      });
-      if (!confirmed) return;
-
-      const res = doseService.deleteDose({
-        peptideId: p.id,
-        scheduledDate: dKey
-      });
-
-      if (!res.success) {
-        void dialogService.alert({ title: "Erro ao remover", message: "Não foi possível remover o registro: " + (res.message || res.error), isDanger: true });
-        return;
-      }
-      haptics.light();
-      renderToday();
-      renderWeek();
-      renderHistory();
-    } else {
-      openRetroLogModal(dKey, id);
-    }
+  if (Number.isInteger(recordIndex)) {
+    const log = doseEntries(rec[id])[recordIndex];
+    if (!log) return;
+    openRetroModal(dKey, id, { storage, dateKey, editingLog: log });
     return;
   }
 
-  toggleDose(id);
+  if (!p) return;
+  openRetroLogModal(dKey, id);
 }
 
 function openRetroLogModal(prefillDate = null, prefillPepId = null) {
@@ -1119,45 +1175,12 @@ function renderHistory() {
         name: pId,
         accent: "#2CC5C0"
       };
-      const val = rec[pId];
-
-      if (Array.isArray(val)) {
-        val.forEach((doseItem, idx) => {
-          const norm = normalizeDoseEntry(doseItem, dk, pId);
-          if (norm) {
-            totalDoses++;
-            pepEntries.push({
-              id: pId,
-              name: p.name || norm.name || pId,
-              accent: p.accent,
-              time: norm.time || "12:00",
-              dose: norm.dose || p.dose || "",
-              ui: norm.ui || p.ui || 0,
-              note: norm.note || "",
-              site: norm.site || "",
-              retroactive: norm.retroactive,
-              idx: idx
-            });
-          }
-        });
-      } else if (val && typeof val === "object") {
-        const norm = normalizeDoseEntry(val, dk, pId);
-        if (norm) {
-          totalDoses++;
-          pepEntries.push({
-            id: pId,
-            name: p.name || norm.name || pId,
-            accent: p.accent,
-            time: norm.time || "12:00",
-            dose: norm.dose || p.dose || "",
-            ui: norm.ui || p.ui || 0,
-            note: norm.note || "",
-            site: norm.site || "",
-            retroactive: norm.retroactive,
-            idx: 0
-          });
-        }
-      }
+      doseEntries(rec[pId]).forEach((doseItem, idx) => {
+        const norm = normalizeDoseEntry(doseItem, dk, pId);
+        if (!norm) return;
+        totalDoses++;
+        pepEntries.push({ ...norm, ...getDoseDisplayData(norm, p), id: pId, accent: p.accent, idx });
+      });
     });
 
     if (pepEntries.length > 0) {
@@ -1189,16 +1212,20 @@ function renderHistory() {
                 <span class="hist-dot" style="background:${sanitizeColor(e.accent, "var(--primary)")};"></span>
                 <div class="hist-info">
                   <div class="hist-name">${esc(e.name)}</div>
+                  <div class="hist-status">${esc(i18nService.t(`phase1.${doseStatus(e)}`))}${e.historyIntegrity === "legacy" ? ` · ${esc(i18nService.t("phase1.legacy"))}` : ""}</div>
                   <div class="hist-dose">
-                    ${esc(e.dose)}${e.ui ? ` · ${esc(String(e.ui))} UI` : ""}${e.site ? ` · 📍 ${esc(e.site)}` : ""}
+                    ${esc(e.dose || "—")}${e.ui !== null ? ` · ${esc(String(e.ui))} UI` : ""}${e.site ? ` · 📍 ${esc(e.site)}` : ""}
                   </div>
                   ${e.note ? `<div class="hist-note">💬 ${esc(e.note)}</div>` : ""}
+                  ${e.statusReason ? `<div class="hist-note">${esc(e.statusReason)}</div>` : ""}
+                  ${e.vialId ? `<div class="hist-note">${esc(i18nService.t("phase1.vial"))}: ${esc(e.vial?.lotNumber || e.vialId)}</div>` : ""}
                 </div>
                 <div class="hist-time">
                   <span>${esc(e.time)}</span>
                   ${e.retroactive ? `<span class="badge-retro">${esc(i18nService.t("history.retroactive"))}</span>` : ""}
                 </div>
-                <button type="button" class="hist-rm" data-date="${sanitizeId(dk)}" data-pep="${sanitizeId(e.id)}" data-idx="${e.idx}" title="${esc(i18nService.t("history.deleteDose"))}" aria-label="${esc(i18nService.t("history.deleteDose"))}">✕</button>
+                <div class="hist-actions"><button type="button" class="hist-edit" data-date="${sanitizeId(dk)}" data-pep="${sanitizeId(e.id)}" data-idx="${e.idx}" aria-label="${esc(i18nService.t("phase1.editRecord"))}">✎</button>
+                <button type="button" class="hist-rm" data-date="${sanitizeId(dk)}" data-pep="${sanitizeId(e.id)}" data-idx="${e.idx}" title="${esc(i18nService.t("history.deleteDose"))}" aria-label="${esc(i18nService.t("history.deleteDose"))}">✕</button></div>
               </div>
             `).join("")}
             </div>
@@ -1207,7 +1234,7 @@ function renderHistory() {
     }
   });
 
-  if (countEl) countEl.textContent = i18nService.t("history.totalCount", { count: totalDoses });
+  if (countEl) countEl.textContent = i18nService.t("phase1.recordsCount", { count: totalDoses });
 
   if (totalDoses === 0) {
     container.innerHTML = `
@@ -1220,11 +1247,17 @@ function renderHistory() {
     container.innerHTML = `${html}</div>`;
   }
 
+  renderAdherenceSummary();
+
   if (measurementsUI && typeof measurementsUI.renderTrendSummary === "function") {
     measurementsUI.renderTrendSummary();
     measurementsUI.renderMeasurementsHistory();
   }
 
+  container.querySelectorAll(".hist-edit").forEach(btn => btn.addEventListener("click", () => {
+    const log = doseEntries(storage.getLogs()[btn.dataset.date]?.[btn.dataset.pep])[Number(btn.dataset.idx)];
+    if (log) openRetroModal(btn.dataset.date, btn.dataset.pep, { storage, dateKey, editingLog: log });
+  }));
   container.querySelectorAll(".hist-rm").forEach((btn) => {
     btn.addEventListener("click", async () => {
       const dKey = btn.dataset.date;
@@ -1279,33 +1312,17 @@ async function deletePeptide(id) {
   const p = peptides.find((x) => x.id === id);
   if (!p) return;
 
-  const confirmed = await showConfirmDialog({
-    title: "Excluir Peptídeo",
-    message: `Deseja realmente remover "${p.name}" do seu protocolo? Os registros de histórico anteriores serão preservados.`,
-    confirmText: "Excluir",
-    cancelText: "Cancelar",
-    isDanger: true
-  });
+  await changeProtocolStatus(p, "ended", { storage, onSaved: protocolSaved });
+}
 
-  if (!confirmed) return;
-
-  const updated = peptides.filter((x) => x.id !== id);
-  const res = storage.setPeptides(updated);
-  if (!res.success) {
-    dialogService.alert({
-      title: "Erro",
-      message: "Erro ao remover peptídeo: " + (res.error || "Armazenamento indisponível"),
-      isDanger: true
-    });
-    return;
-  }
-
-  haptics.medium();
+function protocolSaved() {
+  haptics.success();
   closeAllModals();
   renderToday();
   renderWeek();
   renderHistory();
-  notifications.schedulePeptideReminders(updated);
+  updateNotificationUI(storage.getPeptides());
+  notifications.schedulePeptideReminders(storage.getPeptides());
 }
 
 function setupCalculator() {
@@ -1735,7 +1752,7 @@ function updateBackfillPreviewUI() {
   const startVal = document.getElementById("edit-protocol-start-date")?.value;
   const backfillWrap = document.getElementById("edit-backfill-wrap");
   const backfillPreview = document.getElementById("edit-backfill-preview");
-  if (!backfillWrap || !backfillPreview || !startVal) {
+  if (!backfillWrap || !backfillPreview || !startVal || editingPeptideId) {
     if (backfillWrap) backfillWrap.style.display = "none";
     return;
   }
@@ -1841,7 +1858,9 @@ function openEditModal(pepId, prefillData = null) {
   if (!modal) return;
 
   const peptides = storage.getPeptides();
-  const p = pepId ? peptides.find((x) => x.id === pepId) : null;
+  const originalProtocol = pepId ? peptides.find((x) => x.id === pepId) : null;
+  const p = resolveProtocolAt(originalProtocol);
+  renderProtocolControls(originalProtocol, { storage, onSaved: protocolSaved });
 
   if (title) title.textContent = p ? `Editar ${p.name}` : "Adicionar Peptídeo";
 
@@ -1934,13 +1953,14 @@ function openEditModal(pepId, prefillData = null) {
   }
   const backfillCheck = document.getElementById("edit-backfill-check");
   if (backfillCheck) {
-    backfillCheck.checked = true;
+    backfillCheck.checked = false;
   }
   updateBackfillPreviewUI();
 
   const delBtn = document.getElementById("edit-del-btn");
   if (delBtn) {
-    delBtn.style.display = pepId ? "inline-flex" : "none";
+    delBtn.style.display = pepId && p?.lifecycleStatus !== "ended" ? "inline-flex" : "none";
+    delBtn.textContent = i18nService.t("phase1.end");
   }
 
   const libSection = document.getElementById("modal-lib-section");
@@ -1971,8 +1991,8 @@ function saveEditedPeptide() {
 
   const sub = document.getElementById("edit-sub").value.trim();
   const dose = document.getElementById("edit-dose").value.trim();
-  const ui = parseInt(document.getElementById("edit-ui").value, 10) || 0;
-  const perDay = parseInt(document.getElementById("edit-perday").value, 10) || 1;
+  const ui = parseUnits(document.getElementById("edit-ui").value);
+  const perDay = Number(document.getElementById("edit-perday").value);
   const mainTime = document.getElementById("edit-time").value.trim();
   const note = document.getElementById("edit-note").value.trim();
 
@@ -1984,6 +2004,10 @@ function saveEditedPeptide() {
   });
 
   const protocolStartDate = document.getElementById("edit-protocol-start-date")?.value || null;
+  if (ui === null || !Number.isInteger(perDay) || perDay < 1 || perDay > 6 || (mainTime && !isValidTime(mainTime)) || times.some(time => !isValidTime(time)) || (protocolStartDate && !isValidDateKey(protocolStartDate))) {
+    void dialogService.alert({ title: "Dados inválidos", message: "Confira unidades, quantidade diária, horários e data de início. Valores fracionários de UI são preservados.", isDanger: true });
+    return;
+  }
   let days = null;
   let interval = null;
   let start = protocolStartDate;
@@ -1997,7 +2021,11 @@ function saveEditedPeptide() {
     days = [...selectedDays].sort((a, b) => a - b);
     freq = formatDaysLabel(days);
   } else if (selectedFreqType === "intervalo") {
-    const intVal = parseInt(document.getElementById("edit-interval-val")?.value) || 2;
+    const intVal = Number(document.getElementById("edit-interval-val")?.value);
+    if (!Number.isInteger(intVal) || intVal < 2) {
+      void dialogService.alert({ title: "Intervalo inválido", message: "Informe um número inteiro de dias, a partir de 2.", isDanger: true });
+      return;
+    }
     const sDate = protocolStartDate || document.getElementById("edit-start-date")?.value || dateKey(new Date());
     interval = intVal;
     start = sDate;
@@ -2027,11 +2055,31 @@ function saveEditedPeptide() {
   });
 
   const peptides = [...storage.getPeptides()];
+  const valid = validatePeptide(peptideData);
+  if (!valid.valid) {
+    void dialogService.alert({ title: "Dados inválidos", message: valid.error, isDanger: true });
+    return;
+  }
 
   if (editingPeptideId) {
     const idx = peptides.findIndex((x) => x.id === editingPeptideId);
     if (idx >= 0) {
-      peptides[idx] = peptideData;
+      const original = peptides[idx];
+      const current = resolveProtocolAt(original);
+      if (current.lifecycleStatus === "ended") return;
+      if (current.dose !== dose || current.ui !== ui) peptideData.calculationSnapshot = null;
+      const effectiveDate = document.getElementById("edit-effective-date")?.value;
+      const now = new Date();
+      if (effectiveDate && (!isValidDateKey(effectiveDate) || effectiveDate <= dateKey(now))) {
+        void dialogService.alert({ title: "Vigência inválida", message: "Deixe vazio para aplicar agora ou escolha uma data futura.", isDanger: true });
+        return;
+      }
+      try {
+        peptides[idx] = reviseProtocol(original, peptideData, { effectiveFrom: effectiveDate ? new Date(`${effectiveDate}T00:00:00`).toISOString() : now.toISOString(), now });
+      } catch (error) {
+        void dialogService.alert({ title: "Erro ao alterar protocolo", message: error.message, isDanger: true });
+        return;
+      }
     }
   } else {
     peptides.push(peptideData);
@@ -2047,7 +2095,7 @@ function saveEditedPeptide() {
   const backfillWrap = document.getElementById("edit-backfill-wrap");
   const backfillCheck = document.getElementById("edit-backfill-check");
   let backfillAdded = 0;
-  if (backfillWrap && backfillWrap.style.display !== "none" && backfillCheck && backfillCheck.checked && start) {
+  if (!editingPeptideId && backfillWrap && backfillWrap.style.display !== "none" && backfillCheck && backfillCheck.checked && start) {
     const backfillRes = doseService.backfillPeptideDoses({
       peptide: peptideData,
       startDate: start,
@@ -2055,6 +2103,11 @@ function saveEditedPeptide() {
     });
     if (backfillRes.success && backfillRes.addedCount > 0) {
       backfillAdded = backfillRes.addedCount;
+    }
+    if (!backfillRes.success) {
+      void dialogService.alert({ title: "Histórico não gravado", message: "O protocolo foi salvo, mas o preenchimento do histórico falhou: " + (backfillRes.message || backfillRes.error), isDanger: true });
+      renderToday(); renderWeek(); renderHistory();
+      return;
     }
   }
 

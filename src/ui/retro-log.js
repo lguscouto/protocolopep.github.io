@@ -6,15 +6,28 @@ import { escapeHtml } from "./dom.js";
 import { getNextSite, getLastUsedSite } from "../domain/injection-sites.js";
 import { dialogService } from "../services/dialog.js";
 import { renderInjectionSitePicker } from "./injection-site-picker.js";
+import { DOSE_STATUSES, parseUnits } from "../domain/dose-state.js";
+import { getDoseDisplayData } from "../domain/report.js";
+import { isValidDateKey, isValidTime } from "../domain/schedule.js";
+import { i18nService } from "../services/i18n.js";
+import { resolveProtocolAt } from "../domain/protocol-history.js";
 
 const esc = escapeHtml;
+let editingContext = null;
+let saving = false;
 
-export function openRetroLogModal(prefillDate = null, prefillPepId = null, { storage, dateKey }) {
+export function openRetroLogModal(prefillDate = null, prefillPepId = null, { storage, dateKey, editingLog = null }) {
   const modal = document.getElementById("retro-log-modal");
-  if (!modal) return;
+  if (!modal || saving) return;
+
+  editingContext = editingLog?.id ? {
+    log: JSON.parse(JSON.stringify(editingLog)),
+    peptideId: prefillPepId || editingLog.peptideId,
+    scheduledDate: prefillDate || editingLog.scheduledDate
+  } : null;
 
   const peptides = storage.getPeptides();
-  if (peptides.length === 0) {
+  if (peptides.length === 0 && !editingContext) {
     dialogService.alert({
       title: "Protocolo Vazio",
       message: "Cadastre ao menos um peptídeo no seu protocolo antes de registrar uma aplicação."
@@ -30,63 +43,124 @@ export function openRetroLogModal(prefillDate = null, prefillPepId = null, { sto
   const doseInput = document.getElementById("retro-dose-input");
   const uiInput = document.getElementById("retro-ui-input");
   const noteInput = document.getElementById("retro-note-input");
+  const statusSelect = document.getElementById("retro-status-select");
+  const reasonInput = document.getElementById("retro-reason-input");
+  const historyPanel = document.getElementById("retro-edit-history");
+  const title = document.getElementById("retro-modal-title");
+  if (title) title.textContent = editingContext ? i18nService.t("phase1.editRecord") : "Registrar Aplicação";
 
   const todayKey = dateKey(new Date());
 
   if (dateInput) {
     dateInput.max = todayKey;
-    dateInput.value = prefillDate || todayKey;
+    dateInput.value = editingContext?.scheduledDate || prefillDate || todayKey;
+    dateInput.disabled = Boolean(editingContext);
   }
 
   const nowTime = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
   if (timeInput) {
-    timeInput.value = nowTime;
+    timeInput.value = editingContext?.log.time || nowTime;
   }
 
   if (pepSelect) {
-    pepSelect.innerHTML = peptides.map((p) => `
+    const display = editingContext ? getDoseDisplayData(editingContext.log, peptides.find((p) => p.id === editingContext.peptideId)) : null;
+    const options = editingContext ? [{ id: editingContext.peptideId, ...display }] : peptides;
+    pepSelect.innerHTML = options.map((p) => `
       <option value="${esc(p.id)}" ${p.id === prefillPepId ? "selected" : ""}>
         ${esc(p.name)} (${esc(p.dose || "")}${p.ui ? ` · ${esc(String(p.ui))} UI` : ""})
       </option>
     `).join("");
+    pepSelect.disabled = Boolean(editingContext);
+    if (editingContext?.peptideId || prefillPepId) pepSelect.value = editingContext?.peptideId || prefillPepId;
 
+    let doseEdited = false;
+    let unitsEdited = false;
+    if (doseInput) doseInput.oninput = () => { doseEdited = true; };
+    if (uiInput) uiInput.oninput = () => { unitsEdited = true; };
     const updateDoseAndUi = () => {
       const selectedId = pepSelect.value;
-      const p = peptides.find((x) => x.id === selectedId);
+      const selected = peptides.find((x) => x.id === selectedId);
+      const at = isValidDateKey(dateInput?.value) && isValidTime(timeInput?.value)
+        ? new Date(`${dateInput.value}T${timeInput.value}:00`) : new Date();
+      const p = editingContext ? display : resolveProtocolAt(selected, at);
       if (p) {
-        if (doseInput) doseInput.value = p.dose || "";
-        if (uiInput) uiInput.value = p.ui !== undefined && p.ui !== null ? p.ui : "";
+        if (doseInput && !doseEdited) doseInput.value = p.lifecycleStatus === "not_started" ? "" : (p.dose ?? "");
+        if (uiInput && !unitsEdited) uiInput.value = p.lifecycleStatus === "not_started" ? "" : (p.ui ?? "");
       }
       if (siteSelect) {
-        const configuredSites = storage.getSites();
+        const configuredSites = [...storage.getSites()];
+        const historicalSite = editingContext?.log.site || "";
+        if (historicalSite && !configuredSites.includes(historicalSite)) configuredSites.push(historicalSite);
         const lastUsed = getLastUsedSite(storage.getLogs(), selectedId);
         const nextSite = getNextSite(configuredSites, lastUsed ? lastUsed.site : null);
+        const selectedSite = editingContext ? historicalSite : (nextSite || "");
         siteSelect.innerHTML = `
           <option value="">-- Não especificado --</option>
-          ${configuredSites.map((s) => `<option value="${esc(s)}" ${s === nextSite ? "selected" : ""}>${esc(s)}</option>`).join("")}
+          ${configuredSites.map((s) => `<option value="${esc(s)}" ${s === selectedSite ? "selected" : ""}>${esc(s)}</option>`).join("")}
         `;
+        siteSelect.value = selectedSite;
         renderInjectionSitePicker({
           container: sitePicker,
           select: siteSelect,
           sites: configuredSites,
-          selectedSite: nextSite || "",
+          selectedSite,
           nextSite: nextSite || "",
           lastSite: lastUsed?.site || ""
         });
       }
     };
 
-    pepSelect.onchange = updateDoseAndUi;
+    pepSelect.onchange = () => { doseEdited = false; unitsEdited = false; updateDoseAndUi(); };
+    if (dateInput) dateInput.onchange = editingContext ? null : updateDoseAndUi;
+    if (timeInput) timeInput.onchange = editingContext ? null : updateDoseAndUi;
     updateDoseAndUi();
   }
 
-  if (noteInput) noteInput.value = "";
+  if (noteInput) noteInput.value = editingContext?.log.note || "";
+  if (reasonInput) reasonInput.value = editingContext?.log.statusReason || "";
+  if (statusSelect) {
+    statusSelect.innerHTML = DOSE_STATUSES.map((status) => `<option value="${status}">${esc(i18nService.t(`phase1.${status}`))}</option>`).join("");
+    statusSelect.value = editingContext?.log.status || "applied";
+    const updateStatusFields = () => {
+      const applied = statusSelect.value === "applied";
+      const siteField = document.getElementById("retro-site-field");
+      const reasonField = document.getElementById("retro-reason-field");
+      if (siteField) siteField.hidden = !applied;
+      if (reasonField) reasonField.hidden = applied;
+    };
+    statusSelect.onchange = updateStatusFields;
+    updateStatusFields();
+  }
+  if (historyPanel) {
+    const history = editingContext?.log.editHistory || [];
+    const currentVial = editingContext?.log.vialId;
+    historyPanel.hidden = !editingContext;
+    historyPanel.innerHTML = editingContext ? `
+      ${currentVial ? `<p>Frasco do registro: ${esc(currentVial)}</p>` : ""}
+      ${displayLegacyHint(editingContext.log)}
+      <b>${esc(i18nService.t("phase1.editHistory"))}</b>
+      ${history.length ? `<ol>${history.map((item) => {
+        const previous = item.previous || {};
+        const editedDate = new Date(item.editedAt);
+        const when = Number.isNaN(editedDate.getTime()) ? "Data não informada" : editedDate.toLocaleString(i18nService.getLocale());
+        const prior = getDoseDisplayData(previous);
+        const status = DOSE_STATUSES.includes(previous.status) ? i18nService.t(`phase1.${previous.status}`) : "Estado não informado";
+        return `<li>${esc(when)}: ${esc(status)} · ${esc(previous.time || "--:--")} · ${esc(prior.dose === "" ? "--" : prior.dose)} (${esc(prior.ui ?? "--")} UI)${previous.site ? ` · ${esc(previous.site)}` : ""}${previous.note ? `<br>Observação anterior: ${esc(previous.note)}` : ""}${previous.statusReason ? `<br>Motivo anterior: ${esc(previous.statusReason)}` : ""}</li>`;
+      }).join("")}</ol>` : "<p>Nenhuma correção anterior.</p>"}
+    ` : "";
+  }
 
   modal.classList.add("on");
   modal.setAttribute("aria-hidden", "false");
 }
 
+function displayLegacyHint(log) {
+  return getDoseDisplayData(log).historyIntegrity === "legacy"
+    ? `<p>${esc(i18nService.t("phase1.legacy"))}</p>` : "";
+}
+
 export async function saveRetroLog({ doseService, dateKey, haptics, renderAll }) {
+  if (saving) return;
   const pepSelect = document.getElementById("retro-pep-select");
   const siteSelect = document.getElementById("retro-site-select");
   const dateInput = document.getElementById("retro-date-input");
@@ -94,14 +168,18 @@ export async function saveRetroLog({ doseService, dateKey, haptics, renderAll })
   const doseInput = document.getElementById("retro-dose-input");
   const uiInput = document.getElementById("retro-ui-input");
   const noteInput = document.getElementById("retro-note-input");
+  const statusSelect = document.getElementById("retro-status-select");
+  const reasonInput = document.getElementById("retro-reason-input");
 
   const pepId = pepSelect ? pepSelect.value : "";
   const siteVal = siteSelect ? siteSelect.value.trim() : "";
   const dKey = dateInput ? dateInput.value : "";
   const timeVal = timeInput ? timeInput.value : "12:00";
   const doseVal = doseInput ? doseInput.value.trim() : "";
-  const uiVal = uiInput ? parseInt(uiInput.value, 10) || 0 : 0;
+  const uiVal = parseUnits(uiInput?.value ?? "");
   const noteVal = noteInput ? noteInput.value.trim() : "";
+  const status = statusSelect ? statusSelect.value : "applied";
+  const statusReason = status !== "applied" ? (reasonInput?.value || "").trim() : "";
 
   if (!pepId) {
     dialogService.alert({
@@ -111,11 +189,16 @@ export async function saveRetroLog({ doseService, dateKey, haptics, renderAll })
     return;
   }
 
-  if (!dKey) {
+  if (!isValidDateKey(dKey)) {
     dialogService.alert({
       title: "Campo Obrigatório",
       message: "Informe a data da aplicação."
     });
+    return;
+  }
+
+  if (!isValidTime(timeVal) || uiVal === null || !DOSE_STATUSES.includes(status)) {
+    void dialogService.alert({ title: "Dados inválidos", message: "Confira o horário, o estado e as unidades informadas. Use valores numéricos não negativos para UI, sem arredondamento automático." });
     return;
   }
 
@@ -128,57 +211,72 @@ export async function saveRetroLog({ doseService, dateKey, haptics, renderAll })
     return;
   }
 
-  let res = doseService.registerDose({
-    peptideId: pepId,
-    scheduledDate: dKey,
+  const updates = {
     time: timeVal,
     dose: doseVal,
     ui: uiVal,
     note: noteVal,
-    site: siteVal,
+    site: status === "applied" ? siteVal : "",
+    status,
+    statusReason
+  };
+  const registerData = {
+    peptideId: pepId,
+    scheduledDate: dKey,
+    ...updates,
     retroactive: dKey < todayKey
-  });
+  };
+  const context = editingContext;
+  if (context && uiInput?.value === "" && (context.log.ui === undefined || context.log.ui === null)) delete updates.ui;
+  if (context && doseVal === "" && (context.log.dose === undefined || context.log.dose === null)) delete updates.dose;
+  const saveBtn = document.getElementById("retro-save");
+  saving = true;
+  if (saveBtn) saveBtn.disabled = true;
+  try {
+    let res = context
+      ? await doseService.editDose({ peptideId: context.peptideId, scheduledDate: context.scheduledDate, doseLogId: context.log.id, updates })
+      : await doseService.registerDose(registerData);
 
-  if (!res.success && res.error === "VIAL_MISSING_CONCENTRATION") {
-    const confirmHistOnly = await dialogService.confirm({
-      title: "Concentração Indefinida",
-      message: `${res.message || "O frasco não possui concentração definida."}\n\nDeseja salvar a aplicação apenas no histórico sem debitar estoque?`,
-      confirmText: "Salvar no Histórico",
-      cancelText: "Cancelar",
-      isDanger: false
-    });
-    if (confirmHistOnly) {
-      res = doseService.registerDose({
-        peptideId: pepId,
-        scheduledDate: dKey,
-        time: timeVal,
-        dose: doseVal,
-        ui: uiVal,
-        note: noteVal,
-        site: siteVal,
-        retroactive: dKey < todayKey,
-        allowHistoryOnlyWithoutStock: true
+    if (!context && !res.success && res.error === "VIAL_MISSING_CONCENTRATION") {
+      const confirmHistOnly = await dialogService.confirm({
+        title: "Concentração Indefinida",
+        message: `${res.message || "O frasco não possui concentração definida."}\n\nDeseja salvar a aplicação apenas no histórico sem debitar estoque?`,
+        confirmText: "Salvar no Histórico",
+        cancelText: "Cancelar",
+        isDanger: false
       });
+      if (confirmHistOnly) {
+        res = await doseService.registerDose({
+          ...registerData,
+          allowHistoryOnlyWithoutStock: true
+        });
+      } else return;
     }
-  }
 
-  if (!res.success) {
-    dialogService.alert({
-      title: "Erro",
-      message: "Não foi possível salvar a aplicação: " + (res.message || res.error || "armazenamento indisponível"),
-      isDanger: true
-    });
-    return;
-  }
+    if (!res.success) {
+      dialogService.alert({
+        title: "Erro",
+        message: "Não foi possível salvar o registro: " + (res.message || res.error || "armazenamento indisponível"),
+        isDanger: true
+      });
+      return;
+    }
 
-  const modal = document.getElementById("retro-log-modal");
-  if (modal) {
-    modal.classList.remove("on");
-    modal.setAttribute("aria-hidden", "true");
-  }
+    const modal = document.getElementById("retro-log-modal");
+    if (modal) {
+      modal.classList.remove("on");
+      modal.setAttribute("aria-hidden", "true");
+    }
+    editingContext = null;
 
-  haptics.success();
-  if (typeof renderAll === "function") {
-    renderAll();
+    haptics.success();
+    if (typeof renderAll === "function") {
+      renderAll();
+    }
+  } catch (error) {
+    void dialogService.alert({ title: "Erro", message: "Não foi possível salvar o registro: " + (error?.message || "armazenamento indisponível"), isDanger: true });
+  } finally {
+    saving = false;
+    if (saveBtn) saveBtn.disabled = false;
   }
 }

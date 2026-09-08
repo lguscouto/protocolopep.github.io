@@ -2044,6 +2044,38 @@ body.light .week-event.partial .week-event-action {
   border: 1px solid var(--primary);
 }
 
+.report-preview-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  background: var(--surface2);
+}
+
+.report-preview-summary-grid span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+.report-preview-summary-grid b {
+  color: var(--primary);
+  font-size: 14px;
+}
+
+.report-preview-summary-note {
+  margin: 0 0 8px;
+  color: var(--muted-2);
+  font-size: 10.5px;
+  line-height: 1.35;
+}
+
 /* ---------- Reconstitution Calculator ---------- */
 .step {
   margin-bottom: 18px;
@@ -3551,6 +3583,162 @@ body.theme-light .daypick button.on {
   transform: scale(0.97);
 }
 
+/* ---------- Resumo de Consistência da Rotina (Fase 2) ---------- */
+.adherence-summary {
+  margin: 0 0 16px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+.adherence-summary-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.adherence-summary-eyebrow {
+  color: var(--primary);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.adherence-summary h3 {
+  margin: 3px 0 2px;
+  color: var(--text);
+  font-family: var(--display);
+  font-size: 17px;
+}
+
+.adherence-summary-head p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.adherence-period {
+  display: flex;
+  flex-shrink: 0;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+
+.adherence-period-btn {
+  min-height: 32px;
+  padding: 6px 9px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  font: 700 11px var(--font);
+  cursor: pointer;
+}
+
+.adherence-period-btn.is-selected {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+.adherence-progress {
+  height: 9px;
+  margin-top: 16px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--surface-3);
+}
+
+.adherence-progress span {
+  display: block;
+  height: 100%;
+  min-width: 0;
+  border-radius: inherit;
+  background: var(--primary);
+  transition: width 0.2s ease;
+}
+
+.adherence-progress-label {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-top: 7px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.adherence-progress-label strong {
+  color: var(--text);
+  font-size: 15px;
+}
+
+.adherence-progress-label span:last-child {
+  margin-left: auto;
+  text-align: right;
+}
+
+.adherence-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.adherence-metric {
+  min-width: 0;
+  padding: 9px 6px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+  text-align: center;
+}
+
+.adherence-metric strong {
+  display: block;
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.adherence-metric span {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.25;
+}
+
+.adherence-disclaimer {
+  margin: 12px 0 0;
+  color: var(--muted-2);
+  font-size: 10.5px;
+  line-height: 1.35;
+  text-align: center;
+}
+
+@media (max-width: 420px) {
+  .adherence-summary-head {
+    flex-direction: column;
+  }
+
+  .adherence-period {
+    align-self: stretch;
+  }
+
+  .adherence-period-btn {
+    flex: 1;
+  }
+
+  .adherence-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 /* ---------- Trilha de Auditoria da Calculadora (V02) ---------- */
 .calc-audit-card {
   background: var(--surface);
@@ -3604,3 +3792,17 @@ body.theme-light .daypick button.on {
 
 
 
+/* Phase 1: protocol lifecycle and auditable dose status. */
+.protocol-management { margin: 18px 0; padding: 14px; border: 1px solid var(--border2); border-radius: 16px; background: var(--surface); }
+.protocol-management summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; font-weight: 600; }
+.protocol-management-list { display: grid; gap: 8px; }
+.protocol-manage-item { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; text-align: left; background: var(--surface2); color: var(--text); border: 1px solid var(--border2); border-radius: 12px; padding: 12px; min-height: 48px; }
+.protocol-manage-item strong { overflow-wrap: anywhere; }
+.protocol-manage-item span, .hist-status { font-size: 12px; color: var(--muted); }
+.protocol-lifecycle-controls { padding: 12px; background: var(--surface2); border: 1px solid var(--border2); border-radius: 12px; }
+.protocol-lifecycle-controls p { line-height: 1.5; margin: 8px 0; }
+.protocol-lifecycle-controls .btn-secondary { min-height: 44px; margin-top: 8px; }
+.dose-status { grid-column: 1 / -1; min-height: 44px; }
+.hist-actions { display: flex; flex-direction: column; gap: 4px; }
+.hist-actions button { min-width: 44px; min-height: 44px; border: 1px solid var(--border2); border-radius: 10px; background: var(--surface2); color: var(--text); }
+#edit-units-help { display: block; font-size: 12px; line-height: 1.5; margin-top: 6px; color: var(--muted); }

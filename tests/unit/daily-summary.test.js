@@ -19,7 +19,7 @@ describe("Daily Summary Domain (V04)", () => {
 
     expect(summary).not.toContain("undefined%");
     expect(summary).toContain("50%");
-    expect(summary).toContain("1 de 2 doses previstas concluídas");
+    expect(summary).toContain("1 de 2 doses previstas aplicadas");
     expect(summary).toContain("✓ BPC-157");
     expect(summary).toContain("250 mcg · 10 UI");
     expect(summary).toContain("○ TB-500");
@@ -41,7 +41,7 @@ describe("Daily Summary Domain (V04)", () => {
     const summary = generateDailySummary(singlePeptide, logsWithExtras, targetDate);
 
     expect(summary).not.toContain("3 de 1");
-    expect(summary).toContain("1 de 1 dose prevista concluída");
+    expect(summary).toContain("1 de 1 dose prevista aplicada");
     expect(summary).toContain("+ 2 registros extras");
     expect(summary).toContain("100%");
   });

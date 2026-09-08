@@ -2,7 +2,8 @@
  * Domínio Puro de Resumo Diário e Compartilhamento Seguro (V04)
  */
 
-import { dateToKey, calculateDayProgress, getScheduledPeptides } from "./schedule.js";
+import { dateToKey, isValidDateKey, calculateDayProgress, getScheduledPeptides } from "./schedule.js";
+import { summarizeDoseEntries } from "./dose-state.js";
 
 export function generateDailySummary(
   peptides = [],
@@ -16,7 +17,7 @@ export function generateDailySummary(
     includeDisclaimer = true
   } = options;
 
-  const tKey = dateToKey(targetDate);
+  const tKey = typeof targetDate === "string" && isValidDateKey(targetDate) ? targetDate : dateToKey(targetDate);
   const [y, m, d] = tKey.split("-");
   const dateFormatted = `${d}/${m}/${y}`;
 
@@ -26,31 +27,28 @@ export function generateDailySummary(
 
   let summary = `🧪 Protocolo PEP — Resumo Diário (${dateFormatted})\n`;
   const dueLabel = progress.totalDue === 1 ? "dose prevista" : "doses previstas";
-  let progLine = `Progresso: ${progress.scheduledTaken} de ${progress.totalDue} ${dueLabel} concluídas (${progress.percentage}%)`;
+  const appliedLabel = progress.totalDue === 1 ? "aplicada" : "aplicadas";
+  let progLine = `Aplicações: ${progress.scheduledTaken} de ${progress.totalDue} ${dueLabel} ${appliedLabel} (${progress.percentage}%)`;
   if (progress.extraTaken > 0) {
     const extraLabel = progress.extraTaken === 1 ? "registro extra" : "registros extras";
     progLine += ` (+ ${progress.extraTaken} ${extraLabel})`;
   }
-  summary += `${progLine}\n\n`;
+  summary += `${progLine}\nPuladas: ${progress.skippedCount} · Esquecidas registradas: ${progress.missedCount} · Pendentes: ${progress.pendingCount}\n\n`;
 
   if (scheduled.length === 0) {
     summary += `Nenhuma dose agendada para este dia.\n`;
   } else {
     scheduled.forEach((p, idx) => {
-      const pLogs = dayLogs[p.id];
-      let takenCount = 0;
-      if (Array.isArray(pLogs)) {
-        takenCount = pLogs.length;
-      } else if (pLogs && typeof pLogs === "object") {
-        takenCount = 1;
-      }
-
       const due = Math.max(1, parseInt(p.perDay, 10) || 1);
-      const isDone = takenCount >= due;
+      const counts = summarizeDoseEntries(dayLogs[p.id], due);
+      const isDone = counts.pending === 0;
       const statusIcon = isDone ? "✓" : "○";
-      const statusText = takenCount > due
-        ? `Concluído (${due}/${due} + ${takenCount - due} extra)`
-        : (isDone ? "Concluído" : `${takenCount}/${due}`);
+      const parts = [`Aplicadas: ${Math.min(due, counts.applied)}/${due}`];
+      if (counts.applied > due) parts.push(`${counts.applied - due} extras`);
+      if (counts.skipped) parts.push(`Puladas: ${counts.skipped}`);
+      if (counts.missed) parts.push(`Esquecidas registradas: ${counts.missed}`);
+      parts.push(`Pendentes: ${counts.pending}`);
+      const statusText = parts.join(" · ");
 
       const nameLabel = includeNames ? (p.name || `Peptídeo ${idx + 1}`) : `Item ${idx + 1}`;
       let doseInfo = "";

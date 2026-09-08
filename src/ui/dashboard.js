@@ -11,9 +11,9 @@ const esc = escapeHtml;
 /**
  * Cria uma view model estruturada para o card de dose do dia.
  */
-export function createDoseCardViewModel({ peptide, takenCount = 0, nextSite = null, vialStatus = null }) {
+export function createDoseCardViewModel({ peptide, takenCount = 0, resolvedCount = takenCount, skippedCount = 0, missedCount = 0, nextSite = null, vialStatus = null }) {
   const dueCount = Math.max(1, Number.parseInt(peptide.perDay, 10) || 1);
-  const isCompleted = takenCount >= dueCount;
+  const isCompleted = resolvedCount >= dueCount;
 
   return {
     id: peptide.id,
@@ -24,6 +24,10 @@ export function createDoseCardViewModel({ peptide, takenCount = 0, nextSite = nu
     unitsUI: peptide.ui || 0,
     color: peptide.color || "var(--primary)",
     takenCount,
+    resolvedCount,
+    skippedCount,
+    missedCount,
+    pendingCount: Math.max(0, dueCount - resolvedCount),
     dueCount,
     status: isCompleted ? "completed" : "pending",
     isCompleted,
@@ -59,7 +63,8 @@ export function createDashboardFocusViewModel({ todayItems = [], upcoming = [], 
       .map((item) => {
         const dueCount = Math.max(1, Number.parseInt(item.perDay, 10) || 1);
         const takenCount = Math.min(dueCount, normalizeTakenCount(item.takenCount));
-        return { ...item, dueCount, takenCount, pendingCount: dueCount - takenCount };
+        const resolvedCount = Math.min(dueCount, normalizeTakenCount(item.resolvedCount ?? item.takenCount));
+        return { ...item, dueCount, takenCount, resolvedCount, pendingCount: dueCount - resolvedCount };
       })
       .sort((a, b) => (a.time || "23:59").localeCompare(b.time || "23:59"))
     : [];

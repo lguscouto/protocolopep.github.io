@@ -1,332 +1,291 @@
-/**
- * Domínio de Serviço e Transições de Estado de Doses (P0)
- * Lógica pura, testável e sem dependências do DOM ou storage.
- */
-
+/** Pure, atomic transitions for dose records and their original vial movements. */
 import { createDoseLog, normalizeDoseEntry, validateDoseLog } from "./dose-log.js";
 import { debitVialDose, creditVialDose, extractDoseInMcg } from "./inventory.js";
-import { dateToKey } from "./schedule.js";
+import { dateToKey, isValidDateKey, isValidTime } from "./schedule.js";
+import { parseUnits, DOSE_STATUSES } from "./dose-state.js";
+import { resolveProtocolAt } from "./protocol-history.js";
 
-/**
- * Registra uma dose e debita o inventário correspondente (se disponível).
- * Retorna { success, logs, inventory, doseLog, vial, debitedMcg, error, message }
- */
+const clone = value => value == null ? value : JSON.parse(JSON.stringify(value));
+const fail = (error, message = error) => ({ success: false, error, message });
+const equalAmount = (a, b) => Math.abs(a - b) < 0.0000001;
+const entries = (value, date, id) => Array.isArray(value) ? [...value] : value && typeof value === "object" ? [normalizeDoseEntry(value, date, id)] : [];
+const newId = () => `log_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 9)}`;
+
+function validateInput({ peptideId, scheduledDate, time, status, ui, dose }) {
+  if (typeof peptideId !== "string" || !peptideId.trim()) return fail("VALIDATION_FAILED", "Identificador do protocolo inválido.");
+  if (!isValidDateKey(scheduledDate) || scheduledDate > dateToKey(new Date())) return fail("VALIDATION_FAILED", "Informe uma data válida, que não esteja no futuro.");
+  if (!isValidTime(time)) return fail("VALIDATION_FAILED", "Informe um horário válido entre 00:00 e 23:59.");
+  if (!DOSE_STATUSES.includes(status)) return fail("VALIDATION_FAILED", "Estado do registro inválido.");
+  if (ui === null || parseUnits(ui) === null) return fail("VALIDATION_FAILED", "Unidades inválidas.");
+  if (typeof dose !== "string" && typeof dose !== "number") return fail("VALIDATION_FAILED", "Dose inválida.");
+  const value = String(dose).trim();
+  // Free-text descriptions remain supported, but numerical entries must never be truncated.
+  if (value && (/^[+\-\d.,]/.test(value) || /^(?:NaN|Infinity)\b/i.test(value))) {
+    const match = value.match(/^(\d+(?:[.,]\d+)?)\s*(mg|mcg|ui)?$/i);
+    if (!match || !Number.isFinite(Number(match[1].replace(",", "."))) || Number(match[1].replace(",", ".")) <= 0) {
+      return fail("VALIDATION_FAILED", "Informe uma dose positiva válida, sem arredondamento automático.");
+    }
+  }
+  return null;
+}
+
+function captureProtocol(protocol, dose, ui, vial) {
+  if (!protocol) return null;
+  return clone({
+    name: protocol.name || "",
+    sub: protocol.sub || "",
+    dose,
+    ui,
+    revisionId: protocol.revisionId || null,
+    calculationSnapshot: protocol.calculationSnapshot || null,
+    vial: vial ? {
+      id: vial.id,
+      peptideName: vial.peptideName || "",
+      lotNumber: vial.lotNumber || "",
+      concentrationMcgPerMl: vial.concentrationMcgPerMl,
+      totalMg: vial.totalMg,
+      waterMl: vial.waterMl
+    } : null
+  });
+}
+
+function compatibleVial(vial, peptideId, name) {
+  const normalize = value => String(value || "").trim().toLowerCase();
+  const identities = [normalize(peptideId), normalize(name)].filter(Boolean);
+  return vial && vial.status === "active" && identities.some(id => id === normalize(vial.peptideId) || id === normalize(vial.peptideName));
+}
+
+/** Only applied entries debit stock. Skipped/missed entries carry no stock linkage. */
 export function registerDoseState({
-  logs = {},
-  inventory = [],
-  peptides = [],
-  peptideId,
-  scheduledDate,
-  time,
-  dose,
-  ui,
-  site,
-  note,
-  status = "applied",
-  statusReason = "",
-  retroactive = false,
+  logs = {}, inventory = [], peptides = [], peptideId, scheduledDate, time, dose, ui,
+  site = "", note = "", status = "applied", statusReason = "", retroactive,
   allowHistoryOnlyWithoutStock = false
 }) {
-  const targetDate = scheduledDate || dateToKey(new Date());
-  const peptide = (peptides || []).find((p) => p.id === peptideId);
-  const peptideName = peptide ? peptide.name : "";
-  const doseStr = dose || (peptide ? peptide.dose : "");
-  const uiVal = ui !== undefined && ui !== null ? Number(ui) : (peptide ? Number(peptide.ui) || 0 : 0);
-
-  // 1. Localizar frasco ativo compatível
-  let targetVial = null;
-  let vialIndex = -1;
-  if (Array.isArray(inventory)) {
-    vialIndex = inventory.findIndex((v) => {
-      if (v.status !== "active") return false;
-      const vId = v.peptideId ? String(v.peptideId).trim().toLowerCase() : "";
-      const vName = v.peptideName ? String(v.peptideName).trim().toLowerCase() : "";
-      const pId = peptideId ? String(peptideId).trim().toLowerCase() : "";
-      const pName = peptideName ? String(peptideName).trim().toLowerCase() : "";
-      if (pId && (vId === pId || vName === pId)) return true;
-      if (pName && (vId === pName || vName === pName)) return true;
-      return false;
-    });
-    if (vialIndex !== -1) {
-      targetVial = inventory[vialIndex];
-    }
+  const now = new Date();
+  const today = dateToKey(now);
+  const targetDate = scheduledDate === undefined ? today : scheduledDate;
+  const targetTime = time === undefined ? (targetDate === today ? now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "12:00") : time;
+  // Validate the date and time before constructing an instant or resolving a revision.
+  if (!isValidDateKey(targetDate) || !isValidTime(targetTime)) return fail("VALIDATION_FAILED", "Data ou horário inválido.");
+  const source = peptides.find(p => p.id === peptideId);
+  const takenAt = time === undefined && targetDate === today ? now : new Date(`${targetDate}T${targetTime}:00`);
+  const resolved = resolveProtocolAt(source, takenAt);
+  const peptide = resolved?.lifecycleStatus === "not_started" ? null : resolved;
+  if (status === "applied" && peptide?.numericIntegrity === "needs_review" && (dose === undefined || ui === undefined)) {
+    return fail("VALIDATION_FAILED", "Revise explicitamente a dose e as unidades do protocolo antes de registrar uma aplicação.");
   }
-
-  let updatedInventory = Array.isArray(inventory) ? [...inventory] : [];
-  let debitedVial = null;
-  let debitMovementId = null;
-  let debitedMcg = 0;
-  const generatedLogId = `log_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
-
-  // 2. Se houver frasco ativo, tentar debitar
-  if (targetVial) {
-    const isUiDose = uiVal > 0 || (typeof doseStr === "string" && /\bui\b/i.test(doseStr));
-    const effectiveDoseInput = doseStr || (uiVal > 0 ? `${uiVal} UI` : "");
-    const amountToDebit = extractDoseInMcg(effectiveDoseInput, targetVial);
-
-    if (isUiDose && (!targetVial.concentrationMcgPerMl || targetVial.concentrationMcgPerMl <= 0)) {
-      if (!allowHistoryOnlyWithoutStock) {
-        return {
-          success: false,
-          error: "VIAL_MISSING_CONCENTRATION",
-          message: `O frasco ativo de ${targetVial.peptideName || peptideName} não possui concentração definida para converter UI em mcg. Reconstitua o frasco ou confirme para registrar apenas no histórico.`
-        };
-      }
-    } else if (amountToDebit > 0) {
-      // Rejeitar se saldo for insuficiente (P1 - Sec 12)
-      if (amountToDebit > Number(targetVial.remainingMcg)) {
-        return {
-          success: false,
-          error: "INSUFFICIENT_BALANCE",
-          message: `Saldo insuficiente no frasco de ${targetVial.peptideName} (${targetVial.remainingMcg} mcg restantes, dose requer ${amountToDebit} mcg).`
-        };
-      }
-
-      const debitResult = debitVialDose(targetVial, {
-        doseMcg: amountToDebit,
-        doseStr: effectiveDoseInput,
-        doseLogId: generatedLogId,
-        date: targetDate,
-        note: peptideName || `Dose de ${amountToDebit} mcg`
-      });
-
-      if (!debitResult.success) {
-        return { success: false, error: debitResult.error, message: debitResult.error };
-      }
-
-      debitedVial = debitResult.vial;
-      debitedMcg = debitResult.debitedMcg;
-      const movements = debitedVial.movements || [];
-      debitMovementId = movements.length > 0 ? movements[movements.length - 1].id : null;
-      updatedInventory[vialIndex] = debitedVial;
-    }
-  }
-
-  // 3. Criar log de dose com vinculação ao frasco e movimento
-  const doseLog = createDoseLog({
-    id: generatedLogId,
-    peptideId,
-    scheduledDate: targetDate,
-    time: time || (targetDate === dateToKey(new Date()) ? new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "12:00"),
-    dose: doseStr,
-    ui: uiVal,
-    site: site || "",
-    note: note || "",
-    status,
-    statusReason,
-    retroactive,
-    vialId: debitedVial ? debitedVial.id : null,
-    inventoryMovementId: debitMovementId
+  const doseStr = dose === undefined ? (peptide?.dose || "") : dose;
+  const uiVal = ui === undefined ? (peptide?.ui === undefined ? 0 : peptide.ui) : ui;
+  const invalid = validateInput({ peptideId, scheduledDate: targetDate, time: targetTime, status, ui: uiVal, dose: doseStr });
+  if (invalid) return invalid;
+  const normalizedUnits = parseUnits(uiVal);
+  const log = createDoseLog({
+    id: newId(), peptideId, scheduledDate: targetDate, time: targetTime, takenAt: takenAt.toISOString(), dose: doseStr,
+    ui: normalizedUnits, site, note, status, statusReason, retroactive,
+    debitedMcg: 0, protocolSnapshot: captureProtocol(peptide, String(doseStr).trim(), normalizedUnits, null)
   });
+  const targetIndex = status === "applied" ? inventory.findIndex(v => compatibleVial(v, peptideId, peptide?.name)) : -1;
+  const result = applyStock(log, inventory, targetIndex, { allowHistoryOnlyWithoutStock });
+  if (!result.success) return result;
+  if (result.vial) log.protocolSnapshot = captureProtocol(peptide, log.dose, log.ui, result.vial);
+  return appendLog(logs, result.inventory, log, result.vial, result.debitedMcg);
+}
 
+function applyStock(log, inventory, vialIndex, { allowHistoryOnlyWithoutStock = false, historicalVial = null, fixedAmount = null } = {}) {
+  const updatedInventory = [...inventory];
+  if (log.status !== "applied" || vialIndex < 0) return { success: true, inventory: updatedInventory, vial: null, debitedMcg: 0 };
+  const vial = inventory[vialIndex];
+  if (!Number.isFinite(Number(vial.remainingMcg)) || Number(vial.remainingMcg) < 0) return fail("INVENTORY_LINK_INVALID", "Saldo do frasco inválido.");
+  const input = log.dose || (log.ui > 0 ? `${log.ui} UI` : "");
+  const isUiDose = /\bui\b/i.test(input);
+  const conversionVial = historicalVial ? { ...vial, concentrationMcgPerMl: historicalVial.concentrationMcgPerMl } : vial;
+  if (fixedAmount === null && isUiDose && (!Number.isFinite(Number(conversionVial.concentrationMcgPerMl)) || Number(conversionVial.concentrationMcgPerMl) <= 0)) {
+    if (!allowHistoryOnlyWithoutStock) return fail("VIAL_MISSING_CONCENTRATION", "O frasco não possui concentração válida para converter UI em mcg. Reconstitua o frasco ou confirme o registro somente no histórico.");
+    return { success: true, inventory: updatedInventory, vial: null, debitedMcg: 0 };
+  }
+  const parsed = input.match(/^(\d+(?:[.,]\d+)?)\s*(mg|mcg|ui)?$/i);
+  const value = parsed ? Number(parsed[1].replace(",", ".")) : null;
+  const unit = parsed?.[2]?.toLowerCase();
+  const amount = fixedAmount !== null ? fixedAmount : parsed ? value * (unit === "mg" ? 1000 : unit === "ui" ? Number(conversionVial.concentrationMcgPerMl) / 100 : 1) : extractDoseInMcg(input, conversionVial);
+  if (!Number.isFinite(amount) || amount <= 0) return fail("VALIDATION_FAILED", "Não foi possível calcular o débito da dose informada. Revise os dados antes de registrar.");
+  // Inventory movements use hundredths of a microgram; reject loss rather than silently round.
+  if (!equalAmount(amount, Math.round(amount * 100) / 100)) return fail("INVALID_DOSE_PRECISION", "A precisão informada excede a precisão do estoque; revise o valor sem arredondamento automático.");
+  const debit = debitVialDose(vial, { doseMcg: amount, doseStr: input, doseLogId: log.id, date: log.scheduledDate, note: log.protocolSnapshot?.name || "Aplicação registrada" });
+  if (!debit.success) return fail(debit.error, debit.message || debit.error);
+  if (!equalAmount(Number(vial.remainingMcg) - debit.vial.remainingMcg, amount)) return fail("INVENTORY_LINK_INVALID", "O saldo do frasco não permite um débito exato.");
+  log.vialId = vial.id;
+  log.inventoryMovementId = debit.vial.movements.at(-1).id;
+  log.debitedMcg = debit.debitedMcg;
+  updatedInventory[vialIndex] = debit.vial;
+  return { success: true, inventory: updatedInventory, vial: debit.vial, debitedMcg: debit.debitedMcg };
+}
+
+function appendLog(logs, inventory, doseLog, vial, debitedMcg) {
   const validation = validateDoseLog(doseLog);
-  if (!validation.valid) {
-    return { success: false, error: "VALIDATION_FAILED", message: validation.error };
-  }
-
-  // 4. Adicionar log de dose no registro da data
-  const updatedLogs = { ...(logs || {}) };
-  const dayRec = { ...(updatedLogs[targetDate] || {}) };
-  const curr = dayRec[peptideId];
-  let arr = [];
-  if (Array.isArray(curr)) {
-    arr = [...curr];
-  } else if (curr && typeof curr === "object") {
-    const norm = normalizeDoseEntry(curr, targetDate, peptideId);
-    if (norm) arr = [norm];
-  }
-  arr.push(doseLog);
-  dayRec[peptideId] = arr;
-  updatedLogs[targetDate] = dayRec;
-
-  return {
-    success: true,
-    logs: updatedLogs,
-    inventory: updatedInventory,
-    doseLog,
-    vial: debitedVial,
-    debitedMcg
-  };
+  if (!validation.valid) return fail("VALIDATION_FAILED", validation.error);
+  const day = { ...(logs[doseLog.scheduledDate] || {}) };
+  const current = entries(day[doseLog.peptideId], doseLog.scheduledDate, doseLog.peptideId);
+  day[doseLog.peptideId] = [...current, doseLog];
+  return { success: true, logs: { ...logs, [doseLog.scheduledDate]: day }, inventory, doseLog, vial, debitedMcg };
 }
 
-/**
- * Desfaz uma dose de um peptídeo em uma data, estornando exatamente no frasco original.
- * Retorna { success, logs, inventory, removedLog, vial, creditedMcg, error, message }
- */
-export function undoDoseState({
-  logs = {},
-  inventory = [],
-  peptideId,
-  scheduledDate,
-  doseLogId = null
-}) {
-  const targetDate = scheduledDate || dateToKey(new Date());
-  const updatedLogs = { ...(logs || {}) };
-  const dayRec = { ...(updatedLogs[targetDate] || {}) };
-  const curr = dayRec[peptideId];
-
-  let arr = [];
-  if (Array.isArray(curr)) {
-    arr = [...curr];
-  } else if (curr && typeof curr === "object") {
-    const norm = normalizeDoseEntry(curr, targetDate, peptideId);
-    if (norm) arr = [norm];
+/** Resolve the amount from original evidence, never from the current dose or concentration. */
+function originalDebit(log, inventory) {
+  const status = log.status === undefined ? "applied" : log.status;
+  if (!DOSE_STATUSES.includes(status)) return fail("VALIDATION_FAILED", "Estado do registro inválido; corrija os dados antes de alterar o histórico.");
+  if (status !== "applied") {
+    if (log.vialId || log.inventoryMovementId || Number(log.debitedMcg) > 0) return fail("INVENTORY_LINK_INVALID", "Registro não aplicado com vínculo de estoque inconsistente. O histórico foi preservado.");
+    return { success: true, amount: 0, vialIndex: -1, movementId: null };
   }
-
-  if (arr.length === 0) {
-    return { success: false, error: "NO_DOSE_TO_UNDO", message: "Nenhuma dose encontrada para desfazer." };
+  if (!log.vialId) {
+    if (log.inventoryMovementId || Number(log.debitedMcg) > 0) return fail("INVENTORY_LINK_INVALID", "O registro possui débito sem identificação do frasco original.");
+    return { success: true, amount: 0, vialIndex: -1, movementId: null };
   }
-
-  let removedLog = null;
-
-  if (doseLogId) {
-    const targetIndex = arr.findIndex((l) => l.id === doseLogId);
-    if (targetIndex !== -1) {
-      removedLog = arr[targetIndex];
-      arr.splice(targetIndex, 1);
+  const vialIndex = inventory.findIndex(v => v.id === log.vialId);
+  if (vialIndex < 0) return fail("ORIGINAL_VIAL_MISSING", "O frasco original não foi encontrado. O registro foi preservado para evitar um estorno incorreto.");
+  const vial = inventory[vialIndex];
+  const movements = Array.isArray(vial.movements) ? vial.movements : [];
+  let amount = null;
+  if (log.inventoryMovementId) {
+    const candidates = movements.filter(m => m.id === log.inventoryMovementId);
+    const movement = candidates[0];
+    if (candidates.length !== 1 || movement.type !== "dose" || movement.doseLogId !== log.id || !Number.isFinite(movement.amountMcg) || movement.amountMcg >= 0) {
+      return fail("INVENTORY_LINK_INVALID", "A movimentação original não corresponde ao registro. Nenhum dado foi alterado.");
     }
-  } else {
-    removedLog = arr.pop();
+    amount = -movement.amountMcg;
+    if (movements.some(m => m.type === "undo_dose" && (m.reversesMovementId === movement.id || (!m.reversesMovementId && m.doseLogId === log.id)))) {
+      return fail("INVENTORY_LINK_INVALID", "O débito já possui um estorno ou uma correção sem vínculo verificável.");
+    }
   }
-
-  if (!removedLog) {
-    return { success: false, error: "DOSE_NOT_FOUND", message: "Dose não encontrada para desfazer." };
+  if (log.debitedMcg !== null && log.debitedMcg !== undefined) {
+    if (!Number.isFinite(log.debitedMcg) || log.debitedMcg <= 0 || (amount !== null && !equalAmount(amount, log.debitedMcg))) return fail("INVENTORY_LINK_INVALID", "A quantidade debitada não corresponde à movimentação original.");
+    amount = log.debitedMcg;
   }
+  if (!Number.isFinite(amount) || amount <= 0) return fail("INVENTORY_LINK_INVALID", "A quantidade originalmente debitada não está disponível. O registro foi preservado.");
+  return { success: true, amount, vialIndex, movementId: log.inventoryMovementId || null };
+}
 
-  if (arr.length === 0) {
-    delete dayRec[peptideId];
-  } else {
-    dayRec[peptideId] = arr;
-  }
-
-  if (Object.keys(dayRec).length === 0) {
-    delete updatedLogs[targetDate];
-  } else {
-    updatedLogs[targetDate] = dayRec;
-  }
-
-  let updatedInventory = Array.isArray(inventory) ? [...inventory] : [];
-  let creditedVial = null;
+/** Undo is fail-closed: any missing or inconsistent original stock evidence preserves the entry. */
+export function undoDoseState({ logs = {}, inventory = [], peptideId, scheduledDate, doseLogId = null }) {
+  const targetDate = scheduledDate === undefined ? dateToKey(new Date()) : scheduledDate;
+  if (!isValidDateKey(targetDate) || !peptideId) return fail("VALIDATION_FAILED", "Data ou protocolo inválido.");
+  const day = { ...(logs[targetDate] || {}) };
+  const arr = entries(day[peptideId], targetDate, peptideId);
+  const index = doseLogId ? arr.findIndex(entry => entry?.id === doseLogId) : arr.length - 1;
+  if (index < 0) return fail(doseLogId ? "DOSE_NOT_FOUND" : "NO_DOSE_TO_UNDO", "Nenhuma dose encontrada para desfazer.");
+  const removedLog = arr[index];
+  if (!removedLog || typeof removedLog !== "object") return fail("VALIDATION_FAILED", "Registro inválido.");
+  const original = originalDebit(removedLog, inventory);
+  if (!original.success) return original;
+  const updatedInventory = [...inventory];
+  let vial = null;
   let creditedMcg = 0;
-
-  // 2. Estornar no frasco ORIGINAL que foi debitado (P0 - Sec 3 e 4)
-  if (removedLog.vialId) {
-    const vialIndex = updatedInventory.findIndex((v) => v.id === removedLog.vialId);
-    if (vialIndex !== -1) {
-      const origVial = updatedInventory[vialIndex];
-      const effectiveDoseInput = removedLog.dose || (removedLog.ui ? `${removedLog.ui} UI` : "");
-      const amountToCredit = extractDoseInMcg(effectiveDoseInput, origVial);
-      if (amountToCredit > 0) {
-        const creditRes = creditVialDose(origVial, {
-          doseMcg: amountToCredit,
-          doseStr: effectiveDoseInput,
-          doseLogId: removedLog.id,
-          date: targetDate,
-          note: `Estorno de aplicação (${removedLog.id})`
-        });
-        if (creditRes.success) {
-          creditedVial = creditRes.vial;
-          creditedMcg = creditRes.creditedMcg;
-          updatedInventory[vialIndex] = creditedVial;
-        }
-      }
-    }
+  if (original.amount > 0) {
+    const credit = creditVialDose(inventory[original.vialIndex], { doseMcg: original.amount, doseLogId: removedLog.id, date: targetDate, note: `Estorno de aplicação (${removedLog.id})` });
+    if (!credit.success || !equalAmount(credit.creditedMcg, original.amount)) return fail("INVENTORY_CREDIT_MISMATCH", "O frasco não permite estornar exatamente o débito original. Nenhum dado foi alterado.");
+    vial = credit.vial;
+    vial.movements.at(-1).reversesMovementId = original.movementId;
+    creditedMcg = credit.creditedMcg;
+    updatedInventory[original.vialIndex] = vial;
   }
-
-  return {
-    success: true,
-    logs: updatedLogs,
-    inventory: updatedInventory,
-    removedLog,
-    vial: creditedVial,
-    creditedMcg
-  };
+  arr.splice(index, 1);
+  if (arr.length) day[peptideId] = arr;
+  else delete day[peptideId];
+  const updatedLogs = { ...logs };
+  if (Object.keys(day).length) updatedLogs[targetDate] = day;
+  else delete updatedLogs[targetDate];
+  return { success: true, logs: updatedLogs, inventory: updatedInventory, removedLog, vial, creditedMcg };
 }
 
-/**
- * Remove uma dose do histórico por índice ou ID, estornando estoque se e somente se debitou originalmente.
- */
-export function deleteDoseState({
-  logs = {},
-  inventory = [],
-  scheduledDate,
-  peptideId,
-  doseLogId = null
-}) {
-  return undoDoseState({
-    logs,
-    inventory,
-    peptideId,
-    scheduledDate,
-    doseLogId
+export function deleteDoseState(options) { return undoDoseState(options); }
+
+/** Correct one record as a single state transition; never switch it to another vial. */
+export function editDoseState({ logs = {}, inventory = [], peptideId, scheduledDate, doseLogId, updates = {} }) {
+  if (!doseLogId || !updates || typeof updates !== "object" || Array.isArray(updates)) return fail("VALIDATION_FAILED", "Correção de registro inválida.");
+  const original = entries(logs[scheduledDate]?.[peptideId], scheduledDate, peptideId).find(entry => entry?.id === doseLogId);
+  if (!original) return fail("DOSE_NOT_FOUND", "Dose não encontrada para corrigir.");
+  const allowed = ["scheduledDate", "time", "dose", "ui", "site", "note", "status", "statusReason"];
+  if (Object.keys(updates).some(key => !allowed.includes(key))) return fail("VALIDATION_FAILED", "A correção contém campos que não podem ser alterados.");
+  const next = { ...clone(original), peptideId, scheduledDate, ...updates };
+  const legacyUnknownUnits = !original.protocolSnapshot && original.ui == null && updates.ui === undefined;
+  const legacyUnknownDose = !original.protocolSnapshot && original.dose == null && updates.dose === undefined;
+  next.status = next.status === undefined ? "applied" : next.status;
+  next.dose = legacyUnknownDose ? "" : next.dose === undefined ? "" : next.dose;
+  next.ui = legacyUnknownUnits ? 0 : next.ui === undefined ? 0 : next.ui;
+  const invalid = validateInput(next);
+  if (invalid) return invalid;
+  const undo = undoDoseState({ logs, inventory, peptideId, scheduledDate, doseLogId });
+  if (!undo.success) return undo;
+  const editedAt = new Date().toISOString();
+  const previous = Object.fromEntries([...allowed, "takenAt", "protocolSnapshot", "inventoryMovementId", "vialId", "debitedMcg"].map(key => [key, clone(original[key] ?? null)]));
+  const snapshot = original.protocolSnapshot ? { ...clone(original.protocolSnapshot), dose: String(next.dose).trim(), ui: parseUnits(next.ui) } : null;
+  // A calculation snapshot belongs to its original values; retain it in the audit if dose values change.
+  if (snapshot && (String(next.dose).trim() !== original.dose || parseUnits(next.ui) !== original.ui)) snapshot.calculationSnapshot = null;
+  const corrected = createDoseLog({
+    ...next, id: original.id, createdAt: original.createdAt, editedAt,
+    takenAt: next.scheduledDate !== scheduledDate || next.time !== original.time ? new Date(`${next.scheduledDate}T${next.time}:00`).toISOString() : original.takenAt,
+    retroactive: original.retroactive || next.scheduledDate < dateToKey(new Date()),
+    protocolSnapshot: snapshot, vialId: null, inventoryMovementId: null, debitedMcg: 0,
+    editHistory: [...(original.editHistory || []), { editedAt, previous }]
   });
+  // A skipped correction may later become applied again: retain the previously confirmed vial.
+  const originalStockRecord = [original, ...(original.editHistory || []).slice().reverse().map(edit => edit.previous)].find(entry => entry?.vialId);
+  // A skipped/missed record has no original vial. When the user corrects it to
+  // applied, choose the current active vial for this peptide exactly as a new
+  // registration would; later edits still remain locked to this new vial.
+  const referenceName = original.protocolSnapshot?.name || original.name || original.peptideName || "";
+  const fallbackIndex = original.status !== "applied"
+    ? undo.inventory.findIndex(v => v?.status === "active" && (String(v.peptideId || "") === String(peptideId) || String(v.peptideName || "").trim().toLowerCase() === String(referenceName).trim().toLowerCase()))
+    : -1;
+  const originalIndex = originalStockRecord ? undo.inventory.findIndex(v => v.id === originalStockRecord.vialId) : fallbackIndex;
+  if (corrected.status === "applied" && original.status !== "applied" && originalIndex < 0) return fail("ORIGINAL_VIAL_MISSING", "Nenhum frasco ativo está vinculado a este protocolo para registrar a aplicação.");
+  if (corrected.status === "applied" && originalStockRecord && originalIndex < 0) return fail("ORIGINAL_VIAL_MISSING", "O frasco original não foi encontrado para corrigir a aplicação.");
+  const historicalVial = originalStockRecord?.protocolSnapshot?.vial || (originalStockRecord ? { concentrationMcgPerMl: null } : null);
+  const quantityUnchanged = (updates.dose === undefined || String(updates.dose).trim() === originalStockRecord?.dose)
+    && (updates.ui === undefined || parseUnits(updates.ui) === parseUnits(originalStockRecord?.ui));
+  const fixedAmount = quantityUnchanged && original.vialId ? undo.creditedMcg : null;
+  const result = applyStock(corrected, undo.inventory, originalIndex, { historicalVial, fixedAmount });
+  if (!result.success) return result;
+  if (corrected.protocolSnapshot) {
+    corrected.protocolSnapshot.vial = result.vial
+      ? clone(originalStockRecord?.protocolSnapshot?.vial || {
+          id: result.vial.id, peptideName: result.vial.peptideName || referenceName,
+          lotNumber: result.vial.lotNumber || "", concentrationMcgPerMl: result.vial.concentrationMcgPerMl,
+          totalMg: result.vial.totalMg, waterMl: result.vial.waterMl
+        })
+      : null;
+  }
+  const appended = appendLog(undo.logs, result.inventory, corrected, result.vial || undo.vial, result.debitedMcg);
+  if (legacyUnknownUnits) {
+    if (original.ui === undefined) delete corrected.ui;
+    else corrected.ui = original.ui;
+  }
+  if (legacyUnknownDose) {
+    if (original.dose === undefined) delete corrected.dose;
+    else corrected.dose = original.dose;
+  }
+  return { ...appended, previousLog: clone(original), creditedMcg: undo.creditedMcg };
 }
 
-/**
- * Preenche retroativamente os logs de doses de um peptídeo para uma lista de datas calculadas.
- * Idempotente: não duplica logs caso uma data já possua dose registrada para este peptídeo.
- * Não debita inventário de frascos passados.
- * @param {Object} logs Objeto de logs { [dateKey]: { [peptideId]: [...] } }
- * @param {Object} peptide Objeto do peptídeo
- * @param {Array<{dateKey: string, times: string[]}>} backfillDates Lista de datas com horários
- * @returns {{ logs: Object, addedCount: number, datesAdded: string[] }}
- */
+/** Explicit user-confirmed backfill only; never moves present stock. */
 export function backfillPeptideDoseLogs(logs = {}, peptide = {}, backfillDates = []) {
-  if (!peptide || !peptide.id || !Array.isArray(backfillDates) || backfillDates.length === 0) {
-    return { logs: logs || {}, addedCount: 0, datesAdded: [] };
-  }
-
-  const updatedLogs = { ...(logs || {}) };
+  if (!peptide?.id || !Array.isArray(backfillDates)) return { logs, addedCount: 0, datesAdded: [] };
+  let updatedLogs = { ...logs };
   let addedCount = 0;
   const datesAdded = [];
-
-  const peptideId = peptide.id;
-  const doseStr = peptide.dose || "";
-  const uiVal = Number(peptide.ui) || 0;
-
   for (const item of backfillDates) {
-    const { dateKey, times } = item;
-    if (!dateKey) continue;
-
-    const dayRec = { ...(updatedLogs[dateKey] || {}) };
-    const curr = dayRec[peptideId];
-
-    let existingArr = [];
-    if (Array.isArray(curr)) {
-      existingArr = curr;
-    } else if (curr && typeof curr === "object") {
-      existingArr = [curr];
+    const dateKey = item.dateKey;
+    if (!isValidDateKey(dateKey) || entries(updatedLogs[dateKey]?.[peptide.id], dateKey, peptide.id).length) continue;
+    const times = Array.isArray(item.times) && item.times.length ? item.times : [peptide.time || "08:00"];
+    let dayAdded = false;
+    for (const time of times) {
+      const result = registerDoseState({ logs: updatedLogs, peptides: [peptide], peptideId: peptide.id, scheduledDate: dateKey, time, note: "Início do protocolo (retroativo)", retroactive: true });
+      if (!result.success) continue;
+      updatedLogs = result.logs;
+      addedCount++;
+      dayAdded = true;
     }
-
-    if (existingArr.length > 0) {
-      continue;
-    }
-
-    const timesList = Array.isArray(times) && times.length > 0 ? times : [peptide.time || "08:00"];
-    const newLogsForDay = timesList.map((t) =>
-      createDoseLog({
-        peptideId,
-        scheduledDate: dateKey,
-        time: t,
-        dose: doseStr,
-        ui: uiVal,
-        note: "Início do protocolo (retroativo)",
-        status: "applied",
-        retroactive: true,
-        vialId: null,
-        inventoryMovementId: null
-      })
-    );
-
-    dayRec[peptideId] = newLogsForDay;
-    updatedLogs[dateKey] = dayRec;
-    addedCount += newLogsForDay.length;
-    datesAdded.push(dateKey);
+    if (dayAdded) datesAdded.push(dateKey);
   }
-
-  return {
-    logs: updatedLogs,
-    addedCount,
-    datesAdded
-  };
+  return { logs: updatedLogs, addedCount, datesAdded };
 }

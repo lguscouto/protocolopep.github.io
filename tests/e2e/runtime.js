@@ -44,8 +44,8 @@ export function trackPageRuntime(page) {
  * @param {Object} [options.logs={}]
  * @param {string} [options.locale="pt-BR"]
  */
-export async function seedStorage(page, { skipOnboarding = true, peptides = [], logs = {}, locale = "pt-BR" } = {}) {
-  await page.addInitScript(({ skipOnboarding, peptides, logs, locale }) => {
+export async function seedStorage(page, { skipOnboarding = true, peptides = [], logs = {}, measurements = [], locale = "pt-BR" } = {}) {
+  await page.addInitScript(({ skipOnboarding, peptides, logs, measurements, locale }) => {
     localStorage.clear();
     localStorage.setItem("pep_user_language", locale);
     if (skipOnboarding) {
@@ -57,5 +57,8 @@ export async function seedStorage(page, { skipOnboarding = true, peptides = [], 
     if (logs && Object.keys(logs).length > 0) {
       localStorage.setItem("pep_logs_v2", JSON.stringify(logs));
     }
-  }, { skipOnboarding, peptides, logs, locale });
+    if (measurements && measurements.length > 0) {
+      localStorage.setItem("pep_measurements_v2", JSON.stringify(measurements));
+    }
+  }, { skipOnboarding, peptides, logs, measurements, locale });
 }

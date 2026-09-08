@@ -150,6 +150,9 @@
         </div>
       </div>
 
+      <!-- Resumo descritivo de consistência da rotina (Fase 2) -->
+      <div id="adherence-summary"></div>
+
       <!-- Resumo de Tendências Autorrelatadas (V12) -->
       <div id="measurements-trend-summary"></div>
 
@@ -549,7 +552,8 @@
           </div>
           <div class="form-field">
             <label for="edit-ui" class="form-field-label">Unidades (UI)</label>
-            <input type="number" class="form-field-control" id="edit-ui" placeholder="ex: 10" />
+            <input type="text" inputmode="decimal" class="form-field-control" id="edit-ui" placeholder="ex: 2,5" aria-describedby="edit-units-help" />
+            <small id="edit-units-help" data-i18n="phase1.unitsHelp">Valor matemático em UI. Confira a graduação da seringa; não arredondamos o resultado.</small>
           </div>
         </div>
 
@@ -621,7 +625,7 @@
           <!-- Box de Prévia de Preenchimento Retroativo -->
           <div id="edit-backfill-wrap" style="display:none;margin-top:8px;padding:10px 12px;background:rgba(44,197,192,0.08);border:1px solid rgba(44,197,192,0.25);border-radius:10px;">
             <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12px;color:var(--text);font-weight:500;margin:0;">
-              <input type="checkbox" id="edit-backfill-check" checked style="margin-top:2px;accent-color:var(--primary);width:16px;height:16px;" />
+              <input type="checkbox" id="edit-backfill-check" style="margin-top:2px;accent-color:var(--primary);width:16px;height:16px;" />
               <div>
                 <div style="font-weight:600;color:var(--primary);">Preencher Histórico Retroativo</div>
                 <div id="edit-backfill-preview" style="font-size:11.5px;color:var(--muted);margin-top:2px;">
@@ -742,7 +746,20 @@
           <select class="form-field-control" id="retro-pep-select"></select>
         </div>
 
-        <div class="retro-site-field">
+        <div class="form-field">
+          <label for="retro-status-select" class="form-field-label">Estado do registro</label>
+          <select class="form-field-control" id="retro-status-select">
+            <option value="applied">Aplicada</option>
+            <option value="skipped">Pulada</option>
+            <option value="missed">Esquecida</option>
+          </select>
+        </div>
+        <div class="form-field" id="retro-reason-field" hidden>
+          <label for="retro-reason-input" class="form-field-label" data-i18n="phase1.statusReason">Motivo (opcional)</label>
+          <input type="text" class="form-field-control" id="retro-reason-input" maxlength="200" />
+        </div>
+
+        <div class="retro-site-field" id="retro-site-field">
           <div class="retro-site-label" id="retro-site-label">Local de Aplicação</div>
           <select id="retro-site-select" hidden aria-hidden="true" tabindex="-1"></select>
           <div id="retro-site-picker" aria-labelledby="retro-site-label"></div>
@@ -766,7 +783,7 @@
           </div>
           <div class="form-field">
             <label for="retro-ui-input" class="form-field-label">Unidades (UI)</label>
-            <input type="number" class="form-field-control" id="retro-ui-input" placeholder="ex: 10" />
+            <input type="text" inputmode="decimal" class="form-field-control" id="retro-ui-input" placeholder="ex: 2,5" />
           </div>
         </div>
 
@@ -778,6 +795,7 @@
         <div id="retro-audit-hint" style="margin-bottom:14px;padding:9px 12px;background:rgba(44,197,192,0.08);border:1px solid rgba(44,197,192,0.2);border-radius:10px;font-size:11.5px;color:var(--muted);line-height:1.4;">
           🕒 <b>Registro Auditável:</b> Aplicações marcadas em datas passadas recebem automaticamente a marcação de auditoria <i>Retroativo</i>.
         </div>
+        <div id="retro-edit-history" hidden style="margin-bottom:14px;font-size:12px;color:var(--muted);line-height:1.5;"></div>
       </div>
       <div class="sheet-foot sheet-foot--actions sheet-foot--primary-wide">
         <button type="button" class="btn-subtle" id="retro-cancel">Cancelar</button>
@@ -872,7 +890,11 @@
           <div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border2);">
             <label for="report-opt-notes" style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text);cursor:pointer;">
               <input type="checkbox" id="report-opt-notes" style="accent-color:var(--primary);width:16px;height:16px;" />
-              <span>Incluir anotações e observações clínicas</span>
+              <span>Incluir anotações e observações das aplicações</span>
+            </label>
+            <label for="report-opt-measurements" style="display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--text);cursor:pointer;margin-top:8px;">
+              <input type="checkbox" id="report-opt-measurements" style="accent-color:var(--primary);width:16px;height:16px;flex:0 0 auto;margin-top:1px;" />
+              <span>Incluir medições autorrelatadas (peso, energia, humor e sintomas)</span>
             </label>
           </div>
         </div>
@@ -882,6 +904,7 @@
             <span style="font-size:12px;font-weight:700;color:var(--text);">Prévia do Relatório</span>
             <span id="report-entries-count" style="font-size:11px;color:var(--muted);">0 aplicações</span>
           </div>
+          <div id="report-preview-summary" aria-live="polite"></div>
           <div id="report-preview-list" style="max-height:180px;overflow-y:auto;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;"></div>
         </div>
 

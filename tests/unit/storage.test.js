@@ -87,6 +87,35 @@ describe("Storage Service", () => {
     expect(storageInstance.getPeptides()[0].name).toBe("Peptídeo Inicial");
   });
 
+  it("commita logs e inventário juntos e usa o envelope na recarga", () => {
+    storageInstance.init();
+    const logs = { "2026-09-08": { pep_x: [{ id: "log_x", peptideId: "pep_x", time: "08:00", ui: 2.5, dose: "10 mcg" }] } };
+    const inventory = [{ id: "vial_x", peptideId: "pep_x", peptideName: "X", totalMg: 1, waterMl: 1, remainingMcg: 900 }];
+    expect(storageInstance.commitDoseState({ logs, inventory }).success).toBe(true);
+    // Um consumidor antigo pode deixar os espelhos divergentes; o par atômico prevalece.
+    mockStore.pep_logs_v2 = JSON.stringify({});
+    mockStore.pep_inventory_v2 = JSON.stringify([]);
+    const reloaded = new StorageService();
+    expect(reloaded.init().logs["2026-09-08"].pep_x[0].id).toBe("log_x");
+    expect(reloaded.init().inventory[0].id).toBe("vial_x");
+    expect(JSON.parse(mockStore.pep_dose_state_v1).version).toBe(1);
+  });
+
+  it("não altera a memória nem notifica quando o commit atômico falha", () => {
+    storageInstance.init();
+    const before = storageInstance.getLogs();
+    const notifications = vi.fn();
+    storageInstance.subscribe(notifications);
+    global.localStorage.setItem = vi.fn((key, value) => {
+      if (key === "pep_dose_state_v1") throw new Error("QuotaExceededError");
+      mockStore[key] = String(value);
+    });
+    const result = storageInstance.commitDoseState({ logs: { "2026-09-08": { pep_x: [{ time: "08:00" }] } }, inventory: [] });
+    expect(result.success).toBe(false);
+    expect(storageInstance.getLogs()).toEqual(before);
+    expect(notifications).not.toHaveBeenCalled();
+  });
+
   it("importa backup válido e atualiza stores", () => {
     storageInstance.init();
     const backupJson = JSON.stringify({

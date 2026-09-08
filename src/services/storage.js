@@ -15,6 +15,7 @@ import { createMeasurementEntry, validateMeasurementEntry } from "../domain/meas
 const KEYS = {
   PROTOCOL: "pep_protocol_v2",
   LOGS: "pep_logs_v2",
+  DOSE_STATE: "pep_dose_state_v1",
   INVENTORY: "pep_inventory_v2",
   SITES: "pep_sites_v3",
   MEASUREMENTS: "pep_measurements_v2",
@@ -49,6 +50,7 @@ export class StorageService {
     this.tombstones = [];
     this.hiddenMeasurementIds = [];
     this.listeners = new Set();
+    this.doseStateError = null;
   }
 
   init() {
@@ -186,13 +188,30 @@ export class StorageService {
       this.hiddenMeasurementIds = [];
     }
 
+    // One authoritative record prevents a crash between a dose and its stock movement.
+    // Legacy keys remain readable by older exports, but never override a committed pair.
+    this.doseStateError = null;
+    try {
+      const encoded = localStorage.getItem(KEYS.DOSE_STATE);
+      if (encoded !== null) {
+        const state = JSON.parse(encoded);
+        if (state?.version !== 1 || !state.logs || typeof state.logs !== "object" || Array.isArray(state.logs) || !Array.isArray(state.inventory)) {
+          throw new Error("Registro local de doses e estoque inválido. Restaure um backup válido para continuar.");
+        }
+        this.logs = migrateLogs(state.logs);
+        this.inventory = migrateInventory(state.inventory);
+      }
+    } catch (error) {
+      this.doseStateError = error.message || "Não foi possível ler doses e estoque.";
+    }
     this.notify();
     return {
       peptides: this.peptides,
       logs: this.logs,
       inventory: this.inventory,
       sites: this.sites,
-      measurements: this.measurements
+      measurements: this.measurements,
+      error: this.doseStateError
     };
   }
 
@@ -227,14 +246,28 @@ export class StorageService {
   }
 
   setLogs(newLogs) {
-    const backupSnapshot = this.takeSnapshot();
-    this.logs = migrateLogs(newLogs);
-    const res = this.saveLogs();
-    if (!res.success) {
-      this.restoreSnapshot(backupSnapshot);
-      return res;
+    return this.commitDoseState({ logs: newLogs, inventory: this.inventory });
+  }
+
+  commitDoseState({ logs, inventory }, { notify = true, recover = false } = {}) {
+    if (this.doseStateError && !recover) return { success: false, error: this.doseStateError };
+    let nextLogs, nextInventory;
+    try {
+      if (!logs || typeof logs !== "object" || Array.isArray(logs) || !Array.isArray(inventory)) throw new Error("Doses ou estoque inválidos.");
+      nextLogs = migrateLogs(logs);
+      nextInventory = migrateInventory(inventory);
+      localStorage.setItem(KEYS.DOSE_STATE, JSON.stringify({ version: 1, logs: nextLogs, inventory: nextInventory }));
+    } catch (error) {
+      return { success: false, error: error.message || "Falha ao gravar doses e estoque." };
     }
-    this.notify();
+    this.logs = nextLogs;
+    this.inventory = nextInventory;
+    this.doseStateError = null;
+    // Compatibility mirrors are not the commit. A mirror failure cannot undo a
+    // durable transaction or invite the caller to register the same dose twice.
+    this.saveLogs();
+    this.saveInventory();
+    if (notify) this.notify();
     return { success: true };
   }
 
@@ -253,15 +286,7 @@ export class StorageService {
   }
 
   setInventory(newInventory) {
-    const backupSnapshot = this.takeSnapshot();
-    this.inventory = migrateInventory(newInventory);
-    const res = this.saveInventory();
-    if (!res.success) {
-      this.restoreSnapshot(backupSnapshot);
-      return res;
-    }
-    this.notify();
-    return { success: true };
+    return this.commitDoseState({ logs: this.logs, inventory: newInventory });
   }
 
   saveInventory() {
@@ -621,6 +646,7 @@ export class StorageService {
     this.tombstones = snapshot.tombstones || [];
     this.hiddenMeasurementIds = snapshot.hiddenMeasurementIds || [];
     try {
+      if (!this.doseStateError) localStorage.setItem(KEYS.DOSE_STATE, JSON.stringify({ version: 1, logs: this.logs, inventory: this.inventory }));
       localStorage.setItem(KEYS.PROTOCOL, JSON.stringify(this.peptides));
       localStorage.setItem(KEYS.LOGS, JSON.stringify(this.logs));
       localStorage.setItem(KEYS.INVENTORY, JSON.stringify(this.inventory));
@@ -681,6 +707,8 @@ export class StorageService {
         );
       }
 
+      const doseCommit = this.commitDoseState({ logs: this.logs, inventory: this.inventory }, { notify: false, recover: true });
+      if (!doseCommit.success) throw new Error(doseCommit.error);
       this.notify();
       return {
         success: true,

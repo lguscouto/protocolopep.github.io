@@ -7,6 +7,8 @@
  * - Funções puras, imutáveis e auditáveis.
  */
 
+import { doseStatus } from "./dose-state.js";
+
 export const DEFAULT_INJECTION_SITES = Object.freeze([
   "Abdômen (Superior Direito)",
   "Abdômen (Superior Esquerdo)",
@@ -161,7 +163,7 @@ export function getLastUsedSite(logs, peptideId = null) {
       // Percorrer as doses mais recentes do dia
       for (let i = entries.length - 1; i >= 0; i--) {
         const e = entries[i];
-        if (e && typeof e === "object" && e.site && typeof e.site === "string" && e.site.trim()) {
+        if (e && typeof e === "object" && doseStatus(e) === "applied" && e.site && typeof e.site === "string" && e.site.trim()) {
           return {
             site: e.site.trim(),
             date: dk,

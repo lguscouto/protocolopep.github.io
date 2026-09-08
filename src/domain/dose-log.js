@@ -3,12 +3,13 @@
  */
 
 import { dateToKey, isValidTime, isValidDateKey } from "./schedule.js";
-
-export const DOSE_STATUSES = ["applied", "skipped", "missed"];
+import { DOSE_STATUSES, parseUnits } from "./dose-state.js";
+export { DOSE_STATUSES } from "./dose-state.js";
 
 export function createDoseLog(data = {}) {
   const todayKey = dateToKey(new Date());
-  const scheduledDate = data.scheduledDate && isValidDateKey(data.scheduledDate) ? data.scheduledDate : todayKey;
+  // Preserve invalid supplied values so validation can reject them instead of recording today.
+  const scheduledDate = data.scheduledDate === undefined ? todayKey : data.scheduledDate;
 
   // Se a data agendada for anterior a hoje, ou data.retroactive for true, marca explicitamente como retroativo
   const isPastDate = scheduledDate < todayKey;
@@ -17,9 +18,9 @@ export function createDoseLog(data = {}) {
   const now = new Date();
   let takenAt = data.takenAt;
   if (!takenAt) {
-    if (isRetroactive && scheduledDate) {
-      // Se for retroativo e não informou takenAt completo, compõe a data com o horário
-      const timeStr = isValidTime(data.time) ? data.time : "12:00";
+    if (isValidDateKey(scheduledDate)) {
+      // O instante informado pertence à data e ao horário efetivos, inclusive no dia atual.
+      const timeStr = isValidTime(data.time) ? data.time : (scheduledDate === todayKey ? now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "12:00");
       const [hh, mm] = timeStr.split(":").map(Number);
       const safeH = Number.isInteger(hh) ? hh : 12;
       const safeM = Number.isInteger(mm) ? mm : 0;
@@ -30,22 +31,29 @@ export function createDoseLog(data = {}) {
     }
   }
 
-  const time = isValidTime(data.time) ? data.time : (takenAt ? new Date(takenAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "12:00");
-  const rawStatus = data.status || "applied";
-  const status = DOSE_STATUSES.includes(rawStatus) ? rawStatus : "applied";
+  const time = data.time !== undefined ? data.time : (takenAt && Number.isFinite(Date.parse(takenAt)) ? new Date(takenAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "12:00");
+  const rawStatus = data.status === undefined ? "applied" : data.status;
+  const status = rawStatus;
 
   return {
     id: data.id && typeof data.id === "string" && data.id.trim()
       ? data.id.trim()
       : `log_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`,
     peptideId: data.peptideId ? String(data.peptideId) : "",
+    ...(typeof data.name === "string" ? { name: data.name } : {}),
+    ...(typeof data.peptideName === "string" ? { peptideName: data.peptideName } : {}),
+    ...(typeof data.sub === "string" ? { sub: data.sub } : {}),
+    protocolSnapshot: data.protocolSnapshot && typeof data.protocolSnapshot === "object" ? JSON.parse(JSON.stringify(data.protocolSnapshot)) : null,
+    historyIntegrity: data.protocolSnapshot ? "captured" : "legacy",
+    editHistory: Array.isArray(data.editHistory) ? JSON.parse(JSON.stringify(data.editHistory)) : [],
+    debitedMcg: Number.isFinite(data.debitedMcg) && data.debitedMcg >= 0 ? data.debitedMcg : null,
     scheduledDate,
     takenAt,
     time,
     status,
     statusReason: data.statusReason ? String(data.statusReason).trim() : "",
     dose: data.dose ? String(data.dose).trim() : "",
-    ui: Number.isFinite(Number(data.ui)) ? Number(data.ui) : 0,
+    ui: data.ui === null ? null : parseUnits(data.ui),
     note: data.note ? String(data.note).trim() : "",
     site: data.site ? String(data.site).trim() : "",
     vialId: data.vialId ? String(data.vialId) : null,
@@ -69,13 +77,15 @@ export function validateDoseLog(log) {
     return { valid: false, error: "scheduledDate inválida (deve ser formato YYYY-MM-DD com data de calendário válida)." };
   }
 
-  if (log.time && !isValidTime(log.time)) {
+  if (log.time !== undefined && !isValidTime(log.time)) {
     return { valid: false, error: "time inválido (deve ser formato HH:mm válido entre 00:00 e 23:59)." };
   }
 
-  if (log.status && !DOSE_STATUSES.includes(log.status)) {
+  if (log.status !== undefined && !DOSE_STATUSES.includes(log.status)) {
     return { valid: false, error: `status de dose inválido. Deve ser um de: ${DOSE_STATUSES.join(", ")}` };
   }
+  if (log.ui === null || parseUnits(log.ui) === null) return { valid: false, error: "Unidades inválidas." };
+  if (log.takenAt !== undefined && !Number.isFinite(Date.parse(log.takenAt))) return { valid: false, error: "Instante do registro inválido." };
 
   const todayKey = dateToKey(new Date());
   if (log.scheduledDate > todayKey) {
@@ -87,27 +97,15 @@ export function validateDoseLog(log) {
 
 export function normalizeDoseEntry(entry, scheduledDate, peptideId) {
   if (!entry) return null;
-
-  if (typeof entry === "object" && entry.id && entry.peptideId) {
-    return createDoseLog({
-      ...entry,
-      scheduledDate: entry.scheduledDate || scheduledDate,
-      peptideId: entry.peptideId || peptideId
-    });
-  }
-
-  // Objeto legado (ex: { time: "08:30" } ou { taken: true })
-  return createDoseLog({
-    id: typeof entry === "object" && entry.id ? entry.id : undefined,
-    peptideId,
-    scheduledDate,
-    time: typeof entry === "object" ? entry.time || "12:00" : "12:00",
-    dose: typeof entry === "object" ? entry.dose || "" : "",
-    ui: typeof entry === "object" ? entry.ui || 0 : 0,
-    note: typeof entry === "object" ? entry.note || "" : "",
-    site: typeof entry === "object" ? entry.site || "" : "",
-    vialId: typeof entry === "object" && entry.vialId ? entry.vialId : null,
-    inventoryMovementId: typeof entry === "object" && entry.inventoryMovementId ? entry.inventoryMovementId : null,
-    retroactive: scheduledDate < dateToKey(new Date())
+  const source = typeof entry === "object" ? entry : {};
+  const normalized = createDoseLog({
+    ...source,
+    peptideId: source.peptideId || peptideId,
+    scheduledDate: source.scheduledDate || scheduledDate,
+    time: source.time !== undefined ? source.time : source.t || (isValidTime(entry) ? entry : "12:00")
   });
+  // Migration must retain uncertainty: absent historical values are not an observed zero.
+  if (source.ui === undefined) delete normalized.ui;
+  if (source.dose === undefined) delete normalized.dose;
+  return normalized;
 }

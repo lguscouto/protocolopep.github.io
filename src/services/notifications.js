@@ -1,7 +1,8 @@
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { Capacitor } from "@capacitor/core";
 import { haptics } from "./haptics.js";
-import { isScheduledOnDate } from "../domain/schedule.js";
+import { isScheduledOnDate, isValidTime } from "../domain/schedule.js";
+import { normalizeProtocolRevisions, resolveProtocolAt } from "../domain/protocol-history.js";
 import { formatNotificationContent, getNotificationVisualState } from "../domain/notification-formatter.js";
 
 const NOTIF_CFG_KEY = "pep_notif_config";
@@ -310,19 +311,21 @@ export class NotificationService {
           const targetDate = new Date(now);
           targetDate.setDate(now.getDate() + dayOffset);
 
-          for (const p of peptides) {
-            if (!isScheduledOnDate(p, targetDate)) continue;
-
-            const timeList = Array.isArray(p.times) && p.times.length > 0
-              ? p.times
-              : (p.time ? [p.time] : []);
+          for (const protocol of peptides) {
+            // A revision may change the schedule partway through a day. Resolve
+            // each candidate at its actual instant, not at the end of that day.
+            const configs = [protocol, ...normalizeProtocolRevisions(protocol.revisions).map((revision) => revision.config)];
+            const timesOf = (config) => Array.isArray(config.times) && config.times.length > 0
+              ? config.times : (config.time ? [config.time] : []);
+            const timeList = [...new Set(configs.flatMap(timesOf).filter(isValidTime).map((time) => time.trim()))];
 
             for (const tStr of timeList) {
               const [h, m] = tStr.split(":").map(Number);
-              if (isNaN(h) || isNaN(m)) continue;
 
               const schedDate = new Date(targetDate);
               schedDate.setHours(h, m, 0, 0);
+              const p = resolveProtocolAt(protocol, schedDate);
+              if (!isScheduledOnDate(p, schedDate) || !timesOf(p).includes(tStr)) continue;
 
               // Apenas agendar se a data/hora for futura
               if (schedDate.getTime() > now.getTime()) {
@@ -350,7 +353,7 @@ export class NotificationService {
         // Resumo diário nos próximos 14 dias
         if (this.cfg.summary) {
           const [sh, sm] = this.cfg.summary.split(":").map(Number);
-          if (!isNaN(sh) && !isNaN(sm)) {
+          if (isValidTime(this.cfg.summary)) {
             for (let dayOffset = 0; dayOffset < 14; dayOffset++) {
               const sumDate = new Date(now);
               sumDate.setDate(now.getDate() + dayOffset);

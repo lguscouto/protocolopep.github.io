@@ -3,6 +3,8 @@
  */
 
 import { isValidTime, isValidDateKey } from "./schedule.js";
+import { parseUnits } from "./dose-state.js";
+import { normalizeProtocolRevisions, PROTOCOL_STATUSES } from "./protocol-history.js";
 
 export const HEX_COLOR_REGEX = /^#[0-9A-Fa-f]{6}$/;
 
@@ -43,7 +45,7 @@ export function createPeptide(data = {}) {
   const name = sanitizeString(data.name || "Novo Peptídeo", 80);
   const sub = sanitizeString(data.sub || "", 80);
   const dose = sanitizeString(data.dose || "", 40);
-  const ui = Math.max(0, parseInt(data.ui, 10) || 0);
+  const ui = data.ui === null && data.numericIntegrity === "needs_review" ? null : parseUnits(data.ui);
   const per = data.per === "semana" ? "semana" : "dia";
   const perDay = Math.min(6, Math.max(1, parseInt(data.perDay, 10) || 1));
   const accent = validateHexColor(data.accent, "#2CC5C0");
@@ -76,6 +78,9 @@ export function createPeptide(data = {}) {
       ? data.id
       : `pep_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
     name,
+    numericIntegrity: ui === null || data.numericIntegrity === "needs_review" ? "needs_review" : "valid",
+    lifecycleStatus: PROTOCOL_STATUSES.includes(data.lifecycleStatus) ? data.lifecycleStatus : "active",
+    revisions: normalizeProtocolRevisions(data.revisions),
     sub,
     dose,
     ui,
@@ -97,6 +102,9 @@ export function validatePeptide(p) {
   if (!p || typeof p !== "object") return { valid: false, error: "Objeto inválido" };
   if (!p.name || typeof p.name !== "string" || !p.name.trim()) {
     return { valid: false, error: "Nome do peptídeo é obrigatório" };
+  }
+  if (p.numericIntegrity === "needs_review" || (p.ui !== undefined && parseUnits(p.ui) === null)) {
+    return { valid: false, error: "Informe unidades válidas, sem arredondamento automático." };
   }
   return { valid: true };
 }

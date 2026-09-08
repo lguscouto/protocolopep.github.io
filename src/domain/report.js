@@ -2,6 +2,49 @@
  * Módulo de Geração e Estruturação de Relatórios de Doses (V08)
  */
 
+import { doseStatus, parseUnits, summarizeDoseEntries } from "./dose-state.js";
+import { calculateAdherenceSummary } from "./adherence.js";
+import { calculateMeasurementStats, filterMeasurements } from "./measurements.js";
+
+const hasValue = (value) => value !== undefined && value !== null && value !== "";
+const textValue = (value) => hasValue(value) ? String(value) : "";
+const STATUS_LABELS = Object.freeze({ applied: "Aplicada", skipped: "Pulada", missed: "Esquecida" });
+
+/**
+ * Historical values come only from the record or its immutable snapshot.
+ * The current protocol may identify a legacy record, but cannot supply its dose.
+ */
+export function getDoseDisplayData(entry, currentProtocol = null) {
+  const log = entry && typeof entry === "object" ? entry : {};
+  const snapshot = log.protocolSnapshot && typeof log.protocolSnapshot === "object"
+    && !Array.isArray(log.protocolSnapshot) ? log.protocolSnapshot : null;
+  const uiValue = hasValue(log.ui) ? log.ui : snapshot?.ui;
+  return {
+    name: textValue(snapshot?.name) || textValue(log.peptideName) || textValue(log.name) || textValue(currentProtocol?.name) || "Protocolo sem identificação",
+    sub: textValue(snapshot ? snapshot.sub : (log.peptideSub ?? log.sub ?? currentProtocol?.sub)),
+    dose: hasValue(log.dose) ? log.dose : (hasValue(snapshot?.dose) ? snapshot.dose : ""),
+    ui: hasValue(uiValue) ? parseUnits(uiValue) : null,
+    historyIntegrity: snapshot ? "captured" : "legacy",
+    revisionId: snapshot?.revisionId || null,
+    calculationSnapshot: snapshot?.calculationSnapshot || null,
+    vial: snapshot?.vial && typeof snapshot.vial === "object" ? snapshot.vial : null,
+    vialId: log.vialId || snapshot?.vial?.id || null
+  };
+}
+
+export function summarizeReportEntries(entries = []) {
+  const { applied, skipped, missed } = summarizeDoseEntries(entries, 0);
+  return { total: entries.length, applied, skipped, missed, unknown: entries.length - applied - skipped - missed };
+}
+
+export function getReportVialLabel(entry) {
+  return [
+    entry.vialId,
+    entry.vialLot ? `Lote ${entry.vialLot}` : "",
+    hasValue(entry.vialConcentrationMcgPerMl) ? `${entry.vialConcentrationMcgPerMl} mcg/mL` : ""
+  ].filter(Boolean).join(" · ");
+}
+
 export function buildReportData({
   protocol = [],
   logs = {},
@@ -9,7 +52,7 @@ export function buildReportData({
   endDate = null,
   includeNotes = false
 }) {
-  const pepMap = {};
+  const pepMap = Object.create(null);
   if (Array.isArray(protocol)) {
     protocol.forEach((p) => {
       if (p && p.id) {
@@ -25,34 +68,47 @@ export function buildReportData({
     if (endDate && dateStr > endDate) return;
 
     Object.entries(pepLogs || {}).forEach(([pepId, val]) => {
-      const pInfo = pepMap[pepId] || { name: pepId, sub: "", dose: "", ui: 0 };
+      const pInfo = pepMap[pepId];
       const rawList = Array.isArray(val) ? val : (val ? [val] : []);
 
       rawList.forEach((entry) => {
+        if (!entry || (typeof entry !== "string" && typeof entry !== "object")) return;
+        const display = getDoseDisplayData(entry, pInfo);
         let time = "";
-        let dose = pInfo.dose || "";
-        let ui = pInfo.ui || 0;
         let retroactive = false;
         let note = "";
+        let statusReason = "";
+        let site = "";
 
         if (typeof entry === "string") {
           time = entry;
         } else if (entry && typeof entry === "object") {
           time = entry.time || "";
-          if (entry.dose) dose = entry.dose;
-          if (entry.ui !== undefined && entry.ui !== null) ui = entry.ui;
           if (entry.retroactive) retroactive = true;
           if (entry.note) note = entry.note;
+          statusReason = textValue(entry.statusReason);
+          site = textValue(entry.site);
         }
+
+        const status = doseStatus(entry);
 
         entries.push({
           date: dateStr,
           time: time || "--:--",
           peptideId: pepId,
-          peptideName: pInfo.name || pepId,
-          peptideSub: pInfo.sub || "",
-          dose: dose || "--",
-          ui: Number(ui) || 0,
+          peptideName: display.name,
+          peptideSub: display.sub,
+          dose: hasValue(display.dose) ? display.dose : "--",
+          ui: display.ui,
+          status,
+          statusLabel: STATUS_LABELS[status] || "Não identificado",
+          statusReason: includeNotes ? statusReason : "",
+          site,
+          vialId: display.vialId,
+          vialLot: textValue(display.vial?.lotNumber),
+          vialConcentrationMcgPerMl: display.vial?.concentrationMcgPerMl ?? null,
+          historyIntegrity: display.historyIntegrity,
+          revisionId: display.revisionId,
           retroactive: Boolean(retroactive),
           type: retroactive ? "Retroativo" : "Regular",
           note: includeNotes ? (note || "") : ""
@@ -68,6 +124,81 @@ export function buildReportData({
   });
 
   return entries;
+}
+
+function isDateKey(value) {
+  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
+}
+
+function formatReportDate(value) {
+  const [y, m, d] = String(value || "").split("-");
+  return y && m && d ? `${d}/${m}/${y}` : String(value || "");
+}
+
+function getReportDateBounds(entries = [], measurements = []) {
+  const dates = [
+    ...(Array.isArray(entries) ? entries : []).map((entry) => entry?.date),
+    ...(Array.isArray(measurements) ? measurements : []).map((entry) => entry?.date)
+  ].filter(isDateKey).sort();
+
+  return dates.length > 0
+    ? { startDate: dates[0], endDate: dates[dates.length - 1] }
+    : { startDate: null, endDate: null };
+}
+
+function sanitizeMeasurementForReport(entry, includeNotes = false) {
+  const measurement = entry && typeof entry === "object" ? entry : {};
+  return {
+    date: isDateKey(measurement.date) ? measurement.date : "",
+    time: textValue(measurement.time),
+    weightKg: typeof measurement.weightKg === "number" && Number.isFinite(measurement.weightKg)
+      ? measurement.weightKg
+      : null,
+    energyLevel: Number.isInteger(measurement.energyLevel) ? measurement.energyLevel : null,
+    moodLevel: Number.isInteger(measurement.moodLevel) ? measurement.moodLevel : null,
+    symptoms: Array.isArray(measurement.symptoms)
+      ? measurement.symptoms.map(textValue).filter(Boolean)
+      : [],
+    notes: includeNotes ? textValue(measurement.notes) : "",
+    source: measurement.source === "health_connect" ? "Health Connect" : "Local"
+  };
+}
+
+/**
+ * Monta um relatório pessoal com aplicações, consistência da rotina e, quando
+ * solicitado, medições autorrelatadas. As métricas são descritivas e não
+ * estabelecem correlação clínica entre os conjuntos de dados.
+ */
+export function buildPersonalReport({
+  protocol = [],
+  logs = {},
+  measurements = [],
+  startDate = null,
+  endDate = null,
+  includeNotes = false,
+  includeMeasurements = false
+} = {}) {
+  const entries = buildReportData({ protocol, logs, startDate, endDate, includeNotes });
+  const filteredMeasurements = filterMeasurements(measurements, { startDate, endDate });
+  const bounds = getReportDateBounds(entries, filteredMeasurements);
+  const summaryStart = startDate || bounds.startDate;
+  const summaryEnd = endDate || bounds.endDate;
+  const adherence = summaryStart && summaryEnd
+    ? calculateAdherenceSummary(protocol, logs, { startDate: summaryStart, endDate: summaryEnd })
+    : null;
+  const reportMeasurements = includeMeasurements
+    ? filteredMeasurements.map((entry) => sanitizeMeasurementForReport(entry, includeNotes))
+    : [];
+
+  return {
+    entries,
+    adherence,
+    measurements: reportMeasurements,
+    measurementCount: filteredMeasurements.length,
+    measurementStats: includeMeasurements ? calculateMeasurementStats(reportMeasurements) : null,
+    startDate: summaryStart,
+    endDate: summaryEnd
+  };
 }
 
 export function escapeHTML(val) {
@@ -94,7 +225,8 @@ export function escapeCSV(val) {
 export function generateReportCSV(entries = []) {
   // UTF-8 BOM para compatibilidade com Microsoft Excel e planilhas em PT-BR
   const BOM = "\uFEFF";
-  const headers = ["Data", "Hora", "Peptídeo", "Subtítulo", "Dose", "UI", "Tipo", "Observações"];
+  const headers = ["Data", "Hora", "Peptídeo", "Subtítulo", "Dose", "UI", "Tipo", "Observações",
+    "Estado", "Motivo", "Local", "Frasco", "Lote", "Concentração do frasco (mcg/mL)", "Integridade histórica", "Revisão"];
   const headerLine = headers.map(escapeCSV).join(";");
 
   const lines = entries.map((e) => {
@@ -108,14 +240,123 @@ export function generateReportCSV(entries = []) {
       e.dose,
       e.ui,
       e.type,
-      e.note
+      e.note,
+      e.statusLabel || STATUS_LABELS[doseStatus(e)] || "Não identificado",
+      e.statusReason,
+      e.site,
+      e.vialId,
+      e.vialLot,
+      e.vialConcentrationMcgPerMl,
+      e.historyIntegrity === "captured" ? "Dados preservados no registro" : "Legado: dados históricos incompletos",
+      e.revisionId
     ].map(escapeCSV).join(";");
   });
 
   return BOM + [headerLine, ...lines].join("\r\n");
 }
 
-export function generateReportHTML(entries = [], { startDate, endDate, generatedAt = new Date() } = {}) {
+function getReportEntryCSVRow(e) {
+  return [
+    formatReportDate(e.date),
+    e.time,
+    e.peptideName,
+    e.peptideSub,
+    e.dose,
+    e.ui,
+    e.type,
+    e.note,
+    e.statusLabel || STATUS_LABELS[doseStatus(e)] || "Não identificado",
+    e.statusReason,
+    e.site,
+    e.vialId,
+    e.vialLot,
+    e.vialConcentrationMcgPerMl,
+    e.historyIntegrity === "captured" ? "Dados preservados no registro" : "Legado: dados históricos incompletos",
+    e.revisionId
+  ];
+}
+
+/**
+ * Gera um CSV em seções para o relatório pessoal completo. A função de CSV
+ * histórico acima permanece estável para integrações que esperam somente
+ * linhas de aplicações.
+ */
+export function generatePersonalReportCSV({
+  entries = [],
+  adherence = null,
+  measurements = [],
+  measurementStats = null,
+  startDate = null,
+  endDate = null
+} = {}) {
+  const lines = [];
+  const addRow = (values) => lines.push(values.map(escapeCSV).join(";"));
+
+  addRow(["Seção", "Campo", "Valor"]);
+  if (adherence) {
+    addRow(["Resumo", "Período", startDate && endDate
+      ? `${formatReportDate(startDate)} até ${formatReportDate(endDate)}`
+      : "Todo o histórico"]);
+    [
+      ["Dias programados", adherence.scheduledDays],
+      ["Aplicações previstas", adherence.due],
+      ["Aplicações confirmadas", adherence.applied],
+      ["Registros resolvidos", adherence.resolved],
+      ["Pendentes", adherence.pending],
+      ["Puladas", adherence.skipped],
+      ["Esquecidas", adherence.missed],
+      ["Aplicações extras", adherence.extraApplied],
+      ["Aplicações registradas (%)", adherence.applicationPercent],
+      ["Rotina resolvida (%)", adherence.resolutionPercent],
+      ["Dias completos", adherence.completeDays],
+      ["Dias parciais", adherence.partialDays]
+    ].forEach(([label, value]) => addRow(["Resumo", label, value]));
+  }
+
+  if (measurementStats) {
+    addRow(["Medições", "Registros incluídos", measurementStats.totalEntries]);
+    addRow(["Medições", "Último peso (kg)", measurementStats.latestWeight]);
+    addRow(["Medições", "Variação de peso (kg)", measurementStats.weightDelta]);
+    addRow(["Medições", "Energia média (1–5)", measurementStats.averageEnergy]);
+    addRow(["Medições", "Humor médio (1–5)", measurementStats.averageMood]);
+  }
+
+  addRow([]);
+  const doseHeaders = ["Data", "Hora", "Peptídeo", "Subtítulo", "Dose", "UI", "Tipo", "Observações",
+    "Estado", "Motivo", "Local", "Frasco", "Lote", "Concentração do frasco (mcg/mL)", "Integridade histórica", "Revisão"];
+  addRow(["Aplicações", ...doseHeaders]);
+  entries.forEach((entry) => addRow(["Aplicações", ...getReportEntryCSVRow(entry)]));
+
+  if (measurements.length > 0) {
+    addRow([]);
+    addRow(["Medições autorrelatadas", "Data", "Hora", "Peso (kg)", "Energia (1–5)", "Humor (1–5)", "Sintomas", "Observações", "Origem"]);
+    measurements.forEach((measurement) => addRow([
+      "Medições autorrelatadas",
+      formatReportDate(measurement.date),
+      measurement.time,
+      measurement.weightKg,
+      measurement.energyLevel,
+      measurement.moodLevel,
+      Array.isArray(measurement.symptoms) ? measurement.symptoms.join(" · ") : "",
+      measurement.notes,
+      measurement.source
+    ]));
+  }
+
+  addRow([]);
+  addRow(["Aviso", "Uso", "Registro pessoal autorrelatado; não substitui prontuário, receita ou avaliação clínica e não estabelece correlação entre aplicações e medições."]);
+  return "\uFEFF" + lines.join("\r\n");
+}
+
+export function generateReportHTML(entries = [], {
+  startDate,
+  endDate,
+  generatedAt = new Date(),
+  adherenceSummary = null,
+  measurements = [],
+  includeMeasurements = false,
+  measurementStats = null
+} = {}) {
   const dStr = escapeHTML(generatedAt.toLocaleDateString("pt-BR"));
   const tStr = escapeHTML(generatedAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }));
   
@@ -128,6 +369,7 @@ export function generateReportHTML(entries = [], { startDate, endDate, generated
     periodText = `Até ${endDate.split("-").reverse().join("/")}`;
   }
   const safePeriodText = escapeHTML(periodText);
+  const summary = summarizeReportEntries(entries);
 
   const rows = entries.map((e) => {
     const [y, m, d] = (e.date || "").split("-");
@@ -136,15 +378,60 @@ export function generateReportHTML(entries = [], { startDate, endDate, generated
       <tr>
         <td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;font-weight:600;">${escapeHTML(dateFmt)}</td>
         <td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;">${escapeHTML(e.time)}</td>
-        <td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;font-weight:700;">${escapeHTML(e.peptideName)}</td>
-        <td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;">${escapeHTML(e.dose)} (${Number(e.ui) || 0} UI)</td>
+        <td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;font-weight:700;">${escapeHTML(e.peptideName)}${e.historyIntegrity !== "captured" ? '<div style="font-size:10px;font-weight:400;">Legado: dados históricos incompletos</div>' : ""}</td>
+        <td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;">${escapeHTML(e.dose)} (${escapeHTML(e.ui ?? "--")} UI)</td>
+        <td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;">${escapeHTML(e.statusLabel || STATUS_LABELS[doseStatus(e)] || "Não identificado")}</td>
         <td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;">
           <span style="display:inline-block;padding:2px 6px;border-radius:4px;font-size:11px;background:${e.retroactive ? "#FEF3C7;color:#92400E" : "#E6FFFA;color:#047857"}">${escapeHTML(e.type)}</span>
         </td>
-        <td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;color:#64748B;font-size:12px;">${escapeHTML(e.note || "--")}</td>
+        <td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;font-size:12px;">${escapeHTML(e.site || "--")}<br>${escapeHTML(getReportVialLabel(e) || "Frasco não informado")}</td>
+        <td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;color:#64748B;font-size:12px;">${escapeHTML(e.note || "--")}${e.statusReason ? `<br>Motivo: ${escapeHTML(e.statusReason)}` : ""}</td>
       </tr>
     `;
   }).join("");
+
+  const adherenceSection = adherenceSummary ? `
+  <section class="personal-summary" aria-labelledby="personal-summary-title">
+    <h2 id="personal-summary-title">Resumo descritivo da rotina</h2>
+    <div class="personal-summary-grid">
+      <div><span>Aplicações previstas</span><b>${escapeHTML(adherenceSummary.due)}</b></div>
+      <div><span>Aplicações confirmadas</span><b>${escapeHTML(adherenceSummary.applied)}</b></div>
+      <div><span>Rotina resolvida</span><b>${escapeHTML(adherenceSummary.resolutionPercent)}%</b></div>
+      <div><span>Dias completos</span><b>${escapeHTML(adherenceSummary.completeDays)}</b></div>
+      <div><span>Pendentes</span><b>${escapeHTML(adherenceSummary.pending)}</b></div>
+      <div><span>Aplicações extras</span><b>${escapeHTML(adherenceSummary.extraApplied)}</b></div>
+    </div>
+    <p class="personal-summary-note">Este resumo descreve os registros no período e não avalia eficácia, segurança ou necessidade de ajuste.</p>
+  </section>` : "";
+
+  const measurementRows = Array.isArray(measurements) ? measurements.map((measurement) => `
+      <tr>
+        <td>${escapeHTML(formatReportDate(measurement.date))}</td>
+        <td>${escapeHTML(measurement.time || "--:--")}</td>
+        <td>${escapeHTML(measurement.weightKg ?? "--")}</td>
+        <td>${escapeHTML(measurement.energyLevel ?? "--")}</td>
+        <td>${escapeHTML(measurement.moodLevel ?? "--")}</td>
+        <td>${escapeHTML(Array.isArray(measurement.symptoms) && measurement.symptoms.length > 0 ? measurement.symptoms.join(" · ") : "--")}</td>
+        <td>${escapeHTML(measurement.notes || "--")}</td>
+        <td>${escapeHTML(measurement.source || "Local")}</td>
+      </tr>
+    `).join("") : "";
+  const measurementsSection = includeMeasurements ? `
+  <section class="measurements-section" aria-labelledby="measurements-title">
+    <h2 id="measurements-title">Medições autorrelatadas</h2>
+    ${measurementStats ? `<div class="stats">
+      <div class="stats-item">Registros incluídos: <b>${escapeHTML(measurementStats.totalEntries)}</b></div>
+      ${measurementStats.latestWeight !== null ? `<div class="stats-item">Último peso: <b>${escapeHTML(measurementStats.latestWeight)} kg</b></div>` : ""}
+      ${measurementStats.weightDelta !== null ? `<div class="stats-item">Variação no período: <b>${escapeHTML(measurementStats.weightDelta)} kg</b></div>` : ""}
+      ${measurementStats.averageEnergy !== null ? `<div class="stats-item">Energia média: <b>${escapeHTML(measurementStats.averageEnergy)} / 5</b></div>` : ""}
+      ${measurementStats.averageMood !== null ? `<div class="stats-item">Humor médio: <b>${escapeHTML(measurementStats.averageMood)} / 5</b></div>` : ""}
+    </div>` : ""}
+    <table>
+      <thead><tr><th>Data</th><th>Hora</th><th>Peso (kg)</th><th>Energia</th><th>Humor</th><th>Sintomas</th><th>Observações</th><th>Origem</th></tr></thead>
+      <tbody>${measurementRows || '<tr><td colspan="8" style="padding:16px;text-align:center;color:#64748B;">Nenhuma medição encontrada para o período selecionado.</td></tr>'}</tbody>
+    </table>
+    <p class="personal-summary-note">As medições são autorrelatadas e apresentadas sem correlação clínica com as aplicações.</p>
+  </section>` : "";
 
   return `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -156,9 +443,15 @@ export function generateReportHTML(entries = [], { startDate, endDate, generated
     .header { border-bottom: 2px solid #0E8580; padding-bottom: 12px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: flex-end; }
     .title { font-size: 20px; font-weight: 800; color: #0E8580; margin: 0; }
     .meta { font-size: 12px; color: #64748B; margin-top: 4px; }
-    .stats { display: flex; gap: 16px; margin-bottom: 16px; background: #F8FAFC; padding: 10px 14px; border-radius: 8px; border: 1px solid #E2E8F0; }
+    .stats { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 16px; background: #F8FAFC; padding: 10px 14px; border-radius: 8px; border: 1px solid #E2E8F0; }
     .stats-item { font-size: 12px; }
     .stats-item b { color: #0E8580; font-size: 14px; }
+    .personal-summary, .measurements-section { margin: 16px 0 20px; }
+    .personal-summary h2, .measurements-section h2 { font-size: 15px; color: #0E8580; margin: 0 0 8px; }
+    .personal-summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; background: #F8FAFC; padding: 10px 12px; border: 1px solid #E2E8F0; border-radius: 8px; }
+    .personal-summary-grid div { display: flex; flex-direction: column; gap: 2px; font-size: 11px; color: #64748B; }
+    .personal-summary-grid b { color: #0F172A; font-size: 14px; }
+    .personal-summary-note { color: #64748B; font-size: 11px; line-height: 1.4; margin: 8px 0 0; }
     table { width: 100%; border-collapse: collapse; text-align: left; margin-bottom: 20px; }
     th { background: #F1F5F9; padding: 8px 10px; border-bottom: 2px solid #CBD5E1; font-weight: 700; font-size: 12px; color: #475569; }
     .disclaimer { font-size: 11px; color: #64748B; border-top: 1px solid #E2E8F0; padding-top: 10px; margin-top: 20px; line-height: 1.4; }
@@ -177,8 +470,14 @@ export function generateReportHTML(entries = [], { startDate, endDate, generated
   </div>
 
   <div class="stats">
-    <div class="stats-item">Total de Aplicações: <b>${entries.length}</b></div>
+    <div class="stats-item">Total de Aplicações: <b>${summary.applied}</b></div>
+    <div class="stats-item">Puladas: <b>${summary.skipped}</b></div>
+    <div class="stats-item">Esquecidas: <b>${summary.missed}</b></div>
+    <div class="stats-item">Total de Registros: <b>${summary.total}</b></div>
+    ${summary.unknown ? `<div class="stats-item">Estado não identificado: <b>${summary.unknown}</b></div>` : ""}
   </div>
+
+  ${adherenceSection}
 
   <table>
     <thead>
@@ -187,14 +486,18 @@ export function generateReportHTML(entries = [], { startDate, endDate, generated
         <th>Hora</th>
         <th>Peptídeo</th>
         <th>Dose</th>
+        <th>Estado</th>
         <th>Tipo</th>
+        <th>Local / Frasco</th>
         <th>Observações</th>
       </tr>
     </thead>
     <tbody>
-      ${rows || '<tr><td colspan="6" style="padding:16px;text-align:center;color:#64748B;">Nenhum registro de aplicação encontrado para o período selecionado.</td></tr>'}
+      ${rows || '<tr><td colspan="8" style="padding:16px;text-align:center;color:#64748B;">Nenhum registro de aplicação encontrado para o período selecionado.</td></tr>'}
     </tbody>
   </table>
+
+  ${measurementsSection}
 
   <div class="disclaimer">
     ⚠️ <b>Registro Pessoal Autorrelatado:</b> Este documento é um registro individual gerado localmente pelo usuário do aplicativo Protocolo PEP. Não substitui prontuário médico, receita nem avaliação clínica.

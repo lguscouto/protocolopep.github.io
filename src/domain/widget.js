@@ -8,6 +8,7 @@
  */
 
 import { getScheduledPeptides, dateToKey, keyToDate } from "./schedule.js";
+import { summarizeDoseEntries } from "./dose-state.js";
 
 export function calculateWidgetSummary({
   peptides = [],
@@ -22,21 +23,22 @@ export function calculateWidgetSummary({
   const scheduled = getScheduledPeptides(peptides, dateObj);
   let totalCount = 0;
   let takenCount = 0;
+  let resolvedCount = 0;
+  let skippedCount = 0;
+  let missedCount = 0;
   const pendingSlots = [];
 
   scheduled.forEach((p) => {
     const due = Math.max(1, parseInt(p.perDay, 10) || (Array.isArray(p.times) ? p.times.length : 1));
     totalCount += due;
 
-    const val = dayLogs[p.id];
-    let recorded = 0;
-    if (Array.isArray(val)) {
-      recorded = val.length;
-    } else if (val && typeof val === "object") {
-      recorded = 1;
-    }
-    const takenForPeptide = Math.min(due, recorded);
+    const counts = summarizeDoseEntries(dayLogs[p.id], due);
+    const recorded = counts.resolved;
+    const takenForPeptide = Math.min(due, counts.applied);
     takenCount += takenForPeptide;
+    resolvedCount += Math.min(due, counts.resolved);
+    skippedCount += counts.skipped;
+    missedCount += counts.missed;
 
     if (recorded < due) {
       let times = Array.isArray(p.times) && p.times.length > 0
@@ -62,6 +64,10 @@ export function calculateWidgetSummary({
     return {
       totalCount: 0,
       takenCount: 0,
+      resolvedCount: 0,
+      skippedCount: 0,
+      missedCount: 0,
+      pendingCount: 0,
       progressPct: 0,
       nextDoseTime: "--",
       nextDosePeptide: "Nenhum protocolo hoje",
@@ -71,15 +77,20 @@ export function calculateWidgetSummary({
     };
   }
 
-  if (takenCount >= totalCount) {
+  if (resolvedCount >= totalCount) {
+    const allApplied = takenCount === totalCount;
     return {
       totalCount,
       takenCount,
-      progressPct: 100,
-      nextDoseTime: "100%",
-      nextDosePeptide: "Tudo concluído hoje! 🎉",
-      statusText: "Tudo concluído hoje! 🎉",
-      subText: `Todas as ${totalCount} doses registradas`,
+      resolvedCount,
+      skippedCount,
+      missedCount,
+      pendingCount: 0,
+      progressPct,
+      nextDoseTime: allApplied ? "100%" : "--",
+      nextDosePeptide: allApplied ? "Tudo concluído hoje! 🎉" : "Sem ocorrências pendentes hoje",
+      statusText: allApplied ? "Tudo concluído hoje! 🎉" : "Sem ocorrências pendentes hoje",
+      subText: allApplied ? `Todas as ${totalCount} doses registradas` : `Aplicadas: ${takenCount} · Puladas: ${skippedCount} · Esquecidas: ${missedCount}`,
       discreteMode: Boolean(discreteMode)
     };
   }
@@ -93,11 +104,17 @@ export function calculateWidgetSummary({
   const nextDosePeptide = peptideLabel;
 
   const statusText = rawTime ? `${peptideLabel} · ${rawTime}` : peptideLabel;
-  const subText = `${takenCount} de ${totalCount} doses tomadas (${progressPct}%)`;
+  const subText = `${takenCount} de ${totalCount} doses aplicadas (${progressPct}%)`
+    + (skippedCount ? ` · Puladas: ${skippedCount}` : "")
+    + (missedCount ? ` · Esquecidas: ${missedCount}` : "");
 
   return {
     totalCount,
     takenCount,
+    resolvedCount,
+    skippedCount,
+    missedCount,
+    pendingCount: totalCount - resolvedCount,
     progressPct,
     nextDoseTime,
     nextDosePeptide,

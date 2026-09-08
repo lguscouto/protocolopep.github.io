@@ -26,6 +26,11 @@ describe("Preenchimento Retroativo de Doses (Data da Primeira Dose)", () => {
         return { success: true };
       },
       getPeptides: () => [...storedPeptides],
+      commitDoseState: ({ logs, inventory }) => {
+        storedLogs = structuredClone(logs);
+        storedInventory = structuredClone(inventory);
+        return { success: true };
+      },
       takeSnapshot: () => ({ logs: { ...storedLogs }, inventory: [...storedInventory] }),
       restoreSnapshot: (snap) => {
         storedLogs = { ...snap.logs };

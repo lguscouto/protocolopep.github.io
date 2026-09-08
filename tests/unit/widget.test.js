@@ -35,7 +35,7 @@ describe("Widget Domain Logic (V14)", () => {
     expect(res.nextDosePeptide).toBe("TB-500");
     expect(res.nextDoseTime).toBe("14:00");
     expect(res.statusText).toBe("TB-500 · 14:00");
-    expect(res.subText).toContain("1 de 3 doses tomadas");
+    expect(res.subText).toContain("1 de 3 doses aplicadas");
   });
 
   it("oculta o nome do peptídeo quando o modo discreto está ativado", () => {

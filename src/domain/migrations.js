@@ -16,7 +16,7 @@ import {
   localDateTimeToIso
 } from "./time.js";
 
-export const CURRENT_SCHEMA_VERSION = 6;
+export const CURRENT_SCHEMA_VERSION = 7;
 
 function sanitizeHealthConnectId(value) {
   if (typeof value !== "string") return null;
@@ -217,6 +217,17 @@ export function migrateV5ToV6(state = {}) {
   };
 }
 
+/** V6 → V7: the split legacy stores remain readable until the first atomic write. */
+export function migrateV6ToV7(state = {}) {
+  return {
+    ...state,
+    version: 7,
+    protocol: migratePeptides(state.protocol || state.peptides || []),
+    logs: migrateLogs(state.logs || {}),
+    inventory: migrateInventory(state.inventory || [])
+  };
+}
+
 export function migrateAppState(state = {}) {
   if (!state || typeof state !== "object") {
     state = {};
@@ -238,6 +249,9 @@ export function migrateAppState(state = {}) {
   }
   if (version < 6) {
     current = migrateV5ToV6(current);
+  }
+  if (version < 7) {
+    current = migrateV6ToV7(current);
   }
 
   const rawProtocol = current.protocol || current.peptides || [];

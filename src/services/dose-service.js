@@ -1,165 +1,44 @@
-/**
- * Serviço de Gerenciamento e Persistência Atômica de Doses e Estoque (P0)
- */
-
-import {
-  registerDoseState,
-  undoDoseState,
-  deleteDoseState,
-  backfillPeptideDoseLogs
-} from "../domain/dose-service.js";
+/** Persistence boundary: logs and inventory are committed together or neither is changed. */
+import { registerDoseState, undoDoseState, editDoseState, backfillPeptideDoseLogs } from "../domain/dose-service.js";
 import { calculateBackfillDates } from "../domain/schedule.js";
 
 export class DoseService {
-  constructor(storageService) {
-    this.storage = storageService;
+  constructor(storageService) { this.storage = storageService; }
+
+  commit(result) {
+    if (!result.success) return result;
+    if (typeof this.storage.commitDoseState !== "function") {
+      return { success: false, error: "ATOMIC_STORAGE_UNAVAILABLE", message: "A gravação conjunta de histórico e estoque não está disponível." };
+    }
+    try {
+      const saved = this.storage.commitDoseState({ logs: result.logs, inventory: result.inventory });
+      if (!saved?.success) return { success: false, error: saved?.error || "STORAGE_WRITE_FAILED", message: saved?.message || "Não foi possível gravar o histórico e o estoque. Nenhuma confirmação foi emitida." };
+      const { logs, inventory, ...committed } = result;
+      return committed;
+    } catch {
+      return { success: false, error: "STORAGE_WRITE_FAILED", message: "Não foi possível confirmar a gravação do registro." };
+    }
   }
 
-  /**
-   * Registra uma dose garantindo consistência atômica entre logs e inventário.
-   */
-  registerDose({
-    peptideId,
-    scheduledDate,
-    time,
-    dose,
-    ui,
-    site,
-    note,
-    status = "applied",
-    statusReason = "",
-    retroactive = false,
-    allowHistoryOnlyWithoutStock = false
-  }) {
-    const logs = this.storage.getLogs();
-    const inventory = this.storage.getInventory();
-    const peptides = this.storage.getPeptides();
-
-    const result = registerDoseState({
-      logs,
-      inventory,
-      peptides,
-      peptideId,
-      scheduledDate,
-      time,
-      dose,
-      ui,
-      site,
-      note,
-      status,
-      statusReason,
-      retroactive,
-      allowHistoryOnlyWithoutStock
-    });
-
-    if (!result.success) {
-      return result;
-    }
-
-    // Persistência com snapshot e rollback atômico
-    const snapshot = this.storage.takeSnapshot();
-    const saveLogsRes = this.storage.setLogs(result.logs);
-    if (!saveLogsRes.success) {
-      this.storage.restoreSnapshot(snapshot);
-      return { success: false, error: saveLogsRes.error || "Falha ao gravar logs de dose" };
-    }
-
-    if (result.vial) {
-      const saveInvRes = this.storage.setInventory(result.inventory);
-      if (!saveInvRes.success) {
-        this.storage.restoreSnapshot(snapshot);
-        return { success: false, error: saveInvRes.error || "Falha ao atualizar inventário" };
-      }
-    }
-
-    return {
-      success: true,
-      doseLog: result.doseLog,
-      vial: result.vial,
-      debitedMcg: result.debitedMcg
-    };
+  registerDose(options) {
+    return this.commit(registerDoseState({ ...options, logs: this.storage.getLogs(), inventory: this.storage.getInventory(), peptides: this.storage.getPeptides() }));
   }
 
-  /**
-   * Desfaz a dose estornando no frasco original se houver vínculo
-   */
-  undoDose({ peptideId, scheduledDate, doseLogId = null }) {
-    const logs = this.storage.getLogs();
-    const inventory = this.storage.getInventory();
-
-    const result = undoDoseState({
-      logs,
-      inventory,
-      peptideId,
-      scheduledDate,
-      doseLogId
-    });
-
-    if (!result.success) {
-      return result;
-    }
-
-    const snapshot = this.storage.takeSnapshot();
-    const saveLogsRes = this.storage.setLogs(result.logs);
-    if (!saveLogsRes.success) {
-      this.storage.restoreSnapshot(snapshot);
-      return { success: false, error: saveLogsRes.error || "Falha ao atualizar logs" };
-    }
-
-    if (result.vial) {
-      const saveInvRes = this.storage.setInventory(result.inventory);
-      if (!saveInvRes.success) {
-        this.storage.restoreSnapshot(snapshot);
-        return { success: false, error: saveInvRes.error || "Falha ao estornar inventário" };
-      }
-    }
-
-    return {
-      success: true,
-      removedLog: result.removedLog,
-      vial: result.vial,
-      creditedMcg: result.creditedMcg
-    };
+  undoDose(options) {
+    return this.commit(undoDoseState({ ...options, logs: this.storage.getLogs(), inventory: this.storage.getInventory() }));
   }
 
-  /**
-   * Remove uma dose do histórico com estorno seguro
-   */
-  deleteDose({ peptideId, scheduledDate, doseLogId = null }) {
-    return this.undoDose({ peptideId, scheduledDate, doseLogId });
+  deleteDose(options) { return this.undoDose(options); }
+
+  editDose(options) {
+    return this.commit(editDoseState({ ...options, logs: this.storage.getLogs(), inventory: this.storage.getInventory() }));
   }
 
-  /**
-   * Preenche o histórico de doses de forma atômica para um intervalo retroativo
-   */
   backfillPeptideDoses({ peptide, startDate, todayDate = new Date() }) {
-    if (!peptide || !startDate) {
-      return { success: true, addedCount: 0, datesAdded: [] };
-    }
-
-    const backfillDates = calculateBackfillDates(peptide, startDate, todayDate);
-    if (backfillDates.length === 0) {
-      return { success: true, addedCount: 0, datesAdded: [] };
-    }
-
-    const logs = this.storage.getLogs();
-    const result = backfillPeptideDoseLogs(logs, peptide, backfillDates);
-
-    if (result.addedCount === 0) {
-      return { success: true, addedCount: 0, datesAdded: [] };
-    }
-
-    const snapshot = this.storage.takeSnapshot();
-    const saveRes = this.storage.setLogs(result.logs);
-    if (!saveRes.success) {
-      this.storage.restoreSnapshot(snapshot);
-      return { success: false, error: saveRes.error || "Falha ao gravar histórico retroativo" };
-    }
-
-    return {
-      success: true,
-      addedCount: result.addedCount,
-      datesAdded: result.datesAdded
-    };
+    if (!peptide || !startDate) return { success: true, addedCount: 0, datesAdded: [] };
+    const dates = calculateBackfillDates(peptide, startDate, todayDate);
+    const result = backfillPeptideDoseLogs(this.storage.getLogs(), peptide, dates);
+    if (!result.addedCount) return { success: true, addedCount: 0, datesAdded: [] };
+    return this.commit({ ...result, success: true, inventory: this.storage.getInventory() });
   }
 }

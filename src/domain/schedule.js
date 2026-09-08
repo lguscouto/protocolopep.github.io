@@ -2,6 +2,9 @@
  * Motor Puro de Agendamento e Ocorrências de Doses
  */
 
+import { normalizeProtocolRevisions, resolveProtocolAt, resolveProtocolForDay } from "./protocol-history.js";
+import { summarizeDoseEntries } from "./dose-state.js";
+
 export function isValidTime(timeStr) {
   if (typeof timeStr !== "string") return false;
   const trimmed = timeStr.trim();
@@ -59,8 +62,12 @@ export function daysBetween(aKey, bDate) {
 export function isScheduledOnDate(peptide, targetDate = new Date()) {
   if (!peptide || typeof peptide !== "object") return false;
 
-  const d = new Date(targetDate);
+  const d = typeof targetDate === "string" && isValidDateKey(targetDate) ? keyToDate(targetDate) : new Date(targetDate);
+  if (!Number.isFinite(d.getTime())) return false;
+  peptide = resolveProtocolForDay(peptide, d);
+  if (peptide.lifecycleStatus !== "active") return false;
   d.setHours(0, 0, 0, 0);
+  if (peptide.start && (!isValidDateKey(peptide.start) || daysBetween(peptide.start, d) < 0)) return false;
 
   // 1. Regra de Intervalo Cíclico (A cada X dias)
   if (peptide.interval && Number.isInteger(parseInt(peptide.interval, 10)) && parseInt(peptide.interval, 10) > 1) {
@@ -83,16 +90,19 @@ export function isScheduledOnDate(peptide, targetDate = new Date()) {
 
 export function getScheduledPeptides(peptides = [], targetDate = new Date()) {
   if (!Array.isArray(peptides)) return [];
-  return peptides.filter((p) => isScheduledOnDate(p, targetDate));
+  const date = typeof targetDate === "string" && isValidDateKey(targetDate) ? keyToDate(targetDate) : new Date(targetDate);
+  return peptides.filter(Boolean).map((p) => resolveProtocolForDay(p, date)).filter((p) => isScheduledOnDate(p, date));
 }
 
 export function calculateDayProgress(peptides = [], logs = {}, targetDate = new Date()) {
-  const tKey = dateToKey(targetDate);
+  const tKey = typeof targetDate === "string" && isValidDateKey(targetDate) ? targetDate : dateToKey(targetDate);
   const dayLogs = (logs && logs[tKey]) ? logs[tKey] : {};
   const scheduled = getScheduledPeptides(peptides, targetDate);
 
   let totalDue = 0;
   let scheduledTaken = 0;
+  let resolvedCount = 0;
+  let pendingCount = 0;
   const scheduledPepIds = new Set();
 
   scheduled.forEach((p) => {
@@ -100,25 +110,21 @@ export function calculateDayProgress(peptides = [], logs = {}, targetDate = new 
     totalDue += due;
     scheduledPepIds.add(p.id);
 
-    const val = dayLogs[p.id];
-    let count = 0;
-    if (Array.isArray(val)) {
-      count = val.length;
-    } else if (val && typeof val === "object") {
-      count = 1;
-    }
-    scheduledTaken += Math.min(due, count);
+    const counts = summarizeDoseEntries(dayLogs[p.id], due);
+    scheduledTaken += Math.min(due, counts.applied);
+    resolvedCount += Math.min(due, counts.resolved);
+    pendingCount += counts.pending;
   });
 
   let totalTaken = 0;
   let extraTaken = 0;
+  let skippedCount = 0;
+  let missedCount = 0;
   Object.entries(dayLogs).forEach(([pepId, val]) => {
-    let count = 0;
-    if (Array.isArray(val)) {
-      count = val.length;
-    } else if (val && typeof val === "object") {
-      count = 1;
-    }
+    const counts = summarizeDoseEntries(val);
+    const count = counts.applied;
+    skippedCount += counts.skipped;
+    missedCount += counts.missed;
     totalTaken += count;
     if (!scheduledPepIds.has(pepId)) {
       extraTaken += count;
@@ -133,7 +139,7 @@ export function calculateDayProgress(peptides = [], logs = {}, targetDate = new 
 
   const percentage = totalDue > 0
     ? Math.min(100, Math.round((scheduledTaken / totalDue) * 100))
-    : (totalTaken > 0 ? 100 : 0);
+    : 0;
 
   return {
     dateKey: tKey,
@@ -142,8 +148,12 @@ export function calculateDayProgress(peptides = [], logs = {}, targetDate = new 
     totalTaken,
     scheduledTaken,
     extraTaken,
+    skippedCount,
+    missedCount,
+    resolvedCount,
+    pendingCount,
     percentage,
-    isComplete: totalDue > 0 && scheduledTaken >= totalDue
+    isComplete: totalDue > 0 && pendingCount === 0
   };
 }
 
@@ -181,8 +191,7 @@ export function getUpcomingOccurrences(peptides = [], fromDate = new Date(), lim
     d.setDate(d.getDate() + day);
     const dKey = dateToKey(d);
 
-    for (const p of peptides) {
-      if (isScheduledOnDate(p, d)) {
+    for (const p of getScheduledPeptides(peptides, d)) {
         results.push({
           dateKey: dKey,
           date: d,
@@ -193,7 +202,6 @@ export function getUpcomingOccurrences(peptides = [], fromDate = new Date(), lim
           time: p.time || "08:00",
           color: p.color || "var(--primary)"
         });
-      }
     }
   }
 
@@ -205,6 +213,43 @@ export function getUpcomingOccurrences(peptides = [], fromDate = new Date(), lim
   });
 
   return results.slice(0, limit);
+}
+
+/** Preview actual future clock times using the revision effective at each time. */
+export function getUpcomingDoseTimes(peptides = [], fromDate = new Date(), limit = 3, horizonDays = 365) {
+  const from = typeof fromDate === "string" && isValidDateKey(fromDate) ? keyToDate(fromDate) : new Date(fromDate);
+  if (!Array.isArray(peptides) || !Number.isFinite(from.getTime()) || limit <= 0) return [];
+  const timesOf = (config) => {
+    const times = (Array.isArray(config.times) && config.times.length ? config.times : [config.time || "08:00"])
+      .filter(isValidTime).map((time) => time.trim());
+    return times.slice(0, Math.max(1, Number.parseInt(config.perDay, 10) || times.length || 1));
+  };
+  const candidates = peptides.filter(Boolean).map((protocol) => ({
+    protocol,
+    times: [...new Set([protocol, ...normalizeProtocolRevisions(protocol.revisions).map((revision) => revision.config)].flatMap(timesOf))]
+  }));
+  const results = [];
+  for (let offset = 0; offset <= horizonDays; offset++) {
+    const day = new Date(from);
+    day.setDate(from.getDate() + offset);
+    for (const { protocol, times } of candidates) {
+      for (const time of times) {
+        const [hour, minute] = time.split(":").map(Number);
+        const at = new Date(day);
+        at.setHours(hour, minute, 0, 0);
+        if (at <= from) continue;
+        const effective = resolveProtocolAt(protocol, at);
+        if (!isScheduledOnDate(effective, at) || !timesOf(effective).includes(time)) continue;
+        results.push({
+          dateKey: dateToKey(at), date: at, time,
+          peptideId: protocol.id, name: effective.name, dose: effective.dose || "", ui: effective.ui || 0,
+          revisionId: effective.revisionId, color: effective.color || "var(--primary)"
+        });
+      }
+    }
+    if (results.length >= limit) break;
+  }
+  return results.sort((left, right) => left.date - right.date).slice(0, limit);
 }
 
 /**
@@ -233,19 +278,13 @@ export function calculateBackfillDates(peptide, startDate, todayDate = new Date(
 
   const dates = occurrencesForRange(peptide, startDt, endDt);
 
-  const times = Array.isArray(peptide.times) && peptide.times.length > 0
-    ? peptide.times
-    : [peptide.time || "08:00"];
-
-  const perDay = Math.max(1, parseInt(peptide.perDay, 10) || times.length || 1);
-  const resolvedTimes = times.slice(0, perDay);
-  while (resolvedTimes.length < perDay) {
-    resolvedTimes.push(resolvedTimes[resolvedTimes.length - 1] || "08:00");
-  }
-
-  return dates.map((d) => ({
-    dateKey: dateToKey(d),
-    date: d,
-    times: resolvedTimes
-  }));
+  return dates.map((d) => {
+    const effective = resolveProtocolForDay(peptide, d);
+    const times = Array.isArray(effective.times) && effective.times.length > 0
+      ? effective.times : [effective.time || "08:00"];
+    const perDay = Math.max(1, parseInt(effective.perDay, 10) || times.length || 1);
+    const resolvedTimes = times.slice(0, perDay);
+    while (resolvedTimes.length < perDay) resolvedTimes.push(resolvedTimes.at(-1) || "08:00");
+    return { dateKey: dateToKey(d), date: d, times: resolvedTimes };
+  });
 }
