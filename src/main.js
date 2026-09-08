@@ -1342,7 +1342,7 @@ function renderHistory() {
   const compoundSelect = document.getElementById("history-compound");
   if (compoundSelect) {
     const selected = historyFilters.compoundId;
-    compoundSelect.innerHTML = `<option value="all">Todos os compostos</option>${peptides.map((item) => `<option value="${sanitizeId(item.id)}">${esc(item.name)}${item.lifecycleStatus === "ended" ? " (encerrado)" : ""}</option>`).join("")}`;
+    compoundSelect.innerHTML = `<option value="all">${esc(i18nService.t("history.allCompounds"))}</option>${peptides.map((item) => `<option value="${sanitizeId(item.id)}">${esc(item.name)}${item.lifecycleStatus === "ended" ? ` (${esc(i18nService.t("phase1.ended").toLocaleLowerCase(i18nService.getLocale()))})` : ""}</option>`).join("")}`;
     compoundSelect.value = peptides.some((item) => item.id === selected) ? selected : "all";
     historyFilters.compoundId = compoundSelect.value;
   }

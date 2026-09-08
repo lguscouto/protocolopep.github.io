@@ -144,31 +144,31 @@
           <div class="hist-count" id="history-count"></div>
         </div>
         <div class="history-actions">
-          <button type="button" class="btn-primary" id="open-measurement-modal-btn" aria-label="Registrar peso, medidas ou sintomas">
+          <button type="button" class="btn-primary" id="open-measurement-modal-btn" data-i18n="history.addMeasurements" data-i18n-aria="measurements.addEntry" aria-label="Registrar peso, medidas ou sintomas">
             + Medidas / Sintomas
           </button>
-          <button type="button" class="btn-ghost" id="hist-retro-btn" aria-label="Adicionar registro de dose retroativo">
+          <button type="button" class="btn-ghost" id="hist-retro-btn" data-i18n="history.addRetroactive" aria-label="Adicionar registro de dose retroativo">
             + Dose Retroativa
           </button>
-          <button type="button" class="btn-ghost" id="hist-report-btn" aria-label="Gerar relatório de aplicações">
+          <button type="button" class="btn-ghost" id="hist-report-btn" data-i18n="history.reportButton" aria-label="Gerar relatório de aplicações">
             📄 Relatório
           </button>
         </div>
       </div>
 
       <!-- Resumo descritivo de consistência da rotina (Fase 2) -->
-      <div class="history-filter-panel" aria-label="Filtros do histórico">
+      <div class="history-filter-panel" data-i18n-aria="history.filterPanelLabel" aria-label="Filtros do histórico">
         <div class="history-filter-grid">
-          <label>Período<select id="history-period" class="txt"><option value="7">7 dias</option><option value="30" selected>30 dias</option><option value="90">90 dias</option><option value="all">Todo o histórico</option><option value="custom">Personalizado</option></select></label>
-          <label>Composto<select id="history-compound" class="txt"><option value="all">Todos os compostos</option></select></label>
-          <label>Tipo<select id="history-type" class="txt"><option value="all">Todos os registros</option><option value="application">Aplicações</option><option value="symptom">Sintomas</option><option value="measurement">Medidas</option><option value="protocol">Alterações de protocolo</option></select></label>
-          <label>Buscar<input id="history-search" class="txt" type="search" placeholder="Nome ou observação" autocomplete="off"></label>
+          <label><span data-i18n="history.periodLabel">Período</span><select id="history-period" class="txt"><option value="7" data-i18n="history.sevenDays">7 dias</option><option value="30" selected data-i18n="history.thirtyDays">30 dias</option><option value="90" data-i18n="history.ninetyDays">90 dias</option><option value="all" data-i18n="history.allHistory">Todo o histórico</option><option value="custom" data-i18n="history.customPeriod">Personalizado</option></select></label>
+          <label><span data-i18n="history.compoundLabel">Composto</span><select id="history-compound" class="txt"><option value="all" data-i18n="history.allCompounds">Todos os compostos</option></select></label>
+          <label><span data-i18n="history.typeLabel">Tipo</span><select id="history-type" class="txt"><option value="all" data-i18n="history.allRecords">Todos os registros</option><option value="application" data-i18n="history.applications">Aplicações</option><option value="symptom" data-i18n="history.symptoms">Sintomas</option><option value="measurement" data-i18n="history.measurements">Medidas</option><option value="protocol" data-i18n="history.protocolChanges">Alterações de protocolo</option></select></label>
+          <label><span data-i18n="history.searchLabel">Buscar</span><input id="history-search" class="txt" type="search" data-i18n-placeholder="history.searchPlaceholder" placeholder="Nome ou observação" autocomplete="off"></label>
         </div>
         <div id="history-custom-dates" class="history-custom-dates" hidden>
           <label>Data inicial<input id="history-start-date" class="txt" type="date"></label>
           <label>Data final<input id="history-end-date" class="txt" type="date"></label>
         </div>
-        <p id="history-context-note" class="history-context-note" hidden>Sintomas e medidas são exibidos como contexto geral do período, sem atribuição ao composto filtrado.</p>
+        <p id="history-context-note" class="history-context-note" data-i18n="history.contextNote" hidden>Sintomas e medidas são exibidos como contexto geral do período, sem atribuição ao composto filtrado.</p>
       </div>
 
       <div id="adherence-summary"></div>
