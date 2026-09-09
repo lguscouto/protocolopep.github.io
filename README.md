@@ -399,6 +399,8 @@ pep-protocol/
 
 ## 🚀 Executar, Testar e Compilar
 
+Toolchain Android validada: Android Gradle Plugin `8.13.2`, Gradle Wrapper `8.13`, Kotlin `2.1.20` e JDK `17`. O aplicativo compila com SDK `36`, tem como alvo a API `36` e mantém suporte a partir do Android 8.0 (API `26`).
+
 ### 1. Instalação
 ```bash
 npm install

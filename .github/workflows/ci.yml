@@ -73,6 +73,11 @@ jobs:
           chmod +x gradlew
           ./gradlew testDebugUnitTest
 
+      - name: Run Android Lint
+        run: |
+          cd android
+          ./gradlew lintDebug
+
       - name: Assemble Debug APK
         run: |
           cd android
