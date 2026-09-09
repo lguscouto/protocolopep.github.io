@@ -20,9 +20,12 @@ export class NotificationService {
       discreteMode: true
     };
     this.audioCtx = null;
+    this.nativeSetupPromise = null;
+    this.scheduleInFlight = null;
+    this.lastSchedule = null;
   }
 
-  async init() {
+  async init({ deferNative = false } = {}) {
     try {
       const saved = localStorage.getItem(NOTIF_CFG_KEY);
       if (saved) {
@@ -30,8 +33,17 @@ export class NotificationService {
       }
     } catch (e) {}
 
-    if (Capacitor.isNativePlatform()) {
+    if (!deferNative) await this.ensureNativeSetup();
+  }
+
+  async ensureNativeSetup() {
+    if (!Capacitor.isNativePlatform()) return { success: true, native: false };
+    if (this.nativeSetupPromise) return this.nativeSetupPromise;
+    this.nativeSetupPromise = (async () => {
       try {
+        if (typeof LocalNotifications.createChannel !== "function") {
+          return { success: true, native: true, unsupported: true };
+        }
         await LocalNotifications.createChannel({
           id: NOTIF_CHANNEL_ID,
           name: "Lembretes de Peptídeos",
@@ -60,10 +72,14 @@ export class NotificationService {
           visibility: 1,
           vibration: false
         });
+        return { success: true, native: true };
       } catch (e) {
         console.warn("[Notif] Channel creation error:", e);
+        this.nativeSetupPromise = null;
+        return { success: false, native: true, error: e.message };
       }
-    }
+    })();
+    return this.nativeSetupPromise;
   }
 
   getConfig() {
@@ -93,6 +109,7 @@ export class NotificationService {
 
   saveConfig(newCfg) {
     this.cfg = { ...this.cfg, ...newCfg };
+    this.lastSchedule = null;
     try {
       localStorage.setItem(NOTIF_CFG_KEY, JSON.stringify(this.cfg));
     } catch (e) {}
@@ -341,6 +358,7 @@ export class NotificationService {
   }
 
   async schedulePeptideReminders(peptides = []) {
+    await this.ensureNativeSetup();
     // 1. Sempre cancelar lembretes anteriores
     await this.cancelAllPepReminders();
 
@@ -456,6 +474,49 @@ export class NotificationService {
       schedulingMode: schedulingPolicy.mode,
       exactAlarmStatus: schedulingPolicy.exactAlarm.status
     };
+  }
+
+  schedulePeptideRemindersIfNeeded(peptides = [], { force = false, reason = "state-check" } = {}) {
+    const day = dateToKey(new Date());
+    const fingerprint = JSON.stringify({
+      day,
+      cfg: this.cfg,
+      peptides
+    });
+
+    if (this.scheduleInFlight?.fingerprint === fingerprint && !force) {
+      return this.scheduleInFlight.promise;
+    }
+
+    const run = async () => {
+      if (!force && this.lastSchedule?.fingerprint === fingerprint) {
+        if (!Capacitor.isNativePlatform()) {
+          return { ...this.lastSchedule.result, skipped: true, reason };
+        }
+        try {
+          const pending = await LocalNotifications.getPending();
+          const pendingCount = pending?.notifications?.length || 0;
+          if (pendingCount >= (this.lastSchedule.result.scheduledCount || 0)) {
+            return { ...this.lastSchedule.result, skipped: true, reason };
+          }
+        } catch {
+          // Falha de reconciliação: reagendar mantém o comportamento fail-safe.
+        }
+      }
+
+      const result = await this.schedulePeptideReminders(peptides);
+      if (!result?.error) this.lastSchedule = { fingerprint, result };
+      return { ...result, skipped: false, reason };
+    };
+
+    const promise = (this.scheduleInFlight?.promise || Promise.resolve())
+      .catch(() => {})
+      .then(run)
+      .finally(() => {
+        if (this.scheduleInFlight?.promise === promise) this.scheduleInFlight = null;
+      });
+    this.scheduleInFlight = { fingerprint, promise };
+    return promise;
   }
 }
 

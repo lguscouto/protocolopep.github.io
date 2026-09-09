@@ -243,6 +243,7 @@ export function setupInventoryUI({ storage, onInventoryChange }) {
   }
 
   if (openNewVialFromCalcBtn) {
+    openNewVialFromCalcBtn.dataset.inventoryBound = "true";
     openNewVialFromCalcBtn.addEventListener("click", () => {
       haptics.light();
       const selMgChip = document.querySelector("#calc-mg-chips .chip.sel");

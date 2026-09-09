@@ -276,12 +276,14 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     await assertTouchTargets(".take, .dose-add, .dose-undo", "ações de dose");
 
     await page.locator("#tab-history").click();
+    await expect(page.locator("#view-history")).toHaveAttribute("data-feature-ready", "true");
     await assertTouchTargets(".btn-meas-edit", "edição de medidas");
     await page.locator("#open-measurement-modal-btn").click();
     await assertTouchTargets(".symptom-chip-btn", "chips de sintomas");
     await page.locator("#measurement-modal-close").click();
 
     await page.locator("#tab-settings").click();
+    await expect(page.locator("#view-settings")).toHaveAttribute("data-feature-ready", "true");
     await assertTouchTargets(".lang-select-btn", "seletor de idioma");
     await assertTouchTargets(".edit-vial-btn, .view-vial-history-btn", "ações de inventário");
     await page.locator("#open-sites-settings-btn").click();
@@ -291,11 +293,13 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     await page.locator("#tab-today").click();
     await page.locator(".dash-actions-collapsible summary").click();
     await page.locator("#dash-research-btn").click();
+    await expect(page.locator("#research-modal")).toHaveClass(/\bon\b/);
     await assertTouchTargets("#research-clear-btn, #research-category-chips .chip", "controles da pesquisa");
     await page.locator("#research-modal-close").click();
 
     await page.locator("#tab-settings").click();
     await page.locator("#open-tools-btn").click();
+    await expect(page.locator("#view-calc")).toHaveAttribute("data-feature-ready", "true");
     await assertTouchTargets("#calc-research-btn", "atalho de pesquisa da calculadora");
 
     await page.locator("#tab-today").click();
@@ -502,6 +506,7 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     // Navegar para Ferramentas por Mais
     await page.locator("#tab-settings").click();
     await page.locator("#open-tools-btn").click();
+    await expect(page.locator("#view-calc")).toHaveAttribute("data-feature-ready", "true");
 
     // Preencher dose de 250 mcg (padrão 5mg / 2ml = 2.5 mg/ml -> 250 mcg = 0.25 mg -> 0.1 ml -> 10 UI)
     const doseInput = page.locator("#calc-dose-input");
@@ -582,6 +587,7 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     await page.goto("/");
     await page.waitForLoadState("domcontentloaded");
     await page.locator("#tab-settings").click();
+    await expect(page.locator("#view-settings")).toHaveAttribute("data-feature-ready", "true");
 
     const backup = JSON.stringify({
       app: "protocolo-pep",

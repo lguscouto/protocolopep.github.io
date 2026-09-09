@@ -5,13 +5,15 @@ import "./css/animated-bg.css";
 import "./css/components.css";
 
 import { storage } from "./services/storage.js";
+import { createFeatureLoader, scheduleIdleWork } from "./services/feature-loader.js";
+import { createViewCoordinator } from "./services/view-coordinator.js";
+import { startAnimatedBackground } from "./services/animated-background.js";
 import { commitAction } from "./services/committed-action.js";
 import { theme } from "./services/theme.js";
 import { haptics } from "./services/haptics.js";
 import { notifications } from "./services/notifications.js";
 import { appBridge } from "./services/app-bridge.js";
 import { LIBRARY, PALETTE } from "./data/default-library.js";
-import { calculateReconstitution, convertDoseValue } from "./domain/calculator.js";
 import {
   dateToKey,
   daysBetween,
@@ -31,7 +33,6 @@ import {
 import { createPeptide, validatePeptide } from "./domain/protocol.js";
 import { parseUnits, doseEntries, doseStatus, summarizeDoseEntries } from "./domain/dose-state.js";
 import { resolveProtocolAt, resolveProtocolForDay, reviseProtocol } from "./domain/protocol-history.js";
-import { getDoseDisplayData, buildReviewModel } from "./domain/report.js";
 import { renderProtocolList, renderProtocolControls, changeProtocolStatus } from "./ui/protocol-lifecycle.js";
 import { isValidDateKey, isValidTime } from "./domain/schedule.js";
 import { escapeHtml, sanitizeColor, sanitizeId } from "./ui/dom.js";
@@ -39,35 +40,21 @@ import { shouldShowOnboarding, showOnboarding } from "./ui/onboarding.js";
 import { createCalculationSnapshot, formatAuditTrail } from "./domain/calculation-record.js";
 import { createDoseLog, validateDoseLog, normalizeDoseEntry } from "./domain/dose-log.js";
 import { generateDailySummary } from "./domain/daily-summary.js";
-import { calculateAdherenceSummary } from "./domain/adherence.js";
 import { updateNotificationUI, setupNotificationListeners } from "./ui/notification-settings.js";
-import { setupBackupPreview } from "./ui/backup-preview.js";
-import { recordBackupExport, renderBackupStatusUI } from "./ui/backup-status.js";
-import { exportFile, shareExportedFile } from "./services/export.js";
-import { setupReportModal } from "./ui/report-preview.js";
-import { setupDiagnosticsModal } from "./ui/diagnostics.js";
-import { setupInventoryUI } from "./ui/inventory.js";
 import { calculateRemainingDoses, getExpirationStatus } from "./domain/inventory.js";
-import { setupInjectionSitesUI } from "./ui/injection-sites.js";
 import { getNextSite, getLastUsedSite } from "./domain/injection-sites.js";
-import { setupMeasurementsUI } from "./ui/measurements.js";
+import { createRevisionedPerformanceIndexes } from "./domain/performance-indexes.js";
+import { getDoseDisplayData as getDoseDisplayDataCore } from "./domain/dose-display.js";
 import { appLock } from "./services/app-lock.js";
 import { setupAppLockUI } from "./ui/app-lock.js";
-import { widgetService } from "./services/widget.js";
-import { healthConnect } from "./services/health-connect.js";
-import { setupHealthConnectUI } from "./ui/health-connect.js";
-import { setupCalculatorUI } from "./ui/calculator.js";
 import { dialogService } from "./services/dialog.js";
 import { i18nService } from "./services/i18n.js";
 import { setupI18nUI, applyTranslations } from "./ui/i18n.js";
-import { researchService } from "./services/research.js";
-import { setupResearchUI } from "./ui/research.js";
-import { AccessibilityService, accessibilityService } from "./services/accessibility.js";
+import { accessibilityService } from "./services/accessibility.js";
 import { setupAccessibilityUI } from "./ui/accessibility.js";
 import { setupModalController } from "./ui/modal-controller.js";
 import { DoseService } from "./services/dose-service.js";
 import { openRetroLogModal as openRetroModal, saveRetroLog as saveRetro } from "./ui/retro-log.js";
-import { renderAdherenceSummaryHTML } from "./ui/adherence.js";
 import { App } from "@capacitor/app";
 
 export { accessibilityService };
@@ -117,6 +104,7 @@ function showToast(msg) {
 const dateKey = dateToKey;
 
 function syncAppWidget() {
+  if (!widgetService) return;
   widgetService.syncWidget({
     peptides: storage.getPeptides(),
     logs: storage.getLogs(),
@@ -137,11 +125,273 @@ let researchUI = null;
 let adherencePeriodDays = 7;
 const historyFilters = { period: "30", compoundId: "all", eventType: "all", query: "", startDate: null, endDate: null };
 
+let getDoseDisplayData = null;
+let buildReviewModel = null;
+let calculateAdherenceSummary = null;
+let renderAdherenceSummaryHTML = null;
+let exportFile = null;
+let shareExportedFile = null;
+let recordBackupExport = null;
+let renderBackupStatusUI = () => {};
+let widgetService = null;
+const performanceIndexes = createRevisionedPerformanceIndexes(() => storage.getRevision());
+
+const deferredDom = new Map();
+
+function parkFeatureDom(feature, { childHosts = [], elements = [] } = {}) {
+  const records = deferredDom.get(feature) || [];
+  childHosts.forEach((selector) => {
+    const host = document.querySelector(selector);
+    if (!host || host.dataset.pepDeferred === "true") return;
+    const anchor = document.createComment(`pep:${feature}`);
+    const fragment = document.createDocumentFragment();
+    while (host.firstChild) fragment.appendChild(host.firstChild);
+    host.appendChild(anchor);
+    host.dataset.pepDeferred = "true";
+    records.push({ type: "children", host, anchor, fragment });
+  });
+  elements.forEach((selector) => {
+    const element = document.querySelector(selector);
+    if (!element || element.dataset.pepDeferred === "true") return;
+    const anchor = document.createComment(`pep:${feature}`);
+    element.before(anchor);
+    element.remove();
+    element.dataset.pepDeferred = "true";
+    records.push({ type: "element", element, anchor });
+  });
+  deferredDom.set(feature, records);
+}
+
+function restoreFeatureDom(feature) {
+  const records = deferredDom.get(feature) || [];
+  records.forEach((record) => {
+    if (record.type === "children") {
+      record.anchor.before(record.fragment);
+      record.anchor.remove();
+      delete record.host.dataset.pepDeferred;
+    } else {
+      record.anchor.replaceWith(record.element);
+      delete record.element.dataset.pepDeferred;
+    }
+  });
+  deferredDom.delete(feature);
+}
+
+function prepareDeferredDom() {
+  parkFeatureDom("agenda", { childHosts: ["#view-week"] });
+  parkFeatureDom("history", { childHosts: ["#view-history"], elements: ["#measurement-modal"] });
+  parkFeatureDom("tools", { childHosts: ["#view-calc"], elements: ["#research-modal", "#compound-detail-modal"] });
+  parkFeatureDom("settings", { elements: ["#backup-preview-modal", "#diag-modal", "#vial-modal", "#vial-history-modal", "#sites-modal"] });
+  parkFeatureDom("reporting", { elements: ["#report-modal"] });
+}
+
+async function loadFeature(loader, label) {
+  try {
+    return await loader.load();
+  } catch (error) {
+    void dialogService.alert({
+      title: "Não foi possível abrir",
+      message: `Falha ao carregar ${label}. Tente novamente.`,
+      isDanger: true
+    });
+    throw error;
+  }
+}
+
+const reportingFeature = createFeatureLoader(async () => {
+  restoreFeatureDom("reporting");
+  const { setupReportModal } = await import("./ui/report-preview.js");
+  setupReportModal(storage);
+});
+
+const agendaFeature = createFeatureLoader(async () => {
+  restoreFeatureDom("agenda");
+  applyTranslations(document, i18nService);
+  getDoseDisplayData = getDoseDisplayDataCore;
+  document.getElementById("view-week")?.setAttribute("data-feature-ready", "true");
+});
+
+const historyFeature = createFeatureLoader(async () => {
+  restoreFeatureDom("history");
+  applyTranslations(document, i18nService);
+  const [report, adherence, adherenceUi, measurementsModule] = await Promise.all([
+    import("./domain/report.js"),
+    import("./domain/adherence.js"),
+    import("./ui/adherence.js"),
+    import("./ui/measurements.js")
+  ]);
+  getDoseDisplayData = report.getDoseDisplayData;
+  buildReviewModel = report.buildReviewModel;
+  calculateAdherenceSummary = adherence.calculateAdherenceSummary;
+  renderAdherenceSummaryHTML = adherenceUi.renderAdherenceSummaryHTML;
+  measurementsUI = measurementsModule.setupMeasurementsUI({
+    storage,
+    onMeasurementsChange: () => {
+      invalidateViews("history");
+      if (healthConnectUI?.triggerAutoSync) healthConnectUI.triggerAutoSync();
+    }
+  });
+  setupHistoryFilters();
+  bindRestoredCoreControls();
+  void reportingFeature.load();
+  document.getElementById("view-history")?.setAttribute("data-feature-ready", "true");
+});
+
+const settingsFeature = createFeatureLoader(async () => {
+  restoreFeatureDom("settings");
+  applyTranslations(document, i18nService);
+  const [backupPreview, backupStatus, exportService, diagnostics, inventory, sites, healthService, healthUi, widget] = await Promise.all([
+    import("./ui/backup-preview.js"),
+    import("./ui/backup-status.js"),
+    import("./services/export.js"),
+    import("./ui/diagnostics.js"),
+    import("./ui/inventory.js"),
+    import("./ui/injection-sites.js"),
+    import("./services/health-connect.js"),
+    import("./ui/health-connect.js"),
+    import("./services/widget.js")
+  ]);
+  exportFile = exportService.exportFile;
+  shareExportedFile = exportService.shareExportedFile;
+  recordBackupExport = backupStatus.recordBackupExport;
+  renderBackupStatusUI = backupStatus.renderBackupStatusUI;
+  widgetService = widget.widgetService;
+
+  inventoryUI = inventory.setupInventoryUI({ storage, onInventoryChange: () => invalidateViews("today", "week") });
+  sitesUI = sites.setupInjectionSitesUI({ storage, onSitesChange: () => invalidateViews("today", "week") });
+  healthConnectUI = healthUi.setupHealthConnectUI({
+    healthConnectService: healthService.healthConnect,
+    storage,
+    onSyncComplete: () => {
+      measurementsUI?.renderList?.();
+      invalidateViews("history");
+    },
+    showToast,
+    haptics
+  });
+  backupPreview.setupBackupPreview({
+    storage,
+    theme,
+    notifications,
+    onStateRestored: () => {
+      invalidateViews("today", "week", "history");
+      updateNotificationUI(storage.getPeptides());
+    }
+  });
+  diagnostics.setupDiagnosticsModal({
+    storage,
+    getNotificationsActive: () => (window.pepNotifications ? window.pepNotifications.hasActiveReminders() : false),
+    appVersion: "3.0.3"
+  });
+  const widgetToggle = document.getElementById("widget-discrete-toggle");
+  if (widgetToggle && widgetToggle.dataset.widgetBound !== "true") {
+    widgetToggle.dataset.widgetBound = "true";
+    widgetToggle.checked = widgetService.isDiscreteModeEnabled();
+    widgetToggle.addEventListener("change", () => {
+      widgetService.setDiscreteModeEnabled(widgetToggle.checked);
+      haptics.selection();
+      syncAppWidget();
+    });
+  }
+  bindCalculatorInventoryButton();
+  bindRestoredCoreControls();
+  renderBackupStatusUI();
+  void reportingFeature.load();
+  document.getElementById("view-settings")?.setAttribute("data-feature-ready", "true");
+});
+
+const toolsFeature = createFeatureLoader(async () => {
+  restoreFeatureDom("tools");
+  applyTranslations(document, i18nService);
+  const [calculator, researchServiceModule, researchUi] = await Promise.all([
+    import("./ui/calculator.js"),
+    import("./services/research.js"),
+    import("./ui/research.js")
+  ]);
+  calculator.setupCalculatorUI({
+    haptics,
+    onUseCalculation: ({ dose, ui, calculationSnapshot }) => openEditModal(null, { dose, ui, calculationSnapshot })
+  });
+  researchUI = researchUi.setupResearchUI({
+    researchService: researchServiceModule.researchService,
+    onOpenCalculator: (compound) => {
+      void switchTab("calc");
+      showToast(`Calculadora aberta: ${compound.name}`);
+      setTimeout(() => document.getElementById("calc-dose-input")?.focus(), 150);
+    },
+    onAddToProtocol: (compound) => {
+      void switchTab("today");
+      openEditModal(null, { name: compound.name, sub: compound.categoryLabel, accent: compound.accentColor });
+      showToast(`Iniciando cadastro de ${compound.name}`);
+    }
+  });
+  const vialButton = document.getElementById("calc-save-vial-btn");
+  if (vialButton && settingsFeature.state !== "ready") {
+    vialButton.addEventListener("click", async (event) => {
+      if (settingsFeature.state === "ready") return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      await loadFeature(settingsFeature, "os frascos");
+      vialButton.click();
+    });
+  }
+  if (settingsFeature.state === "ready") bindCalculatorInventoryButton();
+  bindRestoredCoreControls();
+  document.getElementById("view-calc")?.setAttribute("data-feature-ready", "true");
+});
+
+const viewCoordinator = createViewCoordinator({
+  initialView: "today",
+  renderers: { today: renderToday, week: renderWeek, history: renderHistory }
+});
+
+function invalidateViews(...views) {
+  viewCoordinator.invalidate(...views);
+}
+
+function bindCalculatorInventoryButton() {
+  const button = document.getElementById("calc-save-vial-btn");
+  if (!button || button.dataset.inventoryBound === "true" || !inventoryUI) return;
+  button.dataset.inventoryBound = "true";
+  button.addEventListener("click", () => {
+    haptics.light();
+    const mg = parseFloat(document.querySelector("#calc-mg-chips .chip.sel")?.dataset.v || "5");
+    const waterMl = parseFloat(document.querySelector("#calc-ml-chips .chip.sel")?.dataset.v || "2");
+    const select = document.getElementById("calc-peptide-select");
+    const name = select?.value && select.value !== "custom" ? select.options[select.selectedIndex]?.textContent.split(" (")[0].trim() || "" : "";
+    inventoryUI.openVialModal(null, { mg, waterMl, name });
+  });
+}
+
+function bindRestoredCoreControls() {
+  const bind = (id, event, handler) => {
+    const element = document.getElementById(id);
+    if (!element || element.dataset.coreBound === "true") return;
+    element.dataset.coreBound = "true";
+    element.addEventListener(event, handler);
+  };
+  bind("hist-retro-btn", "click", () => { openRetroLogModal(); haptics.light(); });
+  bind("calc-back-btn", "click", () => { haptics.light(); void switchTab("settings"); });
+  ["hist-report-btn", "settings-report-btn"].forEach((id) => {
+    const button = document.getElementById(id);
+    if (!button || button.dataset.reportGuardBound === "true") return;
+    button.dataset.reportGuardBound = "true";
+    button.addEventListener("click", async (event) => {
+      if (reportingFeature.state === "ready") return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      await loadFeature(reportingFeature, "os relatórios");
+      button.click();
+    });
+  });
+}
+
 async function initApp() {
-  await theme.init();
+  prepareDeferredDom();
+  await theme.init({ deferNative: true });
   const storageState = storage.init();
   if (storageState.error) void dialogService.alert({ title: "Falha no armazenamento", message: storageState.error, isDanger: true });
-  await notifications.init();
+  await notifications.init({ deferNative: true });
   notifications.setupActionListener({
     onRegister: ({ peptideId, scheduledDate }) => {
       switchTab("today");
@@ -156,7 +406,7 @@ async function initApp() {
   if (typeof App.addListener === "function") {
     App.addListener("appStateChange", ({ isActive }) => {
       if (isActive && notifications.isEnabled()) {
-        void notifications.schedulePeptideReminders(storage.getPeptides());
+        void notifications.schedulePeptideRemindersIfNeeded(storage.getPeptides(), { reason: "app-resume" });
       }
     });
   }
@@ -204,61 +454,19 @@ async function initApp() {
   }
 
   setupNavigation();
+  setupRenderedEventDelegation();
   setupModalsAndButtons();
   setupNotificationListeners(storage);
-  setupCalculator();
-  inventoryUI = setupInventoryUI({
-    storage,
-    onInventoryChange: () => {
-      renderToday();
-      renderWeek();
-    }
-  });
-  sitesUI = setupInjectionSitesUI({
-    storage,
-    onSitesChange: () => {
-      renderToday();
-      renderWeek();
-    }
-  });
-  measurementsUI = setupMeasurementsUI({
-    storage,
-    onMeasurementsChange: () => {
-      renderHistory();
-      if (healthConnectUI && typeof healthConnectUI.triggerAutoSync === "function") {
-        healthConnectUI.triggerAutoSync();
-      }
-    }
-  });
-  setupHistoryFilters();
   appLockUI = setupAppLockUI({
     appLockService: appLock,
-    onUnlock: () => {
-      renderToday();
-      renderWeek();
-      renderHistory();
-    }
-  });
-  healthConnectUI = setupHealthConnectUI({
-    healthConnectService: healthConnect,
-    storage,
-    onSyncComplete: () => {
-      if (measurementsUI && typeof measurementsUI.renderList === "function") {
-        measurementsUI.renderList();
-      }
-      renderHistory();
-    },
-    showToast,
-    haptics
+    onUnlock: () => invalidateViews("today", "week", "history")
   });
 
   i18nUI = setupI18nUI({
     i18nService,
     onLocaleChange: () => {
       applyTranslations(document, i18nService);
-      renderToday();
-      renderWeek();
-      renderHistory();
+      invalidateViews("today", "week", "history");
       if (inventoryUI && typeof inventoryUI.renderInventoryList === "function") {
         inventoryUI.renderInventoryList();
       }
@@ -276,27 +484,6 @@ async function initApp() {
 
   applyTranslations(document, i18nService);
 
-  researchUI = setupResearchUI({
-    researchService,
-    onOpenCalculator: (compound) => {
-      switchTab("calc");
-      showToast(`Calculadora aberta: ${compound.name}`);
-      const doseInput = document.getElementById("calc-dose-input");
-      if (doseInput) {
-        setTimeout(() => doseInput.focus(), 150);
-      }
-    },
-    onAddToProtocol: (compound) => {
-      switchTab("today");
-      openEditModal(null, {
-        name: compound.name,
-        sub: compound.categoryLabel,
-        accent: compound.accentColor
-      });
-      showToast(`Iniciando cadastro de ${compound.name}`);
-    }
-  });
-
   accessibilityUI = setupAccessibilityUI({
     accessibilityService,
     haptics,
@@ -305,100 +492,51 @@ async function initApp() {
     }
   });
 
-  renderToday();
-  renderWeek();
-  renderHistory();
+  viewCoordinator.render("today", { force: true });
   updateNotificationUI(storage.getPeptides());
-  renderBackupStatusUI();
   if (appLockUI && typeof appLockUI.updateSettingsLockCard === "function") {
     appLockUI.updateSettingsLockCard();
   }
-  if (healthConnectUI && typeof healthConnectUI.updateSettingsCard === "function") {
-    healthConnectUI.updateSettingsCard();
-  }
 
-  const widgetToggle = document.getElementById("widget-discrete-toggle");
-  if (widgetToggle) {
-    widgetToggle.checked = widgetService.isDiscreteModeEnabled();
-    widgetToggle.addEventListener("change", () => {
-      widgetService.setDiscreteModeEnabled(widgetToggle.checked);
-      haptics.selection();
+  scheduleIdleWork(async () => {
+    await theme.syncNativeStatusBar();
+    await notifications.ensureNativeSetup();
+    await notifications.schedulePeptideRemindersIfNeeded(storage.getPeptides(), { reason: "startup" });
+    try {
+      const { widgetService: service } = await import("./services/widget.js");
+      widgetService = service;
       syncAppWidget();
-    });
-  }
+    } catch (error) {
+      console.warn("[Startup] Widget indisponível:", error);
+    }
+  });
 
-  syncAppWidget();
-
-  notifications.schedulePeptideReminders(storage.getPeptides());
+  scheduleIdleWork(async () => {
+    await Promise.allSettled([
+      import("./domain/report.js"),
+      import("./domain/adherence.js"),
+      import("./ui/adherence.js"),
+      import("./ui/measurements.js"),
+      import("./ui/inventory.js"),
+      import("./ui/injection-sites.js"),
+      import("./ui/calculator.js"),
+      import("./ui/research.js"),
+      import("./services/research.js"),
+      import("./ui/backup-preview.js"),
+      import("./ui/backup-status.js"),
+      import("./services/export.js"),
+      import("./ui/diagnostics.js"),
+      import("./services/health-connect.js"),
+      import("./ui/health-connect.js"),
+      import("./services/widget.js"),
+      import("./ui/report-preview.js")
+    ]);
+    document.documentElement.setAttribute("data-pep-prefetch-ready", "true");
+  }, { delay: 600, timeout: 1500 });
 }
 
 function initAnimatedBg() {
-  const container = document.getElementById("bg-molecules");
-  if (!container) return;
-
-  if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    return;
-  }
-
-  const canvas = document.createElement("canvas");
-  container.appendChild(canvas);
-  const ctx = canvas.getContext("2d");
-
-  let w = (canvas.width = window.innerWidth);
-  let h = (canvas.height = window.innerHeight);
-
-  window.addEventListener("resize", () => {
-    w = canvas.width = window.innerWidth;
-    h = canvas.height = window.innerHeight;
-  });
-
-  const particles = Array.from({ length: 18 }, () => ({
-    x: Math.random() * w,
-    y: Math.random() * h,
-    vx: (Math.random() - 0.5) * 0.4,
-    vy: (Math.random() - 0.5) * 0.4,
-    r: Math.random() * 2 + 1.2
-  }));
-
-  function animate() {
-    ctx.clearRect(0, 0, w, h);
-    const isWhite = theme.isLight();
-    ctx.fillStyle = isWhite ? "rgba(14, 133, 128, 0.2)" : "rgba(44, 197, 192, 0.15)";
-    ctx.strokeStyle = isWhite ? "rgba(14, 133, 128, 0.08)" : "rgba(44, 197, 192, 0.06)";
-
-    for (let i = 0; i < particles.length; i++) {
-      const p = particles[i];
-      p.x += p.vx;
-      p.y += p.vy;
-
-      if (p.x < 0) p.x = w;
-      if (p.x > w) p.x = 0;
-      if (p.y < 0) p.y = h;
-      if (p.y > h) p.y = 0;
-
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      ctx.fill();
-
-      for (let j = i + 1; j < particles.length; j++) {
-        const p2 = particles[j];
-        const dx = p.x - p2.x;
-        const dy = p.y - p2.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-
-        if (dist < 110) {
-          ctx.beginPath();
-          ctx.moveTo(p.x, p.y);
-          ctx.lineTo(p2.x, p2.y);
-          ctx.stroke();
-        }
-      }
-    }
-
-    requestAnimationFrame(animate);
-  }
-
-  animate();
+  startAnimatedBackground({ container: document.getElementById("bg-molecules"), theme });
 }
 
 function setupNavigation() {
@@ -446,7 +584,38 @@ function setupNavigation() {
   });
 }
 
-function switchTab(tabId) {
+async function switchTab(tabId) {
+  const previousTab = currentTab;
+  if (tabId === "week") restoreFeatureDom("agenda");
+  if (tabId === "history") restoreFeatureDom("history");
+  if (tabId === "calc") restoreFeatureDom("tools");
+  activateTabShell(tabId);
+  try {
+    if (tabId === "week") await loadFeature(agendaFeature, "a Agenda");
+    if (tabId === "history") await loadFeature(historyFeature, "o Histórico");
+    if (tabId === "settings") await loadFeature(settingsFeature, "Mais e Preferências");
+    if (tabId === "calc") await loadFeature(toolsFeature, "as Ferramentas");
+  } catch {
+    activateTabShell(previousTab);
+    return false;
+  }
+
+  viewCoordinator.activate(tabId);
+  if (tabId === "settings") {
+    updateNotificationUI(storage.getPeptides());
+    renderBackupStatusUI();
+    inventoryUI?.renderInventoryList?.();
+    sitesUI?.updateSummary?.();
+    appLockUI?.updateSettingsLockCard?.();
+    const widgetToggle = document.getElementById("widget-discrete-toggle");
+    if (widgetToggle && widgetService) widgetToggle.checked = widgetService.isDiscreteModeEnabled();
+    healthConnectUI?.updateSettingsCard?.();
+    i18nUI?.updateActiveLangUI?.(i18nService.getLocale());
+  }
+  return true;
+}
+
+function activateTabShell(tabId) {
   currentTab = tabId;
 
   document.querySelectorAll(".view").forEach((view) => {
@@ -470,33 +639,70 @@ function switchTab(tabId) {
     settings: "Mais e Preferências"
   };
   accessibilityService.announce(`Aba ${tabLabels[tabId] || tabId} ativa.`);
+}
 
-  if (tabId === "today") renderToday();
-  if (tabId === "week") renderWeek();
-  if (tabId === "history") renderHistory();
-  if (tabId === "settings") {
-    updateNotificationUI(storage.getPeptides());
-    renderBackupStatusUI();
-    if (inventoryUI && typeof inventoryUI.renderInventoryList === "function") {
-      inventoryUI.renderInventoryList();
+function setupRenderedEventDelegation() {
+  document.getElementById("view-today")?.addEventListener("click", (event) => {
+    const target = event.target.closest("button");
+    if (!target) return;
+    const today = dateKey(new Date());
+    if (target.matches('[data-action="create-protocol"]')) return openEditModal();
+    if (target.matches('[data-action="open-calc"]')) return void switchTab("calc");
+    if (target.matches(".dose-status, .dose-add")) return openRetroLogModal(today, target.dataset.id, { requireSiteSelection: true });
+    if (target.matches(".take")) {
+      return target.classList.contains("done") ? void toggleDose(target.dataset.id) : openRetroLogModal(today, target.dataset.id, { requireSiteSelection: true });
     }
-    if (sitesUI && typeof sitesUI.updateSummary === "function") {
-      sitesUI.updateSummary();
+    if (target.matches(".dose-undo")) return void undoSingleDose(target.dataset.id);
+    if (target.matches(".gear")) return openEditModal(target.dataset.id);
+    if (target.matches(".del")) return void deletePeptide(target.dataset.id);
+    if (target.id === "dash-focus-action") {
+      const action = target.dataset.action;
+      const peptideId = target.dataset.peptideId;
+      if (["toggle-dose", "add-dose"].includes(action) && peptideId) return openRetroLogModal(today, peptideId, { requireSiteSelection: true });
+      if (action === "open-week") return void switchTab("week");
+      if (action === "add-peptide") return openEditModal();
     }
-    if (appLockUI && typeof appLockUI.updateSettingsLockCard === "function") {
-      appLockUI.updateSettingsLockCard();
+  });
+
+  document.getElementById("view-week")?.addEventListener("click", (event) => {
+    const target = event.target.closest("button");
+    if (!target) return;
+    if (target.matches(".week-event-edit")) {
+      openEditModal(target.dataset.pep);
+      haptics.light();
     }
-    const widgetToggle = document.getElementById("widget-discrete-toggle");
-    if (widgetToggle) {
-      widgetToggle.checked = widgetService.isDiscreteModeEnabled();
+    if (target.matches(".week-event-toggle")) {
+      const index = target.dataset.logIndex === "" ? null : Number(target.dataset.logIndex);
+      void toggleDateLog(target.dataset.pep, target.dataset.date, index);
     }
-    if (healthConnectUI && typeof healthConnectUI.updateSettingsCard === "function") {
-      healthConnectUI.updateSettingsCard();
+  });
+
+  document.getElementById("view-history")?.addEventListener("click", async (event) => {
+    const target = event.target.closest("button");
+    if (!target) return;
+    if (target.matches("[data-adherence-days]")) {
+      const days = Number.parseInt(target.dataset.adherenceDays, 10);
+      if ([7, 30].includes(days) && days !== adherencePeriodDays) {
+        adherencePeriodDays = days;
+        renderAdherenceSummary();
+      }
+      return;
     }
-    if (i18nUI && typeof i18nUI.updateActiveLangUI === "function") {
-      i18nUI.updateActiveLangUI(i18nService.getLocale());
+    if (target.id === "empty-add-measurement-btn") return measurementsUI?.openMeasurementModal();
+    if (target.matches(".hist-edit")) {
+      const log = doseEntries(storage.getLogs()[target.dataset.date]?.[target.dataset.pep])[Number(target.dataset.idx)];
+      if (log) openRetroModal(target.dataset.date, target.dataset.pep, { storage, dateKey, editingLog: log });
+      return;
     }
-  }
+    if (target.matches(".history-measurement-edit")) {
+      const entry = storage.getMeasurements().find((item) => item.id === target.dataset.id);
+      if (entry) measurementsUI?.openMeasurementModal(entry);
+      return;
+    }
+    if (target.matches(".hist-rm") && await showConfirmDialog({ title: "Excluir Registro", message: "Deseja realmente remover este registro de dose do histórico?", confirmText: "Excluir", isDanger: true })) {
+      deleteHistoryEntry(target.dataset.date, target.dataset.pep, Number(target.dataset.idx));
+    }
+  });
 }
 
 function drawRing(taken, total) {
@@ -526,11 +732,13 @@ function doseTimes(rec, id) {
 }
 
 function renderToday() {
-  const peptides = storage.getPeptides();
-  const logs = storage.getLogs();
+  const { peptides, logs, inventory, sites: configuredSites } = storage.readSnapshot(["peptides", "logs", "inventory", "sites"]);
+  const indexes = performanceIndexes.get({ logs, inventory });
+  const lastSiteIndex = indexes.lastSites;
+  const vialIndex = indexes.activeVials;
   const now = new Date();
   const todayK = dateKey(now);
-  const rec = logs[todayK] || {};
+  const rec = indexes.getRecordsForDate(todayK) || {};
   const container = document.getElementById("today-cards");
   const heroEl = document.getElementById("dash-hero");
   const focusContent = document.getElementById("dash-focus-content");
@@ -550,19 +758,6 @@ function renderToday() {
 
     container.innerHTML = renderEmptyDashboardHTML();
 
-    const emptyAddBtn = container.querySelector('[data-action="create-protocol"]');
-    if (emptyAddBtn) {
-      emptyAddBtn.addEventListener("click", () => openEditModal());
-    }
-
-    const emptyCalcBtn = container.querySelector('[data-action="open-calc"]');
-    if (emptyCalcBtn) {
-      emptyCalcBtn.addEventListener("click", () => {
-        switchTab("settings");
-        setTimeout(() => document.getElementById("open-tools-btn")?.click(), 0);
-      });
-    }
-
     drawRing(0, 0);
     syncAppWidget();
     return;
@@ -574,13 +769,12 @@ function renderToday() {
   if (actionsWrap) actionsWrap.style.display = "";
 
   const scheduledToday = getScheduledPeptides(peptides, now);
-  const configuredSites = storage.getSites();
   const tomorrow = new Date(now);
   tomorrow.setDate(tomorrow.getDate() + 1);
   const upcoming = getUpcomingOccurrences(peptides, tomorrow, 3);
   const dayProgress = calculateDayProgress(peptides, logs, now);
   const todayItems = scheduledToday.map((peptide) => {
-    const lastUsed = getLastUsedSite(logs, peptide.id);
+    const lastUsed = lastSiteIndex.byPeptide.get(peptide.id) || null;
     return {
       ...peptide,
       takenCount: dosesTaken(rec, peptide.id),
@@ -621,10 +815,10 @@ function renderToday() {
       const records = doseEntries(rec[p.id]);
       const resolved = states.resolved;
 
-      const lastUsed = getLastUsedSite(storage.getLogs(), p.id);
+      const lastUsed = lastSiteIndex.byPeptide.get(p.id) || null;
       const nextSite = getNextSite(configuredSites, lastUsed ? lastUsed.site : null);
 
-      const activeVial = storage.findVialForPeptide(p.id, p.name);
+      const activeVial = vialIndex.find(p.id, p.name);
       let vialStatus = null;
       if (activeVial) {
         const remDoses = calculateRemainingDoses(activeVial, p.dose);
@@ -750,42 +944,6 @@ function renderToday() {
   }
   drawRing(dayProgress.scheduledTaken, dayProgress.totalDue);
 
-  container.querySelectorAll(".dose-status").forEach(b => b.addEventListener("click", () => openRetroLogModal(todayK, b.dataset.id)));
-
-  container.querySelectorAll(".take").forEach((b) => {
-    b.addEventListener("click", () => {
-      if (b.classList.contains("done")) {
-        toggleDose(b.dataset.id);
-      } else {
-        openRetroLogModal(todayK, b.dataset.id, { requireSiteSelection: true });
-      }
-    });
-  });
-  container.querySelectorAll(".dose-add").forEach((b) => {
-    b.addEventListener("click", () => openRetroLogModal(todayK, b.dataset.id, { requireSiteSelection: true }));
-  });
-  container.querySelectorAll(".dose-undo").forEach((b) => {
-    b.addEventListener("click", () => undoSingleDose(b.dataset.id));
-  });
-  container.querySelectorAll(".gear").forEach((b) => {
-    b.addEventListener("click", () => openEditModal(b.dataset.id));
-  });
-  container.querySelectorAll(".del").forEach((b) => {
-    b.addEventListener("click", () => deletePeptide(b.dataset.id));
-  });
-
-  const focusAction = document.getElementById("dash-focus-action");
-  if (focusAction) {
-    focusAction.addEventListener("click", () => {
-      const action = focusAction.dataset.action;
-      const peptideId = focusAction.dataset.peptideId;
-      if (action === "toggle-dose" && peptideId) openRetroLogModal(todayK, peptideId, { requireSiteSelection: true });
-      if (action === "add-dose" && peptideId) openRetroLogModal(todayK, peptideId, { requireSiteSelection: true });
-      if (action === "open-week") switchTab("week");
-      if (action === "add-peptide") openEditModal();
-    });
-  }
-
   syncAppWidget();
 }
 
@@ -852,9 +1010,7 @@ async function toggleDose(id) {
     accessibilityService.announce(`Aplicação de ${p.name} confirmada.`);
   }
 
-  renderToday();
-  renderWeek();
-  renderHistory();
+  invalidateViews("today", "week", "history");
 }
 
 async function addSingleDose(id) {
@@ -907,9 +1063,7 @@ async function addSingleDose(id) {
   }
 
   haptics.medium();
-  renderToday();
-  renderWeek();
-  renderHistory();
+  invalidateViews("today", "week", "history");
 }
 
 function undoSingleDose(id) {
@@ -929,9 +1083,7 @@ function undoSingleDose(id) {
   }
 
   haptics.light();
-  renderToday();
-  renderWeek();
-  renderHistory();
+  invalidateViews("today", "week", "history");
 }
 
 function getTimelineDateParts(date) {
@@ -946,13 +1098,14 @@ function getTimelineDateParts(date) {
   };
 }
 
-function renderAdherenceSummary() {
+function renderAdherenceSummary(snapshot = null) {
   const host = document.getElementById("adherence-summary");
   if (!host) return;
+  const state = snapshot || storage.readSnapshot(["peptides", "logs"]);
 
   const summary = calculateAdherenceSummary(
-    storage.getPeptides(),
-    storage.getLogs(),
+    state.peptides,
+    state.logs,
     { days: adherencePeriodDays, endDate: dateKey(new Date()) }
   );
   host.innerHTML = renderAdherenceSummaryHTML(summary, {
@@ -960,22 +1113,13 @@ function renderAdherenceSummary() {
     locale: i18nService.getLocale()
   });
 
-  host.querySelectorAll("[data-adherence-days]").forEach((button) => {
-    button.addEventListener("click", () => {
-      const nextPeriod = Number.parseInt(button.dataset.adherenceDays, 10);
-      if (![7, 30].includes(nextPeriod) || nextPeriod === adherencePeriodDays) return;
-      adherencePeriodDays = nextPeriod;
-      renderAdherenceSummary();
-    });
-  });
 }
 
 function renderWeek() {
   const container = document.getElementById("week-table-wrap") || document.getElementById("week-grid");
   if (!container) return;
 
-  const peptides = storage.getPeptides();
-  const logs = storage.getLogs();
+  const { peptides, logs } = storage.readSnapshot(["peptides", "logs"]);
   const now = new Date();
   const todayKey = dateKey(now);
 
@@ -1132,19 +1276,6 @@ function renderWeek() {
   html += `</div>`;
   container.innerHTML = html;
 
-  container.querySelectorAll(".week-event-edit").forEach((button) => {
-    button.addEventListener("click", () => {
-      openEditModal(button.dataset.pep);
-      haptics.light();
-    });
-  });
-
-  container.querySelectorAll(".week-event-toggle").forEach((button) => {
-    button.addEventListener("click", () => {
-      const index = button.dataset.logIndex === "" ? null : Number(button.dataset.logIndex);
-      toggleDateLog(button.dataset.pep, button.dataset.date, index);
-    });
-  });
 }
 
 async function toggleDateLog(id, dKey, recordIndex = null) {
@@ -1180,11 +1311,7 @@ async function saveRetroLog() {
     doseService,
     dateKey,
     haptics,
-    renderAll: () => {
-      renderToday();
-      renderWeek();
-      renderHistory();
-    }
+    renderAll: () => invalidateViews("today", "week", "history")
   });
 }
 
@@ -1211,7 +1338,7 @@ function setupHistoryFilters() {
       historyFilters[key] = element.value || (key === "compoundId" || key === "eventType" ? "all" : null);
       const custom = document.getElementById("history-custom-dates");
       if (custom) custom.hidden = historyFilters.period !== "custom";
-      renderHistory();
+      invalidateViews("history");
     });
   });
 }
@@ -1224,7 +1351,6 @@ function renderHistoryEvolution(model) {
   const symptomRows = Object.entries(stats.symptomsFrequency).sort((a, b) => b[1] - a[1]);
   if (model.measurements.length === 0) {
     target.innerHTML = `<div class="empty-state-illustrated empty-state-illustrated--measurements"><img class="empty-state-illustration" src="/assets/illustrations/empty-measurements.png" alt="" aria-hidden="true"><div class="empty-state-title">Registre seu primeiro acompanhamento</div><div class="empty-state-description">Peso, medidas e sintomas ficam organizados no histórico local.</div><button type="button" class="btn-primary empty-state-action" id="empty-add-measurement-btn">+ Medidas / Sintomas</button></div>`;
-    document.getElementById("empty-add-measurement-btn")?.addEventListener("click", () => measurementsUI?.openMeasurementModal());
     return;
   }
   target.innerHTML = `<section class="history-evolution" aria-labelledby="history-evolution-title">
@@ -1346,32 +1472,13 @@ function renderHistoryLegacy() {
     measurementsUI.renderMeasurementsHistory();
   }
 
-  container.querySelectorAll(".hist-edit").forEach(btn => btn.addEventListener("click", () => {
-    const log = doseEntries(storage.getLogs()[btn.dataset.date]?.[btn.dataset.pep])[Number(btn.dataset.idx)];
-    if (log) openRetroModal(btn.dataset.date, btn.dataset.pep, { storage, dateKey, editingLog: log });
-  }));
-  container.querySelectorAll(".hist-rm").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      const dKey = btn.dataset.date;
-      const pId = btn.dataset.pep;
-      const idx = parseInt(btn.dataset.idx, 10);
-      const confirmed = await showConfirmDialog({
-        title: "Excluir Registro",
-        message: "Deseja realmente remover este registro de dose do histórico?",
-        confirmText: "Excluir",
-        isDanger: true
-      });
-      if (confirmed) {
-        deleteHistoryEntry(dKey, pId, idx);
-      }
-    });
-  });
 }
 
 function renderHistory() {
   const container = document.getElementById("history-list");
   if (!container) return;
-  const peptides = storage.getPeptides();
+  const state = storage.readSnapshot(["peptides", "logs", "measurements"]);
+  const peptides = state.peptides;
   const compoundSelect = document.getElementById("history-compound");
   if (compoundSelect) {
     const selected = historyFilters.compoundId;
@@ -1381,8 +1488,8 @@ function renderHistory() {
   }
   const model = buildReviewModel({
     protocol: peptides,
-    logs: storage.getLogs(),
-    measurements: storage.getMeasurements(),
+    logs: state.logs,
+    measurements: state.measurements,
     ...historyDateRange(),
     compoundId: historyFilters.compoundId,
     eventType: historyFilters.eventType,
@@ -1410,20 +1517,7 @@ function renderHistory() {
       <div class="hist-actions">${event.type === "application" ? `<button type="button" class="hist-edit" data-date="${sanitizeId(event.date)}" data-pep="${sanitizeId(event.data.peptideId)}" data-idx="${event.data.recordIndex}">Corrigir</button><button type="button" class="hist-rm" data-date="${sanitizeId(event.date)}" data-pep="${sanitizeId(event.data.peptideId)}" data-idx="${event.data.recordIndex}">Excluir</button>` : event.type === "measurement" || event.type === "symptom" ? `<button type="button" class="history-measurement-edit btn-meas-edit" data-id="${sanitizeId(event.editableId)}">Corrigir</button>` : ""}</div>
     </article>`;
   }).join("")}</div>` : `<div class="timeline-empty history-empty"><div class="timeline-empty-icon" aria-hidden="true">◌</div><strong>Nenhum registro encontrado</strong><p>Ajuste o período, tipo ou busca para localizar outros registros.</p></div>`;
-  renderAdherenceSummary();
-  container.querySelectorAll(".hist-edit").forEach((btn) => btn.addEventListener("click", () => {
-    const log = doseEntries(storage.getLogs()[btn.dataset.date]?.[btn.dataset.pep])[Number(btn.dataset.idx)];
-    if (log) openRetroModal(btn.dataset.date, btn.dataset.pep, { storage, dateKey, editingLog: log });
-  }));
-  container.querySelectorAll(".history-measurement-edit").forEach((btn) => btn.addEventListener("click", () => {
-    const entry = storage.getMeasurements().find((item) => item.id === btn.dataset.id);
-    if (entry && measurementsUI) measurementsUI.openMeasurementModal(entry);
-  }));
-  container.querySelectorAll(".hist-rm").forEach((btn) => btn.addEventListener("click", async () => {
-    if (await showConfirmDialog({ title: "Excluir Registro", message: "Deseja realmente remover este registro de dose do histórico?", confirmText: "Excluir", isDanger: true })) {
-      deleteHistoryEntry(btn.dataset.date, btn.dataset.pep, Number(btn.dataset.idx));
-    }
-  }));
+  renderAdherenceSummary(state);
 }
 
 function deleteHistoryEntry(dKey, pId, idx) {
@@ -1448,9 +1542,7 @@ function deleteHistoryEntry(dKey, pId, idx) {
   }
 
   haptics.light();
-  renderToday();
-  renderWeek();
-  renderHistory();
+  invalidateViews("today", "week", "history");
 }
 
 function showConfirmDialog({ title = "Confirmar", message = "", confirmText = "Confirmar", cancelText = "Cancelar", isDanger = true } = {}) {
@@ -1468,24 +1560,9 @@ async function deletePeptide(id) {
 function protocolSaved() {
   haptics.success();
   closeAllModals();
-  renderToday();
-  renderWeek();
-  renderHistory();
+  invalidateViews("today", "week", "history");
   updateNotificationUI(storage.getPeptides());
-  notifications.schedulePeptideReminders(storage.getPeptides());
-}
-
-function setupCalculator() {
-  setupCalculatorUI({
-    haptics,
-    onUseCalculation: ({ dose, ui, calculationSnapshot }) => {
-      openEditModal(null, {
-        dose,
-        ui,
-        calculationSnapshot
-      });
-    }
-  });
+  notifications.schedulePeptideRemindersIfNeeded(storage.getPeptides(), { force: true, reason: "protocol-change" });
 }
 
 function closeAllModals() {
@@ -1501,6 +1578,25 @@ function closeAllModals() {
 }
 
 function setupModalsAndButtons() {
+  const replayAfterLoad = (selector, loader, label) => {
+    const element = document.querySelector(selector);
+    if (!element) return;
+    element.addEventListener("click", async (event) => {
+      if (loader.state === "ready") return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      try {
+        await loadFeature(loader, label);
+        element.click();
+      } catch {
+        // loadFeature já apresentou feedback e mantém uma nova tentativa disponível.
+      }
+    });
+  };
+  replayAfterLoad("#dash-import-btn", settingsFeature, "a restauração de backup");
+  replayAfterLoad("#dash-report-btn", reportingFeature, "os relatórios");
+  replayAfterLoad("#dash-research-btn", toolsFeature, "a pesquisa");
+
   const themeBtn = document.getElementById("theme-btn");
   if (themeBtn) {
     themeBtn.addEventListener("click", async () => {
@@ -1651,6 +1747,7 @@ function setupModalsAndButtons() {
   const exportBtn = document.getElementById("export-btn");
   const handleExport = async () => {
     try {
+      await loadFeature(settingsFeature, "a exportação de backup");
       const backupPayload = storage.exportBackup(theme.getBackupTheme());
       const now = new Date();
       const stamp = `${dateKey(now)}-${String(now.getHours()).padStart(2, "0")}${String(now.getMinutes()).padStart(2, "0")}${String(now.getSeconds()).padStart(2, "0")}`;
@@ -1703,25 +1800,6 @@ function setupModalsAndButtons() {
   };
 
   if (exportBtn) exportBtn.addEventListener("click", handleExport);
-
-  setupBackupPreview({
-    storage,
-    theme,
-    notifications,
-    onStateRestored: () => {
-      renderToday();
-      renderWeek();
-      renderHistory();
-      updateNotificationUI(storage.getPeptides());
-    }
-  });
-
-  setupReportModal(storage);
-  setupDiagnosticsModal({
-    storage,
-    getNotificationsActive: () => (window.pepNotifications ? window.pepNotifications.hasActiveReminders() : false),
-    appVersion: "3.0.3"
-  });
 
   const reopenOnboardingBtn = document.getElementById("reopen-onboarding-btn");
   if (reopenOnboardingBtn) {
@@ -2274,7 +2352,7 @@ function saveEditedPeptide() {
     }
     if (!backfillRes.success) {
       void dialogService.alert({ title: "Histórico não gravado", message: "O protocolo foi salvo, mas o preenchimento do histórico falhou: " + (backfillRes.message || backfillRes.error), isDanger: true });
-      renderToday(); renderWeek(); renderHistory();
+      invalidateViews("today", "week", "history");
       return;
     }
   }
@@ -2286,11 +2364,9 @@ function saveEditedPeptide() {
     accessibilityService.announce(msg);
   }
 
-  renderToday();
-  renderWeek();
-  renderHistory();
+  invalidateViews("today", "week", "history");
   updateNotificationUI(peptides);
-  notifications.schedulePeptideReminders(peptides);
+  notifications.schedulePeptideRemindersIfNeeded(peptides, { force: true, reason: "protocol-save" });
 
   const modal = document.getElementById("edit-modal");
   if (modal) {

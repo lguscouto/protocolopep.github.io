@@ -61,6 +61,8 @@ export class StorageService {
     this.hiddenMeasurementIds = [];
     this.listeners = new Set();
     this.doseStateError = null;
+    this.revision = 0;
+    this.readCache = new Map();
   }
 
   init() {
@@ -227,6 +229,31 @@ export class StorageService {
 
   getPeptides() {
     return deepClone(this.peptides);
+  }
+
+  getRevision() {
+    return this.revision;
+  }
+
+  readSnapshot(fields = ["peptides", "logs", "inventory", "sites", "measurements"]) {
+    const allowed = ["peptides", "logs", "inventory", "sites", "measurements", "tombstones", "hiddenMeasurementIds"];
+    const requested = [...new Set(Array.isArray(fields) ? fields : [])]
+      .filter((field) => allowed.includes(field))
+      .sort();
+    const cacheKey = requested.join("|");
+    const cached = this.readCache.get(cacheKey);
+    if (cached?.revision === this.revision) return cached.value;
+
+    const snapshot = {};
+    for (const field of requested) snapshot[field] = deepClone(this[field]);
+    const freeze = (value) => {
+      if (!value || typeof value !== "object" || Object.isFrozen(value)) return value;
+      Object.values(value).forEach(freeze);
+      return Object.freeze(value);
+    };
+    const value = freeze(snapshot);
+    this.readCache.set(cacheKey, { revision: this.revision, value });
+    return value;
   }
 
   setPeptides(newPeptides) {
@@ -738,6 +765,8 @@ export class StorageService {
   }
 
   notify(markChanged = true) {
+    this.revision += 1;
+    this.readCache.clear();
     if (markChanged) recordDataChange();
     const payload = {
       peptides: deepClone(this.peptides),

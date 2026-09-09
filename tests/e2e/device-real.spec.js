@@ -353,6 +353,7 @@ test.describe("Protocolo PEP — Galaxy A55 / geometria real", () => {
           await assertPageInvariants(page, { nav, landscape }, `${theme.id}/${nav.id}/${fontScale}x`);
 
           await page.locator("#tab-settings").click();
+          await expect(page.locator("#view-settings")).toHaveAttribute("data-feature-ready", "true");
           await assertPageInvariants(page, { nav, landscape }, `ajustes/${theme.id}/${nav.id}/${fontScale}x`);
           await assertLastContentAboveNavigation(page, { nav, landscape }, `ajustes/${theme.id}/${nav.id}/${fontScale}x`);
 
@@ -378,6 +379,13 @@ test.describe("Protocolo PEP — Galaxy A55 / geometria real", () => {
     const nav = NAV_MODES[0];
     await page.goto(scenarioUrl({ theme, nav, fontScale: 1, landscape }));
     await waitForStableLayout(page);
+
+    await page.locator("#tab-history").click();
+    await expect(page.locator("#view-history")).toHaveAttribute("data-feature-ready", "true");
+    await page.locator("#tab-settings").click();
+    await expect(page.locator("#view-settings")).toHaveAttribute("data-feature-ready", "true");
+    await page.locator("#open-tools-btn").click();
+    await expect(page.locator("#view-calc")).toHaveAttribute("data-feature-ready", "true");
 
     for (const modalId of MODAL_IDS) {
       await showModal(page, modalId);

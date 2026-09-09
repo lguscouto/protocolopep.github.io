@@ -7,7 +7,7 @@ import { getNextSite, getLastUsedSite } from "../domain/injection-sites.js";
 import { dialogService } from "../services/dialog.js";
 import { renderInjectionSitePicker } from "./injection-site-picker.js";
 import { DOSE_STATUSES, parseUnits } from "../domain/dose-state.js";
-import { getDoseDisplayData } from "../domain/report.js";
+import { getDoseDisplayData } from "../domain/dose-display.js";
 import { isValidDateKey, isValidTime } from "../domain/schedule.js";
 import { i18nService } from "../services/i18n.js";
 import { resolveProtocolAt } from "../domain/protocol-history.js";

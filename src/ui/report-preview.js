@@ -13,7 +13,6 @@ const esc = escapeHtml;
 
 export function setupReportModal(storage) {
   const modal = document.getElementById("report-modal");
-  const openBtns = document.querySelectorAll("#hist-report-btn, #settings-report-btn, #dash-report-btn");
   const closeBtn = document.getElementById("report-close");
   const periodSelect = document.getElementById("report-period-select");
   const customDateWrap = document.getElementById("report-custom-dates");
@@ -148,13 +147,15 @@ export function setupReportModal(storage) {
     previewList.innerHTML = html;
   };
 
-  openBtns.forEach((btn) => {
-    btn.addEventListener("click", () => {
+  if (document.documentElement.dataset.reportOpenBound !== "true") {
+    document.documentElement.dataset.reportOpenBound = "true";
+    document.addEventListener("click", (event) => {
+      if (!event.target.closest("#hist-report-btn, #settings-report-btn, #dash-report-btn")) return;
       haptics.light();
       updatePreview();
       if (modal) modal.classList.add("on");
     });
-  });
+  }
 
   if (periodSelect) {
     periodSelect.addEventListener("change", () => {
