@@ -1,6 +1,6 @@
 # 🧪 Protocolo PEP · App Android (Local-First)
 
-![Version](https://img.shields.io/badge/version-3.0.3-2CC5C0)
+![Version](https://img.shields.io/badge/version-3.1.0-2CC5C0)
 ![Android](https://img.shields.io/badge/Android-8.0%2B-green)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![CI](https://github.com/lguscouto/protocolopep.github.io/actions/workflows/ci.yml/badge.svg)
@@ -8,6 +8,18 @@
 Aplicativo Android/PWA para registrar aplicações de peptídeos com poucos toques, receber lembretes no dia certo e lembrar o último local aplicado. O PEP funciona offline, sem conta e sem nuvem, com arquitetura **100% Local-First**, histórico preservado e ferramentas técnicas acessíveis somente quando necessárias.
 
 ---
+
+## 🚀 Novidades da Versão 3.1.0 (Desempenho e Toolchain Android)
+
+- **Abertura mais leve:** o JavaScript inicial caiu de `107,46 kB` para `73,1 kB` gzip (**32,0% menor**) por meio de carregamento sob demanda para Agenda, Histórico, configurações e ferramentas avançadas.
+- **Interface mais responsiva:** o tempo mediano até o DOM pronto caiu de `366 ms` para `269 ms` (**26,5% menor**), e as tarefas longas foram reduzidas de `250 ms` para `154 ms` (**38,4% menor**) no perfil móvel controlado.
+- **Menos trabalho na tela inicial:** a quantidade de elementos ativos na abertura caiu de `1.116` para `747` (**33,1% menor**), mantendo telas, textos, imagens, estilos e funcionalidades.
+- **Navegação eficiente:** apenas a tela ativa é renderizada; áreas alteradas ficam pendentes até serem abertas, listeners usam delegação e os módulos locais são pré-carregados quando o app fica ocioso.
+- **Storage e lembretes otimizados:** leituras agregadas imutáveis, índices por revisão e reconciliação condicional evitam cópias, varreduras e reagendamentos repetidos sem alterar dados ou notificações existentes.
+- **Uso de recursos ajustado:** a animação de fundo pausa quando o app fica invisível e as integrações nativas de tema, canais, lembretes e widget são sincronizadas depois da primeira pintura.
+- **Toolchain Android atualizada:** Android Gradle Plugin `8.13.2` e Gradle Wrapper `8.13`, mantendo Kotlin `2.1.20`, JDK 17, Capacitor 6 e SDK 36.
+- **Release Android versionada:** `versionName 3.1.0` e `versionCode 28`, preservando schema, backups e compatibilidade com instalações anteriores.
+- **Validação:** 485 testes unitários e 112 cenários E2E aprovados, 1 cenário intencionalmente ignorado, teste reproduzível de desempenho, build Web/Android, testes Android, lint e instalação no emulador concluídos.
 
 ## 🚀 Novidades da Versão 3.0.3 (Aplicações em primeiro lugar)
 
@@ -416,12 +428,18 @@ npm test
 npm run test:e2e
 ```
 
-### 4. Compilar Web & Sincronizar com Android
+### 4. Executar Teste de Desempenho
+```bash
+npm run test:performance
+```
+O teste executa cinco medições com viewport de `412 × 915`, CPU 4× mais lenta e massas vazia e preenchida.
+
+### 5. Compilar Web & Sincronizar com Android
 ```bash
 npm run cap:sync
 ```
 
-### 5. Compilar APK Release Android
+### 6. Compilar APK Release Android
 ```bash
 npm run android:build
 ```
