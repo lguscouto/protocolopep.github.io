@@ -274,7 +274,11 @@ export const ptBR = {
     confirmLogTitle: "Confirmar Aplicação",
     confirmLogMessage: "Deseja marcar a dose de {name} ({dose}) como aplicada agora?",
     siteSelectTitle: "Selecione o Local de Aplicação",
-    injectionNotePlaceholder: "Notas ou observações (opcional)"
+    injectionNotePlaceholder: "Notas ou observações (opcional)",
+    routineReminderLabel: "Receber lembrete desta rotina",
+    routineReminderNoTime: "Adicione ao menos um horário válido para ativar os lembretes desta rotina.",
+    routineReminderGlobalOff: "Esta preferência será salva. Ative também os lembretes gerais em Ajustes para receber notificações.",
+    routineReminderEnabledHelp: "Desative para manter a rotina na agenda sem notificações nos horários."
   },
   notifications: {
     doseReminderTitle: "Hora da sua aplicação — {peptide}",

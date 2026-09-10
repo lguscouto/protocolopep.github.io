@@ -274,7 +274,11 @@ export const en = {
     confirmLogTitle: "Confirm Application",
     confirmLogMessage: "Mark dose of {name} ({dose}) as taken now?",
     siteSelectTitle: "Select Injection Site",
-    injectionNotePlaceholder: "Notes or observations (optional)"
+    injectionNotePlaceholder: "Notes or observations (optional)",
+    routineReminderLabel: "Receive reminders for this routine",
+    routineReminderNoTime: "Add at least one valid time to enable reminders for this routine.",
+    routineReminderGlobalOff: "This preference will be saved. Also enable general reminders in Settings to receive notifications.",
+    routineReminderEnabledHelp: "Turn this off to keep the routine on the schedule without notifications at its times."
   },
   notifications: {
     doseReminderTitle: "Time for your application — {peptide}",

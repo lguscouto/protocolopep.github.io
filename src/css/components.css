@@ -3924,3 +3924,40 @@ html.high-contrast .weight-chart-grid { stroke: var(--muted); }
 .dash-focus-last-site {
   color: var(--success);
 }
+/* Controle de lembretes por rotina no editor de protocolo. */
+.routine-reminder-control {
+  margin-top: 12px;
+  padding: 11px 12px;
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  background: var(--surface2);
+}
+
+.routine-reminder-label {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.routine-reminder-label input {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+.routine-reminder-label.is-disabled {
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+.routine-reminder-label input:disabled {
+  cursor: not-allowed;
+}

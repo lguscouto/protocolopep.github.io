@@ -57,6 +57,19 @@ describe("Widget Domain Logic (V14)", () => {
     expect(res.statusText).not.toContain("TB-500");
   });
 
+  it("mantém uma rotina silenciada visível no widget e na contagem diária", () => {
+    const res = calculateWidgetSummary({
+      peptides: [{ ...samplePeptides[0], remindersEnabled: false }],
+      logs: {},
+      targetDate: "2026-08-29",
+      discreteMode: false
+    });
+
+    expect(res.totalCount).toBe(1);
+    expect(res.nextDosePeptide).toBe("BPC-157");
+    expect(res.nextDoseTime).toBe("08:00");
+  });
+
   it("identifica 100% de conclusão quando todas as doses foram tomadas", () => {
     const logs = {
       "2026-08-29": {

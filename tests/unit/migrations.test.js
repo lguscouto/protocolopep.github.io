@@ -9,6 +9,7 @@ import {
   migrateV4ToV5,
   migrateV5ToV6,
   migrateV8ToV9,
+  migrateV9ToV10,
   CURRENT_SCHEMA_VERSION
 } from "../../src/domain/migrations.js";
 
@@ -144,7 +145,7 @@ describe("Migrations Domain", () => {
       ]
     });
 
-    expect(migrated.version).toBe(9);
+    expect(migrated.version).toBe(10);
     expect(migrated.sites).toHaveLength(10);
     expect(migrated.sites).toContain("Flanco (Direito)");
     expect(migrated.sites).toContain("Abdômen (Inferior Esquerdo)");
@@ -157,8 +158,8 @@ describe("Migrations Domain", () => {
     expect(migrated.sites).toEqual(customSites);
   });
 
-  it("CURRENT_SCHEMA_VERSION é 9", () => {
-    expect(CURRENT_SCHEMA_VERSION).toBe(9);
+  it("CURRENT_SCHEMA_VERSION é 10", () => {
+    expect(CURRENT_SCHEMA_VERSION).toBe(10);
   });
 
   it("V5→V6 recalcula campos pela zona IANA e marca contradição sem contexto", () => {
@@ -193,7 +194,7 @@ describe("Migrations Domain", () => {
       ]
     };
     const result = migrateAppState(v1State);
-    expect(result.version).toBe(9);
+    expect(result.version).toBe(10);
     // Medição legada deve ter updatedAt após migração completa
     const m = result.measurements.find(x => x.date === "2026-08-01");
     expect(m).toBeDefined();
@@ -209,8 +210,27 @@ describe("Migrations Domain", () => {
     const direct = migrateV8ToV9(state);
     const once = migrateAppState(direct);
     const twice = migrateAppState(once);
-    expect(once.version).toBe(9);
+    expect(once.version).toBe(10);
     expect(once.measurements[0]).toMatchObject({ id: "legacy", source: "health_connect", ownership: "external", circumferencesCm: { abdomen: null, waist: null, hips: null } });
+    expect(twice).toEqual(once);
+  });
+
+  it("migra V9 para V10 e normaliza lembretes no protocolo e nas revisões", () => {
+    const state = { version: 9, protocol: [{
+      id: "pep_legacy",
+      name: "Legado",
+      times: ["08:00"],
+      revisions: [
+        { id: "r1", effectiveFrom: "2026-09-01T00:00:00.000Z", status: "active", config: { name: "Legado", times: ["08:00"] } },
+        { id: "r2", effectiveFrom: "2026-09-10T00:00:00.000Z", status: "active", config: { name: "Sem horário", times: [] } }
+      ]
+    }] };
+
+    const direct = migrateV9ToV10(state);
+    const once = migrateAppState(direct);
+    const twice = migrateAppState(once);
+    expect(once.protocol[0].remindersEnabled).toBe(true);
+    expect(once.protocol[0].revisions.map((revision) => revision.config.remindersEnabled)).toEqual([true, false]);
     expect(twice).toEqual(once);
   });
 });

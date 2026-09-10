@@ -46,7 +46,7 @@ describe("Backup Domain", () => {
     const result = validateAndParseBackup(payload);
 
     expect(result.valid).toBe(true);
-    expect(result.data.version).toBe(9);
+    expect(result.data.version).toBe(10);
     expect(result.data.healthConnectState.hiddenMeasurementIds).toEqual(["hc_external_1"]);
     expect(result.data.healthConnectState.tombstones).toHaveLength(1);
     expect(result.stats.hiddenMeasurementsCount).toBe(1);

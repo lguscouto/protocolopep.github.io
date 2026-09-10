@@ -47,4 +47,68 @@ describe("Notification schedule revisions", () => {
     expect(result.scheduledCount).toBeGreaterThan(14);
     expect(LocalNotifications.schedule.mock.calls[0][0].notifications.slice(0, 2).map((item) => item.schedule.at.getDate())).toEqual([13, 14]);
   });
+
+  it("ignores silenced routines and only creates a daily summary on an eligible day", async () => {
+    const activeConfig = { name: "Com lembrete", times: ["08:00"], remindersEnabled: true };
+    const revisions = [
+      { id: "r1", effectiveFrom: "1900-01-01T00:00:00.000Z", status: "active", config: activeConfig },
+      { id: "r2", effectiveFrom: "2026-09-02T00:00:00.000Z", status: "ended", config: activeConfig }
+    ];
+    const service = new NotificationService();
+    service.cfg = { ...service.cfg, enabled: true, summary: "21:00" };
+
+    const result = await service.schedulePeptideReminders([
+      { id: "enabled", ...activeConfig, lifecycleStatus: "ended", revisions },
+      { id: "silenced", name: "Silenciada", times: ["09:00"], remindersEnabled: false, lifecycleStatus: "active" }
+    ]);
+
+    expect(result.scheduledCount).toBe(2);
+    const scheduled = LocalNotifications.schedule.mock.calls[0][0].notifications;
+    expect(scheduled.map((item) => item.schedule.at.getHours())).toEqual([8, 21]);
+    expect(scheduled.some((item) => item.extra?.peptideId === "silenced")).toBe(false);
+  });
+
+  it("honors reminder preference changes at the exact revision instant", async () => {
+    const enabled = { name: "Rotina", times: ["08:00", "18:00"], remindersEnabled: true };
+    const disabled = { ...enabled, remindersEnabled: false };
+    const protocol = { id: "revised", ...disabled, lifecycleStatus: "active", revisions: [
+      { id: "r1", effectiveFrom: "1900-01-01T00:00:00.000Z", status: "active", config: enabled },
+      { id: "r2", effectiveFrom: "2026-09-02T12:00:00.000Z", status: "active", config: disabled }
+    ] };
+    const service = new NotificationService();
+    service.cfg.enabled = true;
+
+    const result = await service.schedulePeptideReminders([protocol]);
+    expect(result.scheduledCount).toBe(3);
+    expect(LocalNotifications.schedule.mock.calls[0][0].notifications.map((item) => [item.schedule.at.getDate(), item.schedule.at.getHours()])).toEqual([
+      [1, 8], [1, 18], [2, 8]
+    ]);
+  });
+
+  it("invalidates the scheduling fingerprint when a routine is silenced", async () => {
+    const service = new NotificationService();
+    service.schedulePeptideReminders = vi.fn(async () => ({ scheduledCount: 0 }));
+    const enabled = [{ id: "p1", times: ["08:00"], remindersEnabled: true }];
+    const silenced = [{ ...enabled[0], remindersEnabled: false }];
+
+    await service.schedulePeptideRemindersIfNeeded(enabled);
+    await service.schedulePeptideRemindersIfNeeded(enabled);
+    await service.schedulePeptideRemindersIfNeeded(silenced);
+    expect(service.schedulePeptideReminders).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps the global notification switch authoritative", async () => {
+    const service = new NotificationService();
+    service.cfg.enabled = false;
+    const result = await service.schedulePeptideReminders([{
+      id: "enabled",
+      name: "Rotina",
+      times: ["08:00"],
+      remindersEnabled: true,
+      lifecycleStatus: "active"
+    }]);
+
+    expect(result).toMatchObject({ scheduledCount: 0, schedulingMode: "disabled" });
+    expect(LocalNotifications.schedule).not.toHaveBeenCalled();
+  });
 });

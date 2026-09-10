@@ -284,7 +284,7 @@ const settingsFeature = createFeatureLoader(async () => {
   diagnostics.setupDiagnosticsModal({
     storage,
     getNotificationsActive: () => (window.pepNotifications ? window.pepNotifications.hasActiveReminders() : false),
-    appVersion: "3.3.0"
+    appVersion: "3.4.0"
   });
   const widgetToggle = document.getElementById("widget-discrete-toggle");
   if (widgetToggle && widgetToggle.dataset.widgetBound !== "true") {
@@ -1625,12 +1625,24 @@ async function deletePeptide(id) {
   await changeProtocolStatus(p, "ended", { storage, onSaved: protocolSaved });
 }
 
+function reportReminderRefreshFailure(result) {
+  if (!result?.error) return;
+  void dialogService.alert({
+    title: "Lembretes não atualizados",
+    message: "O protocolo foi salvo, mas não foi possível atualizar os lembretes no aparelho. Abra Lembretes e toque em Reagendar.",
+    isDanger: true
+  });
+}
+
 function protocolSaved() {
   haptics.success();
   closeAllModals();
   invalidateViews("today", "week", "history");
-  updateNotificationUI(storage.getPeptides());
-  notifications.schedulePeptideRemindersIfNeeded(storage.getPeptides(), { force: true, reason: "protocol-change" });
+  void notifications.schedulePeptideRemindersIfNeeded(storage.getPeptides(), { force: true, reason: "protocol-change" })
+    .then((result) => {
+      reportReminderRefreshFailure(result);
+      return updateNotificationUI(storage.getPeptides());
+    });
 }
 
 function closeAllModals() {
@@ -2189,6 +2201,47 @@ function openEditModal(pepId, prefillData = null) {
   const perDayInput = document.getElementById("edit-perday");
   const extraTimesWrap = document.getElementById("edit-extra-times-wrap");
   const extraTimesList = document.getElementById("edit-extra-times-list");
+  const mainTimeInput = document.getElementById("edit-time");
+  const reminderToggle = document.getElementById("edit-reminders-enabled");
+  const reminderHelp = document.getElementById("edit-reminders-help");
+  let reminderToggleTouched = false;
+  const existingHadSchedule = Boolean(p && Array.isArray(p.times) && p.times.length > 0);
+  const mayAutoEnableReminder = !p || !existingHadSchedule;
+
+  const hasValidReminderTime = () => {
+    const values = [mainTimeInput?.value, ...[...document.querySelectorAll(".edit-extra-time")].map((input) => input.value)];
+    return values.some((value) => isValidTime(value?.trim() || ""));
+  };
+
+  const syncReminderControl = () => {
+    if (!reminderToggle) return;
+    const hasSchedule = hasValidReminderTime();
+    reminderToggle.disabled = !hasSchedule;
+    reminderToggle.closest(".routine-reminder-label")?.classList.toggle("is-disabled", !hasSchedule);
+    if (!hasSchedule) {
+      reminderToggle.checked = false;
+    } else if (mayAutoEnableReminder && !reminderToggleTouched) {
+      reminderToggle.checked = true;
+    }
+    if (reminderHelp) {
+      if (!hasSchedule) {
+        reminderHelp.textContent = i18nService.t("modals.routineReminderNoTime");
+      } else if (!notifications.isEnabled()) {
+        reminderHelp.textContent = i18nService.t("modals.routineReminderGlobalOff");
+      } else {
+        reminderHelp.textContent = i18nService.t("modals.routineReminderEnabledHelp");
+      }
+    }
+  };
+
+  if (reminderToggle) {
+    reminderToggle.checked = p ? p.remindersEnabled !== false : false;
+    reminderToggle.onchange = () => {
+      reminderToggleTouched = true;
+      syncReminderControl();
+    };
+  }
+  if (mainTimeInput) mainTimeInput.oninput = syncReminderControl;
 
   const renderExtraTimes = () => {
     const pd = Math.min(6, Math.max(1, parseInt(perDayInput?.value, 10) || 1));
@@ -2196,6 +2249,7 @@ function openEditModal(pepId, prefillData = null) {
     if (pd <= 1) {
       extraTimesWrap.style.display = "none";
       extraTimesList.innerHTML = "";
+      syncReminderControl();
       return;
     }
 
@@ -2212,12 +2266,17 @@ function openEditModal(pepId, prefillData = null) {
       `;
     }
     extraTimesList.innerHTML = html;
+    extraTimesList.querySelectorAll(".edit-extra-time").forEach((input) => {
+      input.addEventListener("input", syncReminderControl);
+    });
+    syncReminderControl();
   };
 
   if (perDayInput) {
     perDayInput.oninput = renderExtraTimes;
   }
   renderExtraTimes();
+  syncReminderControl();
 
   pendingCalculationSnapshot = p ? (p.calculationSnapshot || null) : (prefillData?.calculationSnapshot || null);
 
@@ -2296,7 +2355,7 @@ function openEditModal(pepId, prefillData = null) {
   }
 }
 
-function saveEditedPeptide() {
+async function saveEditedPeptide() {
   const name = document.getElementById("edit-name").value.trim();
   if (!name) {
     void dialogService.alert({ title: "Nome obrigatório", message: "Informe o nome do peptídeo.", isDanger: true });
@@ -2309,6 +2368,7 @@ function saveEditedPeptide() {
   const perDay = Number(document.getElementById("edit-perday").value);
   const mainTime = document.getElementById("edit-time").value.trim();
   const note = document.getElementById("edit-note").value.trim();
+  const remindersEnabled = Boolean(document.getElementById("edit-reminders-enabled")?.checked);
 
   const times = [];
   if (mainTime) times.push(mainTime);
@@ -2363,6 +2423,7 @@ function saveEditedPeptide() {
     perDay,
     times,
     time: mainTime,
+    remindersEnabled,
     note,
     accent: selectedColor,
     calculationSnapshot: pendingCalculationSnapshot
@@ -2433,8 +2494,8 @@ function saveEditedPeptide() {
   }
 
   invalidateViews("today", "week", "history");
-  updateNotificationUI(peptides);
-  notifications.schedulePeptideRemindersIfNeeded(peptides, { force: true, reason: "protocol-save" });
+  const reminderResult = await notifications.schedulePeptideRemindersIfNeeded(peptides, { force: true, reason: "protocol-save" });
+  await updateNotificationUI(peptides);
 
   const modal = document.getElementById("edit-modal");
   if (modal) {
@@ -2446,6 +2507,7 @@ function saveEditedPeptide() {
   }
   switchTab("today");
   haptics.success();
+  reportReminderRefreshFailure(reminderResult);
 }
 
 function openSharePreviewModal() {

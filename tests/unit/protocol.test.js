@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { createPeptide, validatePeptide, validateHexColor, validateDays, validateTimes } from "../../src/domain/protocol.js";
+import { createPeptide, normalizeRemindersEnabled, validatePeptide, validateHexColor, validateDays, validateTimes } from "../../src/domain/protocol.js";
 
 describe("Protocol Domain", () => {
   it("valida cores hexadecimais com segurança", () => {
@@ -23,6 +23,13 @@ describe("Protocol Domain", () => {
     expect(validateTimes(["invalid", "07:00"])).toEqual(["07:00"]);
     // Rejeição estrita de horários inválidos (P1 - Sec 15)
     expect(validateTimes(["99:99", "24:00", "08:00"])).toEqual(["08:00"]);
+  });
+
+  it("normaliza lembretes pela presença de horários sem reativar uma rotina silenciada", () => {
+    expect(normalizeRemindersEnabled({ times: ["08:00"] })).toBe(true);
+    expect(normalizeRemindersEnabled({ times: ["08:00"], remindersEnabled: false })).toBe(false);
+    expect(normalizeRemindersEnabled({ times: [], remindersEnabled: true })).toBe(false);
+    expect(normalizeRemindersEnabled({ time: "99:00" })).toBe(false);
   });
 
   it("valida e sanitiza data de início (start) no formato gregoriano válido", () => {
@@ -52,8 +59,15 @@ describe("Protocol Domain", () => {
     expect(pep.days).toEqual([1, 3, 5]);
     expect(pep.freq).toBe("Seg · Qua · Sex");
     expect(pep.times).toEqual(["08:00"]);
+    expect(pep.remindersEnabled).toBe(true);
     expect(pep.accent).toBe("#2CC5C0");
     expect(pep.id).toMatch(/^pep_/);
+  });
+
+  it("mantém horários de uma rotina com lembretes silenciados", () => {
+    const pep = createPeptide({ name: "Rotina", times: ["08:00", "20:00"], remindersEnabled: false });
+    expect(pep.times).toEqual(["08:00", "20:00"]);
+    expect(pep.remindersEnabled).toBe(false);
   });
 
   it("cria peptídeo preservando calculationSnapshot imutável e auditável", () => {
@@ -89,4 +103,3 @@ describe("Protocol Domain", () => {
     expect(validatePeptide({ name: "CJC-1295" }).valid).toBe(true);
   });
 });
-

@@ -32,7 +32,7 @@ export async function updateNotificationUI(peptides = []) {
   }
 
   if (enableBtn) {
-    if (status.state === "active") {
+    if (cfg.enabled) {
       enableBtn.textContent = "Desativar Lembretes";
       enableBtn.className = "btn-subtle";
       enableBtn.style.width = "100%";

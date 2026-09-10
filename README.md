@@ -1,6 +1,6 @@
 # 🧪 Protocolo PEP · App Android (Local-First)
 
-![Version](https://img.shields.io/badge/version-3.3.0-2CC5C0)
+![Version](https://img.shields.io/badge/version-3.4.0-2CC5C0)
 ![Android](https://img.shields.io/badge/Android-8.0%2B-green)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![CI](https://github.com/lguscouto/protocolopep.github.io/actions/workflows/ci.yml/badge.svg)
@@ -8,6 +8,15 @@
 Aplicativo Android/PWA para registrar aplicações de peptídeos com poucos toques, receber lembretes no dia certo e lembrar o último local aplicado. O PEP funciona offline, sem conta e sem nuvem, com arquitetura **100% Local-First**, histórico preservado e ferramentas técnicas acessíveis somente quando necessárias.
 
 ---
+
+## 🚀 Novidades da Versão 3.4.0 (Lembretes por Rotina)
+
+- **Controle individual:** cada rotina pode manter seus horários na agenda sem emitir notificações locais.
+- **Compatibilidade segura:** rotinas antigas com horários continuam com lembretes ativos; o schema 10 preserva protocolos, revisões e backups anteriores.
+- **Revisões respeitadas:** mudanças imediatas ou futuras na preferência são aplicadas na vigência correta, sem reescrever o histórico.
+- **Resumo diário coerente:** rotinas silenciadas deixam de gerar alertas por horário e não entram no resumo diário.
+- **Release Android versionada:** `versionName 3.4.0` e `versionCode 31`.
+- **Validação:** 514 testes unitários, suíte E2E completa aprovada, teste de desempenho, build Web/Android, testes Android, lint e instalação no emulador concluídos.
 
 ## 🚀 Novidades da Versão 3.3.0 (Circunferências Corporais)
 

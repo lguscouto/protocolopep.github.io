@@ -16,7 +16,7 @@ import {
   localDateTimeToIso
 } from "./time.js";
 
-export const CURRENT_SCHEMA_VERSION = 9;
+export const CURRENT_SCHEMA_VERSION = 10;
 
 function sanitizeHealthConnectId(value) {
   if (typeof value !== "string") return null;
@@ -246,6 +246,15 @@ export function migrateV8ToV9(state = {}) {
   };
 }
 
+/** V9 → V10: controle de lembretes por rotina e por revisão de protocolo. */
+export function migrateV9ToV10(state = {}) {
+  return {
+    ...state,
+    version: 10,
+    protocol: migratePeptides(state.protocol || state.peptides || [])
+  };
+}
+
 export function migrateAppState(state = {}) {
   if (!state || typeof state !== "object") {
     state = {};
@@ -276,6 +285,9 @@ export function migrateAppState(state = {}) {
   }
   if (version < 9) {
     current = migrateV8ToV9(current);
+  }
+  if (version < 10) {
+    current = migrateV9ToV10(current);
   }
 
   const rawProtocol = current.protocol || current.peptides || [];

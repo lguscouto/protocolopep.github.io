@@ -3,6 +3,7 @@ import { Capacitor } from "@capacitor/core";
 import { haptics } from "./haptics.js";
 import { dateToKey, isScheduledOnDate, isValidTime } from "../domain/schedule.js";
 import { normalizeProtocolRevisions, resolveProtocolAt } from "../domain/protocol-history.js";
+import { normalizeRemindersEnabled } from "../domain/protocol.js";
 import { formatNotificationContent, getNotificationVisualState } from "../domain/notification-formatter.js";
 
 const NOTIF_CFG_KEY = "pep_notif_config";
@@ -184,7 +185,7 @@ export class NotificationService {
     return false;
   }
 
-  async getSystemStatus() {
+  async getSystemStatus(peptides = []) {
     let permission = "prompt";
     let pendingCount = 0;
     let exactAlarm = "not_applicable";
@@ -214,12 +215,20 @@ export class NotificationService {
       }
     }
 
+    const eligibleRoutineCount = Array.isArray(peptides)
+      ? peptides.filter((protocol) => {
+          const current = resolveProtocolAt(protocol);
+          return current?.lifecycleStatus === "active" && normalizeRemindersEnabled(current);
+        }).length
+      : 0;
+
     return getNotificationVisualState({
       enabled: this.cfg.enabled,
       permission,
       exactAlarm,
       pendingCount,
-      horizonDays: NOTIFICATION_HORIZON_DAYS
+      horizonDays: NOTIFICATION_HORIZON_DAYS,
+      eligibleRoutineCount
     });
   }
 
@@ -374,6 +383,7 @@ export class NotificationService {
       try {
         const activeChannelId = this.cfg.sound ? NOTIF_CHANNEL_ID : NOTIF_CHANNEL_SILENT_ID;
         const notifications = [];
+        const summaryEligibleDays = new Set();
         let notifId = 1000;
         const now = new Date();
 
@@ -397,6 +407,8 @@ export class NotificationService {
               schedDate.setHours(h, m, 0, 0);
               const p = resolveProtocolAt(protocol, schedDate);
               if (!isScheduledOnDate(p, schedDate) || !timesOf(p).includes(tStr)) continue;
+              if (!normalizeRemindersEnabled(p)) continue;
+              summaryEligibleDays.add(dateToKey(schedDate));
 
               // Apenas agendar se a data/hora for futura
               if (schedDate.getTime() > now.getTime()) {
@@ -431,7 +443,7 @@ export class NotificationService {
               sumDate.setDate(now.getDate() + dayOffset);
               sumDate.setHours(sh, sm, 0, 0);
 
-              if (sumDate.getTime() > now.getTime()) {
+              if (sumDate.getTime() > now.getTime() && summaryEligibleDays.has(dateToKey(sumDate))) {
                 notifications.push({
                   id: notifId++,
                   title: "Protocolo PEP · Resumo Diário",

@@ -41,6 +41,12 @@ export function validateTimes(times, legacyTime = "") {
   return [...new Set(list)].sort();
 }
 
+export function normalizeRemindersEnabled(data = {}) {
+  const hasValidTime = validateTimes(data.times, data.time).length > 0;
+  if (!hasValidTime) return false;
+  return data.remindersEnabled !== false;
+}
+
 export function createPeptide(data = {}) {
   const name = sanitizeString(data.name || "Novo Peptídeo", 80);
   const sub = sanitizeString(data.sub || "", 80);
@@ -59,6 +65,7 @@ export function createPeptide(data = {}) {
 
   const times = validateTimes(data.times, data.time);
   const time = times.length > 0 ? times[0] : (isValidTime(data.time) ? data.time : "");
+  const remindersEnabled = normalizeRemindersEnabled({ ...data, times, time });
 
   // Rótulo amigável calculado se não fornecido
   let freq = sanitizeString(data.freq || "", 60);
@@ -92,6 +99,7 @@ export function createPeptide(data = {}) {
     perDay,
     times,
     time,
+    remindersEnabled,
     note,
     accent,
     calculationSnapshot: data.calculationSnapshot ? { ...data.calculationSnapshot } : null

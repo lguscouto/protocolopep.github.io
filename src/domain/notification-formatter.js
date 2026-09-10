@@ -28,7 +28,8 @@ export function getNotificationVisualState({
   permission = "prompt", // "granted" | "denied" | "prompt"
   exactAlarm = "granted", // "granted" | "denied" | "not_applicable" | "unknown"
   pendingCount = 0,
-  horizonDays = 90
+  horizonDays = 90,
+  eligibleRoutineCount = null
 } = {}) {
   if (permission === "denied") {
     return {
@@ -49,6 +50,18 @@ export function getNotificationVisualState({
       message: "Ative os lembretes para receber alertas locais no horário das suas aplicações.",
       badgeClass: "badge-neutral",
       canSchedule: false,
+      exactAlarm,
+      pendingCount: 0
+    };
+  }
+
+  if (eligibleRoutineCount === 0 && pendingCount === 0) {
+    return {
+      state: "idle",
+      label: "Ativo · Sem rotinas",
+      message: "As notificações estão ativas, mas nenhuma rotina com horário está habilitada para receber lembretes.",
+      badgeClass: "badge-neutral",
+      canSchedule: true,
       exactAlarm,
       pendingCount: 0
     };

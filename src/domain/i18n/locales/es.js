@@ -274,7 +274,11 @@ export const es = {
     confirmLogTitle: "Confirmar Aplicación",
     confirmLogMessage: "¿Deseas marcar la dosis de {name} ({dose}) como aplicada ahora?",
     siteSelectTitle: "Selecciona el Sitio de Aplicación",
-    injectionNotePlaceholder: "Notas u observaciones (opcional)"
+    injectionNotePlaceholder: "Notas u observaciones (opcional)",
+    routineReminderLabel: "Recibir recordatorios de esta rutina",
+    routineReminderNoTime: "Añade al menos un horario válido para activar los recordatorios de esta rutina.",
+    routineReminderGlobalOff: "Esta preferencia se guardará. Activa también los recordatorios generales en Ajustes para recibir notificaciones.",
+    routineReminderEnabledHelp: "Desactiva esta opción para mantener la rutina en la agenda sin notificaciones en sus horarios."
   },
   notifications: {
     doseReminderTitle: "Hora de tu aplicación — {peptide}",

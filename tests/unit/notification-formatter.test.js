@@ -78,4 +78,17 @@ describe("Notification Formatter & Visual State (V05)", () => {
     expect(state.canSchedule).toBe(true);
     expect(state.message).toContain("Alarmes exatos restritos");
   });
+
+  it("deve informar quando o controle global está ativo sem rotina elegível", () => {
+    const state = getNotificationVisualState({
+      enabled: true,
+      permission: "granted",
+      pendingCount: 0,
+      eligibleRoutineCount: 0
+    });
+
+    expect(state.state).toBe("idle");
+    expect(state.label).toContain("Sem rotinas");
+    expect(state.canSchedule).toBe(true);
+  });
 });
