@@ -135,7 +135,7 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
       if (!input) return;
       input.value = entry?.circumferencesCm?.[key] ?? "";
       input.disabled = isExternal;
-      input.title = isExternal ? "Crie um registro local para adicionar circunferências." : "";
+      input.title = isExternal ? i18nService.t("modals.measurements.circumferenceDisabledTitle") : "";
     });
     if (circumferencesHelp) {
       circumferencesHelp.textContent = isExternal
@@ -153,8 +153,8 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
 
     if (deleteBtn) {
       deleteBtn.style.display = entry ? "inline-block" : "none";
-      deleteBtn.textContent = isExternal ? "Ocultar no PEP" : "Excluir";
-      deleteBtn.title = isExternal ? "Oculta a exibição desta medição externa no Protocolo PEP" : "Excluir medição";
+      deleteBtn.textContent = isExternal ? i18nService.t("modals.measurements.hide") : i18nService.t("common.delete");
+      deleteBtn.title = isExternal ? i18nService.t("modals.measurements.hideExternalTitle") : i18nService.t("modals.measurements.deleteTitle");
     }
 
     updateLevelButtons();
@@ -404,15 +404,15 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
       if (!editingEntryId) return;
       const target = storage.getMeasurements().find((m) => m.id === editingEntryId);
       const isExternal = Boolean(target && target.ownership === "external");
-      const confirmTitle = isExternal ? "Ocultar Medição Externa" : "Excluir Medição";
+      const confirmTitle = isExternal ? i18nService.t("modals.measurements.hideExternalTitle") : i18nService.t("modals.measurements.deleteTitle");
       const confirmMsg = isExternal
-        ? "Este registro foi importado do Health Connect. Deseja ocultá-lo da visualização do Protocolo PEP? (O registro original continuará preservado no Health Connect)"
-        : "Deseja realmente excluir este registro corporal / sintomas?";
+        ? i18nService.t("modals.measurements.hideExternalMsg")
+        : i18nService.t("modals.measurements.deleteMsg");
 
       const confirmed = await dialogService.confirm({
         title: confirmTitle,
         message: confirmMsg,
-        confirmText: isExternal ? "Ocultar" : "Excluir",
+        confirmText: isExternal ? i18nService.t("modals.measurements.hide") : i18nService.t("common.delete"),
         isDanger: true
       });
 
@@ -426,8 +426,8 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
           onMeasurementsChange();
         } else {
           dialogService.alert({
-            title: "Erro",
-            message: "Erro ao excluir: " + (res.error || "Falha local"),
+            title: i18nService.t("common.error"),
+            message: i18nService.t("modals.measurements.deleteError", { error: res.error || "" }),
             isDanger: true
           });
         }
@@ -472,8 +472,8 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
       const res = storage.addMeasurement(entryPayload);
       if (!res.success) {
         dialogService.alert({
-          title: "Dados Inválidos",
-          message: "Erro ao salvar medição: " + (res.error || "Dados inválidos"),
+          title: i18nService.t("common.error"),
+          message: i18nService.t("modals.measurements.saveError", { error: res.error || "" }),
           isDanger: true
         });
         return;

@@ -705,7 +705,7 @@ function setupRenderedEventDelegation() {
       measurementsUI?.openMeasurementById(target.dataset.id);
       return;
     }
-    if (target.matches(".hist-rm") && await showConfirmDialog({ title: "Excluir Registro", message: "Deseja realmente remover este registro de dose do histórico?", confirmText: "Excluir", isDanger: true })) {
+    if (target.matches(".hist-rm") && await showConfirmDialog({ title: i18nService.t("dialogs.deleteRecordTitle"), message: i18nService.t("dialogs.deleteRecordMsg"), confirmText: i18nService.t("common.delete"), isDanger: true })) {
       deleteHistoryEntry(target.dataset.date, target.dataset.pep, Number(target.dataset.idx));
     }
   });
@@ -897,7 +897,7 @@ function renderToday() {
       let vialBadgeHTML = "";
       if (vm.vialStatus) {
         const expAlert = vm.vialStatus.expStatus === "expired" ? " ⚠️ Vencido" : vm.vialStatus.expStatus === "expiring_soon" ? " ⏳ Vence em breve" : "";
-        vialBadgeHTML = `<span class="chip-acc" style="background:rgba(14,133,128,0.12);color:var(--success);font-size:11px;font-weight:700;" title="Saldo no frasco ativo">🧪 ~${vm.vialStatus.remainingDoses} doses${expAlert}</span>`;
+        vialBadgeHTML = `<span class="chip-acc" style="background:rgba(14,133,128,0.12);color:var(--success);font-size:11px;font-weight:700;" title="${esc(i18nService.t("settings.inventoryCardTitle"))}">🧪 ~${vm.vialStatus.remainingDoses} ${esc(i18nService.t("common.doses"))}${expAlert}</span>`;
       }
 
       let siteBadgeHTML = "";
@@ -922,7 +922,7 @@ function renderToday() {
           <div class="meta">
             <span class="ui">${esc(String(p.ui))} UI</span>
             <span class="freq">· ${esc(p.freq || "")}</span>
-            <span class="chip-acc">${esc(p.dose || "")}/${esc(p.per || "dia")}</span>
+            <span class="chip-acc">${esc(p.dose || "")}/${esc(p.per || i18nService.t("modals.peptide.perDay"))}</span>
             ${vialBadgeHTML}
             ${siteBadgeHTML}
           </div>
@@ -985,7 +985,7 @@ async function toggleDose(id) {
   if (isUndoing) {
     const res = doseService.undoDose({ peptideId: p.id, scheduledDate: todayK });
     if (!res.success) {
-      void dialogService.alert({ title: "Erro ao desmarcar", message: "Erro ao desmarcar aplicação: " + (res.message || res.error), isDanger: true });
+      void dialogService.alert({ title: i18nService.t("dialogs.unmarkErrorTitle"), message: i18nService.t("dialogs.unmarkErrorMsg") + (res.message || res.error), isDanger: true });
       return;
     }
     haptics.light();
@@ -1023,7 +1023,7 @@ async function toggleDose(id) {
     }
 
     if (!res.success) {
-      void dialogService.alert({ title: "Erro ao gravar", message: "Erro ao gravar aplicação: " + (res.message || res.error), isDanger: true });
+      void dialogService.alert({ title: i18nService.t("dialogs.saveErrorTitle"), message: i18nService.t("dialogs.saveErrorMsg") + (res.message || res.error), isDanger: true });
       return;
     }
     haptics.success();
@@ -1078,7 +1078,7 @@ async function addSingleDose(id) {
   }
 
   if (!res.success) {
-    void dialogService.alert({ title: "Erro ao gravar", message: "Erro ao gravar dose: " + (res.message || res.error), isDanger: true });
+    void dialogService.alert({ title: i18nService.t("dialogs.saveErrorTitle"), message: i18nService.t("dialogs.saveDoseErrorMsg") + (res.message || res.error), isDanger: true });
     return;
   }
 
@@ -1098,7 +1098,7 @@ function undoSingleDose(id) {
   });
 
   if (!res.success) {
-    void dialogService.alert({ title: "Erro ao remover", message: "Erro ao remover dose: " + (res.message || res.error), isDanger: true });
+    void dialogService.alert({ title: i18nService.t("dialogs.removeErrorTitle"), message: i18nService.t("dialogs.removeErrorMsg") + (res.message || res.error), isDanger: true });
     return;
   }
 
@@ -1571,7 +1571,7 @@ function renderHistory() {
   const oldMeasurementList = document.getElementById("measurements-history-list");
   if (oldMeasurementList) oldMeasurementList.innerHTML = "";
   renderHistoryEvolution(model);
-  const typeLabel = { application: "Aplicação", measurement: "Medida", symptom: "Sintoma", protocol: "Protocolo" };
+  const typeLabel = { application: i18nService.t("history.typeApplication"), measurement: i18nService.t("history.typeMeasurement"), symptom: i18nService.t("history.typeSymptom"), protocol: i18nService.t("history.typeProtocol") || "Protocolo" };
   container.innerHTML = model.events.length ? `<div class="history-timeline history-timeline--integrated" role="list">${model.events.map((event) => {
     const details = event.type === "application"
       ? `<span>Previsto: <b>${esc(event.scheduledTime || "não informado")}</b></span><span>Efetivo: <b>${esc(event.effectiveTime || "não informado")}</b></span>${event.data.site ? `<span>Local: <b>${esc(event.data.site)}</b></span>` : ""}`
@@ -1580,11 +1580,11 @@ function renderHistory() {
         : `<span>Vigência: <b>${esc(fmtBR(event.date))} ${esc(event.time)}</b></span><span>Estado: <b>${esc(event.data.statusLabel)}</b></span>`;
     return `<article class="history-event history-event--${event.type} ${event.type === "application" ? `hist-day hist-item ${event.date === dateKey(new Date()) ? "is-today" : ""}` : ""}" role="listitem">
       <div class="history-event-head"><span class="history-event-type">${typeLabel[event.type]}</span><time datetime="${esc(event.date)}T${esc(event.time)}">${esc(fmtBR(event.date))} · ${esc(event.time || "—")}</time></div>
-      <div class="history-event-body"><strong class="${event.type === "application" ? "hist-name" : ""}">${esc(event.title)}</strong><p class="${event.type === "application" ? "hist-status" : ""}">${esc(event.type === "application" ? i18nService.t(`phase1.${event.data.status}`) : event.subtitle)}</p>${event.type === "application" ? `<p class="hist-dose">${esc(event.data.dose)}${event.data.ui !== null ? ` · ${esc(String(event.data.ui))} UI` : ""}${event.data.site ? ` · 📍 ${esc(event.data.site)}` : ""}</p>` : ""}${event.notes ? `<p class="hist-note">${esc(event.notes)}</p>` : ""}${event.retroactive ? `<span class="badge-retro">Retroativo</span>` : ""}${event.contextGeneral ? `<span class="history-context-badge">Contexto geral do período</span>` : ""}</div>
+      <div class="history-event-body"><strong class="${event.type === "application" ? "hist-name" : ""}">${esc(event.title)}</strong><p class="${event.type === "application" ? "hist-status" : ""}">${esc(event.type === "application" ? i18nService.t(`phase1.${event.data.status}`) : event.subtitle)}</p>${event.type === "application" ? `<p class="hist-dose">${esc(event.data.dose)}${event.data.ui !== null ? ` · ${esc(String(event.data.ui))} UI` : ""}${event.data.site ? ` · 📍 ${esc(event.data.site)}` : ""}</p>` : ""}${event.notes ? `<p class="hist-note">${esc(event.notes)}</p>` : ""}${event.retroactive ? `<span class="badge-retro">${esc(i18nService.t("history.retroactiveBadge"))}</span>` : ""}${event.contextGeneral ? `<span class="history-context-badge">${esc(i18nService.t("history.contextBadge"))}</span>` : ""}</div>
       <details class="history-event-details"><summary>Ver detalhes</summary><div>${details}</div></details>
       <div class="hist-actions">${event.type === "application" ? `<button type="button" class="hist-edit" data-date="${sanitizeId(event.date)}" data-pep="${sanitizeId(event.data.peptideId)}" data-idx="${event.data.recordIndex}">Corrigir</button><button type="button" class="hist-rm" data-date="${sanitizeId(event.date)}" data-pep="${sanitizeId(event.data.peptideId)}" data-idx="${event.data.recordIndex}">Excluir</button>` : event.type === "measurement" || event.type === "symptom" ? `<button type="button" class="history-measurement-edit btn-meas-edit" data-id="${sanitizeId(event.editableId)}">Corrigir</button>` : ""}</div>
     </article>`;
-  }).join("")}</div>` : `<div class="timeline-empty history-empty"><div class="timeline-empty-icon" aria-hidden="true">◌</div><strong>Nenhum registro encontrado</strong><p>Ajuste o período, tipo ou busca para localizar outros registros.</p></div>`;
+  }).join("")}</div>` : `<div class="timeline-empty history-empty"><div class="timeline-empty-icon" aria-hidden="true">◌</div><strong>${esc(i18nService.t("history.noRecordsFound"))}</strong><p>${esc(i18nService.t("history.adjustFiltersHint"))}</p></div>`;
   renderAdherenceSummary(state);
 }
 
@@ -1605,7 +1605,7 @@ function deleteHistoryEntry(dKey, pId, idx) {
   });
 
   if (!res.success) {
-    void dialogService.alert({ title: "Erro ao remover", message: "Erro ao remover registro: " + (res.message || res.error || "Armazenamento indisponível"), isDanger: true });
+    void dialogService.alert({ title: i18nService.t("dialogs.removeErrorTitle"), message: i18nService.t("dialogs.removeRecordErrorMsg") + (res.message || res.error || ""), isDanger: true });
     return;
   }
 
@@ -1613,7 +1613,7 @@ function deleteHistoryEntry(dKey, pId, idx) {
   invalidateViews("today", "week", "history");
 }
 
-function showConfirmDialog({ title = "Confirmar", message = "", confirmText = "Confirmar", cancelText = "Cancelar", isDanger = true } = {}) {
+function showConfirmDialog({ title = i18nService.t("common.confirm"), message = "", confirmText = i18nService.t("common.confirm"), cancelText = i18nService.t("common.cancel"), isDanger = true } = {}) {
   return dialogService.confirm({ title, message, confirmText, cancelText, isDanger });
 }
 
@@ -1628,8 +1628,8 @@ async function deletePeptide(id) {
 function reportReminderRefreshFailure(result) {
   if (!result?.error) return;
   void dialogService.alert({
-    title: "Lembretes não atualizados",
-    message: "O protocolo foi salvo, mas não foi possível atualizar os lembretes no aparelho. Abra Lembretes e toque em Reagendar.",
+    title: i18nService.t("dialogs.saveErrorTitle"),
+    message: i18nService.t("dialogs.reminderRescheduleNotice"),
     isDanger: true
   });
 }
@@ -1941,10 +1941,10 @@ function setupModalsAndButtons() {
           document.body.removeChild(textarea);
         }
         haptics.success();
-        void dialogService.alert({ title: "Resumo copiado", message: "Resumo copiado com sucesso para a área de transferência! ✓" });
+        void dialogService.alert({ title: i18nService.t("dialogs.copiedTitle"), message: i18nService.t("dialogs.copiedMsg") });
       } catch (err) {
         console.error("Falha ao copiar:", err);
-        void dialogService.alert({ title: "Falha ao copiar", message: "Não foi possível copiar automaticamente para a área de transferência.", isDanger: true });
+        void dialogService.alert({ title: i18nService.t("dialogs.copyFailTitle"), message: i18nService.t("dialogs.copyFailMsg"), isDanger: true });
       }
     });
   }
@@ -2029,7 +2029,7 @@ function renderLibraryList(filterText = "") {
   });
 
   if (filtered.length === 0) {
-    cont.innerHTML = `<div class="lib-empty">Nenhum peptídeo encontrado na biblioteca. Digite um nome personalizado abaixo.</div>`;
+    cont.innerHTML = `<div class="lib-empty">${esc(i18nService.t("modals.peptide.libEmpty"))}</div>`;
     return;
   }
 
@@ -2118,7 +2118,7 @@ function updateBackfillPreviewUI() {
     const lastParts = dates[dates.length - 1].dateKey.split("-");
     const firstStr = `${firstParts[2]}/${firstParts[1]}`;
     const lastStr = `${lastParts[2]}/${lastParts[1]}`;
-    backfillPreview.textContent = `Preencher ${totalDoses} aplicação(ões) anterior(es) a hoje (${firstStr} a ${lastStr}) como aplicadas no histórico.`;
+    backfillPreview.textContent = i18nService.t("modals.peptide.backfillPreview", { count: totalDoses, start: firstStr, end: lastStr });
   } else {
     backfillWrap.style.display = "none";
   }
@@ -2188,7 +2188,7 @@ function openEditModal(pepId, prefillData = null) {
   const p = resolveProtocolAt(originalProtocol);
   renderProtocolControls(originalProtocol, { storage, onSaved: protocolSaved });
 
-  if (title) title.textContent = p ? `Editar ${p.name}` : "Adicionar Peptídeo";
+  if (title) title.textContent = p ? i18nService.t("modals.peptide.editTitleWithName", { name: p.name }) : i18nService.t("modals.peptide.newTitle");
 
   document.getElementById("edit-name").value = p ? p.name : (prefillData?.name || "");
   document.getElementById("edit-sub").value = p ? p.sub || "" : (prefillData?.sub || "");
@@ -2389,7 +2389,7 @@ async function saveEditedPeptide() {
 
   if (selectedFreqType === "especificos") {
     if (selectedDays.length === 0) {
-      void dialogService.alert({ title: "Agenda incompleta", message: "Selecione ao menos um dia da semana.", isDanger: true });
+      void dialogService.alert({ title: i18nService.t("dialogs.incompleteScheduleTitle"), message: i18nService.t("dialogs.incompleteScheduleMsg"), isDanger: true });
       return;
     }
     days = [...selectedDays].sort((a, b) => a - b);
@@ -2452,7 +2452,7 @@ async function saveEditedPeptide() {
       try {
         peptides[idx] = reviseProtocol(original, peptideData, { effectiveFrom: effectiveDate ? new Date(`${effectiveDate}T00:00:00`).toISOString() : now.toISOString(), now });
       } catch (error) {
-        void dialogService.alert({ title: "Erro ao alterar protocolo", message: error.message, isDanger: true });
+        void dialogService.alert({ title: i18nService.t("dialogs.protocolChangeError"), message: error.message, isDanger: true });
         return;
       }
     }
@@ -2462,7 +2462,7 @@ async function saveEditedPeptide() {
 
   const res = storage.setPeptides(peptides);
   if (!res.success) {
-    void dialogService.alert({ title: "Erro ao salvar", message: "Erro ao salvar peptídeo: " + (res.error || "Armazenamento local indisponível"), isDanger: true });
+    void dialogService.alert({ title: i18nService.t("dialogs.saveErrorTitle"), message: i18nService.t("dialogs.savePeptideError") + (res.error || ""), isDanger: true });
     return;
   }
 
@@ -2480,7 +2480,7 @@ async function saveEditedPeptide() {
       backfillAdded = backfillRes.addedCount;
     }
     if (!backfillRes.success) {
-      void dialogService.alert({ title: "Histórico não gravado", message: "O protocolo foi salvo, mas o preenchimento do histórico falhou: " + (backfillRes.message || backfillRes.error), isDanger: true });
+      void dialogService.alert({ title: i18nService.t("dialogs.backfillFailTitle"), message: i18nService.t("dialogs.backfillFailMsg") + (backfillRes.message || backfillRes.error), isDanger: true });
       invalidateViews("today", "week", "history");
       return;
     }

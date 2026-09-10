@@ -49,7 +49,7 @@ export function openRetroLogModal(prefillDate = null, prefillPepId = null, { sto
   const reasonInput = document.getElementById("retro-reason-input");
   const historyPanel = document.getElementById("retro-edit-history");
   const title = document.getElementById("retro-modal-title");
-  if (title) title.textContent = editingContext ? i18nService.t("phase1.editRecord") : "Registrar Aplicação";
+  if (title) title.textContent = editingContext ? i18nService.t("phase1.editRecord") : i18nService.t("modals.retro.title");
 
   const todayKey = dateKey(new Date());
 
@@ -140,7 +140,7 @@ export function openRetroLogModal(prefillDate = null, prefillPepId = null, { sto
     const currentVial = editingContext?.log.vialId;
     historyPanel.hidden = !editingContext;
     historyPanel.innerHTML = editingContext ? `
-      ${currentVial ? `<p>Frasco do registro: ${esc(currentVial)}</p>` : ""}
+      ${currentVial ? `<p>${esc(i18nService.t("phase1.vial"))}: ${esc(currentVial)}</p>` : ""}
       ${displayLegacyHint(editingContext.log)}
       <b>${esc(i18nService.t("phase1.editHistory"))}</b>
       ${history.length ? `<ol>${history.map((item) => {
@@ -149,8 +149,8 @@ export function openRetroLogModal(prefillDate = null, prefillPepId = null, { sto
         const when = Number.isNaN(editedDate.getTime()) ? "Data não informada" : editedDate.toLocaleString(i18nService.getLocale());
         const prior = getDoseDisplayData(previous);
         const status = DOSE_STATUSES.includes(previous.status) ? i18nService.t(`phase1.${previous.status}`) : "Estado não informado";
-        return `<li>${esc(when)}: ${esc(status)} · ${esc(previous.time || "--:--")} · ${esc(prior.dose === "" ? "--" : prior.dose)} (${esc(prior.ui ?? "--")} UI)${previous.site ? ` · ${esc(previous.site)}` : ""}${previous.note ? `<br>Observação anterior: ${esc(previous.note)}` : ""}${previous.statusReason ? `<br>Motivo anterior: ${esc(previous.statusReason)}` : ""}</li>`;
-      }).join("")}</ol>` : "<p>Nenhuma correção anterior.</p>"}
+        return `<li>${esc(when)}: ${esc(status)} · ${esc(previous.time || "--:--")} · ${esc(prior.dose === "" ? "--" : prior.dose)} (${esc(prior.ui ?? "--")} UI)${previous.site ? ` · ${esc(previous.site)}` : ""}${previous.note ? `<br>${esc(i18nService.t("modals.retro.prevNote"))} ${esc(previous.note)}` : ""}${previous.statusReason ? `<br>${esc(i18nService.t("modals.retro.prevReason"))} ${esc(previous.statusReason)}` : ""}</li>`;
+      }).join("")}</ol>` : `<p>${esc(i18nService.t("modals.retro.noPriorCorrections"))}</p>`}
     ` : "";
   }
 
@@ -297,7 +297,7 @@ export async function saveRetroLog({ doseService, dateKey, haptics, renderAll })
       renderAll();
     }
   } catch (error) {
-    void dialogService.alert({ title: "Erro", message: "Não foi possível salvar o registro: " + (error?.message || "armazenamento indisponível"), isDanger: true });
+    void dialogService.alert({ title: i18nService.t("common.error"), message: i18nService.t("dialogs.saveErrorMsg") + (error?.message || ""), isDanger: true });
   } finally {
     saving = false;
     if (saveBtn) saveBtn.disabled = false;

@@ -6,6 +6,7 @@ import { generateDiagnosticReport } from "../services/diagnostics.js";
 import { exportFile, shareExportedFile } from "../services/export.js";
 import { haptics } from "../services/haptics.js";
 import { dialogService } from "../services/dialog.js";
+import { i18nService } from "../services/i18n.js";
 
 export function setupDiagnosticsModal({ storage, getNotificationsActive, appVersion = "3.4.0" }) {
   const modal = document.getElementById("diag-modal");
@@ -31,7 +32,7 @@ export function setupDiagnosticsModal({ storage, getNotificationsActive, appVers
       }
     } catch (err) {
       if (preEl) {
-        preEl.textContent = `Erro ao gerar diagnóstico: ${err.message}`;
+        preEl.textContent = (i18nService.t("modals.diagnostics.generateError") || "Erro ao gerar diagnóstico: {error}").replace("{error}", err.message);
       }
     }
   };
@@ -65,10 +66,10 @@ export function setupDiagnosticsModal({ storage, getNotificationsActive, appVers
           document.execCommand("copy");
           document.body.removeChild(ta);
         }
-        void dialogService.alert({ title: "Diagnóstico copiado", message: "Diagnóstico técnico copiado para a área de transferência!" });
+        void dialogService.alert({ title: i18nService.t("dialogs.diagCopiedTitle"), message: i18nService.t("dialogs.diagCopiedMsg") });
         haptics.success();
       } catch {
-        void dialogService.alert({ title: "Falha ao copiar", message: "Não foi possível copiar automaticamente.", isDanger: true });
+        void dialogService.alert({ title: i18nService.t("dialogs.copyFailTitle"), message: i18nService.t("dialogs.copyFailMsg"), isDanger: true });
       }
     });
   }
@@ -92,10 +93,10 @@ export function setupDiagnosticsModal({ storage, getNotificationsActive, appVers
 
         haptics.success();
         const userWantsShare = await dialogService.confirm({
-          title: "Diagnóstico Exportado ✓",
-          message: `Arquivo salvo com sucesso em:\n📁 ${result.path}\n\nDeseja compartilhar este relatório de diagnóstico?`,
-          confirmText: "Compartilhar",
-          cancelText: "OK",
+          title: i18nService.t("dialogs.diagExportTitle"),
+          message: i18nService.t("dialogs.diagExportMsg", { path: result.path }),
+          confirmText: i18nService.t("modals.share.actionShare"),
+          cancelText: i18nService.t("common.ok"),
           isDanger: false
         });
 
@@ -110,8 +111,8 @@ export function setupDiagnosticsModal({ storage, getNotificationsActive, appVers
       } catch (err) {
         haptics.warning();
         void dialogService.alert({
-          title: "Erro na Exportação",
-          message: "Não foi possível salvar o diagnóstico: " + (err.message || err),
+          title: i18nService.t("modals.report.exportErrorTitle"),
+          message: i18nService.t("modals.report.exportErrorMsg", { error: err.message || err }),
           isDanger: true
         });
       }

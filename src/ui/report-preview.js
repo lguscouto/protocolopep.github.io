@@ -115,7 +115,7 @@ export function setupReportModal(storage) {
 
     const previewEvents = Array.isArray(currentReport.events) ? currentReport.events : [];
     if (previewEvents.length === 0) {
-      previewList.innerHTML = `<div style="padding:18px;text-align:center;color:var(--muted);font-size:12.5px;">Nenhum evento encontrado no período selecionado. O relatório vazio ainda pode ser salvo.</div>`;
+      previewList.innerHTML = `<div style="padding:18px;text-align:center;color:var(--muted);font-size:12.5px;">${esc(i18nService.t("modals.report.noEventsInPeriod"))}</div>`;
       return;
     }
 
@@ -141,7 +141,7 @@ export function setupReportModal(storage) {
     }).join("");
 
     if (previewEvents.length > 15) {
-      html += `<div style="padding:8px;text-align:center;font-size:11px;color:var(--muted);">+ ${previewEvents.length - 15} outros eventos incluídos no relatório final</div>`;
+      html += `<div style="padding:8px;text-align:center;font-size:11px;color:var(--muted);">${esc(i18nService.t("modals.report.otherEventsIncluded", { count: previewEvents.length - 15 }))}</div>`;
     }
 
     previewList.innerHTML = html;
@@ -224,13 +224,22 @@ export function setupReportModal(storage) {
         if (result.aborted) return;
         if (!result.success) throw new Error(result.error || "Falha ao exportar");
         haptics.success();
-        const share = await dialogService.confirm({ title: "CSV de medidas salvo", message: `Arquivo salvo em:\n${result.path}\n\nDeseja compartilhar este CSV?`, confirmText: "Compartilhar", cancelText: "OK" });
+        const share = await dialogService.confirm({
+          title: i18nService.t("modals.report.csvMeasSavedTitle"),
+          message: i18nService.t("modals.report.csvMeasSavedMsg", { path: result.path }),
+          confirmText: i18nService.t("modals.share.actionShare"),
+          cancelText: i18nService.t("common.ok")
+        });
         if (share) {
           const shared = await shareExportedFile({ fileName: filename, content: csv, mimeType: "text/csv", title: "Medidas Protocolo PEP" });
           if (!shared.success && !shared.aborted) void dialogService.alert({ title: "Compartilhamento indisponível", message: shared.error, isDanger: true });
         }
       } catch (error) {
-        void dialogService.alert({ title: "Erro na exportação", message: error.message || "Não foi possível salvar o CSV.", isDanger: true });
+        void dialogService.alert({
+          title: i18nService.t("modals.report.exportErrorTitle"),
+          message: i18nService.t("modals.report.exportErrorMsg", { error: error.message || "" }),
+          isDanger: true
+        });
       }
     });
   }
@@ -250,12 +259,21 @@ export function setupReportModal(storage) {
       const result = await saveReportPdf({ fileName, html });
       if (result.aborted) return;
       if (!result.success) {
-        void dialogService.alert({ title: "Erro ao gerar PDF", message: result.error || "Não foi possível criar o arquivo.", isDanger: true });
+        void dialogService.alert({
+          title: i18nService.t("modals.report.pdfErrorTitle"),
+          message: result.error || i18nService.t("modals.report.exportErrorMsg", { error: "" }),
+          isDanger: true
+        });
         return;
       }
       haptics.success();
       if (result.printDialog) return;
-      const share = await dialogService.confirm({ title: "PDF salvo", message: `Arquivo salvo em:\n${result.path}\n\nDeseja compartilhar este arquivo?`, confirmText: "Compartilhar", cancelText: "OK" });
+      const share = await dialogService.confirm({
+        title: i18nService.t("modals.report.pdfSavedTitle"),
+        message: i18nService.t("modals.report.pdfSavedMsg", { path: result.path }),
+        confirmText: i18nService.t("modals.share.actionShare"),
+        cancelText: i18nService.t("common.ok")
+      });
       if (share) {
         const shared = await shareSavedFile({ uri: result.uri, title: "Relatório Protocolo PEP" });
         if (!shared.success && !shared.aborted) void dialogService.alert({ title: "Compartilhamento indisponível", message: shared.error, isDanger: true });

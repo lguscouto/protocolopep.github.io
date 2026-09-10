@@ -42,6 +42,49 @@ describe("Domínio de Internacionalização (i18n)", () => {
     it("possui o mesmo conjunto de chaves em pt-BR e es", () => {
       expect(esKeys).toEqual(ptKeys);
     });
+
+    it("nenhuma chave folha é vazia ou indefinida em qualquer dos idiomas", () => {
+      for (const key of ptKeys) {
+        const valPt = resolveNestedKey(ptBR, key);
+        const valEn = resolveNestedKey(en, key);
+        const valEs = resolveNestedKey(es, key);
+
+        expect(typeof valPt).toBe("string");
+        expect(valPt.trim().length).toBeGreaterThan(0);
+
+        expect(typeof valEn).toBe("string");
+        expect(valEn.trim().length).toBeGreaterThan(0);
+
+        expect(typeof valEs).toBe("string");
+        expect(valEs.trim().length).toBeGreaterThan(0);
+      }
+    });
+
+    it("todas as chaves anotadas no index.html resolvem para strings válidas nos 3 idiomas", async () => {
+      const fs = await import("fs");
+      const path = await import("path");
+      const htmlPath = path.resolve(process.cwd(), "index.html");
+      const html = fs.readFileSync(htmlPath, "utf8");
+
+      const attrRegex = /data-i18n(?:-html|-placeholder|-title|-aria)?="([^"]+)"/g;
+      let match;
+      const htmlKeys = new Set();
+      while ((match = attrRegex.exec(html)) !== null) {
+        htmlKeys.add(match[1]);
+      }
+
+      expect(htmlKeys.size).toBeGreaterThan(150);
+
+      for (const key of htmlKeys) {
+        const valPt = resolveNestedKey(ptBR, key);
+        const valEn = resolveNestedKey(en, key);
+        const valEs = resolveNestedKey(es, key);
+
+        expect(valPt, `Chave ${key} não encontrada em pt-BR`).toBeTruthy();
+        expect(valEn, `Chave ${key} não encontrada em en`).toBeTruthy();
+        expect(valEs, `Chave ${key} não encontrada em es`).toBeTruthy();
+      }
+    });
   });
 
   describe("resolveNestedKey", () => {

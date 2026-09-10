@@ -16,6 +16,7 @@ import {
 import { escapeHtml } from "./dom.js";
 import { haptics } from "../services/haptics.js";
 import { dialogService } from "../services/dialog.js";
+import { i18nService } from "../services/i18n.js";
 
 export function setupInjectionSitesUI({ storage, onSitesChange = () => {} }) {
   const modal = document.getElementById("sites-modal");
@@ -31,7 +32,7 @@ export function setupInjectionSitesUI({ storage, onSitesChange = () => {} }) {
     if (!summaryEl) return;
     const sites = storage.getSites();
     if (!sites || sites.length === 0) {
-      summaryEl.textContent = "Nenhum local configurado na rotação.";
+      summaryEl.textContent = i18nService.t("modals.sites.noSitesInRotation");
       return;
     }
     const lastUsed = getLastUsedSite(storage.getLogs());
@@ -141,7 +142,7 @@ export function setupInjectionSitesUI({ storage, onSitesChange = () => {} }) {
       renderSitesList();
       onSitesChange();
     } else {
-      void dialogService.alert({ title: "Erro ao salvar", message: "Erro ao salvar local: " + (res.error || "Falha no armazenamento"), isDanger: true });
+      void dialogService.alert({ title: i18nService.t("common.error"), message: i18nService.t("dialogs.saveErrorMsg") + (res.error || ""), isDanger: true });
     }
   }
 

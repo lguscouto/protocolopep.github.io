@@ -43,7 +43,7 @@ export function setupInventoryUI({ storage, onInventoryChange }) {
     editingVialId = vial ? vial.id : null;
     const titleEl = document.getElementById("vial-modal-title");
     if (titleEl) {
-      titleEl.textContent = vial ? "Editar Frasco" : "Novo Frasco de Peptídeo";
+      titleEl.textContent = vial ? i18nService.t("modals.vial.editTitle") : i18nService.t("modals.vial.newTitle");
     }
 
     const nameInput = document.getElementById("vial-name-input");
@@ -76,7 +76,7 @@ export function setupInventoryUI({ storage, onInventoryChange }) {
 
     if (vialDeleteBtn) {
       vialDeleteBtn.style.display = vial ? "inline-flex" : "none";
-      vialDeleteBtn.textContent = hasHistory ? "Descartar / Arquivar" : "Excluir Frasco";
+      vialDeleteBtn.textContent = hasHistory ? i18nService.t("modals.vial.archiveBtn") : i18nService.t("modals.confirmAction.deleteVialTitle");
     }
 
     if (vialModal) {
@@ -107,10 +107,10 @@ export function setupInventoryUI({ storage, onInventoryChange }) {
         listEl.innerHTML = `<div style="text-align:center;padding:24px;color:var(--muted);font-size:13px;">Nenhuma movimentação registrada.</div>`;
       } else {
         listEl.innerHTML = movements.map((m) => {
-          const typeLabel = m.type === "reconstitution" ? "Reconstituição Inicial" :
-                            m.type === "dose" ? "Aplicação de Dose" :
-                            m.type === "undo_dose" ? "Estorno de Dose" :
-                            m.type === "adjustment" ? "Ajuste Manual" : m.type;
+          const typeLabel = m.type === "reconstitution" ? i18nService.t("modals.vial.typeReconstitution") :
+                            m.type === "dose" ? i18nService.t("modals.vial.movementDose") :
+                            m.type === "undo_dose" ? i18nService.t("modals.vial.movementUndo") :
+                            m.type === "adjustment" ? i18nService.t("modals.vial.typeAdjustment") : m.type;
           const badgeColor = m.amountMcg > 0 ? "var(--success)" : "var(--primary)";
           const formattedAmount = m.amountMcg > 0 ? `+${m.amountMcg} mcg` : `${m.amountMcg} mcg`;
           
@@ -279,9 +279,9 @@ export function setupInventoryUI({ storage, onInventoryChange }) {
 
       if (canDelete) {
         const confirmed = await dialogService.confirm({
-          title: "Excluir Frasco",
-          message: "Tem certeza que deseja excluir este frasco do inventário?",
-          confirmText: "Excluir",
+          title: i18nService.t("modals.confirmAction.deleteVialTitle"),
+          message: i18nService.t("modals.confirmAction.deleteVialMessage"),
+          confirmText: i18nService.t("common.delete"),
           isDanger: true
         });
         if (confirmed) {
@@ -289,8 +289,8 @@ export function setupInventoryUI({ storage, onInventoryChange }) {
           const res = storage.setInventory(newInventory);
           if (!res.success) {
             dialogService.alert({
-              title: "Erro",
-              message: "Erro ao excluir frasco: " + res.error,
+              title: i18nService.t("common.error"),
+              message: i18nService.t("modals.vial.deleteError", { error: res.error || "" }),
               isDanger: true
             });
             return;
@@ -302,9 +302,9 @@ export function setupInventoryUI({ storage, onInventoryChange }) {
         }
       } else {
         const confirmed = await dialogService.confirm({
-          title: "Arquivar Frasco",
-          message: "Este frasco possui histórico de aplicações registradas e não pode ser excluído fisicamente para manter a integridade dos seus dados.\n\nDeseja arquivar/descartar este frasco?",
-          confirmText: "Arquivar/Descartar",
+          title: i18nService.t("modals.vial.archiveTitle"),
+          message: i18nService.t("modals.vial.archiveMsg"),
+          confirmText: i18nService.t("modals.vial.archiveBtn"),
           isDanger: true
         });
         if (confirmed) {
@@ -314,8 +314,8 @@ export function setupInventoryUI({ storage, onInventoryChange }) {
           const res = storage.setInventory(currentInv);
           if (!res.success) {
             dialogService.alert({
-              title: "Erro",
-              message: "Erro ao arquivar frasco: " + res.error,
+              title: i18nService.t("common.error"),
+              message: i18nService.t("modals.vial.archiveError", { error: res.error || "" }),
               isDanger: true
             });
             return;
@@ -394,8 +394,8 @@ export function setupInventoryUI({ storage, onInventoryChange }) {
       const res = storage.setInventory(inventory);
       if (!res.success) {
         dialogService.alert({
-          title: "Erro de Armazenamento",
-          message: "Erro ao salvar frasco: " + res.error,
+          title: i18nService.t("modals.vial.storageErrorTitle"),
+          message: i18nService.t("modals.vial.saveError", { error: res.error || "" }),
           isDanger: true
         });
         return;

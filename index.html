@@ -77,7 +77,7 @@
 
       <!-- Recursos avançados ficam disponíveis sem competir com o registro diário. -->
       <details class="dash-actions-wrap dash-actions-collapsible">
-        <summary class="dash-tools-summary">Mais ferramentas</summary>
+        <summary class="dash-tools-summary" data-i18n="tools.moreTools">Mais ferramentas</summary>
         <div class="dash-tools-heading" data-i18n="dashboard.tools">Ferramentas</div>
         <div class="dash-actions-grid" role="toolbar" aria-label="Ferramentas" data-i18n-aria="dashboard.tools">
           <button type="button" class="dash-action-btn" id="dash-share-btn" aria-label="Compartilhar resumo do dia">
@@ -97,10 +97,10 @@
             <span data-i18n="dashboard.calculator">Calculadora</span>
           </button>
           <button type="button" class="dash-action-btn" id="dash-inventory-btn" aria-label="Abrir frascos e saldo">
-            <span aria-hidden="true">🧴</span><span>Frascos e saldo</span>
+            <span aria-hidden="true">🧴</span><span data-i18n="tools.vialsCardTitle">Frascos e saldo</span>
           </button>
           <button type="button" class="dash-action-btn" id="dash-report-btn" aria-label="Abrir relatório do histórico">
-            <span aria-hidden="true">📄</span><span>Relatório</span>
+            <span aria-hidden="true">📄</span><span data-i18n="tools.reportCardTitle">Relatório</span>
           </button>
           <button type="button" class="dash-action-btn dash-action-btn--wide open-research-modal-btn" id="dash-research-btn" aria-label="Abrir base de pesquisa científica">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><path d="M11 8v6M8 11h6"/></svg>
@@ -166,8 +166,8 @@
           <label><span data-i18n="history.searchLabel">Buscar</span><input id="history-search" class="txt" type="search" data-i18n-placeholder="history.searchPlaceholder" placeholder="Nome ou observação" autocomplete="off"></label>
         </div>
         <div id="history-custom-dates" class="history-custom-dates" hidden>
-          <label>Data inicial<input id="history-start-date" class="txt" type="date"></label>
-          <label>Data final<input id="history-end-date" class="txt" type="date"></label>
+          <label><span data-i18n="modals.report.startDate">Data inicial</span><input id="history-start-date" class="txt" type="date"></label>
+          <label><span data-i18n="modals.report.endDate">Data final</span><input id="history-end-date" class="txt" type="date"></label>
         </div>
         <p id="history-context-note" class="history-context-note" data-i18n="history.contextNote" hidden>Sintomas e medidas são exibidos como contexto geral do período, sem atribuição ao composto filtrado.</p>
       </div>
@@ -187,14 +187,14 @@
     <!-- FERRAMENTAS (acessada por Mais) -->
     <section class="view" id="view-calc" role="tabpanel" aria-label="Ferramentas">
       <div class="page-title-wrap" style="margin-bottom: 14px;">
-        <button type="button" class="btn-ghost" id="calc-back-btn" style="margin-bottom:10px;">← Voltar para Mais</button>
+        <button type="button" class="btn-ghost" id="calc-back-btn" data-i18n="tools.backToMore" style="margin-bottom:10px;">← Voltar para Mais</button>
         <h2 class="page-title" data-i18n="calculator.title">Calculadora de Reconstituição</h2>
       </div>
       
       <div class="step">
         <div class="step-h">
           <span class="step-n">1</span>
-          <div class="lab">Quantidade de peptídeo no frasco <small>Conteúdo total (mg)</small></div>
+          <div class="lab"><span data-i18n="calculator.step1Title">Quantidade de peptídeo no frasco</span> <small data-i18n="calculator.step1Desc">Conteúdo total (mg)</small></div>
         </div>
         <div class="chips" id="calc-mg-chips">
           <button class="chip" data-v="2">2 mg</button>
@@ -209,7 +209,7 @@
       <div class="step">
         <div class="step-h">
           <span class="step-n">2</span>
-          <div class="lab">Água bacteriostática adicionada <small>Volume de diluente (ml)</small></div>
+          <div class="lab"><span data-i18n="calculator.step2Title">Água bacteriostática adicionada</span> <small data-i18n="calculator.step2Desc">Volume de diluente (ml)</small></div>
         </div>
         <div class="chips" id="calc-ml-chips">
           <button class="chip" data-v="1">1 ml</button>
@@ -222,10 +222,10 @@
       <div class="step">
         <div class="step-h">
           <span class="step-n">3</span>
-          <div class="lab">Dose desejada por aplicação <small>Informe a dose pretendida</small></div>
+          <div class="lab"><span data-i18n="calculator.step3Title">Dose desejada por aplicação</span> <small data-i18n="calculator.step3Desc">Informe a dose pretendida</small></div>
         </div>
         <div style="display:flex;gap:8px;">
-          <input type="number" class="num" id="calc-dose-input" placeholder="ex: 250" step="any" />
+          <input type="number" class="num" id="calc-dose-input" placeholder="ex: 250" data-i18n-placeholder="calculator.dosePlaceholder" step="any" />
           <div class="unittoggle" id="calc-unit-toggle">
             <button class="on" data-u="mcg">mcg</button>
             <button data-u="mg">mg</button>
@@ -235,48 +235,48 @@
 
       <!-- Resultado e Seringa -->
       <div class="result">
-        <div style="font-size:11.5px;color:var(--muted-2);margin-bottom:8px;text-align:center;" aria-hidden="true">
+        <div style="font-size:11.5px;color:var(--muted-2);margin-bottom:8px;text-align:center;" aria-hidden="true" data-i18n="tools.autoUpdated">
           ⚡ Resultado atualizado automaticamente
         </div>
         <div class="res-main">
           <span class="big" id="calc-res-big">--</span>
           <span class="unit">UI</span>
         </div>
-        <div class="res-sub" id="calc-res-sub" aria-live="polite">Informe a dose pretendida acima para calcular.</div>
+        <div class="res-sub" id="calc-res-sub" aria-live="polite" data-i18n="calculator.doseHint">Informe a dose pretendida acima para calcular.</div>
 
         <div class="syringe" id="calc-syringe" role="img" aria-label="Visualização gráfica da seringa U-100"></div>
 
         <!-- Resumo das Entradas para Dupla Conferência -->
         <div class="calc-inputs-summary" id="calc-inputs-summary" style="display:none;margin-top:12px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:10px 14px;font-size:12.5px;">
-          <div style="font-weight:700;color:var(--text);margin-bottom:4px;">📋 Confira os dados usados:</div>
+          <div style="font-weight:700;color:var(--text);margin-bottom:4px;" data-i18n="tools.dataUsed">📋 Confira os dados usados:</div>
           <div style="color:var(--muted);display:flex;flex-wrap:wrap;gap:12px;" id="calc-summary-values">--</div>
         </div>
 
         <div class="grid2" style="margin-top:12px;">
           <div class="stat">
             <div class="v" id="calc-res-conc">--</div>
-            <div class="k">Concentração da solução</div>
+            <div class="k" data-i18n="calculator.concentration">Concentração da solução</div>
           </div>
           <div class="stat">
             <div class="v" id="calc-res-doses">--</div>
-            <div class="k">Rendimento estimado</div>
+            <div class="k" data-i18n="calculator.yield">Rendimento estimado</div>
           </div>
         </div>
 
         <!-- Trilha de Auditoria e Dupla Conferência (V02) -->
         <div class="calc-audit-card" id="calc-audit-card" style="display:none;margin-top:14px;">
           <div class="calc-audit-header">
-            <span>🔬 Conferência Matemática Auditável</span>
+            <span data-i18n="tools.mathAudit">🔬 Conferência Matemática Auditável</span>
           </div>
           <div class="calc-audit-formula" id="calc-audit-formula">--</div>
           <div class="calc-audit-trail" id="calc-audit-trail">--</div>
         </div>
 
         <div class="calc-actions">
-          <button type="button" class="btn-primary" id="calc-use-btn" disabled>
+          <button type="button" class="btn-primary" id="calc-use-btn" data-i18n="calculator.useInProtocol" disabled>
             + Usar no Protocolo
           </button>
-          <button type="button" class="btn-sec" id="calc-save-vial-btn" disabled>
+          <button type="button" class="btn-sec" id="calc-save-vial-btn" data-i18n="calculator.saveVial" disabled>
             🧪 Salvar Frasco
           </button>
         </div>
@@ -298,21 +298,21 @@
       </div>
 
       <section class="settings-section" aria-labelledby="settings-group-tools">
-        <h3 class="section-title settings-section-title" id="settings-group-tools">Ferramentas</h3>
+        <h3 class="section-title settings-section-title" id="settings-group-tools" data-i18n="tools.title">Ferramentas</h3>
         <div class="panel settings-card settings-tools-card">
           <div class="settings-card-header">
             <div class="settings-card-copy">
-              <div class="settings-card-title">Calculadora e recursos avançados</div>
-              <div style="font-size:12px;color:var(--muted);">Use quando precisar conferir cálculos, pesquisar ou organizar frascos.</div>
+              <div class="settings-card-title" data-i18n="tools.subtitle">Calculadora e recursos avançados</div>
+              <div style="font-size:12px;color:var(--muted);" data-i18n="tools.desc">Use quando precisar conferir cálculos, pesquisar ou organizar frascos.</div>
             </div>
-            <button type="button" class="btn-primary settings-header-action" id="open-tools-btn">Abrir ferramentas</button>
+            <button type="button" class="btn-primary settings-header-action" id="open-tools-btn" data-i18n="tools.openBtn">Abrir ferramentas</button>
           </div>
         </div>
       </section>
 
       <!-- GRUPO 1: APARÊNCIA E ACESSIBILIDADE -->
       <section class="settings-section" aria-labelledby="settings-group-appearance">
-        <h3 class="section-title settings-section-title" id="settings-group-appearance">Aparência e Acessibilidade</h3>
+        <h3 class="section-title settings-section-title" id="settings-group-appearance" data-i18n="settings.appearanceSubtitle">Aparência e Acessibilidade</h3>
         
         <!-- Card de Seleção de Idioma / i18n -->
         <div class="panel settings-card">
@@ -356,7 +356,7 @@
 
       <!-- GRUPO 2: SEGURANÇA E NOTIFICAÇÕES -->
       <section class="settings-section" aria-labelledby="settings-group-security">
-        <h3 class="section-title settings-section-title" id="settings-group-security">Segurança e Notificações</h3>
+        <h3 class="section-title settings-section-title" id="settings-group-security" data-i18n="settings.securitySubtitle">Segurança e Notificações</h3>
 
         <!-- Card de Bloqueio Biométrico / PIN -->
         <div class="panel settings-card">
@@ -365,7 +365,7 @@
               <div style="font-size:14px;font-weight:700;" data-i18n="settings.securityTitle">Segurança & Privacidade</div>
               <div style="font-size:12px;color:var(--muted);" id="app-lock-status-desc" data-i18n="settings.securityDesc">Exigir biometria ou PIN ao abrir o app</div>
             </div>
-            <span class="badge badge-neutral" id="app-lock-status-badge">DESATIVADO</span>
+            <span class="badge badge-neutral" id="app-lock-status-badge" data-i18n="common.disabled">DESATIVADO</span>
           </div>
           <div class="settings-toggle-row settings-toggle-row--spaced">
             <label for="app-lock-toggle" class="settings-toggle-label">
@@ -379,9 +379,9 @@
         <div class="panel settings-card">
           <div class="settings-card-header">
             <div class="settings-card-copy settings-card-title" data-i18n="settings.remindersTitle">Lembretes & Notificações</div>
-            <span class="badge badge-neutral" id="settings-notif-badge">Desativado</span>
+            <span class="badge badge-neutral" id="settings-notif-badge" data-i18n="common.disabled">Desativado</span>
           </div>
-          <div style="font-size:12.5px;color:var(--muted);line-height:1.5;margin-bottom:14px;" id="settings-notif-msg">
+          <div style="font-size:12.5px;color:var(--muted);line-height:1.5;margin-bottom:14px;" id="settings-notif-msg" data-i18n="settings.remindersCardDesc">
             Configure alarmes locais para os horários das suas aplicações diárias.
           </div>
           <button type="button" class="btn-primary" id="open-notif-modal-btn" style="width:100%;" data-i18n="settings.remindersConfigureBtn">
@@ -394,7 +394,7 @@
           <div class="settings-card-header">
             <div class="settings-card-copy">
               <div style="font-size:14px;font-weight:700;" data-i18n="settings.widgetTitle">Widget da Tela Inicial</div>
-              <div style="font-size:12px;color:var(--muted);">Acompanhamento rápido de aplicações</div>
+              <div style="font-size:12px;color:var(--muted);" data-i18n="dashboard.subtitle">Acompanhamento rápido de aplicações</div>
             </div>
             <span class="badge badge-accent" data-i18n="settings.widgetBadge">WIDGET 3X2</span>
           </div>
@@ -412,16 +412,16 @@
 
       <!-- GRUPO 3: DADOS E INVENTÁRIO -->
       <section class="settings-section" aria-labelledby="settings-group-data">
-        <h3 class="section-title settings-section-title" id="settings-group-data">Dados e Inventário</h3>
+        <h3 class="section-title settings-section-title" id="settings-group-data" data-i18n="settings.dataSubtitle">Dados e Inventário</h3>
 
         <!-- Card de Inventário de Frascos -->
         <div class="panel settings-card">
           <div class="settings-card-header">
             <div class="settings-card-copy">
-              <div style="font-size:14px;font-weight:700;">Inventário de Frascos</div>
-              <div style="font-size:12px;color:var(--muted);">Controle de reconstituição, saldo e validade</div>
+              <div style="font-size:14px;font-weight:700;" data-i18n="settings.inventoryCardTitle">Inventário de Frascos</div>
+              <div style="font-size:12px;color:var(--muted);" data-i18n="settings.inventoryCardDesc">Controle de reconstituição, saldo e validade</div>
             </div>
-            <button type="button" class="btn-primary settings-header-action" id="open-new-vial-btn">
+            <button type="button" class="btn-primary settings-header-action" id="open-new-vial-btn" data-i18n="settings.newVialBtn">
               + Novo Frasco
             </button>
           </div>
@@ -433,9 +433,9 @@
           <div class="settings-card-header">
             <div class="settings-card-copy">
               <div style="font-size:14px;font-weight:700;" data-i18n="settings.siteRotationTitle">Locais de Aplicação</div>
-              <div style="font-size:12px;color:var(--muted);" id="sites-summary-text">Sequência de locais para alternância</div>
+              <div style="font-size:12px;color:var(--muted);" id="sites-summary-text" data-i18n="settings.siteRotationSub">Sequência de locais para alternância</div>
             </div>
-            <button type="button" class="btn-primary settings-header-action" id="open-sites-settings-btn">
+            <button type="button" class="btn-primary settings-header-action" id="open-sites-settings-btn" data-i18n="settings.siteConfigureBtn">
               ⚙ Configurar
             </button>
           </div>
@@ -448,7 +448,7 @@
               <div style="font-size:14px;font-weight:700;" data-i18n="settings.healthConnectTitle">Health Connect (Android)</div>
               <div style="font-size:12px;color:var(--muted);" id="hc-status-desc" data-i18n="settings.healthConnectDesc">Sincronização de peso e medidas corporais</div>
             </div>
-            <span class="badge-status off" id="hc-status-badge">DESATIVADO</span>
+            <span class="badge-status off" id="hc-status-badge" data-i18n="common.disabled">DESATIVADO</span>
           </div>
           <div style="font-size:12.5px;color:var(--muted);line-height:1.5;margin-bottom:12px;" data-i18n="settings.healthConnectHelp">
             Integração opcional e privada com o subsistema de saúde do Android para sincronizar registros de peso corporal.
@@ -490,13 +490,13 @@
 
       <!-- GRUPO 4: SOBRE O APP E AJUDA -->
       <section class="settings-section" aria-labelledby="settings-group-about">
-        <h3 class="section-title settings-section-title" id="settings-group-about">Sobre o App e Ajuda</h3>
+        <h3 class="section-title settings-section-title" id="settings-group-about" data-i18n="settings.aboutSubtitle">Sobre o App e Ajuda</h3>
 
         <div class="panel settings-card">
           <div class="settings-card-header settings-card-header--about">
             <div class="settings-card-copy">
               <div style="font-weight:700;font-family:var(--display);" data-i18n="settings.appInfo">Protocolo PEP Android</div>
-              <div style="font-size:12px;color:var(--muted);">Versão 3.4.0 · Local-First Edition</div>
+              <div style="font-size:12px;color:var(--muted);" data-i18n="settings.appVersion">Versão 3.4.0 · Local-First Edition</div>
             </div>
             <div class="settings-card-actions">
               <button type="button" class="btn-ghost btn-ghost--compact" id="open-diag-btn" aria-label="Abrir diagnósticos do sistema" data-i18n="settings.diagnosticsBtn">
@@ -550,76 +550,76 @@
   <div class="modal" id="edit-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
     <div class="sheet">
       <div class="sheet-head">
-        <div class="sheet-title" id="modal-title">Adicionar Peptídeo</div>
+        <div class="sheet-title" id="modal-title" data-i18n="modals.peptide.newTitle">Adicionar Peptídeo</div>
         <button type="button" class="sheet-x" id="edit-close" aria-label="Fechar editor de peptídeo">✕</button>
       </div>
       <div class="sheet-body">
         <!-- Seção de Busca na Biblioteca (Exibida no modo Adicionar) -->
         <div class="modal-lib-section form-field form-field--large" id="modal-lib-section">
-          <label for="lib-search-input" class="form-field-label">Biblioteca de Peptídeos (Busca rápida)</label>
-          <input type="text" class="form-field-control lib-search-input" id="lib-search-input" placeholder="🔍 Buscar peptídeo ou categoria..." autocomplete="off" />
+          <label for="lib-search-input" class="form-field-label" data-i18n="modals.peptide.libraryLabel">Biblioteca de Peptídeos (Busca rápida)</label>
+          <input type="text" class="form-field-control lib-search-input" id="lib-search-input" placeholder="🔍 Buscar peptídeo ou categoria..." data-i18n-placeholder="modals.peptide.libraryPlaceholder" autocomplete="off" />
           <div class="lib-list" id="modal-lib-list" role="listbox" aria-label="Sugestões de peptídeos"></div>
         </div>
 
         <div class="form-field">
-          <label for="edit-name" class="form-field-label">Nome do Peptídeo</label>
-          <input type="text" class="form-field-control" id="edit-name" placeholder="ex: BPC-157" />
+          <label for="edit-name" class="form-field-label" data-i18n="modals.peptide.nameLabel">Nome do Peptídeo</label>
+          <input type="text" class="form-field-control" id="edit-name" placeholder="ex: BPC-157" data-i18n-placeholder="modals.peptide.namePlaceholder" />
         </div>
 
         <div class="form-field">
-          <label for="edit-sub" class="form-field-label">Subtítulo / Categoria</label>
-          <input type="text" class="form-field-control" id="edit-sub" placeholder="ex: reparo tecidual" />
+          <label for="edit-sub" class="form-field-label" data-i18n="modals.peptide.subLabel">Subtítulo / Categoria</label>
+          <input type="text" class="form-field-control" id="edit-sub" placeholder="ex: reparo tecidual" data-i18n-placeholder="modals.peptide.subPlaceholder" />
         </div>
 
         <div class="form-field-grid">
           <div class="form-field">
-            <label for="edit-dose" class="form-field-label">Dose (mg/mcg)</label>
-            <input type="text" class="form-field-control" id="edit-dose" placeholder="ex: 250 mcg" />
+            <label for="edit-dose" class="form-field-label" data-i18n="modals.peptide.doseLabel">Dose (mg/mcg)</label>
+            <input type="text" class="form-field-control" id="edit-dose" placeholder="ex: 250 mcg" data-i18n-placeholder="modals.peptide.dosePlaceholder" />
           </div>
           <div class="form-field">
-            <label for="edit-ui" class="form-field-label">Unidades (UI)</label>
-            <input type="text" inputmode="decimal" class="form-field-control" id="edit-ui" placeholder="ex: 2,5" aria-describedby="edit-units-help" />
+            <label for="edit-ui" class="form-field-label" data-i18n="modals.peptide.uiLabel">Unidades (UI)</label>
+            <input type="text" inputmode="decimal" class="form-field-control" id="edit-ui" placeholder="ex: 2,5" data-i18n-placeholder="modals.peptide.uiPlaceholder" aria-describedby="edit-units-help" />
             <small id="edit-units-help" data-i18n="phase1.unitsHelp">Valor matemático em UI. Confira a graduação da seringa; não arredondamos o resultado.</small>
           </div>
         </div>
 
         <!-- Detalhe do Cálculo Vinculado (V02) -->
         <div id="modal-calc-info" style="display:none;margin-bottom:12px;padding:8px 10px;background:rgba(44,197,192,0.08);border:1px solid rgba(44,197,192,0.2);border-radius:10px;font-size:11.5px;color:var(--text);" role="status">
-          <span style="font-weight:700;color:var(--primary);">🔬 Reconstituição Vinculada:</span>
+          <span style="font-weight:700;color:var(--primary);" data-i18n="modals.peptide.linkedRecon">🔬 Reconstituição Vinculada:</span>
           <div id="modal-calc-info-txt" style="margin-top:2px;font-family:monospace;color:var(--muted);">--</div>
         </div>
 
         <!-- Período: Por dia / Por semana -->
         <div class="form-field">
-          <label class="form-field-label">Período</label>
+          <label class="form-field-label" data-i18n="modals.peptide.periodHeading">Período</label>
           <div class="seg-control" id="edit-period-toggle" role="group" aria-label="Frequência periódica">
-            <button type="button" class="on" data-per="dia">Por dia</button>
-            <button type="button" data-per="semana">Por semana</button>
+            <button type="button" class="on" data-per="dia" data-i18n="modals.peptide.perDay">Por dia</button>
+            <button type="button" data-per="semana" data-i18n="modals.peptide.perWeek">Por semana</button>
           </div>
         </div>
 
         <!-- Frequência: Todos os dias / Dias específicos / A cada X dias -->
         <div class="form-field">
           <div class="form-field-heading">
-            <label class="form-field-label">Frequência</label>
-            <div class="days-preview-txt" id="edit-freq-preview">Todos os dias</div>
+            <label class="form-field-label" data-i18n="modals.peptide.frequencyHeading">Frequência</label>
+            <div class="days-preview-txt" id="edit-freq-preview" data-i18n="modals.peptide.freqDaily">Todos os dias</div>
           </div>
           <div class="seg-control" id="edit-freq-type-toggle" role="group" aria-label="Tipo de agendamento">
-            <button type="button" class="on" data-type="todos">Todos os dias</button>
-            <button type="button" data-type="especificos">Dias específicos</button>
-            <button type="button" data-type="intervalo">A cada X dias</button>
+            <button type="button" class="on" data-type="todos" data-i18n="modals.peptide.freqDaily">Todos os dias</button>
+            <button type="button" data-type="especificos" data-i18n="modals.peptide.freqDays">Dias específicos</button>
+            <button type="button" data-type="intervalo" data-i18n="modals.peptide.freqInterval">A cada X dias</button>
           </div>
 
           <!-- Seletor de Dias Específicos: D S T Q Q S S -->
           <div id="edit-days-wrap" style="display:none;">
-            <div class="days-grid" id="edit-days-grid" role="group" aria-label="Dias da semana">
-              <button type="button" class="day-chip" data-day="0" aria-label="Domingo">D</button>
-              <button type="button" class="day-chip" data-day="1" aria-label="Segunda-feira">S</button>
-              <button type="button" class="day-chip" data-day="2" aria-label="Terça-feira">T</button>
-              <button type="button" class="day-chip" data-day="3" aria-label="Quarta-feira">Q</button>
-              <button type="button" class="day-chip" data-day="4" aria-label="Quinta-feira">Q</button>
-              <button type="button" class="day-chip" data-day="5" aria-label="Sexta-feira">S</button>
-              <button type="button" class="day-chip" data-day="6" aria-label="Sábado">S</button>
+            <div class="days-grid" id="edit-days-grid" role="group" aria-label="Dias da semana" data-i18n-aria="modals.peptide.daysAria">
+              <button type="button" class="day-chip" data-day="0" aria-label="Domingo" data-i18n="days.sunLetter" data-i18n-aria="days.sun">D</button>
+              <button type="button" class="day-chip" data-day="1" aria-label="Segunda-feira" data-i18n="days.monLetter" data-i18n-aria="days.mon">S</button>
+              <button type="button" class="day-chip" data-day="2" aria-label="Terça-feira" data-i18n="days.tueLetter" data-i18n-aria="days.tue">T</button>
+              <button type="button" class="day-chip" data-day="3" aria-label="Quarta-feira" data-i18n="days.wedLetter" data-i18n-aria="days.wed">Q</button>
+              <button type="button" class="day-chip" data-day="4" aria-label="Quinta-feira" data-i18n="days.thuLetter" data-i18n-aria="days.thu">Q</button>
+              <button type="button" class="day-chip" data-day="5" aria-label="Sexta-feira" data-i18n="days.friLetter" data-i18n-aria="days.fri">S</button>
+              <button type="button" class="day-chip" data-day="6" aria-label="Sábado" data-i18n="days.satLetter" data-i18n-aria="days.sat">S</button>
             </div>
           </div>
 
@@ -627,14 +627,14 @@
           <div id="edit-interval-wrap" style="display:none;">
             <div class="interval-box">
               <div class="form-field-interval">
-                <label for="edit-interval-val" class="form-field-label form-field-label--subtle">A cada</label>
+                <label for="edit-interval-val" class="form-field-label form-field-label--subtle" data-i18n="modals.peptide.every">A cada</label>
                 <div class="form-field-inline">
                   <input type="number" class="form-field-control form-field-control--compact form-field-control--interval" id="edit-interval-val" value="2" min="2" max="30" />
-                  <span class="form-field-suffix">dias</span>
+                  <span class="form-field-suffix" data-i18n="modals.peptide.daysUnit">dias</span>
                 </div>
               </div>
               <div class="form-field-interval form-field-interval--date">
-                <label for="edit-start-date" class="form-field-label form-field-label--subtle">A partir de</label>
+                <label for="edit-start-date" class="form-field-label form-field-label--subtle" data-i18n="modals.peptide.from">A partir de</label>
                 <input type="date" class="form-field-control form-field-control--compact" id="edit-start-date" />
               </div>
             </div>
@@ -643,7 +643,7 @@
 
         <!-- Data da Primeira Dose / Início do Protocolo -->
         <div class="form-field">
-          <label for="edit-protocol-start-date" class="form-field-label">
+          <label for="edit-protocol-start-date" class="form-field-label" data-i18n="modals.peptide.startDateLabel">
             Data da Primeira Dose / Início
           </label>
           <input type="date" class="form-field-control" id="edit-protocol-start-date" />
@@ -653,8 +653,8 @@
             <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12px;color:var(--text);font-weight:500;margin:0;">
               <input type="checkbox" id="edit-backfill-check" style="margin-top:2px;accent-color:var(--primary);width:16px;height:16px;" />
               <div>
-                <div style="font-weight:600;color:var(--primary);">Preencher Histórico Retroativo</div>
-                <div id="edit-backfill-preview" style="font-size:11.5px;color:var(--muted);margin-top:2px;">
+                <div style="font-weight:600;color:var(--primary);" data-i18n="modals.peptide.backfillTitle">Preencher Histórico Retroativo</div>
+                <div id="edit-backfill-preview" style="font-size:11.5px;color:var(--muted);margin-top:2px;" data-i18n="modals.peptide.backfillDesc">
                   Marcar doses anteriores a hoje como aplicadas no histórico.
                 </div>
               </div>
@@ -665,17 +665,17 @@
         <div class="form-field">
           <div class="form-field-grid form-field-grid--flush">
             <div class="form-field">
-              <label for="edit-perday" class="form-field-label">Doses por Dia</label>
+              <label for="edit-perday" class="form-field-label" data-i18n="modals.peptide.dosesPerDay">Doses por Dia</label>
               <input type="number" class="form-field-control" id="edit-perday" value="1" min="1" max="6" />
             </div>
             <div class="form-field">
-              <label for="edit-time" class="form-field-label">Horário Principal</label>
+              <label for="edit-time" class="form-field-label" data-i18n="modals.peptide.mainTime">Horário Principal</label>
               <input type="time" class="form-field-control" id="edit-time" />
             </div>
           </div>
           <!-- Horários adicionais se doses/dia > 1 -->
           <div id="edit-extra-times-wrap" style="display:none;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:10px 12px;margin-top:8px;">
-            <label style="display:block;font-size:11.5px;font-weight:600;color:var(--muted);margin-bottom:6px;">Horários das Demais Aplicações</label>
+            <label style="display:block;font-size:11.5px;font-weight:600;color:var(--muted);margin-bottom:6px;" data-i18n="modals.peptide.otherTimes">Horários das Demais Aplicações</label>
             <div id="edit-extra-times-list" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
           </div>
           <div class="routine-reminder-control" id="edit-reminder-control">
@@ -688,18 +688,18 @@
         </div>
 
         <div class="form-field form-field--large">
-          <label for="edit-note" class="form-field-label">Observações</label>
-          <input type="text" class="form-field-control" id="edit-note" placeholder="ex: em jejum pela manhã" />
+          <label for="edit-note" class="form-field-label" data-i18n="modals.peptide.notesLabel">Observações</label>
+          <input type="text" class="form-field-control" id="edit-note" placeholder="ex: em jejum pela manhã" data-i18n-placeholder="modals.peptide.notesPlaceholder" />
         </div>
 
         <div class="form-field form-field--last">
-          <label class="form-field-label">Cor de Identificação</label>
+          <label class="form-field-label" data-i18n="modals.peptide.colorLabel">Cor de Identificação</label>
           <div class="swatches" id="modal-swatches" role="group" aria-label="Seletor de cor"></div>
         </div>
       </div>
       <div class="sheet-foot sheet-foot--actions sheet-foot--primary-wide">
-        <button type="button" class="btn-danger" id="edit-del-btn" style="display:none;">Excluir</button>
-        <button type="button" class="btn-primary" id="edit-save">Salvar Peptídeo</button>
+        <button type="button" class="btn-danger" id="edit-del-btn" data-i18n="common.delete" style="display:none;">Excluir</button>
+        <button type="button" class="btn-primary" id="edit-save" data-i18n="modals.peptide.saveBtn">Salvar Peptídeo</button>
       </div>
     </div>
   </div>
@@ -708,60 +708,60 @@
   <div class="modal" id="notif-modal" role="dialog" aria-modal="true" aria-labelledby="notif-modal-title">
     <div class="sheet sheet--standard">
       <div class="sheet-head">
-        <div class="sheet-title" id="notif-modal-title">Lembretes de aplicação</div>
+        <div class="sheet-title" id="notif-modal-title" data-i18n="modals.notifications.title">Lembretes de aplicação</div>
         <button type="button" class="sheet-x" id="notif-close" aria-label="Fechar lembretes">✕</button>
       </div>
       <div class="sheet-body">
         <div class="modal-status-card" style="background:var(--surface2);border:1px solid var(--border2);border-radius:12px;padding:12px 14px;margin-bottom:14px;">
           <div class="modal-status-header">
-            <div class="modal-status-title" style="font-size:12.5px;font-weight:700;color:var(--text);">Seus lembretes</div>
-            <span class="badge badge-neutral" id="nf-status-badge">Desativado</span>
+            <div class="modal-status-title" style="font-size:12.5px;font-weight:700;color:var(--text);" data-i18n="modals.notifications.subtitle">Seus lembretes</div>
+            <span class="badge badge-neutral" id="nf-status-badge" data-i18n="common.disabled">Desativado</span>
           </div>
-          <div style="font-size:12px;color:var(--muted);line-height:1.45;" id="nf-status-msg">
+          <div style="font-size:12px;color:var(--muted);line-height:1.45;" id="nf-status-msg" data-i18n="modals.notifications.enableDesc">
             Ative os lembretes para receber notificações locais nos horários programados.
           </div>
         </div>
 
         <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:12px;padding:12px 14px;margin-bottom:14px;">
-          <div style="font-size:12.5px;font-weight:700;color:var(--text);margin-bottom:10px;">Opções de Notificação</div>
+          <div style="font-size:12.5px;font-weight:700;color:var(--text);margin-bottom:10px;" data-i18n="modals.notifications.optionsHeading">Opções de Notificação</div>
           
           <label for="nf-discrete-toggle" style="display:flex;align-items:flex-start;gap:10px;margin-bottom:12px;cursor:pointer;">
             <input type="checkbox" id="nf-discrete-toggle" checked style="accent-color:var(--primary);width:17px;height:17px;margin-top:2px;" />
             <div>
-              <div style="font-size:13px;font-weight:600;color:var(--text);">Conteúdo Discreto (Recomendado)</div>
-              <div style="font-size:11.5px;color:var(--muted);line-height:1.35;">Oculta nomes de compostos e doses na tela de bloqueio do aparelho.</div>
+              <div style="font-size:13px;font-weight:600;color:var(--text);" data-i18n="modals.notifications.discreteTitle">Conteúdo Discreto (Recomendado)</div>
+              <div style="font-size:11.5px;color:var(--muted);line-height:1.35;" data-i18n="modals.notifications.discreteDesc">Oculta nomes de compostos e doses na tela de bloqueio do aparelho.</div>
             </div>
           </label>
 
           <label for="nf-sound-toggle" style="display:flex;align-items:center;gap:10px;margin-bottom:12px;cursor:pointer;">
             <input type="checkbox" id="nf-sound-toggle" checked style="accent-color:var(--primary);width:17px;height:17px;" />
             <div>
-              <div style="font-size:13px;font-weight:600;color:var(--text);">Som e Vibração</div>
+              <div style="font-size:13px;font-weight:600;color:var(--text);" data-i18n="modals.notifications.soundVibration">Som e Vibração</div>
             </div>
           </label>
 
           <div class="settings-summary-row">
             <div class="settings-summary-copy">
-              <label for="nf-summary-time" style="font-size:12.5px;font-weight:600;color:var(--text);display:block;">Resumo diário</label>
-              <div style="font-size:11px;color:var(--muted);">Um lembrete para conferir as aplicações do dia</div>
+              <label for="nf-summary-time" style="font-size:12.5px;font-weight:600;color:var(--text);display:block;" data-i18n="modals.notifications.dailySummaryTitle">Resumo diário</label>
+              <div style="font-size:11px;color:var(--muted);" data-i18n="modals.notifications.dailySummaryDesc">Um lembrete para conferir as aplicações do dia</div>
             </div>
             <input type="time" class="txt settings-summary-time" id="nf-summary-time" />
           </div>
         </div>
 
-        <button type="button" class="btn-primary" id="nf-enable" style="width:100%;margin-bottom:10px;">Ativar Lembretes</button>
+        <button type="button" class="btn-primary" id="nf-enable" data-i18n="modals.notifications.enableBtn" style="width:100%;margin-bottom:10px;">Ativar Lembretes</button>
         
         <div class="action-row action-row--equal action-row--modal">
-          <button type="button" class="btn-subtle" id="nf-test">Testar Alerta</button>
-          <button type="button" class="btn-subtle" id="nf-reschedule">Reagendar</button>
+          <button type="button" class="btn-subtle" id="nf-test" data-i18n="modals.notifications.testAlertBtn">Testar Alerta</button>
+          <button type="button" class="btn-subtle" id="nf-reschedule" data-i18n="modals.notifications.rescheduleBtn">Reagendar</button>
         </div>
 
-        <div style="font-size:11px;color:var(--muted);line-height:1.4;">
+        <div style="font-size:11px;color:var(--muted);line-height:1.4;" data-i18n="modals.notifications.localReassurance">
           🔒 Os lembretes são locais e continuam funcionando sem conta, servidor ou rastreamento.
         </div>
       </div>
       <div class="sheet-foot">
-        <button type="button" class="btn-primary" id="nf-done">Concluído</button>
+        <button type="button" class="btn-primary" id="nf-done" data-i18n="common.completed">Concluído</button>
       </div>
     </div>
   </div>
@@ -770,21 +770,21 @@
   <div class="modal" id="retro-log-modal" role="dialog" aria-modal="true" aria-labelledby="retro-modal-title">
     <div class="sheet sheet--narrow">
       <div class="sheet-head">
-        <div class="sheet-title" id="retro-modal-title">Registrar Aplicação</div>
+        <div class="sheet-title" id="retro-modal-title" data-i18n="modals.retro.title">Registrar Aplicação</div>
         <button type="button" class="sheet-x" id="retro-close" aria-label="Fechar registro de aplicação">✕</button>
       </div>
       <div class="sheet-body">
         <div class="form-field">
-          <label for="retro-pep-select" class="form-field-label">Peptídeo</label>
+          <label for="retro-pep-select" class="form-field-label" data-i18n="modals.retro.peptideLabel">Peptídeo</label>
           <select class="form-field-control" id="retro-pep-select"></select>
         </div>
 
         <div class="form-field">
-          <label for="retro-status-select" class="form-field-label">O que aconteceu?</label>
+          <label for="retro-status-select" class="form-field-label" data-i18n="modals.retro.statusLabel">O que aconteceu?</label>
           <select class="form-field-control" id="retro-status-select">
-            <option value="applied">Aplicada</option>
-            <option value="skipped">Pulada</option>
-            <option value="missed">Esquecida</option>
+            <option value="applied" data-i18n="modals.retro.statusApplied">Aplicada</option>
+            <option value="skipped" data-i18n="modals.retro.statusSkipped">Pulada</option>
+            <option value="missed" data-i18n="modals.retro.statusMissed">Esquecida</option>
           </select>
         </div>
         <div class="form-field" id="retro-reason-field" hidden>
@@ -793,46 +793,46 @@
         </div>
 
         <div class="retro-site-field" id="retro-site-field">
-          <div class="retro-site-label" id="retro-site-label">Onde você aplicou?</div>
+          <div class="retro-site-label" id="retro-site-label" data-i18n="modals.retro.siteLabel">Onde você aplicou?</div>
           <select id="retro-site-select" hidden aria-hidden="true" tabindex="-1"></select>
           <div id="retro-site-picker" aria-labelledby="retro-site-label"></div>
         </div>
 
         <div class="form-field-grid form-field-grid--date">
           <div class="form-field">
-            <label for="retro-date-input" class="form-field-label">Data da Aplicação</label>
+            <label for="retro-date-input" class="form-field-label" data-i18n="modals.retro.dateLabel">Data da Aplicação</label>
             <input type="date" class="form-field-control form-field-control--compact" id="retro-date-input" />
           </div>
           <div class="form-field">
-            <label for="retro-time-input" class="form-field-label">Horário</label>
+            <label for="retro-time-input" class="form-field-label" data-i18n="modals.retro.timeLabel">Horário</label>
             <input type="time" class="form-field-control form-field-control--compact" id="retro-time-input" />
           </div>
         </div>
 
         <div class="form-field-grid">
           <div class="form-field">
-            <label for="retro-dose-input" class="form-field-label">Dose registrada</label>
-            <input type="text" class="form-field-control" id="retro-dose-input" placeholder="ex: 250 mcg" />
+            <label for="retro-dose-input" class="form-field-label" data-i18n="modals.retro.doseLabel">Dose registrada</label>
+            <input type="text" class="form-field-control" id="retro-dose-input" placeholder="ex: 250 mcg" data-i18n-placeholder="modals.retro.dosePlaceholder" />
           </div>
           <div class="form-field">
-            <label for="retro-ui-input" class="form-field-label">Unidades (UI, opcional)</label>
-            <input type="text" inputmode="decimal" class="form-field-control" id="retro-ui-input" placeholder="ex: 2,5" />
+            <label for="retro-ui-input" class="form-field-label" data-i18n="modals.retro.uiLabel">Unidades (UI, opcional)</label>
+            <input type="text" inputmode="decimal" class="form-field-control" id="retro-ui-input" placeholder="ex: 2,5" data-i18n-placeholder="modals.retro.uiPlaceholder" />
           </div>
         </div>
 
         <div class="form-field form-field--large">
-          <label for="retro-note-input" class="form-field-label">Observações / Motivo</label>
-          <input type="text" class="form-field-control" id="retro-note-input" placeholder="ex: esqueci de anotar ontem" />
+          <label for="retro-note-input" class="form-field-label" data-i18n="modals.retro.notesLabel">Observações / Motivo</label>
+          <input type="text" class="form-field-control" id="retro-note-input" placeholder="ex: esqueci de anotar ontem" data-i18n-placeholder="modals.retro.notesPlaceholder" />
         </div>
 
         <div id="retro-audit-hint" style="margin-bottom:14px;padding:9px 12px;background:rgba(44,197,192,0.08);border:1px solid rgba(44,197,192,0.2);border-radius:10px;font-size:11.5px;color:var(--muted);line-height:1.4;">
-          🕒 <b>Registro Auditável:</b> Aplicações marcadas em datas passadas recebem automaticamente a marcação de auditoria <i>Retroativo</i>.
+          🕒 <b data-i18n="modals.retro.auditTitle">Registro Auditável:</b> Aplicações marcadas em datas passadas recebem automaticamente a marcação de auditoria <i data-i18n="modals.retro.auditRetro">Retroativo</i>.
         </div>
         <div id="retro-edit-history" hidden style="margin-bottom:14px;font-size:12px;color:var(--muted);line-height:1.5;"></div>
       </div>
       <div class="sheet-foot sheet-foot--actions sheet-foot--primary-wide">
-        <button type="button" class="btn-subtle" id="retro-cancel">Cancelar</button>
-        <button type="button" class="btn-primary" id="retro-save">Salvar Registro</button>
+        <button type="button" class="btn-subtle" id="retro-cancel" data-i18n="common.cancel">Cancelar</button>
+        <button type="button" class="btn-primary" id="retro-save" data-i18n="modals.retro.saveBtn">Salvar Registro</button>
       </div>
     </div>
   </div>
@@ -841,34 +841,34 @@
   <div class="modal" id="share-preview-modal" role="dialog" aria-modal="true" aria-labelledby="share-preview-title">
     <div class="sheet sheet--standard">
       <div class="sheet-head">
-        <div class="sheet-title" id="share-preview-title">Compartilhar Progresso</div>
+        <div class="sheet-title" id="share-preview-title" data-i18n="modals.share.title">Compartilhar Progresso</div>
         <button type="button" class="sheet-x" id="share-close" aria-label="Fechar compartilhamento">✕</button>
       </div>
       <div class="sheet-body">
         <div style="margin-bottom:12px;">
-          <label for="share-preview-text" style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:6px;">Prévia do Resumo</label>
+          <label for="share-preview-text" style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:6px;" data-i18n="modals.share.previewLabel">Prévia do Resumo</label>
           <textarea id="share-preview-text" class="txt" style="width:100%;height:140px;font-size:12px;line-height:1.45;font-family:monospace;resize:none;" readonly></textarea>
         </div>
 
         <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:12px;padding:12px 14px;margin-bottom:14px;">
-          <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;">Opções de Privacidade</div>
+          <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;" data-i18n="modals.share.privacyHeading">Opções de Privacidade</div>
           <label for="share-opt-doses" style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text);margin-bottom:6px;cursor:pointer;">
             <input type="checkbox" id="share-opt-doses" checked style="accent-color:var(--primary);width:16px;height:16px;" />
-            <span>Incluir dosagens e unidades</span>
+            <span data-i18n="modals.share.includeDoses">Incluir dosagens e unidades</span>
           </label>
           <label for="share-opt-names" style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text);cursor:pointer;">
             <input type="checkbox" id="share-opt-names" checked style="accent-color:var(--primary);width:16px;height:16px;" />
-            <span>Incluir nomes dos peptídeos</span>
+            <span data-i18n="modals.share.includeNames">Incluir nomes dos peptídeos</span>
           </label>
         </div>
 
-        <div style="font-size:11px;color:var(--muted);line-height:1.4;margin-bottom:6px;">
+        <div style="font-size:11px;color:var(--muted);line-height:1.4;margin-bottom:6px;" data-i18n="modals.share.disclaimerReassurance">
           🔒 O texto é gerado exclusivamente neste dispositivo antes de ser enviado para qualquer outro app.
         </div>
       </div>
       <div class="sheet-foot sheet-foot--actions sheet-foot--balanced">
-        <button type="button" class="btn-subtle" id="share-copy-btn">Copiar Texto</button>
-        <button type="button" class="btn-primary" id="share-native-btn">Compartilhar...</button>
+        <button type="button" class="btn-subtle" id="share-copy-btn" data-i18n="modals.share.copyTextBtn">Copiar Texto</button>
+        <button type="button" class="btn-primary" id="share-native-btn" data-i18n="modals.share.shareBtn">Compartilhar...</button>
       </div>
     </div>
   </div>
@@ -877,15 +877,15 @@
   <div class="modal" id="backup-preview-modal" role="dialog" aria-modal="true" aria-labelledby="backup-preview-title">
     <div class="sheet sheet--standard">
       <div class="sheet-head">
-        <div class="sheet-title" id="backup-preview-title">Restaurar Backup Local</div>
+        <div class="sheet-title" id="backup-preview-title" data-i18n="modals.backup.title">Restaurar Backup Local</div>
         <button type="button" class="sheet-x" id="backup-preview-close" aria-label="Fechar restauração">✕</button>
       </div>
       <div class="sheet-body">
         <div id="backup-preview-content"></div>
       </div>
       <div class="sheet-foot sheet-foot--actions sheet-foot--primary-wide">
-        <button type="button" class="btn-subtle" id="backup-preview-cancel">Cancelar</button>
-        <button type="button" class="btn-primary" id="backup-preview-confirm">Substituir & Restaurar</button>
+        <button type="button" class="btn-subtle" id="backup-preview-cancel" data-i18n="common.cancel">Cancelar</button>
+        <button type="button" class="btn-primary" id="backup-preview-confirm" data-i18n="modals.backup.substituteBtn">Substituir & Restaurar</button>
       </div>
     </div>
   </div>
@@ -894,61 +894,61 @@
   <div class="modal" id="report-modal" role="dialog" aria-modal="true" aria-labelledby="report-modal-title">
     <div class="sheet sheet--standard">
       <div class="sheet-head">
-        <div class="sheet-title" id="report-modal-title">Relatório de Aplicações</div>
+        <div class="sheet-title" id="report-modal-title" data-i18n="modals.report.title">Relatório de Aplicações</div>
         <button type="button" class="sheet-x" id="report-close" aria-label="Fechar relatório">✕</button>
       </div>
       <div class="sheet-body">
         <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:12px;padding:12px 14px;margin-bottom:14px;">
-          <div style="font-size:12.5px;font-weight:700;color:var(--text);margin-bottom:8px;">Filtro de Período</div>
+          <div style="font-size:12.5px;font-weight:700;color:var(--text);margin-bottom:8px;" data-i18n="modals.report.filterHeading">Filtro de Período</div>
           <div style="margin-bottom:8px;">
-            <label for="report-period-select" class="sr-only">Período do Relatório</label>
+            <label for="report-period-select" class="sr-only" data-i18n="modals.report.periodLabel">Período do Relatório</label>
             <select class="txt" id="report-period-select" style="width:100%;">
-              <option value="7">Últimos 7 dias</option>
-              <option value="30" selected>Últimos 30 dias</option>
-              <option value="90">Últimos 90 dias</option>
-              <option value="all">Todo o histórico registrado</option>
-              <option value="custom">Personalizado (selecionar datas)</option>
+              <option value="7" data-i18n="modals.report.last7Days">Últimos 7 dias</option>
+              <option value="30" selected data-i18n="modals.report.last30Days">Últimos 30 dias</option>
+              <option value="90" data-i18n="modals.report.last90Days">Últimos 90 dias</option>
+              <option value="all" data-i18n="modals.report.allHistory">Todo o histórico registrado</option>
+              <option value="custom" data-i18n="modals.report.customRange">Personalizado (selecionar datas)</option>
             </select>
           </div>
           <div id="report-custom-dates" style="display:none;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;">
             <div>
-              <label for="report-start-date" style="display:block;font-size:11.5px;color:var(--muted);margin-bottom:3px;">Data Inicial</label>
+              <label for="report-start-date" style="display:block;font-size:11.5px;color:var(--muted);margin-bottom:3px;" data-i18n="modals.report.startDate">Data Inicial</label>
               <input type="date" class="txt" id="report-start-date" style="padding:6px 8px;font-size:12px;" />
             </div>
             <div>
-              <label for="report-end-date" style="display:block;font-size:11.5px;color:var(--muted);margin-bottom:3px;">Data Final</label>
+              <label for="report-end-date" style="display:block;font-size:11.5px;color:var(--muted);margin-bottom:3px;" data-i18n="modals.report.endDate">Data Final</label>
               <input type="date" class="txt" id="report-end-date" style="padding:6px 8px;font-size:12px;" />
             </div>
           </div>
           <div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border2);">
             <label for="report-opt-notes" style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text);cursor:pointer;">
               <input type="checkbox" id="report-opt-notes" style="accent-color:var(--primary);width:16px;height:16px;" />
-              <span>Incluir anotações e observações das aplicações</span>
+              <span data-i18n="modals.report.includeNotes">Incluir anotações e observações das aplicações</span>
             </label>
             <label for="report-opt-measurements" style="display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--text);margin-top:8px;">
               <input type="checkbox" id="report-opt-measurements" checked disabled style="accent-color:var(--primary);width:16px;height:16px;flex:0 0 auto;margin-top:1px;" />
-              <span>Incluir medições e sintomas do período como dados descritivos</span>
+              <span data-i18n="modals.report.includeMeasurements">Incluir medições e sintomas do período como dados descritivos</span>
             </label>
           </div>
         </div>
 
         <div style="margin-bottom:14px;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-            <span style="font-size:12px;font-weight:700;color:var(--text);">Prévia do Relatório</span>
-            <span id="report-entries-count" style="font-size:11px;color:var(--muted);">0 aplicações</span>
+            <span style="font-size:12px;font-weight:700;color:var(--text);" data-i18n="modals.report.previewHeading">Prévia do Relatório</span>
+            <span id="report-entries-count" style="font-size:11px;color:var(--muted);" data-i18n="modals.report.entriesZero">0 aplicações</span>
           </div>
           <div id="report-preview-summary" aria-live="polite"></div>
           <div id="report-preview-list" style="max-height:180px;overflow-y:auto;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;"></div>
         </div>
 
         <div style="font-size:11px;color:var(--muted);line-height:1.4;">
-          ⚠️ <b>Uso Pessoal:</b> Relatório gerado localmente neste dispositivo para fins de acompanhamento individual.
+          ⚠️ <b data-i18n="modals.report.personalUseHeading">Uso Pessoal:</b> Relatório gerado localmente neste dispositivo para fins de acompanhamento individual.
         </div>
       </div>
       <div class="sheet-foot sheet-foot--actions report-export-actions">
-        <button type="button" class="btn-subtle" id="report-export-csv">CSV aplicações</button>
-        <button type="button" class="btn-subtle" id="report-export-measurements-csv">CSV medidas</button>
-        <button type="button" class="btn-primary" id="report-print-pdf">Salvar PDF</button>
+        <button type="button" class="btn-subtle" id="report-export-csv" data-i18n="modals.report.exportCsvApps">CSV aplicações</button>
+        <button type="button" class="btn-subtle" id="report-export-measurements-csv" data-i18n="modals.report.exportCsvMeas">CSV medidas</button>
+        <button type="button" class="btn-primary" id="report-print-pdf" data-i18n="modals.report.savePdf">Salvar PDF</button>
       </div>
     </div>
   </div>
@@ -957,20 +957,20 @@
   <div class="modal" id="diag-modal" role="dialog" aria-modal="true" aria-labelledby="diag-modal-title">
     <div class="sheet sheet--standard">
       <div class="sheet-head">
-        <div class="sheet-title" id="diag-modal-title">Diagnósticos do Sistema</div>
+        <div class="sheet-title" id="diag-modal-title" data-i18n="modals.diagnostics.title">Diagnósticos do Sistema</div>
         <button type="button" class="sheet-x" id="diag-close" aria-label="Fechar diagnósticos">✕</button>
       </div>
       <div class="sheet-body">
         <div style="margin-bottom:12px;">
           <div style="font-size:12px;color:var(--muted);line-height:1.4;margin-bottom:8px;">
-            🔒 <b>Desidentificação Automática:</b> Este relatório contém unicamente métricas estruturais (contadores, versão e armazenamento) para suporte técnico, sem nenhum nome de medicamento, dose ou nota pessoal.
+            🔒 <b data-i18n="modals.diagnostics.deidentHeading">Desidentificação Automática:</b> Este relatório contém unicamente métricas estruturais (contadores, versão e armazenamento) para suporte técnico, sem nenhum nome de medicamento, dose ou nota pessoal.
           </div>
           <pre id="diag-json-preview" style="background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:12px;font-size:11.5px;line-height:1.45;color:var(--text);font-family:monospace;max-height:220px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;"></pre>
         </div>
       </div>
       <div class="sheet-foot sheet-foot--actions sheet-foot--primary-narrow">
-        <button type="button" class="btn-subtle" id="diag-copy-btn">Copiar JSON</button>
-        <button type="button" class="btn-primary" id="diag-export-btn">Exportar Arquivo</button>
+        <button type="button" class="btn-subtle" id="diag-copy-btn" data-i18n="modals.diagnostics.copyJsonBtn">Copiar JSON</button>
+        <button type="button" class="btn-primary" id="diag-export-btn" data-i18n="modals.diagnostics.exportFileBtn">Exportar Arquivo</button>
       </div>
     </div>
   </div>
@@ -979,51 +979,51 @@
   <div class="modal" id="vial-modal" role="dialog" aria-modal="true" aria-labelledby="vial-modal-title">
     <div class="sheet sheet--standard">
       <div class="sheet-head">
-        <div class="sheet-title" id="vial-modal-title">Novo Frasco de Peptídeo</div>
+        <div class="sheet-title" id="vial-modal-title" data-i18n="modals.vial.newTitle">Novo Frasco de Peptídeo</div>
         <button type="button" class="sheet-x" id="vial-modal-close" aria-label="Fechar modal de frasco">✕</button>
       </div>
       <form id="vial-form">
         <div class="sheet-body">
           <div class="form-field">
-            <label for="vial-name-input" class="form-field-label form-field-label--strong">Nome do Peptídeo / Composto *</label>
-            <input type="text" class="form-field-control" id="vial-name-input" placeholder="Ex: BPC-157, Tirzepatida..." required />
+            <label for="vial-name-input" class="form-field-label form-field-label--strong" data-i18n="modals.vial.nameLabel">Nome do Peptídeo / Composto *</label>
+            <input type="text" class="form-field-control" id="vial-name-input" placeholder="Ex: BPC-157, Tirzepatida..." data-i18n-placeholder="modals.vial.namePlaceholder" required />
           </div>
 
           <div class="form-field-grid">
             <div class="form-field">
-              <label for="vial-mg-input" class="form-field-label form-field-label--strong">Massa Total (mg) *</label>
-              <input type="number" step="any" class="form-field-control" id="vial-mg-input" placeholder="Ex: 5" required />
+              <label for="vial-mg-input" class="form-field-label form-field-label--strong" data-i18n="modals.vial.mgLabel">Massa Total (mg) *</label>
+              <input type="number" step="any" class="form-field-control" id="vial-mg-input" placeholder="Ex: 5" data-i18n-placeholder="modals.vial.mgPlaceholder" required />
             </div>
             <div class="form-field">
-              <label for="vial-water-input" class="form-field-label form-field-label--strong">Diluente (mL) *</label>
-              <input type="number" step="any" class="form-field-control" id="vial-water-input" placeholder="Ex: 2" required />
+              <label for="vial-water-input" class="form-field-label form-field-label--strong" data-i18n="modals.vial.waterLabel">Diluente (mL) *</label>
+              <input type="number" step="any" class="form-field-control" id="vial-water-input" placeholder="Ex: 2" data-i18n-placeholder="modals.vial.waterPlaceholder" required />
             </div>
           </div>
 
           <div class="form-field-grid">
             <div class="form-field">
-              <label for="vial-recon-date" class="form-field-label form-field-label--strong">Data Reconstituição</label>
+              <label for="vial-recon-date" class="form-field-label form-field-label--strong" data-i18n="modals.vial.reconDateLabel">Data Reconstituição</label>
               <input type="date" class="form-field-control form-field-control--compact" id="vial-recon-date" />
             </div>
             <div class="form-field">
-              <label for="vial-expiry-date" class="form-field-label form-field-label--strong">Data de Validade</label>
+              <label for="vial-expiry-date" class="form-field-label form-field-label--strong" data-i18n="modals.vial.expiryDateLabel">Data de Validade</label>
               <input type="date" class="form-field-control form-field-control--compact" id="vial-expiry-date" />
             </div>
           </div>
 
           <div class="form-field">
-            <label for="vial-lot-input" class="form-field-label form-field-label--strong">Lote / Código (Opcional)</label>
-            <input type="text" class="form-field-control" id="vial-lot-input" placeholder="Ex: LOT-2026-A" />
+            <label for="vial-lot-input" class="form-field-label form-field-label--strong" data-i18n="modals.vial.lotLabel">Lote / Código (Opcional)</label>
+            <input type="text" class="form-field-control" id="vial-lot-input" placeholder="Ex: LOT-2026-A" data-i18n-placeholder="modals.vial.lotPlaceholder" />
           </div>
 
           <div class="form-field">
-            <label for="vial-notes-input" class="form-field-label form-field-label--strong">Observações</label>
+            <label for="vial-notes-input" class="form-field-label form-field-label--strong" data-i18n="modals.vial.notesLabel">Observações</label>
             <textarea class="form-field-control form-field-control--compact form-field-control--fixed" id="vial-notes-input" rows="2" placeholder="Ex: Armazenar sob refrigeração de 2°C a 8°C"></textarea>
           </div>
         </div>
         <div class="sheet-foot sheet-foot--actions sheet-foot--primary-wide">
-          <button type="button" class="btn-danger" id="vial-delete-btn" style="display:none;">Excluir</button>
-          <button type="submit" class="btn-primary" id="vial-save-btn">Salvar Frasco</button>
+          <button type="button" class="btn-danger" id="vial-delete-btn" data-i18n="common.delete" style="display:none;">Excluir</button>
+          <button type="submit" class="btn-primary" id="vial-save-btn" data-i18n="modals.vial.saveBtn">Salvar Frasco</button>
         </div>
       </form>
     </div>
@@ -1033,14 +1033,14 @@
   <div class="modal" id="vial-history-modal" role="dialog" aria-modal="true" aria-labelledby="vial-history-title">
     <div class="sheet sheet--standard">
       <div class="sheet-head">
-        <div class="sheet-title" id="vial-history-title">Movimentações do Frasco</div>
+        <div class="sheet-title" id="vial-history-title" data-i18n="modals.vial.historyTitle">Movimentações do Frasco</div>
         <button type="button" class="sheet-x" id="vial-history-close" aria-label="Fechar histórico de movimentações">✕</button>
       </div>
       <div class="sheet-body">
         <div id="vial-history-list" style="max-height:300px;overflow-y:auto;"></div>
       </div>
       <div class="sheet-foot">
-        <button type="button" class="btn-primary" onclick="document.getElementById('vial-history-modal').classList.remove('on')">
+        <button type="button" class="btn-primary" data-i18n="common.close" onclick="document.getElementById('vial-history-modal').classList.remove('on')">
           Fechar
         </button>
       </div>
@@ -1052,27 +1052,27 @@
     <div class="sheet sheet--standard">
       <div class="sheet-head">
         <div>
-          <div class="sheet-title" id="sites-modal-title">Rotação de Sítios</div>
-          <div style="font-size:12px;color:var(--muted);margin-top:2px;">Alterne a ordem sequencial das suas aplicações</div>
+          <div class="sheet-title" id="sites-modal-title" data-i18n="modals.sites.title">Rotação de Sítios</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px;" data-i18n="modals.sites.subtitle">Alterne a ordem sequencial das suas aplicações</div>
         </div>
         <button type="button" class="sheet-x" id="sites-modal-close" aria-label="Fechar configuração de sítios">✕</button>
       </div>
       <div class="sheet-body sheet-body--sites">
         <div id="sites-manage-list" style="margin-bottom:16px;"></div>
 
-        <div style="font-size:12px;font-weight:700;margin-bottom:6px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">Adicionar Novo Sítio</div>
+        <div style="font-size:12px;font-weight:700;margin-bottom:6px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;" data-i18n="modals.sites.addTitle">Adicionar Novo Sítio</div>
         <div style="display:flex;gap:8px;margin-bottom:16px;">
-          <input type="text" id="sites-new-name" placeholder="Ex: Glúteo Esquerdo" style="flex:1;padding:8px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--surface2);color:var(--text);font-size:13px;" maxlength="50">
-          <button type="button" class="btn-primary" id="sites-add-btn" style="width:auto;padding:8px 16px;font-size:13px;white-space:nowrap;">
+          <input type="text" id="sites-new-name" placeholder="Ex: Glúteo Esquerdo" data-i18n-placeholder="modals.sites.addPlaceholder" style="flex:1;padding:8px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--surface2);color:var(--text);font-size:13px;" maxlength="50">
+          <button type="button" class="btn-primary" id="sites-add-btn" data-i18n="modals.sites.addBtn" style="width:auto;padding:8px 16px;font-size:13px;white-space:nowrap;">
             + Adicionar
           </button>
         </div>
       </div>
       <div class="sheet-foot sheet-foot--split">
-        <button type="button" class="btn-subtle" id="sites-reset-btn" style="font-size:12px;padding:8px 12px;width:auto;">
+        <button type="button" class="btn-subtle" id="sites-reset-btn" data-i18n="modals.sites.resetBtn" style="font-size:12px;padding:8px 12px;width:auto;">
           Restaurar Padrão
         </button>
-        <button type="button" class="btn-primary" onclick="document.getElementById('sites-modal').classList.remove('on')" style="font-size:12px;padding:8px 20px;width:auto;">
+        <button type="button" class="btn-primary" data-i18n="common.completed" onclick="document.getElementById('sites-modal').classList.remove('on')" style="font-size:12px;padding:8px 20px;width:auto;">
           Concluído
         </button>
       </div>
@@ -1084,8 +1084,8 @@
     <div class="sheet sheet--form">
       <div class="sheet-head">
         <div>
-          <div class="sheet-title" id="measurement-modal-title">Registro Corporal / Sintomas</div>
-          <div style="font-size:12px;color:var(--muted);margin-top:2px;">Acompanhamento pessoal autorrelatado</div>
+          <div class="sheet-title" id="measurement-modal-title" data-i18n="modals.measurements.title">Registro Corporal / Sintomas</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px;" data-i18n="modals.measurements.subtitle">Acompanhamento pessoal autorrelatado</div>
         </div>
         <button type="button" class="sheet-x" id="measurement-modal-close" aria-label="Fechar modal de medições">✕</button>
       </div>
@@ -1094,34 +1094,34 @@
           <!-- Data e Hora -->
           <div class="form-field-row">
             <div class="form-field form-field--date">
-              <label for="meas-date-input" class="form-field-label form-field-label--strong">Data</label>
+              <label for="meas-date-input" class="form-field-label form-field-label--strong" data-i18n="modals.measurements.dateLabel">Data</label>
               <input type="date" id="meas-date-input" class="form-field-control" required>
             </div>
             <div class="form-field form-field--time">
-              <label for="meas-time-input" class="form-field-label form-field-label--strong">Hora</label>
+              <label for="meas-time-input" class="form-field-label form-field-label--strong" data-i18n="modals.measurements.timeLabel">Hora</label>
               <input type="time" id="meas-time-input" class="form-field-control">
             </div>
           </div>
 
           <!-- Peso Corporal -->
           <div class="form-field form-field--large">
-            <label for="meas-weight-input" class="form-field-label form-field-label--strong">Peso Corporal (kg)</label>
-            <input type="number" id="meas-weight-input" class="form-field-control" inputmode="decimal" step="0.1" min="20" max="400" placeholder="Ex: 82,5 (opcional)">
+            <label for="meas-weight-input" class="form-field-label form-field-label--strong" data-i18n="modals.measurements.weightLabel">Peso Corporal (kg)</label>
+            <input type="number" id="meas-weight-input" class="form-field-control" inputmode="decimal" step="0.1" min="20" max="400" placeholder="Ex: 82,5 (opcional)" data-i18n-placeholder="modals.measurements.weightPlaceholder">
           </div>
 
           <details class="measurement-circumferences">
-            <summary>Circunferências (opcional)</summary>
+            <summary data-i18n="modals.measurements.circumferencesSummary">Circunferências (opcional)</summary>
             <div class="measurement-circumferences-grid">
-              <label class="form-field" for="meas-abdomen-input"><span class="form-field-label form-field-label--strong">Abdômen</span><span class="measurement-unit-input"><input type="text" id="meas-abdomen-input" class="form-field-control" inputmode="decimal" placeholder="Ex: 92,5" aria-describedby="meas-circumferences-help"><span>cm</span></span></label>
-              <label class="form-field" for="meas-waist-input"><span class="form-field-label form-field-label--strong">Cintura</span><span class="measurement-unit-input"><input type="text" id="meas-waist-input" class="form-field-control" inputmode="decimal" placeholder="Ex: 88"><span>cm</span></span></label>
-              <label class="form-field" for="meas-hips-input"><span class="form-field-label form-field-label--strong">Quadril</span><span class="measurement-unit-input"><input type="text" id="meas-hips-input" class="form-field-control" inputmode="decimal" placeholder="Ex: 101"><span>cm</span></span></label>
+              <label class="form-field" for="meas-abdomen-input"><span class="form-field-label form-field-label--strong" data-i18n="modals.measurements.abdomenLabel">Abdômen</span><span class="measurement-unit-input"><input type="text" id="meas-abdomen-input" class="form-field-control" inputmode="decimal" placeholder="Ex: 92,5" data-i18n-placeholder="modals.measurements.abdomenPlaceholder" aria-describedby="meas-circumferences-help"><span>cm</span></span></label>
+              <label class="form-field" for="meas-waist-input"><span class="form-field-label form-field-label--strong" data-i18n="modals.measurements.waistLabel">Cintura</span><span class="measurement-unit-input"><input type="text" id="meas-waist-input" class="form-field-control" inputmode="decimal" placeholder="Ex: 88" data-i18n-placeholder="modals.measurements.waistPlaceholder"><span>cm</span></span></label>
+              <label class="form-field" for="meas-hips-input"><span class="form-field-label form-field-label--strong" data-i18n="modals.measurements.hipsLabel">Quadril</span><span class="measurement-unit-input"><input type="text" id="meas-hips-input" class="form-field-control" inputmode="decimal" placeholder="Ex: 101" data-i18n-placeholder="modals.measurements.hipsPlaceholder"><span>cm</span></span></label>
             </div>
-            <p class="form-field-hint" id="meas-circumferences-help">Medidas opcionais em centímetros, registradas somente neste dispositivo.</p>
+            <p class="form-field-hint" id="meas-circumferences-help" data-i18n="modals.measurements.circumferencesHelp">Medidas opcionais em centímetros, registradas somente neste dispositivo.</p>
           </details>
 
           <!-- Nível de Energia (1 a 5) -->
           <div class="form-field form-field--large">
-            <div class="form-field-label form-field-label--strong">Nível de Energia (1 = Muito baixa, 5 = Excelente)</div>
+            <div class="form-field-label form-field-label--strong" data-i18n="modals.measurements.energyLabel">Nível de Energia (1 = Muito baixa, 5 = Excelente)</div>
             <div class="form-choice-row" role="radiogroup" aria-label="Nível de energia">
               <button type="button" class="btn-subtle form-choice-btn form-choice-btn--energy" id="meas-energy-1">1 😫</button>
               <button type="button" class="btn-subtle form-choice-btn form-choice-btn--energy" id="meas-energy-2">2 🥱</button>
@@ -1133,7 +1133,7 @@
 
           <!-- Nível de Humor (1 a 5) -->
           <div class="form-field form-field--large">
-            <div class="form-field-label form-field-label--strong">Humor / Bem-estar (1 = Ruim, 5 = Excelente)</div>
+            <div class="form-field-label form-field-label--strong" data-i18n="modals.measurements.moodLabel">Humor / Bem-estar (1 = Ruim, 5 = Excelente)</div>
             <div class="form-choice-row" role="radiogroup" aria-label="Nível de humor">
               <button type="button" class="btn-subtle form-choice-btn form-choice-btn--mood" id="meas-mood-1">1 😞</button>
               <button type="button" class="btn-subtle form-choice-btn form-choice-btn--mood" id="meas-mood-2">2 😕</button>
@@ -1145,12 +1145,12 @@
 
           <!-- Sintomas e Observações Rápidas -->
           <div class="form-field form-field--large">
-            <div class="form-field-label form-field-label--strong">Sintomas & Efeitos Autorrelatados</div>
+            <div class="form-field-label form-field-label--strong" data-i18n="modals.measurements.symptomsHeading">Sintomas & Efeitos Autorrelatados</div>
             <div id="meas-symptoms-chips" class="form-chip-list"></div>
-            <p class="form-field-hint">A intensidade é opcional e pode ser ajustada em cada sintoma selecionado.</p>
+            <p class="form-field-hint" data-i18n="modals.measurements.symptomsHelp">A intensidade é opcional e pode ser ajustada em cada sintoma selecionado.</p>
             <div class="form-field-inline">
-              <input type="text" id="meas-custom-symptom-input" class="form-field-control form-field-control--compact" placeholder="Outro sintoma / observação..." maxlength="60">
-              <button type="button" class="btn-sec form-field-inline-action" id="meas-add-symptom-btn">
+              <input type="text" id="meas-custom-symptom-input" class="form-field-control form-field-control--compact" placeholder="Outro sintoma / observação..." data-i18n-placeholder="modals.measurements.customSymptomPlaceholder" maxlength="60">
+              <button type="button" class="btn-sec form-field-inline-action" id="meas-add-symptom-btn" data-i18n="modals.measurements.addSymptomBtn">
                 + Incluir
               </button>
             </div>
@@ -1158,20 +1158,20 @@
 
           <!-- Observações Livres -->
           <div class="form-field form-field--last">
-            <label for="meas-notes-input" class="form-field-label form-field-label--strong">Notas Adicionais</label>
+            <label for="meas-notes-input" class="form-field-label form-field-label--strong" data-i18n="modals.measurements.notesLabel">Notas Adicionais</label>
             <textarea id="meas-notes-input" class="form-field-control" rows="2" placeholder="Ex: Treino pesado, hidratação normal, sono de 8h..." maxlength="500"></textarea>
           </div>
         </div>
 
         <div class="sheet-foot sheet-foot--measurement">
-          <button type="button" class="btn-danger" id="measurement-delete-btn" style="display:none;width:auto;font-size:12px;padding:8px 14px;">
+          <button type="button" class="btn-danger" id="measurement-delete-btn" data-i18n="common.delete" style="display:none;width:auto;font-size:12px;padding:8px 14px;">
             Excluir
           </button>
           <div class="sheet-foot-actions">
-            <button type="button" class="btn-subtle" onclick="document.getElementById('measurement-modal').classList.remove('on')" style="width:auto;font-size:12px;padding:8px 16px;">
+            <button type="button" class="btn-subtle" data-i18n="common.cancel" onclick="document.getElementById('measurement-modal').classList.remove('on')" style="width:auto;font-size:12px;padding:8px 16px;">
               Cancelar
             </button>
-            <button type="submit" class="btn-primary" style="width:auto;font-size:12px;padding:8px 20px;">
+            <button type="submit" class="btn-primary" data-i18n="modals.measurements.saveBtn" style="width:auto;font-size:12px;padding:8px 20px;">
               Salvar Registro
             </button>
           </div>
@@ -1185,11 +1185,11 @@
     <div style="width:72px;height:72px;border-radius:24px;background:rgba(99,102,241,0.12);display:flex;align-items:center;justify-content:center;margin-bottom:20px;font-size:36px;">
       🔒
     </div>
-    <h2 style="font-size:20px;font-weight:800;color:var(--text);margin:0 0 8px;">Protocolo PEP Bloqueado</h2>
-    <p style="font-size:13.5px;color:var(--muted);max-width:280px;line-height:1.5;margin:0 0 28px;">
+    <h2 style="font-size:20px;font-weight:800;color:var(--text);margin:0 0 8px;" data-i18n="appLock.title">Protocolo PEP Bloqueado</h2>
+    <p style="font-size:13.5px;color:var(--muted);max-width:280px;line-height:1.5;margin:0 0 28px;" data-i18n="appLock.desc">
       Seus dados de protocolo estão protegidos. Confirme sua identidade para acessar.
     </p>
-    <button type="button" class="btn-primary" id="app-lock-unlock-btn" style="max-width:260px;padding:14px 24px;font-size:14px;border-radius:12px;">
+    <button type="button" class="btn-primary" id="app-lock-unlock-btn" data-i18n="appLock.unlockBtn" style="max-width:260px;padding:14px 24px;font-size:14px;border-radius:12px;">
       🔓 Desbloquear
     </button>
   </div>
@@ -1265,7 +1265,7 @@
 
         <!-- Resumo da Literatura -->
         <div>
-          <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:4px;">Resumo dos Estudos Clínicos / Pré-clínicos</div>
+          <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:4px;" data-i18n="research.clinicalStudies">Resumo dos Estudos Clínicos / Pré-clínicos</div>
           <div style="font-size:13px;color:var(--text);line-height:1.5;" id="compound-detail-summary">-</div>
         </div>
 
@@ -1298,14 +1298,14 @@
   <div class="modal" id="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
     <div class="sheet sheet--compact">
       <div class="sheet-head">
-        <div class="sheet-title" id="confirm-title">Confirmar Ação</div>
+        <div class="sheet-title" id="confirm-title" data-i18n="modals.confirmAction.title">Confirmar Ação</div>
         <button type="button" class="sheet-x" id="confirm-close" aria-label="Fechar confirmação">✕</button>
       </div>
       <div class="sheet-body sheet-body--confirm">
         <p id="confirm-message" style="color:var(--text);font-size:14.5px;line-height:1.5;margin:0 0 20px;white-space:pre-line;word-break:break-word;"></p>
         <div class="action-row action-row--equal">
-          <button type="button" class="btn-subtle" id="confirm-cancel">Cancelar</button>
-          <button type="button" class="btn-danger" id="confirm-ok">Confirmar</button>
+          <button type="button" class="btn-subtle" id="confirm-cancel" data-i18n="common.cancel">Cancelar</button>
+          <button type="button" class="btn-danger" id="confirm-ok" data-i18n="common.confirm">Confirmar</button>
         </div>
       </div>
     </div>

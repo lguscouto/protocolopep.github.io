@@ -8,6 +8,7 @@
  */
 
 import { haptics } from "../services/haptics.js";
+import { i18nService } from "../services/i18n.js";
 
 export function setupAppLockUI({ appLockService, onUnlock = () => {} }) {
   const overlay = document.getElementById("app-lock-overlay");
@@ -35,9 +36,9 @@ export function setupAppLockUI({ appLockService, onUnlock = () => {} }) {
   async function triggerAuthentication() {
     if (!appLockService.isLocked) return;
     const res = await appLockService.authenticate({
-      title: "Protocolo PEP",
-      subtitle: "Confirme sua biometria ou PIN para desbloquear",
-      reason: "Proteção de privacidade de dados locais do Protocolo PEP"
+      title: i18nService.t("appLock.authTitle"),
+      subtitle: i18nService.t("appLock.authSubtitle"),
+      reason: i18nService.t("appLock.reasonAccess")
     });
 
     if (res.success) {
@@ -58,21 +59,21 @@ export function setupAppLockUI({ appLockService, onUnlock = () => {} }) {
 
     if (statusBadge) {
       if (isEnabled) {
-        statusBadge.textContent = "ATIVADO";
+        statusBadge.textContent = i18nService.t("common.enabled").toUpperCase();
         statusBadge.className = "badge-status on";
       } else {
-        statusBadge.textContent = "DESATIVADO";
+        statusBadge.textContent = i18nService.t("common.disabled").toUpperCase();
         statusBadge.className = "badge-status off";
       }
     }
 
     if (statusDesc) {
       if (isEnabled) {
-        statusDesc.textContent = "O app exige confirmação biométrica ou PIN do dispositivo ao abrir ou retornar do plano de fundo.";
+        statusDesc.textContent = i18nService.t("appLock.statusActive");
       } else if (!availability.isAvailable && availability.isNative) {
-        statusDesc.textContent = "Biometria ou bloqueio de tela não configurados no Android.";
+        statusDesc.textContent = i18nService.t("appLock.statusNotAvailable");
       } else {
-        statusDesc.textContent = "Exigir biometria ou PIN do dispositivo para abrir o aplicativo.";
+        statusDesc.textContent = i18nService.t("appLock.statusDescDefault");
       }
     }
   }
@@ -91,9 +92,9 @@ export function setupAppLockUI({ appLockService, onUnlock = () => {} }) {
 
       // Exigir autenticação prévia para mudar o estado de proteção
       const authRes = await appLockService.authenticate({
-        title: "Segurança do Protocolo PEP",
-        subtitle: targetState ? "Confirme para ativar o bloqueio" : "Confirme para desativar o bloqueio",
-        reason: targetState ? "Confirme sua identidade para proteger o app." : "Confirme sua identidade para remover a proteção."
+        title: i18nService.t("appLock.authTitle"),
+        subtitle: targetState ? i18nService.t("appLock.reasonEnable") : i18nService.t("appLock.reasonDisable"),
+        reason: targetState ? i18nService.t("appLock.reasonEnable") : i18nService.t("appLock.reasonDisable")
       });
 
       if (authRes.success) {

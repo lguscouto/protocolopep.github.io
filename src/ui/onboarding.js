@@ -5,6 +5,7 @@
 
 import { haptics } from "../services/haptics.js";
 import { escapeHtml } from "./dom.js";
+import { i18nService } from "../services/i18n.js";
 
 export const ONBOARDING_VERSION = "1";
 export const ONBOARDING_KEY = "pep_onboarding_version";
@@ -33,6 +34,32 @@ export const ONBOARDING_SLIDES = Object.freeze([
   })
 ]);
 
+export function getOnboardingSlides(i18n = i18nService) {
+  return [
+    {
+      image: "/assets/illustrations/onboarding-welcome.png",
+      imageAlt: i18n?.t("onboarding.slide1Alt") || "Ilustração amigável de organização e acompanhamento pessoal",
+      title: i18n?.t("onboarding.slide1Title") || "Bem-vindo ao PEP",
+      subtitle: i18n?.t("onboarding.slide1Subtitle") || "Seu diário de aplicações",
+      content: i18n?.t("onboarding.slide1Content") || "Registre cada aplicação em poucos toques, receba um lembrete no dia certo e saiba onde você aplicou por último."
+    },
+    {
+      image: "/assets/illustrations/onboarding-private.png",
+      imageAlt: i18n?.t("onboarding.slide2Alt") || "Celular protegido por um escudo e cadeado",
+      title: i18n?.t("onboarding.slide2Title") || "Seus dados ficam com você",
+      subtitle: i18n?.t("onboarding.slide2Subtitle") || "Privacidade sem complicação",
+      content: i18n?.t("onboarding.slide2Content") || "O PEP funciona no seu aparelho, sem conta e sem depender da internet. Você pode salvar uma cópia dos seus registros quando quiser."
+    },
+    {
+      image: "/assets/illustrations/onboarding-responsible.png",
+      imageAlt: i18n?.t("onboarding.slide3Alt") || "Calculadora, registro pessoal e balança representando uso responsável",
+      title: i18n?.t("onboarding.slide3Title") || "Um registro para sua rotina",
+      subtitle: i18n?.t("onboarding.slide3Subtitle") || "Organização pessoal, sem prescrições",
+      content: i18n?.t("onboarding.slide3Content") || "O PEP registra o que você informa e não indica tratamentos ou doses. Confirme sua rotina e a segurança das aplicações com seu profissional de saúde."
+    }
+  ];
+}
+
 export function shouldShowOnboarding() {
   try {
     const saved = localStorage.getItem(ONBOARDING_KEY);
@@ -56,7 +83,7 @@ export function showOnboarding({ onComplete, isReview = false } = {}) {
 
   let currentStep = 0;
 
-  const slides = ONBOARDING_SLIDES;
+  const slides = getOnboardingSlides(i18nService);
 
   const overlay = document.createElement("div");
   overlay.id = "onboarding-overlay";
@@ -82,7 +109,7 @@ export function showOnboarding({ onComplete, isReview = false } = {}) {
           ${isLast ? `
             <label class="onboarding-agree">
               <input type="checkbox" id="onboarding-check" ${isReview ? "checked" : ""} />
-              <span>Estou ciente e concordo com os termos de uso pessoal e não prescrição.</span>
+              <span>${escapeHtml(i18nService.t("onboarding.agreeTerms"))}</span>
             </label>
           ` : ""}
         </div>
@@ -95,16 +122,16 @@ export function showOnboarding({ onComplete, isReview = false } = {}) {
 
         <div class="onboarding-actions">
           ${currentStep > 0 ? `
-            <button type="button" class="btn-ghost" id="onboarding-prev">Voltar</button>
+            <button type="button" class="btn-ghost" id="onboarding-prev">${escapeHtml(i18nService.t("onboarding.back"))}</button>
           ` : (isReview ? `
-            <button type="button" class="btn-ghost" id="onboarding-close">Fechar</button>
+            <button type="button" class="btn-ghost" id="onboarding-close">${escapeHtml(i18nService.t("onboarding.close"))}</button>
           ` : `<div></div>`)}
 
           ${!isLast ? `
-            <button type="button" class="btn-primary" id="onboarding-next">Avançar</button>
+            <button type="button" class="btn-primary" id="onboarding-next">${escapeHtml(i18nService.t("onboarding.next"))}</button>
           ` : `
             <button type="button" class="btn-primary" id="onboarding-finish" ${!isReview ? "disabled" : ""}>
-              ${isReview ? "Concluir Revisão" : "Começar a Usar"}
+              ${isReview ? escapeHtml(i18nService.t("onboarding.finishReview")) : escapeHtml(i18nService.t("onboarding.startUsing"))}
             </button>
           `}
         </div>

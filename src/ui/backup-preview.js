@@ -8,6 +8,7 @@ import { haptics } from "../services/haptics.js";
 import { dialogService } from "../services/dialog.js";
 import { escapeHtml } from "./dom.js";
 import { exportFile } from "../services/export.js";
+import { i18nService } from "../services/i18n.js";
 
 const esc = escapeHtml;
 
@@ -146,7 +147,13 @@ export function setupBackupPreview({
       });
       if (recoveryResult.aborted || !recoveryResult.success) {
         confirmBtn.disabled = false;
-        void dialogService.alert({ title: "Restauração interrompida", message: recoveryResult.aborted ? "A cópia de recuperação foi cancelada; nenhum dado foi substituído." : `Não foi possível salvar a cópia de recuperação: ${recoveryResult.error || "falha local"}. Nenhum dado foi substituído.`, isDanger: true });
+        void dialogService.alert({
+          title: i18nService.t("modals.backup.restoreInterruptedTitle"),
+          message: recoveryResult.aborted
+            ? i18nService.t("modals.backup.restoreCancelledMsg")
+            : i18nService.t("modals.backup.restoreFailedMsg", { error: recoveryResult.error || "" }),
+          isDanger: true
+        });
         return;
       }
       const res = storage.importBackup(pendingBackupString);
@@ -178,13 +185,23 @@ export function setupBackupPreview({
         haptics.success();
         const themeNotice = themeError ? "\n\nO tema anterior foi mantido." : "";
         void dialogService.alert({
-          title: "Backup restaurado",
-          message: `Backup restaurado com sucesso! ✓\n• Peptídeos: ${res.stats.peptideCount}\n• Dias registrados: ${res.stats.logDaysCount}\n• Total de doses: ${res.stats.totalDosesCount}\n\nCópia de recuperação anterior salva em:\n${recoveryResult.path}${themeNotice}`
+          title: i18nService.t("modals.backup.backupRestoredTitle"),
+          message: i18nService.t("modals.backup.backupRestoredMsg", {
+            peptides: res.stats.peptideCount,
+            days: res.stats.logDaysCount,
+            doses: res.stats.totalDosesCount,
+            path: recoveryResult.path,
+            notice: themeNotice
+          })
         });
       } else {
         confirmBtn.disabled = false;
         haptics.warning();
-        void dialogService.alert({ title: "Erro ao importar", message: "Erro ao importar backup: " + (res.error || "Formato incompatível"), isDanger: true });
+        void dialogService.alert({
+          title: i18nService.t("modals.backup.importErrorTitle"),
+          message: i18nService.t("modals.backup.importErrorMsg", { error: res.error || "" }),
+          isDanger: true
+        });
       }
     });
   }
