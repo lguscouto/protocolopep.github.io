@@ -1,6 +1,6 @@
 # 🧪 Protocolo PEP · App Android (Local-First)
 
-![Version](https://img.shields.io/badge/version-3.4.0-2CC5C0)
+![Version](https://img.shields.io/badge/version-3.4.1-2CC5C0)
 ![Android](https://img.shields.io/badge/Android-8.0%2B-green)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![CI](https://github.com/lguscouto/protocolopep.github.io/actions/workflows/ci.yml/badge.svg)
@@ -8,6 +8,16 @@
 Aplicativo Android/PWA para registrar aplicações de peptídeos com poucos toques, receber lembretes no dia certo e lembrar o último local aplicado. O PEP funciona offline, sem conta e sem nuvem, com arquitetura **100% Local-First**, histórico preservado e ferramentas técnicas acessíveis somente quando necessárias.
 
 ---
+
+## 🚀 Novidades da Versão 3.4.1 (Internacionalização Trilíngue Completa)
+
+- **Paridade Canônica Total:** Os dicionários de Português (`pt-BR`), Inglês (`en`) e Espanhol (`es`) foram elevados a 690 chaves folha com 100% de paridade e cobertura semântica completa.
+- **Anotação Reativa e Declarativa:** Todos os 292 elementos estáticos e interativos da interface (`index.html`) foram anotados com atributos `data-i18n*`, permitindo alternância instantânea de idioma em tempo de execução sem recarregar a aplicação.
+- **Controladores de UI Internacionalizados:** Eliminação de todas as strings literais em português nos controladores de interface (`main.js`, `onboarding.js`, `retro-log.js`, `measurements.js`, `inventory.js`, `report-preview.js`, `diagnostics.js`, `backup-preview.js`, `app-lock.js`, `injection-sites.js`).
+- **Dias da Semana e Agenda:** Seleção e prévia de dias da semana no modal de rotinas com suporte multilíngue para letras unitárias, siglas curtas e nomes completos.
+- **Onboarding e Termos Multilíngue:** Slides, ilustrações com `imageAlt` acessível e declaração de uso pessoal agora traduzidos fielmente nos 3 idiomas.
+- **Release Android versionada:** `versionName 3.4.1` e `versionCode 32`.
+- **Validação:** 516 testes unitários aprovados com novos testes de integridade de chaves e resolução completa de elementos, build Web de produção concluído com sucesso.
 
 ## 🚀 Novidades da Versão 3.4.0 (Lembretes por Rotina)
 
