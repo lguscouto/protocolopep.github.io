@@ -37,6 +37,7 @@ describe("Relatório pessoal da Fase 3", () => {
       date: "2026-08-02",
       time: "07:00",
       weightKg: 82.4,
+      circumferencesCm: { abdomen: 94.5, waist: 89, hips: 101 },
       energyLevel: 4,
       moodLevel: 3,
       symptoms: ["Fadiga"],
@@ -68,7 +69,7 @@ describe("Relatório pessoal da Fase 3", () => {
 
     expect(report.entries).toHaveLength(1);
     expect(report.measurements).toHaveLength(1);
-    expect(report.measurements[0]).toMatchObject({ date: "2026-08-02", weightKg: 82.4, source: "Local" });
+    expect(report.measurements[0]).toMatchObject({ date: "2026-08-02", weightKg: 82.4, circumferencesCm: { abdomen: 94.5, waist: 89, hips: 101 }, source: "Local" });
     expect(report.measurementStats).toMatchObject({ totalEntries: 1, latestWeight: 82.4, earliestWeight: 82.4, weightDelta: 0 });
     expect(report.adherence).toMatchObject({ due: 31, applied: 1, resolutionPercent: 3 });
   });
@@ -88,6 +89,7 @@ describe("Relatório pessoal da Fase 3", () => {
         date: "2026-08-02",
         time: "07:00",
         weightKg: 82,
+        circumferencesCm: { abdomen: 93.5, waist: 88, hips: 100.5 },
         energyLevel: 4,
         moodLevel: 3,
         symptoms: ["<img src=x>"],
@@ -101,6 +103,8 @@ describe("Relatório pessoal da Fase 3", () => {
     const csv = generatePersonalReportCSV(report);
     expect(csv.startsWith("\uFEFF")).toBe(true);
     expect(csv).toContain('"Aplicações";"Data";"Hora"');
+    expect(csv).toContain('"Abdômen (cm)";"Cintura (cm)";"Quadril (cm)"');
+    expect(csv).toContain('"93.5";"88";"100.5"');
     expect(csv).toContain('"\'=HYPERLINK(""https://evil.test"")"');
 
     const html = generateReportHTML([], {
@@ -110,6 +114,7 @@ describe("Relatório pessoal da Fase 3", () => {
       measurementStats: report.measurementStats
     });
     expect(html).toContain("Medições autorrelatadas");
+    expect(html).toContain("Abdômen: 93.5 · Cintura: 88 · Quadril: 100.5");
     expect(html).toContain("&lt;img src=x&gt;");
     expect(html).toContain("&quot;https://evil.test&quot;");
     expect(html).not.toContain("<img src=x>");

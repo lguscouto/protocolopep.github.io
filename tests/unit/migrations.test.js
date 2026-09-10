@@ -8,6 +8,7 @@ import {
   migrateV3ToV4,
   migrateV4ToV5,
   migrateV5ToV6,
+  migrateV8ToV9,
   CURRENT_SCHEMA_VERSION
 } from "../../src/domain/migrations.js";
 
@@ -143,7 +144,7 @@ describe("Migrations Domain", () => {
       ]
     });
 
-    expect(migrated.version).toBe(8);
+    expect(migrated.version).toBe(9);
     expect(migrated.sites).toHaveLength(10);
     expect(migrated.sites).toContain("Flanco (Direito)");
     expect(migrated.sites).toContain("Abdômen (Inferior Esquerdo)");
@@ -156,8 +157,8 @@ describe("Migrations Domain", () => {
     expect(migrated.sites).toEqual(customSites);
   });
 
-  it("CURRENT_SCHEMA_VERSION é 7", () => {
-    expect(CURRENT_SCHEMA_VERSION).toBe(8);
+  it("CURRENT_SCHEMA_VERSION é 9", () => {
+    expect(CURRENT_SCHEMA_VERSION).toBe(9);
   });
 
   it("V5→V6 recalcula campos pela zona IANA e marca contradição sem contexto", () => {
@@ -192,10 +193,24 @@ describe("Migrations Domain", () => {
       ]
     };
     const result = migrateAppState(v1State);
-    expect(result.version).toBe(8);
+    expect(result.version).toBe(9);
     // Medição legada deve ter updatedAt após migração completa
     const m = result.measurements.find(x => x.date === "2026-08-01");
     expect(m).toBeDefined();
     expect(m.updatedAt).toBeDefined();
+    expect(m.circumferencesCm).toEqual({ abdomen: null, waist: null, hips: null });
+  });
+
+  it("migra V8 para V9 de forma idempotente e preserva IDs e origem", () => {
+    const state = { version: 8, exportedAt: "2026-09-10T12:00:00.000Z", measurements: [{
+      id: "legacy", date: "2026-09-10", time: "08:00", weightKg: 80,
+      source: "health_connect", ownership: "external", temporalIntegrity: "needs_review"
+    }] };
+    const direct = migrateV8ToV9(state);
+    const once = migrateAppState(direct);
+    const twice = migrateAppState(once);
+    expect(once.version).toBe(9);
+    expect(once.measurements[0]).toMatchObject({ id: "legacy", source: "health_connect", ownership: "external", circumferencesCm: { abdomen: null, waist: null, hips: null } });
+    expect(twice).toEqual(once);
   });
 });

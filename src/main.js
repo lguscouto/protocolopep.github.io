@@ -124,10 +124,11 @@ let i18nUI = null;
 let researchUI = null;
 let adherencePeriodDays = 7;
 const historyFilters = { period: "30", compoundId: "all", eventType: "all", query: "", startDate: null, endDate: null };
+let historyBodyMetric = "weight";
 
 let getDoseDisplayData = null;
 let buildReviewModel = null;
-let buildWeightChartModel = null;
+let buildBodyMetricChartModel = null;
 let calculateAdherenceSummary = null;
 let renderAdherenceSummaryHTML = null;
 let exportFile = null;
@@ -223,7 +224,7 @@ const historyFeature = createFeatureLoader(async () => {
   ]);
   getDoseDisplayData = report.getDoseDisplayData;
   buildReviewModel = report.buildReviewModel;
-  buildWeightChartModel = measurementsModule.buildWeightChartModel;
+  buildBodyMetricChartModel = measurementsModule.buildBodyMetricChartModel;
   calculateAdherenceSummary = adherence.calculateAdherenceSummary;
   renderAdherenceSummaryHTML = adherenceUi.renderAdherenceSummaryHTML;
   measurementsUI = measurementsModule.setupMeasurementsUI({
@@ -283,7 +284,7 @@ const settingsFeature = createFeatureLoader(async () => {
   diagnostics.setupDiagnosticsModal({
     storage,
     getNotificationsActive: () => (window.pepNotifications ? window.pepNotifications.hasActiveReminders() : false),
-    appVersion: "3.2.0"
+    appVersion: "3.3.0"
   });
   const widgetToggle = document.getElementById("widget-discrete-toggle");
   if (widgetToggle && widgetToggle.dataset.widgetBound !== "true") {
@@ -717,6 +718,11 @@ function setupRenderedEventDelegation() {
   };
   document.getElementById("view-history")?.addEventListener("focusin", updateWeightChartDetail);
   document.getElementById("view-history")?.addEventListener("pointerover", updateWeightChartDetail);
+  document.getElementById("view-history")?.addEventListener("change", (event) => {
+    if (event.target.id !== "history-body-metric") return;
+    historyBodyMetric = event.target.value;
+    invalidateViews("history");
+  });
 }
 
 function drawRing(taken, total) {
@@ -1362,7 +1368,18 @@ function renderHistoryEvolution(model) {
   if (!target) return;
   const stats = model.measurementStats;
   const weightRecords = model.measurements.filter((entry) => entry.weightKg !== null);
-  const weightChart = buildWeightChartModel(model.measurements);
+  const metricDefinitions = [
+    { key: "weight", label: "Peso", unit: "kg", getValue: (entry) => entry.weightKg },
+    { key: "abdomen", label: "Abdômen", unit: "cm", getValue: (entry) => entry.circumferencesCm?.abdomen },
+    { key: "waist", label: "Cintura", unit: "cm", getValue: (entry) => entry.circumferencesCm?.waist },
+    { key: "hips", label: "Quadril", unit: "cm", getValue: (entry) => entry.circumferencesCm?.hips }
+  ];
+  const availableMetrics = metricDefinitions.filter((metric) => model.measurements.some((entry) => Number.isFinite(metric.getValue(entry)) && metric.getValue(entry) > 0));
+  if (!availableMetrics.some((metric) => metric.key === historyBodyMetric)) {
+    historyBodyMetric = availableMetrics.find((metric) => metric.key === "weight")?.key || availableMetrics[0]?.key || "weight";
+  }
+  const selectedMetric = metricDefinitions.find((metric) => metric.key === historyBodyMetric) || metricDefinitions[0];
+  const bodyMetricChart = buildBodyMetricChartModel(model.measurements, selectedMetric.key);
   const symptomRows = Object.entries(stats.symptomsFrequency).sort((a, b) => b[1] - a[1]);
   if (model.measurements.length === 0) {
     target.innerHTML = `<div class="empty-state-illustrated empty-state-illustrated--measurements"><img class="empty-state-illustration" src="/assets/illustrations/empty-measurements.png" alt="" aria-hidden="true"><div class="empty-state-title">Registre seu primeiro acompanhamento</div><div class="empty-state-description">Peso, medidas e sintomas ficam organizados no histórico local.</div><button type="button" class="btn-primary empty-state-action" id="empty-add-measurement-btn">+ Medidas / Sintomas</button></div>`;
@@ -1376,47 +1393,49 @@ function renderHistoryEvolution(model) {
       <span><b>${esc(String(weightRecords.length))}</b> pesos registrados</span>
       <span><b>${esc(String(symptomRows.reduce((sum, [, count]) => sum + count, 0)))}</b> relatos de sintomas</span>
     </div>
-    ${renderWeightChart(weightChart)}
+    ${availableMetrics.length ? `<label class="history-metric-selector" for="history-body-metric"><span>Métrica do gráfico</span><select id="history-body-metric" class="txt">${availableMetrics.map((metric) => `<option value="${metric.key}" ${metric.key === selectedMetric.key ? "selected" : ""}>${metric.label}</option>`).join("")}</select></label>` : ""}
+    ${renderBodyMetricChart(bodyMetricChart)}
     ${weightRecords.length > 0 && weightRecords.length < 3 ? `<p class="history-context-note">Há poucos registros de peso. Os valores disponíveis são exibidos sem projeção de tendência.</p>` : ""}
     ${symptomRows.length ? `<div class="history-symptom-frequency">${symptomRows.map(([name, count]) => `<span>${esc(name)} <b>${count}×</b></span>`).join("")}</div>` : ""}
     <details class="history-data-table"><summary>Tabela textual dos dados utilizados</summary>
-      <div class="history-table-scroll"><table><thead><tr><th>Data</th><th>Hora</th><th>Peso</th><th>Energia</th><th>Humor</th><th>Sintomas</th><th>Origem</th></tr></thead><tbody>
-      ${model.measurements.map((entry) => `<tr><td>${esc(fmtBR(entry.date))}</td><td>${esc(entry.time || "—")}</td><td>${entry.weightKg ?? "—"}</td><td>${entry.energyLevel ?? "—"}</td><td>${entry.moodLevel ?? "—"}</td><td>${esc(entry.symptomDetails.map((item) => `${item.name}${item.intensity ? ` (${item.intensity})` : ""}`).join(" · ") || "—")}</td><td>${esc(entry.source)}</td></tr>`).join("") || `<tr><td colspan="7">Nenhum registro no período.</td></tr>`}
+      <div class="history-table-scroll"><table><thead><tr><th>Data</th><th>Hora</th><th>Peso</th><th>Abdômen</th><th>Cintura</th><th>Quadril</th><th>Energia</th><th>Humor</th><th>Sintomas</th><th>Origem</th></tr></thead><tbody>
+      ${model.measurements.map((entry) => `<tr><td>${esc(fmtBR(entry.date))}</td><td>${esc(entry.time || "—")}</td><td>${entry.weightKg !== null ? `${entry.weightKg} kg` : "—"}</td><td>${entry.circumferencesCm?.abdomen !== null && entry.circumferencesCm?.abdomen !== undefined ? `${entry.circumferencesCm.abdomen} cm` : "—"}</td><td>${entry.circumferencesCm?.waist !== null && entry.circumferencesCm?.waist !== undefined ? `${entry.circumferencesCm.waist} cm` : "—"}</td><td>${entry.circumferencesCm?.hips !== null && entry.circumferencesCm?.hips !== undefined ? `${entry.circumferencesCm.hips} cm` : "—"}</td><td>${entry.energyLevel ?? "—"}</td><td>${entry.moodLevel ?? "—"}</td><td>${esc(entry.symptomDetails.map((item) => `${item.name}${item.intensity ? ` (${item.intensity})` : ""}`).join(" · ") || "—")}</td><td>${esc(entry.source)}</td></tr>`).join("") || `<tr><td colspan="10">Nenhum registro no período.</td></tr>`}
       </tbody></table></div></details>
     <p class="history-context-note">Dados descritivos autorrelatados. A falta de registro não significa ausência de sintomas e não há interpretação causal ou clínica.</p>
   </section>`;
 }
 
-function renderWeightChart(chart) {
+function renderBodyMetricChart(chart) {
+  const metric = chart?.metric || { label: "Peso", unit: "kg" };
   if (!chart || chart.points.length === 0) {
-    return `<div class="weight-chart-empty" data-testid="weight-chart-empty">Ainda não há pesos válidos neste período. Os demais registros continuam disponíveis abaixo.</div>`;
+    return `<div class="weight-chart-empty" data-testid="weight-chart-empty">Ainda não há pesos válidos neste período e também não há circunferências válidas. Os demais registros continuam disponíveis abaixo.</div>`;
   }
 
   const latest = chart.points[chart.points.length - 1];
   const description = chart.points.length === 1
-    ? `Um peso registrado em ${fmtBR(latest.date)}: ${latest.weightKg} kg.`
-    : `${chart.points.length} pesos diários registrados entre ${fmtBR(chart.firstDate)} e ${fmtBR(chart.lastDate)}. As distâncias representam os intervalos reais entre as datas.`;
+    ? `Uma medida de ${metric.label.toLocaleLowerCase("pt-BR")} registrada em ${fmtBR(latest.date)}: ${latest.value} ${metric.unit}.`
+    : `${chart.points.length} medidas diárias de ${metric.label.toLocaleLowerCase("pt-BR")} registradas entre ${fmtBR(chart.firstDate)} e ${fmtBR(chart.lastDate)}. As distâncias representam os intervalos reais entre as datas.`;
   const dateLabels = chart.firstDate === chart.lastDate
     ? `<text class="weight-chart-axis-label" x="${chart.points[0].x}" y="${chart.height - 10}" text-anchor="middle">${esc(fmtBR(chart.firstDate))}</text>`
     : `<text class="weight-chart-axis-label" x="${chart.plot.left}" y="${chart.height - 10}" text-anchor="start">${esc(fmtBR(chart.firstDate))}</text><text class="weight-chart-axis-label" x="${chart.width - chart.plot.right}" y="${chart.height - 10}" text-anchor="end">${esc(fmtBR(chart.lastDate))}</text>`;
 
   return `<div class="weight-chart" data-testid="weight-chart">
-    <div class="weight-chart-heading"><strong>Evolução do peso</strong><span>Último peso de cada dia</span></div>
+    <div class="weight-chart-heading"><strong>Evolução de ${metric.label.toLocaleLowerCase("pt-BR")}</strong><span>Última medida de cada dia</span></div>
     <div class="weight-chart-stage">
       <svg class="weight-chart-svg" viewBox="0 0 ${chart.width} ${chart.height}" role="img" aria-labelledby="weight-chart-title weight-chart-desc">
-        <title id="weight-chart-title">Evolução do peso registrado</title>
+        <title id="weight-chart-title">Evolução de ${metric.label.toLocaleLowerCase("pt-BR")} registrada</title>
         <desc id="weight-chart-desc">${esc(description)}</desc>
-        ${chart.gridLines.map((line) => `<line class="weight-chart-grid" x1="${chart.plot.left}" x2="${chart.width - chart.plot.right}" y1="${line.y}" y2="${line.y}"></line><text class="weight-chart-axis-label" x="${chart.plot.left - 9}" y="${line.y + 4}" text-anchor="end">${esc(String(line.weightKg))} kg</text>`).join("")}
+        ${chart.gridLines.map((line) => `<line class="weight-chart-grid" x1="${chart.plot.left}" x2="${chart.width - chart.plot.right}" y1="${line.y}" y2="${line.y}"></line><text class="weight-chart-axis-label" x="${chart.plot.left - 9}" y="${line.y + 4}" text-anchor="end">${esc(String(line.value))} ${metric.unit}</text>`).join("")}
         <path class="weight-chart-area" d="${chart.areaPath}"></path>
         <path class="weight-chart-line" d="${chart.linePath}"></path>
         ${dateLabels}
       </svg>
       ${chart.points.map((point) => {
-        const detail = `${fmtBR(point.date)}${point.time ? ` às ${point.time}` : ""}: ${point.weightKg} kg`;
+        const detail = `${fmtBR(point.date)}${point.time ? ` às ${point.time}` : ""}: ${point.value} ${metric.unit}`;
         return `<button type="button" class="weight-chart-point" style="left:${(point.x / chart.width) * 100}%;top:${(point.y / chart.height) * 100}%" data-measurement-id="${esc(point.id)}" data-detail="${esc(detail)}" aria-label="${esc(`${detail}. Abrir registro.`)}"></button>`;
       }).join("")}
     </div>
-    <p class="weight-chart-detail" id="history-weight-chart-detail" aria-live="polite">${esc(`${fmtBR(latest.date)}${latest.time ? ` às ${latest.time}` : ""}: ${latest.weightKg} kg`)}</p>
+    <p class="weight-chart-detail" id="history-weight-chart-detail" aria-live="polite">${esc(`${fmtBR(latest.date)}${latest.time ? ` às ${latest.time}` : ""}: ${latest.value} ${metric.unit}`)}</p>
   </div>`;
 }
 

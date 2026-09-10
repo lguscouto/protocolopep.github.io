@@ -76,6 +76,38 @@ export const DEFAULT_SYMPTOM_SUGGESTIONS = Object.freeze([
 
 export const SYMPTOM_INTENSITIES = Object.freeze(["leve", "moderada", "intensa"]);
 
+export const BODY_METRICS = Object.freeze({
+  weight: Object.freeze({ key: "weight", label: "Peso", unit: "kg", path: "weightKg" }),
+  abdomen: Object.freeze({ key: "abdomen", label: "Abdômen", unit: "cm", path: "circumferencesCm.abdomen" }),
+  waist: Object.freeze({ key: "waist", label: "Cintura", unit: "cm", path: "circumferencesCm.waist" }),
+  hips: Object.freeze({ key: "hips", label: "Quadril", unit: "cm", path: "circumferencesCm.hips" })
+});
+
+const CIRCUMFERENCE_KEYS = Object.freeze(["abdomen", "waist", "hips"]);
+
+function parseOptionalCircumference(value, key) {
+  if (value === null || value === undefined || value === "") return null;
+  const parsed = typeof value === "number" ? value : Number(String(value).replace(",", "."));
+  if (!Number.isFinite(parsed) || parsed < 10 || parsed > 300) {
+    const label = BODY_METRICS[key]?.label?.toLocaleLowerCase("pt-BR") || "circunferência";
+    throw new MeasurementValidationError(
+      `INVALID_CIRCUMFERENCE_${key.toUpperCase()}`,
+      `A medida de ${label} deve estar entre 10 cm e 300 cm.`
+    );
+  }
+  return Math.round(parsed * 100) / 100;
+}
+
+/** Normaliza as circunferências opcionais sem modificar o objeto recebido. */
+export function normalizeCircumferencesCm(value = {}) {
+  const source = value && typeof value === "object" && !Array.isArray(value) ? value : {};
+  return {
+    abdomen: parseOptionalCircumference(source.abdomen, "abdomen"),
+    waist: parseOptionalCircumference(source.waist, "waist"),
+    hips: parseOptionalCircumference(source.hips, "hips")
+  };
+}
+
 /**
  * Sanitiza e valida o formato de texto de um sintoma.
  * @param {string} symptom
@@ -118,6 +150,7 @@ export function normalizeSymptomDetails(symptoms = [], symptomDetails = []) {
  * @param {string} params.date - Data no formato YYYY-MM-DD
  * @param {string} [params.time] - Horário no formato HH:mm
  * @param {number|null} [params.weightKg] - Peso em kg (ex: 82.5) ou null se não informado
+ * @param {{abdomen?: number|null, waist?: number|null, hips?: number|null}} [params.circumferencesCm]
  * @param {number|null} [params.energyLevel] - Nível de energia de 1 a 5 ou null
  * @param {number|null} [params.moodLevel] - Nível de humor de 1 a 5 ou null
  * @param {string[]} [params.symptoms] - Lista de sintomas autorrelatados
@@ -140,6 +173,7 @@ export function createMeasurementEntry({
   date = undefined,
   time = undefined,
   weightKg = null,
+  circumferencesCm = {},
   energyLevel = null,
   moodLevel = null,
   symptoms = [],
@@ -184,6 +218,7 @@ export function createMeasurementEntry({
     }
     parsedWeight = Math.round(num * 100) / 100;
   }
+  const normalizedCircumferences = normalizeCircumferencesCm(circumferencesCm);
 
   let parsedEnergy = null;
   if (energyLevel !== null && energyLevel !== undefined && energyLevel !== "") {
@@ -288,6 +323,7 @@ export function createMeasurementEntry({
     date: cleanDate,
     time: cleanTime,
     weightKg: parsedWeight,
+    circumferencesCm: normalizedCircumferences,
     energyLevel: parsedEnergy,
     moodLevel: parsedMood,
     symptoms: uniqueSymptoms,
@@ -344,6 +380,12 @@ export function validateMeasurementEntry(entry) {
     }
   }
 
+  try {
+    normalizeCircumferencesCm(entry.circumferencesCm);
+  } catch (error) {
+    errors.push(error.message || "As circunferências devem ser números válidos entre 10 cm e 300 cm.");
+  }
+
   if (entry.energyLevel !== null && entry.energyLevel !== undefined) {
     if (!Number.isInteger(entry.energyLevel) || entry.energyLevel < 1 || entry.energyLevel > 5) {
       errors.push("O nível de energia deve ser um número inteiro de 1 a 5.");
@@ -394,7 +436,10 @@ export function calculateMeasurementStats(entries) {
       averageEnergy: null,
       averageMood: null,
       symptomsFrequency: {},
-      mostFrequentSymptom: null
+      mostFrequentSymptom: null,
+      bodyMetrics: Object.fromEntries(["weight", ...CIRCUMFERENCE_KEYS].map((key) => [key, {
+        count: 0, earliest: null, latest: null, delta: null, min: null, max: null
+      }]))
     };
   }
 
@@ -408,6 +453,23 @@ export function calculateMeasurementStats(entries) {
   const weightEntries = sorted.filter(
     (e) => e.weightKg !== null && e.weightKg !== undefined && typeof e.weightKg === "number" && !Number.isNaN(e.weightKg)
   );
+  const bodyMetrics = Object.fromEntries(CIRCUMFERENCE_KEYS.map((key) => {
+    const metricEntries = sorted.filter((entry) => {
+      const value = entry?.circumferencesCm?.[key];
+      return typeof value === "number" && Number.isFinite(value) && value > 0;
+    });
+    const values = metricEntries.map((entry) => entry.circumferencesCm[key]);
+    const earliest = values[0] ?? null;
+    const latest = values[values.length - 1] ?? null;
+    return [key, {
+      count: values.length,
+      earliest,
+      latest,
+      delta: values.length ? Math.round((latest - earliest) * 100) / 100 : null,
+      min: values.length ? Math.min(...values) : null,
+      max: values.length ? Math.max(...values) : null
+    }];
+  }));
 
   let latestWeight = null;
   let earliestWeight = null;
@@ -424,6 +486,14 @@ export function calculateMeasurementStats(entries) {
     minWeight = Math.min(...weights);
     maxWeight = Math.max(...weights);
   }
+  bodyMetrics.weight = {
+    count: weightEntries.length,
+    earliest: earliestWeight,
+    latest: latestWeight,
+    delta: weightDelta,
+    min: minWeight,
+    max: maxWeight
+  };
 
   const energyEntries = sorted.filter((e) => typeof e.energyLevel === "number" && e.energyLevel >= 1 && e.energyLevel <= 5);
   const averageEnergy = energyEntries.length > 0
@@ -466,7 +536,8 @@ export function calculateMeasurementStats(entries) {
     averageEnergy,
     averageMood,
     symptomsFrequency,
-    mostFrequentSymptom
+    mostFrequentSymptom,
+    bodyMetrics
   };
 }
 
@@ -486,22 +557,28 @@ function dateKeyToUtcTime(value) {
 }
 
 /**
- * Constrói a geometria descritiva do gráfico de peso sem interpolar registros.
- * Quando há mais de um peso no mesmo dia, mantém o último registro daquele dia.
+ * Constrói a geometria descritiva de uma métrica corporal sem interpolar registros.
+ * Quando há mais de uma medida no mesmo dia, mantém o último registro daquele dia.
  *
  * @param {Object[]} measurements
+ * @param {"weight"|"abdomen"|"waist"|"hips"} metricKey
  * @returns {Object}
  */
-export function buildWeightChartModel(measurements) {
+export function buildBodyMetricChartModel(measurements, metricKey = "weight") {
+  const metric = BODY_METRICS[metricKey];
+  if (!metric) throw new MeasurementValidationError("INVALID_BODY_METRIC", "Métrica corporal inválida.");
+  const getValue = metricKey === "weight"
+    ? (entry) => entry?.weightKg
+    : (entry) => entry?.circumferencesCm?.[metricKey];
   const source = Array.isArray(measurements) ? measurements : [];
   const candidates = source
     .map((entry, inputIndex) => ({ entry, inputIndex }))
     .filter(({ entry }) => (
       entry && typeof entry === "object"
       && isValidDateKey(entry.date)
-      && typeof entry.weightKg === "number"
-      && Number.isFinite(entry.weightKg)
-      && entry.weightKg > 0
+      && typeof getValue(entry) === "number"
+      && Number.isFinite(getValue(entry))
+      && getValue(entry) > 0
     ))
     .sort((a, b) => {
       const dateComparison = a.entry.date.localeCompare(b.entry.date);
@@ -528,14 +605,15 @@ export function buildWeightChartModel(measurements) {
       areaPath: "",
       firstDate: null,
       lastDate: null,
-      minWeight: null,
-      maxWeight: null
+      minValue: null,
+      maxValue: null,
+      metric
     };
   }
 
-  const weights = dailyEntries.map((entry) => entry.weightKg);
-  const rawMin = Math.min(...weights);
-  const rawMax = Math.max(...weights);
+  const values = dailyEntries.map(getValue);
+  const rawMin = Math.min(...values);
+  const rawMax = Math.max(...values);
   const range = rawMax - rawMin;
   const yPadding = range > 0 ? Math.max(range * 0.12, 0.25) : Math.max(rawMin * 0.01, 0.5);
   const minWeight = Math.max(0, rawMin - yPadding);
@@ -549,12 +627,14 @@ export function buildWeightChartModel(measurements) {
     const x = timeRange === 0
       ? left + plotWidth / 2
       : left + ((entryTime - firstTime) / timeRange) * plotWidth;
-    const y = top + ((maxWeight - entry.weightKg) / (maxWeight - minWeight)) * plotHeight;
+    const value = getValue(entry);
+    const y = top + ((maxWeight - value) / (maxWeight - minWeight)) * plotHeight;
     return {
       id: String(entry.id || ""),
       date: entry.date,
       time: String(entry.time || ""),
-      weightKg: entry.weightKg,
+      value,
+      weightKg: metricKey === "weight" ? value : undefined,
       source: entry.source || "Local",
       ownership: entry.ownership === "external" ? "external" : "pep",
       x,
@@ -569,7 +649,8 @@ export function buildWeightChartModel(measurements) {
     : "";
   const gridLines = [0, 0.5, 1].map((ratio) => ({
     y: top + ratio * plotHeight,
-    weightKg: Math.round((maxWeight - ratio * (maxWeight - minWeight)) * 10) / 10
+    value: Math.round((maxWeight - ratio * (maxWeight - minWeight)) * 10) / 10,
+    weightKg: metricKey === "weight" ? Math.round((maxWeight - ratio * (maxWeight - minWeight)) * 10) / 10 : undefined
   }));
 
   return {
@@ -582,9 +663,16 @@ export function buildWeightChartModel(measurements) {
     areaPath,
     firstDate: points[0].date,
     lastDate: points[points.length - 1].date,
-    minWeight: rawMin,
-    maxWeight: rawMax
+    minValue: rawMin,
+    maxValue: rawMax,
+    minWeight: metricKey === "weight" ? rawMin : undefined,
+    maxWeight: metricKey === "weight" ? rawMax : undefined,
+    metric
   };
+}
+
+export function buildWeightChartModel(measurements) {
+  return buildBodyMetricChartModel(measurements, "weight");
 }
 
 /**

@@ -1,6 +1,6 @@
 # 🧪 Protocolo PEP · App Android (Local-First)
 
-![Version](https://img.shields.io/badge/version-3.2.0-2CC5C0)
+![Version](https://img.shields.io/badge/version-3.3.0-2CC5C0)
 ![Android](https://img.shields.io/badge/Android-8.0%2B-green)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![CI](https://github.com/lguscouto/protocolopep.github.io/actions/workflows/ci.yml/badge.svg)
@@ -8,6 +8,14 @@
 Aplicativo Android/PWA para registrar aplicações de peptídeos com poucos toques, receber lembretes no dia certo e lembrar o último local aplicado. O PEP funciona offline, sem conta e sem nuvem, com arquitetura **100% Local-First**, histórico preservado e ferramentas técnicas acessíveis somente quando necessárias.
 
 ---
+
+## 🚀 Novidades da Versão 3.3.0 (Circunferências Corporais)
+
+- **Registro corporal ampliado:** abdômen, cintura e quadril opcionais em centímetros, com validação local e edição no mesmo registro de acompanhamento.
+- **Evolução por métrica:** o gráfico do Histórico alterna entre peso e circunferências disponíveis, respeitando os intervalos reais entre datas e abrindo o registro selecionado.
+- **Compatibilidade preservada:** schema 9 migra registros e backups anteriores sem alterar a chave local; o Health Connect continua restrito ao peso.
+- **Relatórios completos:** CSV, prévia e PDF passam a incluir as circunferências preenchidas e suas estatísticas descritivas.
+- **Release Android versionada:** `versionName 3.3.0` e `versionCode 30`.
 
 ## 🚀 Novidades da Versão 3.2.0 (Evolução Visual do Peso)
 
@@ -56,7 +64,7 @@ Aplicativo Android/PWA para registrar aplicações de peptídeos com poucos toqu
 - **Relatório pessoal:** um único modelo alimenta prévia, CSV e PDF; aplicações e medidas são exportadas em arquivos CSV separados; o PDF Android é paginado, salvo localmente e compartilhável.
 - **Continuidade dos dados:** backup com data e hora no nome, indicação de alterações após o último export, lembrete discreto após 7 dias e prévia de restauração.
 - **Restauração protegida:** cópia de recuperação é salva antes de substituir os dados; cancelamentos e falhas não são apresentados como arquivos entregues nem como restaurações concluídas.
-- **Migração segura:** schema 8 com migração idempotente, preservando revisões de protocolo, frascos, sintomas, medidas e vínculos do Health Connect.
+- **Migração segura:** schema 9 com migração idempotente, preservando revisões de protocolo, frascos, sintomas, medidas e vínculos do Health Connect.
 - **Acesso rápido e consistência visual:** atalhos contextuais para inventário e relatório, cinco abas preservadas, onboarding, mapa de aplicação, idiomas e recursos técnicos mantidos.
 - **Validação:** 477 testes unitários, 109 cenários E2E aprovados, validação no emulador Pixel 8, build web e Android aprovados.
 

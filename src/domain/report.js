@@ -141,6 +141,11 @@ function sanitizeMeasurementForReport(entry, includeNotes = false) {
     weightKg: typeof measurement.weightKg === "number" && Number.isFinite(measurement.weightKg)
       ? measurement.weightKg
       : null,
+    circumferencesCm: {
+      abdomen: Number.isFinite(measurement.circumferencesCm?.abdomen) ? measurement.circumferencesCm.abdomen : null,
+      waist: Number.isFinite(measurement.circumferencesCm?.waist) ? measurement.circumferencesCm.waist : null,
+      hips: Number.isFinite(measurement.circumferencesCm?.hips) ? measurement.circumferencesCm.hips : null
+    },
     energyLevel: Number.isInteger(measurement.energyLevel) ? measurement.energyLevel : null,
     moodLevel: Number.isInteger(measurement.moodLevel) ? measurement.moodLevel : null,
     symptoms: Array.isArray(measurement.symptoms)
@@ -199,7 +204,7 @@ export function buildReviewModel({
     editableId: entry.id, recordIndex: entry.recordIndex, data: entry
   }));
   measurementRecords.forEach((entry) => {
-    const measures = [entry.weightKg !== null ? `${entry.weightKg} kg` : "", entry.energyLevel ? `Energia ${entry.energyLevel}/5` : "", entry.moodLevel ? `Humor ${entry.moodLevel}/5` : ""].filter(Boolean);
+    const measures = [entry.weightKg !== null ? `${entry.weightKg} kg` : "", entry.circumferencesCm.abdomen !== null ? `Abdômen ${entry.circumferencesCm.abdomen} cm` : "", entry.circumferencesCm.waist !== null ? `Cintura ${entry.circumferencesCm.waist} cm` : "", entry.circumferencesCm.hips !== null ? `Quadril ${entry.circumferencesCm.hips} cm` : "", entry.energyLevel ? `Energia ${entry.energyLevel}/5` : "", entry.moodLevel ? `Humor ${entry.moodLevel}/5` : ""].filter(Boolean);
     if (measures.length) events.push({ id: `measurement_${entry.id}`, type: "measurement", date: entry.date, time: entry.time, title: "Medição autorrelatada", subtitle: measures.join(" · "), notes: entry.notes, contextGeneral: compoundId !== "all", editableId: entry.id, data: entry });
     if (entry.symptomDetails.length) events.push({ id: `symptom_${entry.id}`, type: "symptom", date: entry.date, time: entry.time, title: "Sintomas autorrelatados", subtitle: entry.symptomDetails.map((item) => `${item.name}${item.intensity ? ` (${item.intensity})` : ""}`).join(" · "), notes: entry.notes, contextGeneral: compoundId !== "all", editableId: entry.id, data: entry });
   });
@@ -379,6 +384,12 @@ export function generatePersonalReportCSV({
     addRow(["Medições", "Variação de peso (kg)", measurementStats.weightDelta]);
     addRow(["Medições", "Energia média (1–5)", measurementStats.averageEnergy]);
     addRow(["Medições", "Humor médio (1–5)", measurementStats.averageMood]);
+    Object.entries({ abdomen: "Abdômen", waist: "Cintura", hips: "Quadril" }).forEach(([key, label]) => {
+      const metric = measurementStats.bodyMetrics?.[key];
+      if (!metric?.count) return;
+      addRow(["Medições", `Última medida de ${label.toLocaleLowerCase("pt-BR")} (cm)`, metric.latest]);
+      addRow(["Medições", `Variação de ${label.toLocaleLowerCase("pt-BR")} (cm)`, metric.delta]);
+    });
   }
 
   addRow([]);
@@ -389,12 +400,15 @@ export function generatePersonalReportCSV({
 
   if (measurements.length > 0) {
     addRow([]);
-    addRow(["Medições autorrelatadas", "Data", "Hora", "Peso (kg)", "Energia (1–5)", "Humor (1–5)", "Sintomas", "Observações", "Origem"]);
+    addRow(["Medições autorrelatadas", "Data", "Hora", "Peso (kg)", "Abdômen (cm)", "Cintura (cm)", "Quadril (cm)", "Energia (1–5)", "Humor (1–5)", "Sintomas", "Observações", "Origem"]);
     measurements.forEach((measurement) => addRow([
       "Medições autorrelatadas",
       formatReportDate(measurement.date),
       measurement.time,
       measurement.weightKg,
+      measurement.circumferencesCm?.abdomen,
+      measurement.circumferencesCm?.waist,
+      measurement.circumferencesCm?.hips,
       measurement.energyLevel,
       measurement.moodLevel,
       Array.isArray(measurement.symptoms) ? measurement.symptoms.join(" · ") : "",
@@ -470,6 +484,7 @@ export function generateReportHTML(entries = [], {
         <td>${escapeHTML(formatReportDate(measurement.date))}</td>
         <td>${escapeHTML(measurement.time || "--:--")}</td>
         <td>${escapeHTML(measurement.weightKg ?? "--")}</td>
+        <td>${escapeHTML([["Abdômen", measurement.circumferencesCm?.abdomen], ["Cintura", measurement.circumferencesCm?.waist], ["Quadril", measurement.circumferencesCm?.hips]].filter(([, value]) => value !== null && value !== undefined).map(([label, value]) => `${label}: ${value}`).join(" · ") || "--")}</td>
         <td>${escapeHTML(measurement.energyLevel ?? "--")}</td>
         <td>${escapeHTML(measurement.moodLevel ?? "--")}</td>
         <td>${escapeHTML(Array.isArray(measurement.symptomDetails) && measurement.symptomDetails.length > 0 ? measurement.symptomDetails.map((item) => `${item.name}${item.intensity ? ` (${item.intensity})` : ""}`).join(" · ") : "--")}</td>
@@ -484,12 +499,13 @@ export function generateReportHTML(entries = [], {
       <div class="stats-item">Registros incluídos: <b>${escapeHTML(measurementStats.totalEntries)}</b></div>
       ${measurementStats.latestWeight !== null ? `<div class="stats-item">Último peso: <b>${escapeHTML(measurementStats.latestWeight)} kg</b></div>` : ""}
       ${measurementStats.weightDelta !== null ? `<div class="stats-item">Variação no período: <b>${escapeHTML(measurementStats.weightDelta)} kg</b></div>` : ""}
+      ${Object.entries({ abdomen: "Abdômen", waist: "Cintura", hips: "Quadril" }).map(([key, label]) => measurementStats.bodyMetrics?.[key]?.count ? `<div class="stats-item">Último ${label.toLocaleLowerCase("pt-BR")}: <b>${escapeHTML(measurementStats.bodyMetrics[key].latest)} cm</b></div>` : "").join("")}
       ${measurementStats.averageEnergy !== null ? `<div class="stats-item">Energia média: <b>${escapeHTML(measurementStats.averageEnergy)} / 5</b></div>` : ""}
       ${measurementStats.averageMood !== null ? `<div class="stats-item">Humor médio: <b>${escapeHTML(measurementStats.averageMood)} / 5</b></div>` : ""}
     </div>` : ""}
     <table>
-      <thead><tr><th>Data</th><th>Hora</th><th>Peso (kg)</th><th>Energia</th><th>Humor</th><th>Sintomas</th><th>Observações</th><th>Origem</th></tr></thead>
-      <tbody>${measurementRows || '<tr><td colspan="8" style="padding:16px;text-align:center;color:#64748B;">Nenhuma medição encontrada para o período selecionado.</td></tr>'}</tbody>
+      <thead><tr><th>Data</th><th>Hora</th><th>Peso (kg)</th><th>Circunferências (cm)</th><th>Energia</th><th>Humor</th><th>Sintomas</th><th>Observações</th><th>Origem</th></tr></thead>
+      <tbody>${measurementRows || '<tr><td colspan="9" style="padding:16px;text-align:center;color:#64748B;">Nenhuma medição encontrada para o período selecionado.</td></tr>'}</tbody>
     </table>
     <p class="personal-summary-note">As medições são autorrelatadas e apresentadas sem correlação clínica com as aplicações.</p>
   </section>` : "";

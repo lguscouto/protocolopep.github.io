@@ -3,7 +3,9 @@ import {
   createMeasurementEntry,
   validateMeasurementEntry,
   calculateMeasurementStats,
+  buildBodyMetricChartModel,
   buildWeightChartModel,
+  normalizeCircumferencesCm,
   filterMeasurements,
   haveMeasurementsChanged,
   formatSymptomLabel,
@@ -50,6 +52,23 @@ describe("Measurements Domain (V12)", () => {
     const validRes = validateMeasurementEntry(entry);
     expect(validRes.valid).toBe(true);
     expect(validRes.errors).toHaveLength(0);
+  });
+
+  it("normaliza circunferências opcionais, aceita vírgula e preserva a entrada", () => {
+    const source = { abdomen: "92,55", waist: 88.123, hips: "101" };
+    const snapshot = { ...source };
+    expect(normalizeCircumferencesCm(source)).toEqual({ abdomen: 92.55, waist: 88.12, hips: 101 });
+    expect(source).toEqual(snapshot);
+    expect(createMeasurementEntry({ date: "2026-09-10", circumferencesCm: source }).circumferencesCm)
+      .toEqual({ abdomen: 92.55, waist: 88.12, hips: 101 });
+  });
+
+  it.each([0, -1, 9.99, 300.01, Number.NaN, Number.POSITIVE_INFINITY, "inválido"])("rejeita circunferência inválida %s", (value) => {
+    expect(() => normalizeCircumferencesCm({ waist: value })).toThrow("entre 10 cm e 300 cm");
+  });
+
+  it("aceita os limites e mantém ausências como null", () => {
+    expect(normalizeCircumferencesCm({ abdomen: 10, hips: 300 })).toEqual({ abdomen: 10, waist: null, hips: 300 });
   });
 
   it("preserva clientRecordId quando fornecido", () => {
@@ -105,10 +124,21 @@ describe("Measurements Domain (V12)", () => {
     expect(stats.weightDelta).toBe(-2.0);
     expect(stats.minWeight).toBe(83.0);
     expect(stats.maxWeight).toBe(85.0);
+    expect(stats.bodyMetrics.weight).toEqual({ count: 3, earliest: 85, latest: 83, delta: -2, min: 83, max: 85 });
     expect(stats.averageEnergy).toBe(4.0); // (3 + 4 + 5 + 4) / 4 = 4.0
     expect(stats.symptomsFrequency["Fadiga"]).toBe(2);
     expect(stats.symptomsFrequency["Disposição elevada"]).toBe(2);
     expect(stats.mostFrequentSymptom).toBeDefined();
+  });
+
+  it("calcula estatísticas independentes para cada circunferência", () => {
+    const stats = calculateMeasurementStats([
+      createMeasurementEntry({ date: "2026-09-01", circumferencesCm: { abdomen: 95, waist: 90 } }),
+      createMeasurementEntry({ date: "2026-09-10", circumferencesCm: { abdomen: 92.5, hips: 101 } })
+    ]);
+    expect(stats.bodyMetrics.abdomen).toEqual({ count: 2, earliest: 95, latest: 92.5, delta: -2.5, min: 92.5, max: 95 });
+    expect(stats.bodyMetrics.waist).toMatchObject({ count: 1, earliest: 90, latest: 90, delta: 0 });
+    expect(stats.bodyMetrics.hips).toMatchObject({ count: 1, latest: 101 });
   });
 
   it("filtra registros por intervalo de datas e sintoma", () => {
@@ -190,6 +220,35 @@ describe("Measurements Domain (V12)", () => {
       expect(chart.points).toEqual([]);
       expect(chart.linePath).toBe("");
       expect(chart.firstDate).toBeNull();
+    });
+  });
+
+  describe("gráfico de evolução de circunferências", () => {
+    it("usa a última medida do dia e mantém intervalos reais", () => {
+      const source = [
+        { id: "morning", date: "2026-09-01", time: "08:00", circumferencesCm: { waist: 90 } },
+        { id: "evening", date: "2026-09-01", time: "20:00", circumferencesCm: { waist: 89.5 } },
+        { id: "day-two", date: "2026-09-02", time: "08:00", circumferencesCm: { waist: 89 } },
+        { id: "day-eleven", date: "2026-09-11", time: "08:00", circumferencesCm: { waist: 88 } }
+      ];
+      const snapshot = structuredClone(source);
+      const chart = buildBodyMetricChartModel(source, "waist");
+      expect(chart.points.map((point) => [point.id, point.value])).toEqual([["evening", 89.5], ["day-two", 89], ["day-eleven", 88]]);
+      expect((chart.points[1].x - chart.points[0].x) / (chart.points[2].x - chart.points[0].x)).toBeCloseTo(0.1, 5);
+      expect(chart.metric).toMatchObject({ key: "waist", label: "Cintura", unit: "cm" });
+      expect(source).toEqual(snapshot);
+    });
+
+    it("trata série constante, ponto único, vazio e chave inválida", () => {
+      const constant = buildBodyMetricChartModel([
+        { id: "a", date: "2026-09-01", circumferencesCm: { hips: 100 } },
+        { id: "b", date: "2026-09-08", circumferencesCm: { hips: 100 } }
+      ], "hips");
+      const single = buildBodyMetricChartModel([{ id: "a", date: "2026-09-01", circumferencesCm: { abdomen: 92 } }], "abdomen");
+      expect(constant.points.every((point) => Number.isFinite(point.y))).toBe(true);
+      expect(single.points[0].x).toBe(single.plot.left + single.plot.width / 2);
+      expect(buildBodyMetricChartModel([], "waist").points).toEqual([]);
+      expect(() => buildBodyMetricChartModel([], "unknown")).toThrow("Métrica corporal inválida");
     });
   });
 

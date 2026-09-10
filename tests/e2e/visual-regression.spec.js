@@ -57,6 +57,7 @@ const VISUAL_STATE = Object.freeze({
     date: todayKey,
     time: "08:00",
     weightKg: 82.4,
+    circumferencesCm: { abdomen: 94.5, waist: 89, hips: 101 },
     energyLevel: 4,
     moodLevel: 4,
     symptoms: ["Fadiga"],
@@ -179,6 +180,9 @@ test.describe("Protocolo PEP — Matriz de regressão visual", () => {
       await assertVisualAnchor(page, ".measurement-chip--weight", `medidas preenchidas (${theme.id})`);
       await assertVisualAnchor(page, ".weight-chart", `gráfico de peso (${theme.id})`);
       await expect(page.locator(".weight-chart-line")).toHaveAttribute("d", /^M /);
+      await expect(page.locator("#history-body-metric option")).toHaveCount(4);
+      await page.locator("#history-body-metric").selectOption("waist");
+      await expect(page.locator(".weight-chart-heading")).toContainText("Evolução de cintura");
       await assertViewportIntegrity(page, `histórico/${theme.id}/${viewportWidth}px`);
 
       await page.locator("#hist-retro-btn").evaluate((element) => {

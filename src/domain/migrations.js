@@ -16,7 +16,7 @@ import {
   localDateTimeToIso
 } from "./time.js";
 
-export const CURRENT_SCHEMA_VERSION = 8;
+export const CURRENT_SCHEMA_VERSION = 9;
 
 function sanitizeHealthConnectId(value) {
   if (typeof value !== "string") return null;
@@ -237,6 +237,15 @@ export function migrateV7ToV8(state = {}) {
   };
 }
 
+/** V8 → V9: circunferências corporais opcionais, sem alterar a chave de storage. */
+export function migrateV8ToV9(state = {}) {
+  return {
+    ...state,
+    version: 9,
+    measurements: migrateMeasurements(state.measurements || [])
+  };
+}
+
 export function migrateAppState(state = {}) {
   if (!state || typeof state !== "object") {
     state = {};
@@ -264,6 +273,9 @@ export function migrateAppState(state = {}) {
   }
   if (version < 8) {
     current = migrateV7ToV8(current);
+  }
+  if (version < 9) {
+    current = migrateV8ToV9(current);
   }
 
   const rawProtocol = current.protocol || current.peptides || [];

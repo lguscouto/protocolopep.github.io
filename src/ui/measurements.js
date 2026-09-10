@@ -12,12 +12,13 @@ import {
   createMeasurementEntry,
   validateMeasurementEntry,
   calculateMeasurementStats,
+  buildBodyMetricChartModel,
   buildWeightChartModel,
   DEFAULT_SYMPTOM_SUGGESTIONS,
   formatSymptomLabel,
   normalizeSymptomDetails
 } from "../domain/measurements.js";
-export { buildWeightChartModel };
+export { buildBodyMetricChartModel, buildWeightChartModel };
 import { escapeHtml, sanitizeId } from "./dom.js";
 import { haptics } from "../services/haptics.js";
 import { dialogService } from "../services/dialog.js";
@@ -36,6 +37,10 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
   const dateInput = document.getElementById("meas-date-input");
   const timeInput = document.getElementById("meas-time-input");
   const weightInput = document.getElementById("meas-weight-input");
+  const abdomenInput = document.getElementById("meas-abdomen-input");
+  const waistInput = document.getElementById("meas-waist-input");
+  const hipsInput = document.getElementById("meas-hips-input");
+  const circumferencesHelp = document.getElementById("meas-circumferences-help");
   const notesInput = document.getElementById("meas-notes-input");
   const customSymptomInput = document.getElementById("meas-custom-symptom-input");
   const addSymptomBtn = document.getElementById("meas-add-symptom-btn");
@@ -125,6 +130,17 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
       weightInput.title = isExternal
         ? "Registro importado do Health Connect. Para alterar peso ou horário, utilize o aplicativo de origem."
         : "";
+    }
+    [[abdomenInput, "abdomen"], [waistInput, "waist"], [hipsInput, "hips"]].forEach(([input, key]) => {
+      if (!input) return;
+      input.value = entry?.circumferencesCm?.[key] ?? "";
+      input.disabled = isExternal;
+      input.title = isExternal ? "Crie um registro local para adicionar circunferências." : "";
+    });
+    if (circumferencesHelp) {
+      circumferencesHelp.textContent = isExternal
+        ? "As circunferências não são importadas pelo Health Connect. Crie um registro local para adicioná-las."
+        : "Medidas opcionais em centímetros, registradas somente neste dispositivo.";
     }
     if (notesInput) notesInput.value = entry ? (entry.notes || "") : "";
 
@@ -249,6 +265,9 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
                   <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;">
                     <span style="font-size:13.5px;font-weight:700;color:var(--text);">${esc(fmtDate)} · ${esc(m.time || "")}</span>
                     ${m.weightKg !== null ? `<span class="chip-acc measurement-chip measurement-chip--weight">⚖️ ${m.weightKg} kg</span>` : ""}
+                    ${m.circumferencesCm?.abdomen !== null && m.circumferencesCm?.abdomen !== undefined ? `<span class="chip-acc measurement-chip measurement-chip--circumference">Abdômen ${m.circumferencesCm.abdomen} cm</span>` : ""}
+                    ${m.circumferencesCm?.waist !== null && m.circumferencesCm?.waist !== undefined ? `<span class="chip-acc measurement-chip measurement-chip--circumference">Cintura ${m.circumferencesCm.waist} cm</span>` : ""}
+                    ${m.circumferencesCm?.hips !== null && m.circumferencesCm?.hips !== undefined ? `<span class="chip-acc measurement-chip measurement-chip--circumference">Quadril ${m.circumferencesCm.hips} cm</span>` : ""}
                     ${m.energyLevel ? `<span class="chip-acc measurement-chip measurement-chip--energy">⚡ Energia ${m.energyLevel}/5</span>` : ""}
                     ${m.moodLevel ? `<span class="chip-acc measurement-chip measurement-chip--mood">😊 Humor ${m.moodLevel}/5</span>` : ""}
                     ${m.ownership === "external" ? `<span class="chip-acc measurement-chip measurement-chip--external">🔗 Health Connect</span>` : ""}
@@ -428,6 +447,9 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
       const dateVal = isExternal && existing ? existing.date : (dateInput ? dateInput.value : "");
       const timeVal = isExternal && existing ? existing.time : (timeInput ? timeInput.value : "08:00");
       const rawWeight = isExternal && existing ? existing.weightKg : (weightInput ? weightInput.value.trim() : "");
+      const circumferenceValue = (input, key) => isExternal && existing
+        ? existing.circumferencesCm?.[key] ?? null
+        : (input?.value.trim() || null);
       const notesVal = notesInput ? notesInput.value.trim() : "";
 
       const entryPayload = {
@@ -435,6 +457,11 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
         date: dateVal,
         time: timeVal,
         weightKg: rawWeight !== null && rawWeight !== undefined && rawWeight !== "" ? rawWeight : null,
+        circumferencesCm: {
+          abdomen: circumferenceValue(abdomenInput, "abdomen"),
+          waist: circumferenceValue(waistInput, "waist"),
+          hips: circumferenceValue(hipsInput, "hips")
+        },
         energyLevel: selectedEnergy,
         moodLevel: selectedMood,
         symptoms: Array.from(selectedSymptoms),
