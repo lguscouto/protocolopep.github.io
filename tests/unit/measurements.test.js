@@ -3,6 +3,7 @@ import {
   createMeasurementEntry,
   validateMeasurementEntry,
   calculateMeasurementStats,
+  buildWeightChartModel,
   filterMeasurements,
   haveMeasurementsChanged,
   formatSymptomLabel,
@@ -122,6 +123,74 @@ describe("Measurements Domain (V12)", () => {
 
     const filteredSymptom = filterMeasurements(entries, { symptom: "Fadiga" });
     expect(filteredSymptom).toHaveLength(2);
+  });
+
+  describe("gráfico de evolução do peso", () => {
+    it("filtra pesos inválidos, ordena e preserva a entrada original", () => {
+      const entries = [
+        { id: "c", date: "2026-09-10", time: "08:00", weightKg: 79 },
+        { id: "a", date: "2026-09-01", time: "08:00", weightKg: 81 },
+        { id: "invalid", date: "2026-09-05", time: "08:00", weightKg: Number.NaN },
+        { id: "zero", date: "2026-09-06", time: "08:00", weightKg: 0 },
+        { id: "missing", date: "2026-09-07", time: "08:00", weightKg: null }
+      ];
+      const snapshot = entries.map((entry) => ({ ...entry }));
+
+      const chart = buildWeightChartModel(entries);
+
+      expect(chart.points.map((point) => point.id)).toEqual(["a", "c"]);
+      expect(entries).toEqual(snapshot);
+    });
+
+    it("usa o último peso do dia sem remover registros da origem", () => {
+      const entries = [
+        { id: "morning", date: "2026-09-05", time: "08:00", weightKg: 80.5 },
+        { id: "evening", date: "2026-09-05", time: "20:00", weightKg: 80.1 },
+        { id: "next", date: "2026-09-06", time: "07:00", weightKg: 79.9 }
+      ];
+      const chart = buildWeightChartModel(entries);
+
+      expect(chart.points).toHaveLength(2);
+      expect(chart.points[0]).toMatchObject({ id: "evening", weightKg: 80.1 });
+      expect(entries).toHaveLength(3);
+    });
+
+    it("representa intervalos reais no eixo horizontal", () => {
+      const chart = buildWeightChartModel([
+        { id: "a", date: "2026-09-01", weightKg: 81 },
+        { id: "b", date: "2026-09-02", weightKg: 80.5 },
+        { id: "c", date: "2026-09-11", weightKg: 80 }
+      ]);
+      const [first, second, last] = chart.points;
+
+      expect((second.x - first.x) / (last.x - first.x)).toBeCloseTo(0.1, 5);
+    });
+
+    it("trata série constante e ponto único com coordenadas finitas", () => {
+      const constant = buildWeightChartModel([
+        { id: "a", date: "2026-09-01", weightKg: 80 },
+        { id: "b", date: "2026-09-08", weightKg: 80 }
+      ]);
+      const single = buildWeightChartModel([{ id: "only", date: "2026-09-03", weightKg: 76.4 }]);
+
+      expect(constant.points.every((point) => Number.isFinite(point.x) && Number.isFinite(point.y))).toBe(true);
+      expect(single.points[0].x).toBe(single.plot.left + single.plot.width / 2);
+      expect(Number.isFinite(single.points[0].y)).toBe(true);
+      expect(single.linePath).not.toContain("NaN");
+      expect(single.areaPath).toBe("");
+    });
+
+    it("não cria rótulos negativos para um peso positivo pequeno", () => {
+      const chart = buildWeightChartModel([{ id: "small", date: "2026-09-03", weightKg: 0.1 }]);
+      expect(chart.gridLines.every((line) => line.weightKg >= 0)).toBe(true);
+    });
+
+    it("retorna um modelo vazio para entradas ausentes", () => {
+      const chart = buildWeightChartModel(null);
+      expect(chart.points).toEqual([]);
+      expect(chart.linePath).toBe("");
+      expect(chart.firstDate).toBeNull();
+    });
   });
 
   it("detecta alterações profundas com haveMeasurementsChanged", () => {

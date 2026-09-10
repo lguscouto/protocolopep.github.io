@@ -177,6 +177,8 @@ test.describe("Protocolo PEP — Matriz de regressão visual", () => {
       await page.locator("#tab-history").click();
       await assertVisualAnchor(page, ".history-timeline", `histórico (${theme.id})`);
       await assertVisualAnchor(page, ".measurement-chip--weight", `medidas preenchidas (${theme.id})`);
+      await assertVisualAnchor(page, ".weight-chart", `gráfico de peso (${theme.id})`);
+      await expect(page.locator(".weight-chart-line")).toHaveAttribute("d", /^M /);
       await assertViewportIntegrity(page, `histórico/${theme.id}/${viewportWidth}px`);
 
       await page.locator("#hist-retro-btn").evaluate((element) => {

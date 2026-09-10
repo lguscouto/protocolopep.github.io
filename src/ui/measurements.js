@@ -12,10 +12,12 @@ import {
   createMeasurementEntry,
   validateMeasurementEntry,
   calculateMeasurementStats,
+  buildWeightChartModel,
   DEFAULT_SYMPTOM_SUGGESTIONS,
   formatSymptomLabel,
   normalizeSymptomDetails
 } from "../domain/measurements.js";
+export { buildWeightChartModel };
 import { escapeHtml, sanitizeId } from "./dom.js";
 import { haptics } from "../services/haptics.js";
 import { dialogService } from "../services/dialog.js";
@@ -142,6 +144,14 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
     updateLevelButtons();
     renderSymptomChips();
     modal.classList.add("on");
+  }
+
+  function openMeasurementById(id) {
+    const entry = storage.getMeasurements().find((measurement) => measurement.id === id);
+    if (!entry) return false;
+    haptics.selection();
+    openMeasurementModal(entry);
+    return true;
   }
 
   function renderTrendSummary() {
@@ -363,12 +373,8 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
     historyListEl.addEventListener("click", (e) => {
       const editBtn = e.target.closest(".btn-meas-edit");
       if (editBtn) {
-        haptics.selection();
         const id = editBtn.dataset.id;
-        const entry = storage.getMeasurements().find((m) => m.id === id);
-        if (entry) {
-          openMeasurementModal(entry);
-        }
+        openMeasurementById(id);
       }
     });
   }
@@ -460,6 +466,7 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
 
   return {
     openMeasurementModal,
+    openMeasurementById,
     renderTrendSummary,
     renderMeasurementsHistory
   };

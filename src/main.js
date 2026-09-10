@@ -127,6 +127,7 @@ const historyFilters = { period: "30", compoundId: "all", eventType: "all", quer
 
 let getDoseDisplayData = null;
 let buildReviewModel = null;
+let buildWeightChartModel = null;
 let calculateAdherenceSummary = null;
 let renderAdherenceSummaryHTML = null;
 let exportFile = null;
@@ -222,6 +223,7 @@ const historyFeature = createFeatureLoader(async () => {
   ]);
   getDoseDisplayData = report.getDoseDisplayData;
   buildReviewModel = report.buildReviewModel;
+  buildWeightChartModel = measurementsModule.buildWeightChartModel;
   calculateAdherenceSummary = adherence.calculateAdherenceSummary;
   renderAdherenceSummaryHTML = adherenceUi.renderAdherenceSummaryHTML;
   measurementsUI = measurementsModule.setupMeasurementsUI({
@@ -281,7 +283,7 @@ const settingsFeature = createFeatureLoader(async () => {
   diagnostics.setupDiagnosticsModal({
     storage,
     getNotificationsActive: () => (window.pepNotifications ? window.pepNotifications.hasActiveReminders() : false),
-    appVersion: "3.1.0"
+    appVersion: "3.2.0"
   });
   const widgetToggle = document.getElementById("widget-discrete-toggle");
   if (widgetToggle && widgetToggle.dataset.widgetBound !== "true") {
@@ -678,8 +680,12 @@ function setupRenderedEventDelegation() {
   });
 
   document.getElementById("view-history")?.addEventListener("click", async (event) => {
-    const target = event.target.closest("button");
+    const target = event.target.closest("button, [role='button']");
     if (!target) return;
+    if (target.matches(".weight-chart-point")) {
+      measurementsUI?.openMeasurementById(target.dataset.measurementId);
+      return;
+    }
     if (target.matches("[data-adherence-days]")) {
       const days = Number.parseInt(target.dataset.adherenceDays, 10);
       if ([7, 30].includes(days) && days !== adherencePeriodDays) {
@@ -695,14 +701,22 @@ function setupRenderedEventDelegation() {
       return;
     }
     if (target.matches(".history-measurement-edit")) {
-      const entry = storage.getMeasurements().find((item) => item.id === target.dataset.id);
-      if (entry) measurementsUI?.openMeasurementModal(entry);
+      measurementsUI?.openMeasurementById(target.dataset.id);
       return;
     }
     if (target.matches(".hist-rm") && await showConfirmDialog({ title: "Excluir Registro", message: "Deseja realmente remover este registro de dose do histórico?", confirmText: "Excluir", isDanger: true })) {
       deleteHistoryEntry(target.dataset.date, target.dataset.pep, Number(target.dataset.idx));
     }
   });
+
+  const updateWeightChartDetail = (event) => {
+    const point = event.target.closest(".weight-chart-point");
+    if (!point) return;
+    const detail = document.getElementById("history-weight-chart-detail");
+    if (detail) detail.textContent = point.dataset.detail || "";
+  };
+  document.getElementById("view-history")?.addEventListener("focusin", updateWeightChartDetail);
+  document.getElementById("view-history")?.addEventListener("pointerover", updateWeightChartDetail);
 }
 
 function drawRing(taken, total) {
@@ -1348,6 +1362,7 @@ function renderHistoryEvolution(model) {
   if (!target) return;
   const stats = model.measurementStats;
   const weightRecords = model.measurements.filter((entry) => entry.weightKg !== null);
+  const weightChart = buildWeightChartModel(model.measurements);
   const symptomRows = Object.entries(stats.symptomsFrequency).sort((a, b) => b[1] - a[1]);
   if (model.measurements.length === 0) {
     target.innerHTML = `<div class="empty-state-illustrated empty-state-illustrated--measurements"><img class="empty-state-illustration" src="/assets/illustrations/empty-measurements.png" alt="" aria-hidden="true"><div class="empty-state-title">Registre seu primeiro acompanhamento</div><div class="empty-state-description">Peso, medidas e sintomas ficam organizados no histórico local.</div><button type="button" class="btn-primary empty-state-action" id="empty-add-measurement-btn">+ Medidas / Sintomas</button></div>`;
@@ -1361,6 +1376,7 @@ function renderHistoryEvolution(model) {
       <span><b>${esc(String(weightRecords.length))}</b> pesos registrados</span>
       <span><b>${esc(String(symptomRows.reduce((sum, [, count]) => sum + count, 0)))}</b> relatos de sintomas</span>
     </div>
+    ${renderWeightChart(weightChart)}
     ${weightRecords.length > 0 && weightRecords.length < 3 ? `<p class="history-context-note">Há poucos registros de peso. Os valores disponíveis são exibidos sem projeção de tendência.</p>` : ""}
     ${symptomRows.length ? `<div class="history-symptom-frequency">${symptomRows.map(([name, count]) => `<span>${esc(name)} <b>${count}×</b></span>`).join("")}</div>` : ""}
     <details class="history-data-table"><summary>Tabela textual dos dados utilizados</summary>
@@ -1369,6 +1385,39 @@ function renderHistoryEvolution(model) {
       </tbody></table></div></details>
     <p class="history-context-note">Dados descritivos autorrelatados. A falta de registro não significa ausência de sintomas e não há interpretação causal ou clínica.</p>
   </section>`;
+}
+
+function renderWeightChart(chart) {
+  if (!chart || chart.points.length === 0) {
+    return `<div class="weight-chart-empty" data-testid="weight-chart-empty">Ainda não há pesos válidos neste período. Os demais registros continuam disponíveis abaixo.</div>`;
+  }
+
+  const latest = chart.points[chart.points.length - 1];
+  const description = chart.points.length === 1
+    ? `Um peso registrado em ${fmtBR(latest.date)}: ${latest.weightKg} kg.`
+    : `${chart.points.length} pesos diários registrados entre ${fmtBR(chart.firstDate)} e ${fmtBR(chart.lastDate)}. As distâncias representam os intervalos reais entre as datas.`;
+  const dateLabels = chart.firstDate === chart.lastDate
+    ? `<text class="weight-chart-axis-label" x="${chart.points[0].x}" y="${chart.height - 10}" text-anchor="middle">${esc(fmtBR(chart.firstDate))}</text>`
+    : `<text class="weight-chart-axis-label" x="${chart.plot.left}" y="${chart.height - 10}" text-anchor="start">${esc(fmtBR(chart.firstDate))}</text><text class="weight-chart-axis-label" x="${chart.width - chart.plot.right}" y="${chart.height - 10}" text-anchor="end">${esc(fmtBR(chart.lastDate))}</text>`;
+
+  return `<div class="weight-chart" data-testid="weight-chart">
+    <div class="weight-chart-heading"><strong>Evolução do peso</strong><span>Último peso de cada dia</span></div>
+    <div class="weight-chart-stage">
+      <svg class="weight-chart-svg" viewBox="0 0 ${chart.width} ${chart.height}" role="img" aria-labelledby="weight-chart-title weight-chart-desc">
+        <title id="weight-chart-title">Evolução do peso registrado</title>
+        <desc id="weight-chart-desc">${esc(description)}</desc>
+        ${chart.gridLines.map((line) => `<line class="weight-chart-grid" x1="${chart.plot.left}" x2="${chart.width - chart.plot.right}" y1="${line.y}" y2="${line.y}"></line><text class="weight-chart-axis-label" x="${chart.plot.left - 9}" y="${line.y + 4}" text-anchor="end">${esc(String(line.weightKg))} kg</text>`).join("")}
+        <path class="weight-chart-area" d="${chart.areaPath}"></path>
+        <path class="weight-chart-line" d="${chart.linePath}"></path>
+        ${dateLabels}
+      </svg>
+      ${chart.points.map((point) => {
+        const detail = `${fmtBR(point.date)}${point.time ? ` às ${point.time}` : ""}: ${point.weightKg} kg`;
+        return `<button type="button" class="weight-chart-point" style="left:${(point.x / chart.width) * 100}%;top:${(point.y / chart.height) * 100}%" data-measurement-id="${esc(point.id)}" data-detail="${esc(detail)}" aria-label="${esc(`${detail}. Abrir registro.`)}"></button>`;
+      }).join("")}
+    </div>
+    <p class="weight-chart-detail" id="history-weight-chart-detail" aria-live="polite">${esc(`${fmtBR(latest.date)}${latest.time ? ` às ${latest.time}` : ""}: ${latest.weightKg} kg`)}</p>
+  </div>`;
 }
 
 function renderHistoryLegacy() {

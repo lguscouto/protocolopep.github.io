@@ -1,7 +1,7 @@
 # Política de Privacidade — Protocolo PEP
 
 **Última atualização:** 9 de Setembro de 2026<br>
-**Versão da Aplicação:** 3.1.0
+**Versão da Aplicação:** 3.2.0
 
 ## 1. Princípio Fundamental e Arquitetura Local-First
 O **Protocolo PEP** foi concebido e estruturado sob os princípios **Local-First**, **Privacidade por Padrão** e **Não Rastreamento**. Acreditamos que seus dados médicos, protocolos de peptídeos, horários de aplicação, notas de reconstituição e medições corporais pertencem única e exclusivamente a você.

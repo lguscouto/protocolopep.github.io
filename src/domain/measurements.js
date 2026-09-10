@@ -470,6 +470,123 @@ export function calculateMeasurementStats(entries) {
   };
 }
 
+const WEIGHT_CHART_SIZE = Object.freeze({
+  width: 720,
+  height: 240,
+  left: 58,
+  right: 18,
+  top: 18,
+  bottom: 38
+});
+
+function dateKeyToUtcTime(value) {
+  if (!isValidDateKey(value)) return null;
+  const [year, month, day] = value.split("-").map(Number);
+  return Date.UTC(year, month - 1, day);
+}
+
+/**
+ * Constrói a geometria descritiva do gráfico de peso sem interpolar registros.
+ * Quando há mais de um peso no mesmo dia, mantém o último registro daquele dia.
+ *
+ * @param {Object[]} measurements
+ * @returns {Object}
+ */
+export function buildWeightChartModel(measurements) {
+  const source = Array.isArray(measurements) ? measurements : [];
+  const candidates = source
+    .map((entry, inputIndex) => ({ entry, inputIndex }))
+    .filter(({ entry }) => (
+      entry && typeof entry === "object"
+      && isValidDateKey(entry.date)
+      && typeof entry.weightKg === "number"
+      && Number.isFinite(entry.weightKg)
+      && entry.weightKg > 0
+    ))
+    .sort((a, b) => {
+      const dateComparison = a.entry.date.localeCompare(b.entry.date);
+      if (dateComparison !== 0) return dateComparison;
+      const timeComparison = String(a.entry.time || "").localeCompare(String(b.entry.time || ""));
+      return timeComparison !== 0 ? timeComparison : a.inputIndex - b.inputIndex;
+    });
+
+  const latestByDate = new Map();
+  candidates.forEach(({ entry }) => latestByDate.set(entry.date, entry));
+  const dailyEntries = [...latestByDate.values()];
+  const { width, height, left, right, top, bottom } = WEIGHT_CHART_SIZE;
+  const plotWidth = width - left - right;
+  const plotHeight = height - top - bottom;
+
+  if (dailyEntries.length === 0) {
+    return {
+      width,
+      height,
+      plot: { left, right, top, bottom, width: plotWidth, height: plotHeight },
+      points: [],
+      gridLines: [],
+      linePath: "",
+      areaPath: "",
+      firstDate: null,
+      lastDate: null,
+      minWeight: null,
+      maxWeight: null
+    };
+  }
+
+  const weights = dailyEntries.map((entry) => entry.weightKg);
+  const rawMin = Math.min(...weights);
+  const rawMax = Math.max(...weights);
+  const range = rawMax - rawMin;
+  const yPadding = range > 0 ? Math.max(range * 0.12, 0.25) : Math.max(rawMin * 0.01, 0.5);
+  const minWeight = Math.max(0, rawMin - yPadding);
+  const maxWeight = rawMax + yPadding;
+  const firstTime = dateKeyToUtcTime(dailyEntries[0].date);
+  const lastTime = dateKeyToUtcTime(dailyEntries[dailyEntries.length - 1].date);
+  const timeRange = lastTime - firstTime;
+
+  const points = dailyEntries.map((entry) => {
+    const entryTime = dateKeyToUtcTime(entry.date);
+    const x = timeRange === 0
+      ? left + plotWidth / 2
+      : left + ((entryTime - firstTime) / timeRange) * plotWidth;
+    const y = top + ((maxWeight - entry.weightKg) / (maxWeight - minWeight)) * plotHeight;
+    return {
+      id: String(entry.id || ""),
+      date: entry.date,
+      time: String(entry.time || ""),
+      weightKg: entry.weightKg,
+      source: entry.source || "Local",
+      ownership: entry.ownership === "external" ? "external" : "pep",
+      x,
+      y
+    };
+  });
+
+  const linePath = points.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`).join(" ");
+  const baseline = top + plotHeight;
+  const areaPath = points.length > 1
+    ? `${linePath} L ${points[points.length - 1].x} ${baseline} L ${points[0].x} ${baseline} Z`
+    : "";
+  const gridLines = [0, 0.5, 1].map((ratio) => ({
+    y: top + ratio * plotHeight,
+    weightKg: Math.round((maxWeight - ratio * (maxWeight - minWeight)) * 10) / 10
+  }));
+
+  return {
+    width,
+    height,
+    plot: { left, right, top, bottom, width: plotWidth, height: plotHeight },
+    points,
+    gridLines,
+    linePath,
+    areaPath,
+    firstDate: points[0].date,
+    lastDate: points[points.length - 1].date,
+    minWeight: rawMin,
+    maxWeight: rawMax
+  };
+}
+
 /**
  * Filtra registros de medição por período e/ou sintoma.
  * @param {Object[]} entries

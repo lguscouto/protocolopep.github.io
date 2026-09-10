@@ -1,6 +1,6 @@
 # 🧪 Protocolo PEP · App Android (Local-First)
 
-![Version](https://img.shields.io/badge/version-3.1.0-2CC5C0)
+![Version](https://img.shields.io/badge/version-3.2.0-2CC5C0)
 ![Android](https://img.shields.io/badge/Android-8.0%2B-green)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![CI](https://github.com/lguscouto/protocolopep.github.io/actions/workflows/ci.yml/badge.svg)
@@ -8,6 +8,16 @@
 Aplicativo Android/PWA para registrar aplicações de peptídeos com poucos toques, receber lembretes no dia certo e lembrar o último local aplicado. O PEP funciona offline, sem conta e sem nuvem, com arquitetura **100% Local-First**, histórico preservado e ferramentas técnicas acessíveis somente quando necessárias.
 
 ---
+
+## 🚀 Novidades da Versão 3.2.0 (Evolução Visual do Peso)
+
+- **Gráfico no Histórico:** a área Evolução apresenta os pesos registrados no período selecionado em uma linha temporal responsiva, sem projeções nem valores estimados.
+- **Intervalos fiéis às datas:** a distância entre os pontos acompanha o intervalo real entre os registros; quando há mais de um peso no mesmo dia, o gráfico usa o último e preserva todos na tabela textual.
+- **Consulta direta:** tocar, clicar ou usar o teclado em um ponto abre o registro correspondente, mantendo medições do Health Connect em modo somente leitura.
+- **Acessibilidade e temas:** o gráfico oferece descrição para tecnologia assistiva, foco visível, alvos de toque amplos e adaptação aos temas escuro, claro e alto contraste.
+- **Compatibilidade preservada:** nenhuma migração ou alteração do schema de medições, backups e registros históricos foi necessária.
+- **Release Android versionada:** `versionName 3.2.0` e `versionCode 29`.
+- **Validação:** 491 testes unitários e 121 cenários E2E aprovados, 1 cenário intencionalmente ignorado, teste de desempenho, build Web/Android, testes Android, lint e instalação no emulador concluídos.
 
 ## 🚀 Novidades da Versão 3.1.0 (Desempenho e Toolchain Android)
 
