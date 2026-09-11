@@ -13,6 +13,7 @@ import {
   calculateWeightGoalIndicators,
   DEFAULT_SYMPTOM_SUGGESTIONS
 } from "../../src/domain/measurements.js";
+import { buildProtocolRevisionMarkerModel } from "../../src/domain/protocol-revision-markers.js";
 
 describe("Measurements Domain (V12)", () => {
   it("normaliza meta de peso com vírgula sem alterar a entrada", () => {
@@ -282,6 +283,33 @@ describe("Measurements Domain (V12)", () => {
       expect(single.points[0].x).toBe(single.plot.left + single.plot.width / 2);
       expect(buildBodyMetricChartModel([], "waist").points).toEqual([]);
       expect(() => buildBodyMetricChartModel([], "unknown")).toThrow("Métrica corporal inválida");
+    });
+  });
+
+  describe("marcadores de revisões no gráfico", () => {
+    it("usa somente revisões explícitas, preserva configurações e separa revisões do mesmo dia", () => {
+      const measurements = [{ id: "m1", date: "2026-09-01", weightKg: 80 }, { id: "m2", date: "2026-09-10", weightKg: 79 }];
+      const chart = buildBodyMetricChartModel(measurements, "weight", { startDate: "2026-09-01", endDate: "2026-09-15" });
+      const protocols = [{ id: "p1", name: "Atual", revisions: [
+        { id: "legacy", legacy: true, status: "active", effectiveFrom: "2026-09-02T08:00:00.000Z", config: { name: "Legado" } },
+        { id: "r1", status: "paused", effectiveFrom: "2026-09-05T08:00:00.000Z", config: { name: "Histórico", dose: "100 mcg", ui: 2.5, freq: "Todos os dias", perDay: 1, times: ["08:00"], remindersEnabled: true } },
+        { id: "r2", status: "active", effectiveFrom: "2026-09-05T18:00:00.000Z", config: { name: "Histórico", dose: "120 mcg", ui: 3, times: ["18:00"], remindersEnabled: false } },
+        { id: "outside", status: "active", effectiveFrom: "2026-09-20T08:00:00.000Z", config: { name: "Fora" } }
+      ] }];
+      const before = structuredClone(protocols);
+      const markers = buildProtocolRevisionMarkerModel(protocols, "p1", chart, { startDate: "2026-09-01", endDate: "2026-09-15" });
+      expect(markers.map((marker) => marker.id)).toEqual(["r1", "r2"]);
+      expect(markers[0]).toMatchObject({ statusLabel: "Pausado", config: { dose: "100 mcg", ui: 2.5, remindersEnabled: true } });
+      expect(markers[0].x).not.toBe(markers[1].x);
+      expect(protocols).toEqual(before);
+    });
+
+    it("mantém pesos proporcionais à janela selecionada", () => {
+      const chart = buildBodyMetricChartModel([{ id: "m", date: "2026-09-10", weightKg: 80 }], "weight", { startDate: "2026-09-01", endDate: "2026-09-20" });
+      expect(chart.points[0].x).toBeCloseTo(chart.plot.left + chart.plot.width * 9 / 19, 5);
+      expect(chart.firstDate).toBe("2026-09-01");
+      expect(chart.lastDate).toBe("2026-09-20");
+      expect(buildProtocolRevisionMarkerModel([], "missing", chart, { startDate: "2026-09-01", endDate: "2026-09-20" })).toEqual([]);
     });
   });
 

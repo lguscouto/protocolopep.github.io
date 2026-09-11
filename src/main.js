@@ -124,11 +124,14 @@ let researchUI = null;
 let adherencePeriodDays = 7;
 const historyFilters = { period: "30", compoundId: "all", eventType: "all", query: "", startDate: null, endDate: null };
 let historyBodyMetric = "weight";
+let historyRevisionCompoundId = "";
 
 let getDoseDisplayData = null;
 let buildReviewModel = null;
 let buildBodyMetricChartModel = null;
 let calculateWeightGoalIndicators = null;
+let buildProtocolRevisionMarkerModel = null;
+let renderBodyMetricChart = null;
 let calculateAdherenceSummary = null;
 let renderAdherenceSummaryHTML = null;
 let exportFile = null;
@@ -216,17 +219,21 @@ const agendaFeature = createFeatureLoader(async () => {
 const historyFeature = createFeatureLoader(async () => {
   restoreFeatureDom("history");
   applyTranslations(document, i18nService);
-  const [report, adherence, adherenceUi, measurementsModule, measurementsDomain] = await Promise.all([
+  const [report, adherence, adherenceUi, measurementsModule, measurementsDomain, revisionMarkers, bodyMetricChartUi] = await Promise.all([
     import("./domain/report.js"),
     import("./domain/adherence.js"),
     import("./ui/adherence.js"),
     import("./ui/measurements.js"),
-    import("./domain/measurements.js")
+    import("./domain/measurements.js"),
+    import("./domain/protocol-revision-markers.js"),
+    import("./ui/body-metric-chart.js")
   ]);
   getDoseDisplayData = report.getDoseDisplayData;
   buildReviewModel = report.buildReviewModel;
   buildBodyMetricChartModel = measurementsModule.buildBodyMetricChartModel;
   calculateWeightGoalIndicators = measurementsDomain.calculateWeightGoalIndicators;
+  buildProtocolRevisionMarkerModel = revisionMarkers.buildProtocolRevisionMarkerModel;
+  renderBodyMetricChart = bodyMetricChartUi.renderBodyMetricChart;
   calculateAdherenceSummary = adherence.calculateAdherenceSummary;
   renderAdherenceSummaryHTML = adherenceUi.renderAdherenceSummaryHTML;
   measurementsUI = measurementsModule.setupMeasurementsUI({
@@ -286,7 +293,7 @@ const settingsFeature = createFeatureLoader(async () => {
   diagnostics.setupDiagnosticsModal({
     storage,
     getNotificationsActive: () => (window.pepNotifications ? window.pepNotifications.hasActiveReminders() : false),
-    appVersion: "3.7.0"
+    appVersion: "3.8.0"
   });
   const widgetToggle = document.getElementById("widget-discrete-toggle");
   if (widgetToggle && widgetToggle.dataset.widgetBound !== "true") {
@@ -692,6 +699,11 @@ function setupRenderedEventDelegation() {
       measurementsUI?.openMeasurementById(target.dataset.measurementId);
       return;
     }
+    if (target.matches(".protocol-revision-marker")) {
+      const detail = document.getElementById("history-protocol-revision-detail");
+      if (detail) detail.textContent = target.dataset.detail || "";
+      return;
+    }
     if (target.id === "history-goal-clear-btn") {
       const result = storage.setMeasurementGoals({ goalWeightKg: null });
       if (!result.success) {
@@ -726,6 +738,12 @@ function setupRenderedEventDelegation() {
   });
 
   const updateWeightChartDetail = (event) => {
+    const revisionMarker = event.target.closest(".protocol-revision-marker");
+    if (revisionMarker) {
+      const detail = document.getElementById("history-protocol-revision-detail");
+      if (detail) detail.textContent = revisionMarker.dataset.detail || "";
+      return;
+    }
     const point = event.target.closest(".weight-chart-point");
     if (!point) return;
     const detail = document.getElementById("history-weight-chart-detail");
@@ -734,8 +752,9 @@ function setupRenderedEventDelegation() {
   document.getElementById("view-history")?.addEventListener("focusin", updateWeightChartDetail);
   document.getElementById("view-history")?.addEventListener("pointerover", updateWeightChartDetail);
   document.getElementById("view-history")?.addEventListener("change", (event) => {
-    if (event.target.id !== "history-body-metric") return;
-    historyBodyMetric = event.target.value;
+    if (event.target.id === "history-body-metric") historyBodyMetric = event.target.value;
+    else if (event.target.id === "history-revision-compound") historyRevisionCompoundId = event.target.value;
+    else return;
     invalidateViews("history");
   });
   document.getElementById("view-history")?.addEventListener("submit", (event) => {
@@ -1439,7 +1458,19 @@ function renderHistoryEvolution(model) {
     historyBodyMetric = availableMetrics.find((metric) => metric.key === "weight")?.key || availableMetrics[0]?.key || "weight";
   }
   const selectedMetric = metricDefinitions.find((metric) => metric.key === historyBodyMetric) || metricDefinitions[0];
-  const bodyMetricChart = buildBodyMetricChartModel(model.measurements, selectedMetric.key);
+  const historyRange = historyDateRange();
+  const protocols = storage.getPeptides();
+  const bodyMetricChart = buildBodyMetricChartModel(model.measurements, selectedMetric.key, historyRevisionCompoundId ? historyRange : {});
+  const revisionCompounds = protocols.filter((protocol) => {
+    const probe = buildProtocolRevisionMarkerModel([protocol], protocol.id, bodyMetricChart, historyRange);
+    return probe.length > 0;
+  });
+  if (historyRevisionCompoundId && !revisionCompounds.some((protocol) => protocol.id === historyRevisionCompoundId)) {
+    historyRevisionCompoundId = "";
+  }
+  const revisionMarkers = historyRevisionCompoundId
+    ? buildProtocolRevisionMarkerModel(protocols, historyRevisionCompoundId, bodyMetricChart, historyRange)
+    : [];
   const symptomRows = Object.entries(stats.symptomsFrequency).sort((a, b) => b[1] - a[1]);
   if (model.measurements.length === 0) {
     target.innerHTML = `<section class="history-evolution"><form class="history-weight-goal" id="history-weight-goal-form"><div><strong>Meta pessoal de peso</strong><span>Opcional e salva apenas neste dispositivo.</span></div><label for="history-goal-weight-input" class="sr-only">Meta de peso em quilogramas</label><div class="history-weight-goal-controls"><input id="history-goal-weight-input" class="txt" type="text" inputmode="decimal" pattern="[0-9]+([,.][0-9]+)?" placeholder="Meta em kg" value="${weightIndicators.goalWeightKg ?? ""}"><button type="submit" class="btn-primary" id="history-goal-save-btn">Salvar meta</button><button type="button" class="btn-secondary" id="history-goal-clear-btn" ${weightIndicators.goalWeightKg === null ? "disabled" : ""}>Apagar</button></div></form><div class="empty-state-illustrated empty-state-illustrated--measurements"><img class="empty-state-illustration" src="/assets/illustrations/empty-measurements.png" alt="" aria-hidden="true"><div class="empty-state-title">Registre seu primeiro acompanhamento</div><div class="empty-state-description">Peso, medidas e sintomas ficam organizados no histórico local.</div><button type="button" class="btn-primary empty-state-action" id="empty-add-measurement-btn">+ Medidas / Sintomas</button></div></section>`;
@@ -1459,8 +1490,9 @@ function renderHistoryEvolution(model) {
       <span><b>${formatSigned(weightIndicators.weeklyObservedChangeKg)}</b> variação semanal observada</span>
       <span><b>${esc(goalDifference)}</b> diferença até a meta</span>
     </div>
+    ${revisionCompounds.length ? `<label class="history-metric-selector" for="history-revision-compound"><span>Revisões do composto</span><select id="history-revision-compound" class="txt"><option value="">Sem composto</option>${revisionCompounds.map((protocol) => `<option value="${esc(protocol.id)}" ${protocol.id === historyRevisionCompoundId ? "selected" : ""}>${esc(protocol.name)}</option>`).join("")}</select></label>` : ""}
     ${availableMetrics.length ? `<label class="history-metric-selector" for="history-body-metric"><span>Métrica do gráfico</span><select id="history-body-metric" class="txt">${availableMetrics.map((metric) => `<option value="${metric.key}" ${metric.key === selectedMetric.key ? "selected" : ""}>${metric.label}</option>`).join("")}</select></label>` : ""}
-    ${renderBodyMetricChart(bodyMetricChart)}
+    ${renderBodyMetricChart(bodyMetricChart, revisionMarkers)}
     ${weightRecords.length > 0 && weightRecords.length < 3 ? `<p class="history-context-note">Há poucos registros de peso. Os valores disponíveis são exibidos sem projeção de tendência.</p>` : ""}
     ${symptomRows.length ? `<div class="history-symptom-frequency">${symptomRows.map(([name, count]) => `<span>${esc(name)} <b>${count}×</b></span>`).join("")}</div>` : ""}
     <details class="history-data-table"><summary>Tabela textual dos dados utilizados</summary>
@@ -1469,40 +1501,6 @@ function renderHistoryEvolution(model) {
       </tbody></table></div></details>
     <p class="history-context-note">Dados descritivos autorrelatados. A falta de registro não significa ausência de sintomas e não há interpretação causal ou clínica.</p>
   </section>`;
-}
-
-function renderBodyMetricChart(chart) {
-  const metric = chart?.metric || { label: "Peso", unit: "kg" };
-  if (!chart || chart.points.length === 0) {
-    return `<div class="weight-chart-empty" data-testid="weight-chart-empty">Ainda não há pesos válidos neste período e também não há circunferências válidas. Os demais registros continuam disponíveis abaixo.</div>`;
-  }
-
-  const latest = chart.points[chart.points.length - 1];
-  const description = chart.points.length === 1
-    ? `Uma medida de ${metric.label.toLocaleLowerCase("pt-BR")} registrada em ${fmtBR(latest.date)}: ${latest.value} ${metric.unit}.`
-    : `${chart.points.length} medidas diárias de ${metric.label.toLocaleLowerCase("pt-BR")} registradas entre ${fmtBR(chart.firstDate)} e ${fmtBR(chart.lastDate)}. As distâncias representam os intervalos reais entre as datas.`;
-  const dateLabels = chart.firstDate === chart.lastDate
-    ? `<text class="weight-chart-axis-label" x="${chart.points[0].x}" y="${chart.height - 10}" text-anchor="middle">${esc(fmtBR(chart.firstDate))}</text>`
-    : `<text class="weight-chart-axis-label" x="${chart.plot.left}" y="${chart.height - 10}" text-anchor="start">${esc(fmtBR(chart.firstDate))}</text><text class="weight-chart-axis-label" x="${chart.width - chart.plot.right}" y="${chart.height - 10}" text-anchor="end">${esc(fmtBR(chart.lastDate))}</text>`;
-
-  return `<div class="weight-chart" data-testid="weight-chart">
-    <div class="weight-chart-heading"><strong>Evolução de ${metric.label.toLocaleLowerCase("pt-BR")}</strong><span>Última medida de cada dia</span></div>
-    <div class="weight-chart-stage">
-      <svg class="weight-chart-svg" viewBox="0 0 ${chart.width} ${chart.height}" role="img" aria-labelledby="weight-chart-title weight-chart-desc">
-        <title id="weight-chart-title">Evolução de ${metric.label.toLocaleLowerCase("pt-BR")} registrada</title>
-        <desc id="weight-chart-desc">${esc(description)}</desc>
-        ${chart.gridLines.map((line) => `<line class="weight-chart-grid" x1="${chart.plot.left}" x2="${chart.width - chart.plot.right}" y1="${line.y}" y2="${line.y}"></line><text class="weight-chart-axis-label" x="${chart.plot.left - 9}" y="${line.y + 4}" text-anchor="end">${esc(String(line.value))} ${metric.unit}</text>`).join("")}
-        <path class="weight-chart-area" d="${chart.areaPath}"></path>
-        <path class="weight-chart-line" d="${chart.linePath}"></path>
-        ${dateLabels}
-      </svg>
-      ${chart.points.map((point) => {
-        const detail = `${fmtBR(point.date)}${point.time ? ` às ${point.time}` : ""}: ${point.value} ${metric.unit}`;
-        return `<button type="button" class="weight-chart-point" style="left:${(point.x / chart.width) * 100}%;top:${(point.y / chart.height) * 100}%" data-measurement-id="${esc(point.id)}" data-detail="${esc(detail)}" aria-label="${esc(`${detail}. Abrir registro.`)}"></button>`;
-      }).join("")}
-    </div>
-    <p class="weight-chart-detail" id="history-weight-chart-detail" aria-live="polite">${esc(`${fmtBR(latest.date)}${latest.time ? ` às ${latest.time}` : ""}: ${latest.value} ${metric.unit}`)}</p>
-  </div>`;
 }
 
 function renderHistoryLegacy() {

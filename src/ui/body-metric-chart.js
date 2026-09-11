@@ -1,0 +1,24 @@
+import { escapeHtml } from "./dom.js";
+
+const fmtBR = (iso) => {
+  if (!iso) return "";
+  const parts = iso.split("-");
+  return parts.length < 3 ? iso : `${parts[2]}/${parts[1]}/${parts[0]}`;
+};
+
+export function renderBodyMetricChart(chart, revisionMarkers = []) {
+  const esc = escapeHtml;
+  const metric = chart?.metric || { label: "Peso", unit: "kg" };
+  if (!chart || chart.points.length === 0) {
+    return `<div class="weight-chart-empty" data-testid="weight-chart-empty">Ainda não há pesos válidos neste período e também não há circunferências válidas. Os demais registros continuam disponíveis abaixo.</div>`;
+  }
+  const latest = chart.points[chart.points.length - 1];
+  const revisionDescription = revisionMarkers.length ? ` ${revisionMarkers.length} revisão${revisionMarkers.length === 1 ? "" : "ões"} de protocolo indicada${revisionMarkers.length === 1 ? "" : "s"} por marcadores verticais.` : "";
+  const description = (chart.points.length === 1
+    ? `Uma medida de ${metric.label.toLocaleLowerCase("pt-BR")} registrada em ${fmtBR(latest.date)}: ${latest.value} ${metric.unit}.`
+    : `${chart.points.length} medidas diárias de ${metric.label.toLocaleLowerCase("pt-BR")} registradas entre ${fmtBR(chart.firstDate)} e ${fmtBR(chart.lastDate)}. As distâncias representam os intervalos reais entre as datas.`) + revisionDescription;
+  const dateLabels = chart.firstDate === chart.lastDate
+    ? `<text class="weight-chart-axis-label" x="${chart.points[0].x}" y="${chart.height - 10}" text-anchor="middle">${esc(fmtBR(chart.firstDate))}</text>`
+    : `<text class="weight-chart-axis-label" x="${chart.plot.left}" y="${chart.height - 10}" text-anchor="start">${esc(fmtBR(chart.firstDate))}</text><text class="weight-chart-axis-label" x="${chart.width - chart.plot.right}" y="${chart.height - 10}" text-anchor="end">${esc(fmtBR(chart.lastDate))}</text>`;
+  return `<div class="weight-chart" data-testid="weight-chart"><div class="weight-chart-heading"><strong>Evolução de ${metric.label.toLocaleLowerCase("pt-BR")}</strong><span>Última medida de cada dia</span></div><div class="weight-chart-stage"><svg class="weight-chart-svg" viewBox="0 0 ${chart.width} ${chart.height}" role="img" aria-labelledby="weight-chart-title weight-chart-desc"><title id="weight-chart-title">Evolução de ${metric.label.toLocaleLowerCase("pt-BR")} registrada</title><desc id="weight-chart-desc">${esc(description)}</desc>${chart.gridLines.map((line) => `<line class="weight-chart-grid" x1="${chart.plot.left}" x2="${chart.width - chart.plot.right}" y1="${line.y}" y2="${line.y}"></line><text class="weight-chart-axis-label" x="${chart.plot.left - 9}" y="${line.y + 4}" text-anchor="end">${esc(String(line.value))} ${metric.unit}</text>`).join("")}${revisionMarkers.map((marker) => `<line class="protocol-revision-line" x1="${marker.x}" x2="${marker.x}" y1="${chart.plot.top}" y2="${chart.height - chart.plot.bottom}"></line>`).join("")}<path class="weight-chart-area" d="${chart.areaPath}"></path><path class="weight-chart-line" d="${chart.linePath}"></path>${dateLabels}</svg>${chart.points.map((point) => { const detail = `${fmtBR(point.date)}${point.time ? ` às ${point.time}` : ""}: ${point.value} ${metric.unit}`; return `<button type="button" class="weight-chart-point" style="left:${(point.x / chart.width) * 100}%;top:${(point.y / chart.height) * 100}%" data-measurement-id="${esc(point.id)}" data-detail="${esc(detail)}" aria-label="${esc(`${detail}. Abrir registro.`)}"></button>`; }).join("")}${revisionMarkers.map((marker) => { const config = marker.config; const summary = [config.dose ? `Dose: ${config.dose}${config.ui !== null ? ` · ${config.ui} UI` : ""}` : "", config.freq ? `Frequência: ${config.freq}` : "", config.perDay ? `${config.perDay} aplicação${config.perDay === 1 ? "" : "ões"} por dia` : "", config.times.length ? `Horários: ${config.times.join(", ")}` : "", `Lembretes: ${config.remindersEnabled ? "ativados" : "desativados"}`].filter(Boolean).join(" · "); const detail = `${fmtBR(marker.date)} às ${marker.time} · ${marker.statusLabel} · ${config.name}${summary ? ` · ${summary}` : ""}`; return `<button type="button" class="protocol-revision-marker" style="left:${(marker.x / chart.width) * 100}%" data-detail="${esc(detail)}" aria-label="${esc(`${detail}. Mostrar revisão registrada.`)}"></button>`; }).join("")}</div><p class="weight-chart-detail" id="history-weight-chart-detail" aria-live="polite">${esc(`${fmtBR(latest.date)}${latest.time ? ` às ${latest.time}` : ""}: ${latest.value} ${metric.unit}`)}</p>${revisionMarkers.length ? `<p class="protocol-revision-detail" id="history-protocol-revision-detail" aria-live="polite">Selecione uma revisão para ver a configuração registrada.</p>` : ""}</div>`;
+}

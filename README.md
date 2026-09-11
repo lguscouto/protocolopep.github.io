@@ -1,6 +1,6 @@
 # 🧪 Protocolo PEP · App Android (Local-First)
 
-![Version](https://img.shields.io/badge/version-3.7.0-2CC5C0)
+![Version](https://img.shields.io/badge/version-3.8.0-2CC5C0)
 ![Android](https://img.shields.io/badge/Android-8.0%2B-green)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![CI](https://github.com/lguscouto/protocolopep.github.io/actions/workflows/ci.yml/badge.svg)
@@ -8,6 +8,15 @@
 Aplicativo Android/PWA para registrar aplicações de peptídeos com poucos toques, receber lembretes no dia certo e lembrar o último local aplicado. O PEP funciona offline, sem conta e sem nuvem, com arquitetura **100% Local-First**, histórico preservado e ferramentas técnicas acessíveis somente quando necessárias.
 
 ---
+
+## 🚀 Novidades da Versão 3.8.0 (Revisões do protocolo no gráfico)
+
+- **Linha do tempo opcional:** em Histórico → Evolução, o seletor “Revisões do composto” começa em “Sem composto”; ao escolher um composto, exibe somente as revisões explícitas persistidas no período.
+- **Escala temporal comum:** as revisões aparecem como marcadores verticais tracejados no mesmo eixo real das medições, inclusive antes ou depois da primeira medida visível. Revisões no mesmo dia continuam separadas e preservam o horário.
+- **Detalhe histórico fiel:** ao selecionar um marcador, o painel mostra data, horário, estado e a configuração capturada naquela revisão, incluindo dose/UI, frequência, aplicações, horários e lembretes.
+- **Sem inferência causal:** os marcadores apenas registram eventos históricos; o aplicativo não associa revisões a variações corporais nem faz recomendações clínicas.
+- **Compatibilidade preservada:** não houve mudança em protocolos, medições, logs, Health Connect, backups ou schema 11.
+- **Release Android versionada:** `versionName 3.8.0` e `versionCode 36`.
 
 ## 🚀 Novidades da Versão 3.7.0 (Meta pessoal de peso)
 

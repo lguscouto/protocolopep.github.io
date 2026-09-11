@@ -3898,16 +3898,23 @@ html.high-contrast .multi-dose-extra-list li {
 .weight-chart-axis-label { fill: var(--muted); font-size: 10px; font-weight: 600; }
 .weight-chart-area { fill: color-mix(in srgb, var(--primary) 14%, transparent); pointer-events: none; }
 .weight-chart-line { fill: none; stroke: var(--primary); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; pointer-events: none; }
+.protocol-revision-line { stroke: var(--warning); stroke-width: 2; stroke-dasharray: 5 4; vector-effect: non-scaling-stroke; pointer-events: none; }
 .weight-chart-point { position: absolute; width: 45px; height: 45px; padding: 0; border: 0; border-radius: 50%; background: transparent; transform: translate(-50%, -50%); cursor: pointer; }
 .weight-chart-point::after { content: ""; position: absolute; inset: 50% auto auto 50%; width: 10px; height: 10px; border: 4px solid var(--primary); border-radius: 50%; background: var(--surface); transform: translate(-50%, -50%); }
 .weight-chart-point:hover::after,
 .weight-chart-point:focus-visible::after { background: var(--primary); }
 .weight-chart-point:focus-visible { outline: 2px solid var(--text); outline-offset: -7px; }
+.protocol-revision-marker { position: absolute; top: 0; bottom: 0; width: 44px; padding: 0; border: 0; background: transparent; transform: translateX(-50%); cursor: pointer; }
+.protocol-revision-marker::after { content: ""; position: absolute; top: 8px; bottom: 26px; left: 50%; width: 8px; border-radius: 4px; background: color-mix(in srgb, var(--warning) 22%, transparent); transform: translateX(-50%); }
+.protocol-revision-marker:hover::after, .protocol-revision-marker:focus-visible::after { background: color-mix(in srgb, var(--warning) 48%, transparent); }
+.protocol-revision-marker:focus-visible { outline: 2px solid var(--warning); outline-offset: -5px; }
 .weight-chart-detail { min-height: 18px; margin: 2px 0 0; color: var(--text); font-size: 11.5px; font-weight: 700; text-align: center; }
+.protocol-revision-detail { min-height: 18px; margin: 5px 0 0; color: var(--muted); font-size: 11px; line-height: 1.4; text-align: center; }
 .weight-chart-empty { margin-top: 12px; padding: 12px; border: 1px dashed var(--border); border-radius: 10px; color: var(--muted); background: var(--surface2); font-size: 11.5px; line-height: 1.45; text-align: center; }
 html.high-contrast .weight-chart-line { stroke-width: 4; }
 html.high-contrast .weight-chart-point::after { border-width: 5px; }
 html.high-contrast .weight-chart-grid { stroke: var(--muted); }
+html.high-contrast .protocol-revision-line { stroke-width: 3; }
 .history-symptom-frequency { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 .history-symptom-frequency span, .history-context-badge { padding: 4px 8px; border-radius: 999px; background: var(--surface2); color: var(--muted); font-size: 11px; }
 .history-data-table { margin-top: 12px; }

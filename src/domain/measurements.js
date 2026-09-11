@@ -612,7 +612,7 @@ function dateKeyToUtcTime(value) {
  * @param {"weight"|"abdomen"|"waist"|"hips"} metricKey
  * @returns {Object}
  */
-export function buildBodyMetricChartModel(measurements, metricKey = "weight") {
+export function buildBodyMetricChartModel(measurements, metricKey = "weight", { startDate = null, endDate = null } = {}) {
   const metric = BODY_METRICS[metricKey];
   if (!metric) throw new MeasurementValidationError("INVALID_BODY_METRIC", "Métrica corporal inválida.");
   const getValue = metricKey === "weight"
@@ -666,8 +666,12 @@ export function buildBodyMetricChartModel(measurements, metricKey = "weight") {
   const yPadding = range > 0 ? Math.max(range * 0.12, 0.25) : Math.max(rawMin * 0.01, 0.5);
   const minWeight = Math.max(0, rawMin - yPadding);
   const maxWeight = rawMax + yPadding;
-  const firstTime = dateKeyToUtcTime(dailyEntries[0].date);
-  const lastTime = dateKeyToUtcTime(dailyEntries[dailyEntries.length - 1].date);
+  const requestedStart = dateKeyToUtcTime(startDate);
+  const requestedEnd = dateKeyToUtcTime(endDate);
+  const firstTime = requestedStart !== null && requestedEnd !== null && requestedEnd >= requestedStart
+    ? requestedStart : dateKeyToUtcTime(dailyEntries[0].date);
+  const lastTime = requestedStart !== null && requestedEnd !== null && requestedEnd >= requestedStart
+    ? requestedEnd : dateKeyToUtcTime(dailyEntries[dailyEntries.length - 1].date);
   const timeRange = lastTime - firstTime;
 
   const points = dailyEntries.map((entry) => {
@@ -709,8 +713,8 @@ export function buildBodyMetricChartModel(measurements, metricKey = "weight") {
     gridLines,
     linePath,
     areaPath,
-    firstDate: points[0].date,
-    lastDate: points[points.length - 1].date,
+    firstDate: startDate && endDate && requestedEnd >= requestedStart ? startDate : points[0].date,
+    lastDate: startDate && endDate && requestedEnd >= requestedStart ? endDate : points[points.length - 1].date,
     minValue: rawMin,
     maxValue: rawMax,
     minWeight: metricKey === "weight" ? rawMin : undefined,
