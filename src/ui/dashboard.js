@@ -86,9 +86,7 @@ export function createDashboardFocusViewModel({ todayItems = [], upcoming = [], 
       nextSite: nextPending.nextSite || "",
       lastSite: nextPending.lastSite || "",
       action: nextPending.dueCount > 1 ? "add-dose" : "toggle-dose",
-      actionLabel: nextPending.dueCount > 1
-        ? translate("dashboard.registerNextDose", {}, locale)
-        : translate("dashboard.registerApplication", {}, locale),
+      actionLabel: translate("dashboard.registerApplication", {}, locale),
       peptideId: nextPending.id || ""
     };
   }

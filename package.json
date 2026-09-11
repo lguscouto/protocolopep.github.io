@@ -1,6 +1,6 @@
 {
   "name": "pep-protocol",
-  "version": "3.4.1",
+  "version": "3.5.0",
   "type": "module",
   "private": true,
   "description": "App Android/PWA Local-First para registrar aplicações de peptídeos, receber lembretes e consultar o histórico.",

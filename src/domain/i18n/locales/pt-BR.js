@@ -56,6 +56,19 @@ export const ptBR = {
     "resolved": "registros resolvidos",
     "disclaimer": "Resumo descritivo dos seus registros. Não indica eficácia, segurança ou orientação médica."
   },
+  "phase4": {
+    "routineComplete": "Rotina do dia concluída",
+    "undoLast": "Desfazer última",
+    "details": "Detalhes das aplicações",
+    "occurrence": "Aplicação {position}",
+    "scheduledAt": "Prevista: {time}",
+    "timeNotInformed": "Horário não informado",
+    "recordedAt": "Registrada: {time}",
+    "reason": "Motivo: {reason}",
+    "extraRecords": "Registros excedentes",
+    "extraRecord": "Registro extra {position}",
+    "unknownState": "Estado desconhecido"
+  },
   "common": {
     "today": "Hoje",
     "save": "Salvar",

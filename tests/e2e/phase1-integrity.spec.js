@@ -41,7 +41,7 @@ async function openManagedProtocol(page, id = BASE_PROTOCOL.id) {
 }
 
 async function recordStatus(page, status) {
-  await page.locator(`.dose-status[data-id="${BASE_PROTOCOL.id}"]`).click();
+  await page.locator(`.multi-dose-register[data-id="${BASE_PROTOCOL.id}"]`).click();
   await expect(page.locator("#retro-log-modal")).toHaveClass(/on/);
   await page.locator("#retro-status-select").selectOption(status);
   await page.locator("#retro-reason-input").fill(`Registro sintético ${status}`);
@@ -76,9 +76,15 @@ test.describe("Fase 1 — integridade da rotina", () => {
     expect(omitted.logs[TODAY][BASE_PROTOCOL.id].map((log) => log.status)).toEqual(["skipped", "missed"]);
     expect(omitted.inventory[0].remainingMcg).toBe(5000);
     await expect(page.locator("#dash-hero")).toHaveAttribute("data-state", "complete");
-    await expect(page.locator(".doses-count")).toContainText("0/2 aplicadas");
-    await expect(page.locator(".doses-count")).toContainText("1 puladas");
-    await expect(page.locator(".doses-count")).toContainText("1 não realizadas");
+    await expect(page.locator(".multi-dose-register")).toContainText("Rotina do dia concluída");
+    await expect(page.locator(".multi-dose-register")).toContainText("2/2");
+    await expect(page.locator(".dosebox, .dose-add, .dose-status")).toHaveCount(0);
+    const details = page.locator(".multi-dose-details");
+    await details.locator("summary").focus();
+    await page.keyboard.press("Enter");
+    await expect(details).toHaveAttribute("open", "");
+    await expect(details.locator('[data-status="skipped"]')).toContainText("Pulada");
+    await expect(details.locator('[data-status="missed"]')).toContainText("Não realizada");
 
     await page.locator('[data-tab="week"]').click();
     const day = page.locator(`.week-day[data-date="${TODAY}"]`);
@@ -101,6 +107,47 @@ test.describe("Fase 1 — integridade da rotina", () => {
     await page.locator('[data-tab="history"]').click();
     await expect(page.locator(".hist-status").filter({ hasText: "Aplicada" })).toHaveCount(1);
     await expect(page.locator(".hist-status").filter({ hasText: "Não realizada" })).toHaveCount(1);
+    runtime.assertCleanRuntime();
+  });
+
+  test("multidose usa uma ação, exige local só para aplicada e desfaz débito vinculado", async ({ page }) => {
+    const runtime = await prepare(page);
+    const action = page.locator(`.multi-dose-register[data-id="${BASE_PROTOCOL.id}"]`);
+    await expect(action).toHaveCount(1);
+    await expect(action).toContainText("Registrar aplicação");
+    await expect(action).toContainText("0/2");
+    await expect(page.locator(".dosebox, .dose-add, .dose-status")).toHaveCount(0);
+
+    await action.click();
+    await expect(page.locator("#retro-status-select")).toHaveValue("applied");
+    await page.locator("#retro-save").click();
+    await expect(page.locator("#confirm-title")).toHaveText("Escolha o local");
+    expect((await state(page)).logs).toEqual({});
+    expect((await state(page)).inventory[0].remainingMcg).toBe(5000);
+    await page.locator("#confirm-ok").click();
+
+    await page.locator("#retro-log-modal .injection-site-point").first().click();
+    await page.locator("#retro-save").click();
+    await expect(page.locator("#retro-log-modal")).not.toHaveClass(/on/);
+    const applied = await state(page);
+    expect(applied.logs[TODAY][BASE_PROTOCOL.id]).toHaveLength(1);
+    expect(applied.inventory[0].remainingMcg).toBe(4937.5);
+    await expect(action).toContainText("1/2");
+
+    await page.locator(`.dose-undo[data-id="${BASE_PROTOCOL.id}"]`).click();
+    const undone = await state(page);
+    expect(undone.logs[TODAY]?.[BASE_PROTOCOL.id] || []).toHaveLength(0);
+    expect(undone.inventory[0].remainingMcg).toBe(5000);
+    expect(undone.inventory[0].movements.at(-1)).toMatchObject({ type: "undo_dose" });
+    await expect(action).toContainText("0/2");
+    runtime.assertCleanRuntime();
+  });
+
+  test("rotina de aplicação única mantém o controle atual", async ({ page }) => {
+    const runtime = await prepare(page, [{ ...BASE_PROTOCOL, perDay: 1, times: ["08:00"] }]);
+    await expect(page.locator(`.take[data-id="${BASE_PROTOCOL.id}"]`)).toHaveCount(1);
+    await expect(page.locator(".multi-dose-register, .multi-dose-details")).toHaveCount(0);
+    await expect(page.locator("#dash-focus-action")).toContainText("Registrar aplicação");
     runtime.assertCleanRuntime();
   });
 

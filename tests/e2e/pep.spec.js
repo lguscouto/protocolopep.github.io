@@ -273,7 +273,7 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
       }
     };
 
-    await assertTouchTargets(".take, .dose-add, .dose-undo", "ações de dose");
+    await assertTouchTargets(".take, .multi-dose-register, .dose-undo", "ações de dose");
 
     await page.locator("#tab-history").click();
     await expect(page.locator("#view-history")).toHaveAttribute("data-feature-ready", "true");

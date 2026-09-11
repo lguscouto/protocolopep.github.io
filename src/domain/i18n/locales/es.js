@@ -56,6 +56,19 @@ export const es = {
     "resolved": "registros resueltos",
     "disclaimer": "Resumen descriptivo de sus registros. No indica eficacia, seguridad ni orientación médica."
   },
+  "phase4": {
+    "routineComplete": "Rutina del día completada",
+    "undoLast": "Deshacer último",
+    "details": "Detalles de las aplicaciones",
+    "occurrence": "Aplicación {position}",
+    "scheduledAt": "Programada: {time}",
+    "timeNotInformed": "Horario no informado",
+    "recordedAt": "Registrada: {time}",
+    "reason": "Motivo: {reason}",
+    "extraRecords": "Registros excedentes",
+    "extraRecord": "Registro extra {position}",
+    "unknownState": "Estado desconocido"
+  },
   "common": {
     "today": "Hoy",
     "save": "Guardar",

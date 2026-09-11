@@ -31,7 +31,7 @@ import {
   renderUpcomingHTML
 } from "./ui/dashboard.js";
 import { createPeptide, validatePeptide } from "./domain/protocol.js";
-import { parseUnits, doseEntries, doseStatus, summarizeDoseEntries } from "./domain/dose-state.js";
+import { buildDailyApplicationProgress, parseUnits, doseEntries, doseStatus, summarizeDoseEntries } from "./domain/dose-state.js";
 import { resolveProtocolAt, resolveProtocolForDay, reviseProtocol } from "./domain/protocol-history.js";
 import { renderProtocolList, renderProtocolControls, changeProtocolStatus } from "./ui/protocol-lifecycle.js";
 import { isValidDateKey, isValidTime } from "./domain/schedule.js";
@@ -284,7 +284,7 @@ const settingsFeature = createFeatureLoader(async () => {
   diagnostics.setupDiagnosticsModal({
     storage,
     getNotificationsActive: () => (window.pepNotifications ? window.pepNotifications.hasActiveReminders() : false),
-    appVersion: "3.4.1"
+    appVersion: "3.5.0"
   });
   const widgetToggle = document.getElementById("widget-discrete-toggle");
   if (widgetToggle && widgetToggle.dataset.widgetBound !== "true") {
@@ -651,7 +651,7 @@ function setupRenderedEventDelegation() {
     const today = dateKey(new Date());
     if (target.matches('[data-action="create-protocol"]')) return openEditModal();
     if (target.matches('[data-action="open-calc"]')) return void switchTab("calc");
-    if (target.matches(".dose-status, .dose-add")) return openRetroLogModal(today, target.dataset.id, { requireSiteSelection: true });
+    if (target.matches(".multi-dose-register")) return openRetroLogModal(today, target.dataset.id, { requireSiteSelection: true, initialStatus: "applied" });
     if (target.matches(".take")) {
       return target.classList.contains("done") ? void toggleDose(target.dataset.id) : openRetroLogModal(today, target.dataset.id, { requireSiteSelection: true });
     }
@@ -745,10 +745,42 @@ function dosesTaken(rec, id) {
 
 function dosesResolved(rec, id) { return summarizeDoseEntries(rec[id]).resolved; }
 
-function doseTimes(rec, id) {
-  const v = rec[id];
-  if (!v) return [];
-  return doseEntries(v).map(x => x.time || x.t || "");
+function renderMultiDoseDetails(progress) {
+  const statusLabel = (status) => status === "pending"
+    ? i18nService.t("common.pending")
+    : i18nService.t(`phase1.${status}`);
+  const occurrences = progress.occurrences.map((occurrence) => `
+    <li class="multi-dose-detail-row" data-status="${sanitizeId(occurrence.status)}">
+      <div class="multi-dose-detail-main">
+        <strong>${esc(i18nService.t("phase4.occurrence", { position: occurrence.position }))}</strong>
+        <span class="multi-dose-detail-status">${esc(statusLabel(occurrence.status))}</span>
+      </div>
+      <div class="multi-dose-detail-meta">
+        <span>${esc(occurrence.scheduledTime
+          ? i18nService.t("phase4.scheduledAt", { time: occurrence.scheduledTime })
+          : i18nService.t("phase4.timeNotInformed"))}</span>
+        ${occurrence.effectiveTime ? `<span>${esc(i18nService.t("phase4.recordedAt", { time: occurrence.effectiveTime }))}</span>` : ""}
+        ${occurrence.reason ? `<span>${esc(i18nService.t("phase4.reason", { reason: occurrence.reason }))}</span>` : ""}
+      </div>
+    </li>`).join("");
+  const extras = progress.extras.length ? `
+    <div class="multi-dose-extra-heading">${esc(i18nService.t("phase4.extraRecords"))}</div>
+    <ul class="multi-dose-extra-list">
+      ${progress.extras.map((record, index) => `
+        <li>
+          <strong>${esc(i18nService.t("phase4.extraRecord", { position: index + 1 }))}</strong>
+          <span>${esc(record.kind === "unknown" ? i18nService.t("phase4.unknownState") : statusLabel(record.status))}</span>
+          ${record.time ? `<span>${esc(i18nService.t("phase4.recordedAt", { time: record.time }))}</span>` : ""}
+          ${record.reason ? `<span>${esc(i18nService.t("phase4.reason", { reason: record.reason }))}</span>` : ""}
+        </li>`).join("")}
+    </ul>` : "";
+
+  return `
+    <details class="multi-dose-details">
+      <summary>${esc(i18nService.t("phase4.details"))}</summary>
+      <ol class="multi-dose-detail-list">${occurrences}</ol>
+      ${extras}
+    </details>`;
 }
 
 function renderToday() {
@@ -831,9 +863,10 @@ function renderToday() {
     scheduledToday.forEach((p) => {
       const perDay = p.perDay || 1;
       const tomadas = dosesTaken(rec, p.id);
-      const states = summarizeDoseEntries(rec[p.id], perDay);
       const records = doseEntries(rec[p.id]);
-      const resolved = states.resolved;
+      const progress = buildDailyApplicationProgress({ peptide: p, records });
+      const states = progress;
+      const resolved = progress.resolved;
 
       const lastUsed = lastSiteIndex.byPeptide.get(p.id) || null;
       const nextSite = getNextSite(configuredSites, lastUsed ? lastUsed.site : null);
@@ -857,8 +890,7 @@ function renderToday() {
         vialStatus
       });
 
-      const horarios = doseTimes(rec, p.id);
-      const lastTime = horarios.length ? horarios[horarios.length - 1] : "";
+      const lastTime = records.length ? records.at(-1)?.time || records.at(-1)?.t || "" : "";
       const moon = p.moon ? " 🌙" : "";
 
       const card = document.createElement("article");
@@ -866,6 +898,7 @@ function renderToday() {
       card.style.setProperty("--acc", sanitizeColor(p.accent, "var(--primary)"));
 
       let ctrlHTML;
+      let detailsHTML = "";
       if (perDay <= 1) {
         ctrlHTML = `
           <button type="button" class="take ${vm.isCompleted ? "done" : ""}" data-id="${sanitizeId(p.id)}" aria-label="${vm.isCompleted ? 'Desmarcar dose de ' + esc(p.name) : 'Confirmar dose de ' + esc(p.name)}">
@@ -873,25 +906,18 @@ function renderToday() {
             ${vm.isCompleted && lastTime ? `<span class="at">${esc(lastTime)}</span>` : ""}
           </button>`;
       } else {
-        let boxes = "";
-        for (let i = 0; i < perDay; i++) {
-          const marcada = i < resolved;
-          const hora = marcada && horarios[i] ? horarios[i] : "";
-          boxes += `
-            <div class="dosebox ${marcada ? "on" : ""}">
-              <span class="dosebox-ico" aria-label="${esc(marcada ? i18nService.t(`phase1.${doseStatus(records[i])}`) : i18nService.t("common.pending"))}">${marcada ? doseStatus(records[i]) === "applied" ? "✓" : "−" : i + 1}</span>
-              ${hora ? `<span class="dosebox-t">${esc(hora)}</span>` : ""}
-            </div>`;
-        }
+        const completed = progress.pending === 0;
+        const actionLabel = completed ? i18nService.t("phase4.routineComplete") : i18nService.t("dashboard.registerApplication");
         ctrlHTML = `
-          <div class="doses" data-id="${sanitizeId(p.id)}">
-            <div class="doses-count">${esc(i18nService.t("phase1.cardProgress", { taken: tomadas, due: perDay, skipped: states.skipped, missed: states.missed }))}</div>
-            <div class="doses-boxes">${boxes}</div>
-            <div class="doses-btns">
-              <button type="button" class="dose-add" data-id="${sanitizeId(p.id)}" ${resolved >= perDay ? "disabled" : ""}>+ dose</button>
-              ${resolved > 0 ? `<button type="button" class="dose-undo" data-id="${sanitizeId(p.id)}">desfazer</button>` : ""}
-            </div>
+          <div class="multi-dose-controls" data-id="${sanitizeId(p.id)}">
+            <button type="button" class="multi-dose-register" data-id="${sanitizeId(p.id)}" ${completed ? "disabled" : ""}
+              aria-label="${esc(`${actionLabel} · ${progress.resolved}/${progress.total}`)}">
+              <span>${esc(actionLabel)}</span>
+              <strong>${esc(`${progress.resolved}/${progress.total}`)}</strong>
+            </button>
+            ${resolved > 0 ? `<button type="button" class="dose-undo" data-id="${sanitizeId(p.id)}">${esc(i18nService.t("phase4.undoLast"))}</button>` : ""}
           </div>`;
+        detailsHTML = renderMultiDoseDetails(progress);
       }
 
       let vialBadgeHTML = "";
@@ -943,7 +969,7 @@ function renderToday() {
           </button>
         </div>
         ${ctrlHTML}
-        ${resolved < perDay ? `<button type="button" class="dose-status btn-secondary" data-id="${sanitizeId(p.id)}">${esc(i18nService.t("phase1.recordStatus"))}</button>` : ""}`;
+        ${detailsHTML}`;
 
       container.appendChild(card);
     });

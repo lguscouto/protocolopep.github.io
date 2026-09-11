@@ -83,12 +83,12 @@ describe("Dashboard UI Module", () => {
     expect(renderDashboardFocusHTML(model)).toContain("Abdômen (Direito)");
   });
 
-  it("avança para a próxima dose de um protocolo multidose", () => {
+  it("mantém o mesmo registro simplificado para um protocolo multidose", () => {
     const model = createDashboardFocusViewModel({
       todayItems: [{ id: "multi", name: "Multidose", perDay: 2, takenCount: 1 }]
     });
 
-    expect(model).toMatchObject({ action: "add-dose", actionLabel: "Registrar próxima dose" });
+    expect(model).toMatchObject({ action: "add-dose", actionLabel: "Registrar aplicação" });
   });
 
   it("exibe conclusão factual quando toda a rotina do dia foi registrada", () => {

@@ -56,6 +56,19 @@ export const en = {
     "resolved": "resolved records",
     "disclaimer": "Descriptive summary of your records. It does not indicate efficacy, safety, or medical guidance."
   },
+  "phase4": {
+    "routineComplete": "Today's routine completed",
+    "undoLast": "Undo last",
+    "details": "Application details",
+    "occurrence": "Application {position}",
+    "scheduledAt": "Scheduled: {time}",
+    "timeNotInformed": "Time not provided",
+    "recordedAt": "Recorded: {time}",
+    "reason": "Reason: {reason}",
+    "extraRecords": "Extra records",
+    "extraRecord": "Extra record {position}",
+    "unknownState": "Unknown status"
+  },
   "common": {
     "today": "Today",
     "save": "Save",

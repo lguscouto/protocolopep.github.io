@@ -1,6 +1,6 @@
 # 🧪 Protocolo PEP · App Android (Local-First)
 
-![Version](https://img.shields.io/badge/version-3.4.1-2CC5C0)
+![Version](https://img.shields.io/badge/version-3.5.0-2CC5C0)
 ![Android](https://img.shields.io/badge/Android-8.0%2B-green)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![CI](https://github.com/lguscouto/protocolopep.github.io/actions/workflows/ci.yml/badge.svg)
@@ -8,6 +8,15 @@
 Aplicativo Android/PWA para registrar aplicações de peptídeos com poucos toques, receber lembretes no dia certo e lembrar o último local aplicado. O PEP funciona offline, sem conta e sem nuvem, com arquitetura **100% Local-First**, histórico preservado e ferramentas técnicas acessíveis somente quando necessárias.
 
 ---
+
+## 🚀 Novidades da Versão 3.5.0 (Registro Simplificado de Múltiplas Aplicações)
+
+- **Uma ação por rotina multidose:** as caixas numeradas, “+ dose” e “Registrar situação” deram lugar ao botão estável **Registrar aplicação**, com contador factual de ocorrências resolvidas, como `1/3`.
+- **Estados no mesmo fluxo:** o modal único permite registrar aplicação, dose pulada ou não realizada; a seleção de local permanece obrigatória somente para aplicações confirmadas.
+- **Conclusão clara e auditável:** ao resolver todas as ocorrências, inclusive com puladas ou não realizadas, o cartão informa **Rotina do dia concluída**. Detalhes recolhíveis mostram horário previsto, estado, horário efetivo, motivo e registros excedentes sem inferir dados ausentes.
+- **Estoque preservado:** aplicações confirmadas continuam debitando uma única vez do frasco vinculado; puladas/não realizadas não mexem no saldo, e “Desfazer última” só estorna o débito comprovadamente associado.
+- **Compatibilidade mantida:** alteração restrita à apresentação multidose, sem migrar `pep_protocol_v2`, logs, backups ou o schema 10. Rotinas de aplicação única permanecem com o controle anterior.
+- **Release Android versionada:** `versionName 3.5.0` e `versionCode 33`.
 
 ## 🚀 Novidades da Versão 3.4.1 (Internacionalização Trilíngue Completa)
 

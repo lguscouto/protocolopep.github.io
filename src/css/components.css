@@ -995,111 +995,54 @@ body.theme-light .take.done {
   opacity: 0.85;
 }
 
-/* Multidose Controls */
-.doses {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 6px;
-  min-width: 96px;
-}
-
-.doses-count {
-  font-size: 11.5px;
-  font-weight: 700;
-  color: var(--acc, var(--primary));
-}
-
-.doses-boxes {
-  display: flex;
-  gap: 5px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
-.dosebox {
-  width: 36px;
-  min-height: 36px;
-  border-radius: 9px;
-  border: 1.5px solid var(--border2);
-  background: var(--surface3);
+/* Simplified multidose controls */
+.multi-dose-controls {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  padding: 2px;
+  gap: 4px;
+  flex: 0 0 176px;
+  width: 176px;
 }
 
-.dosebox.on {
-  background: var(--acc, var(--primary));
-  border-color: var(--acc, var(--primary));
-  animation: takePop 0.32s ease;
-}
-
-.dosebox-ico {
-  font-size: 13px;
-  font-weight: 800;
-  color: var(--muted2);
-  line-height: 1;
-}
-
-.dosebox.on .dosebox-ico {
-  color: #080C11;
-}
-
-body.theme-light .dosebox.on .dosebox-ico {
-  color: #FFFFFF;
-}
-
-.dosebox-t {
-  font-size: 8px;
-  font-weight: 600;
-  color: #080C11;
-  opacity: 0.85;
-  margin-top: 1px;
-  line-height: 1;
-}
-
-body.theme-light .dosebox-t {
-  color: #FFFFFF;
-}
-
-.doses-btns {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
-
-.dose-add {
+.multi-dose-register {
   background: transparent;
   border: 1.5px solid var(--acc, var(--primary));
   color: var(--acc, var(--primary));
   font-family: var(--font);
   font-weight: 700;
-  font-size: 11.5px;
-  min-width: var(--tap-min);
-  min-height: var(--tap-min);
-  padding: 8px 10px;
-  display: inline-flex;
+  font-size: 13px;
+  width: 176px;
+  min-height: 76px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   align-items: center;
   justify-content: center;
-  line-height: 1.2;
+  line-height: 1.25;
   touch-action: manipulation;
-  border-radius: 8px;
+  border-radius: 12px;
   cursor: pointer;
   transition: all 0.18s ease;
+  text-align: center;
 }
 
-.dose-add:active:not(:disabled) {
+.multi-dose-register strong {
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+
+.multi-dose-register:active:not(:disabled) {
   transform: scale(0.94);
 }
 
-.dose-add:disabled {
-  opacity: 0.35;
+.multi-dose-register:disabled {
+  background: color-mix(in srgb, var(--acc, var(--primary)) 12%, var(--surface2));
   cursor: default;
-  border-color: var(--border2);
-  color: var(--muted);
+  border-color: var(--acc, var(--primary));
+  color: var(--text);
+  opacity: 1;
 }
 
 .dose-undo {
@@ -3824,6 +3767,104 @@ body.theme-light .daypick button.on {
   background-size: 5px 5px, 5px 5px;
   background-repeat: no-repeat;
   transition: border-color .2s ease, box-shadow .2s ease, background-color .2s ease;
+}
+
+.multi-dose-details {
+  flex: 1 0 100%;
+  width: 100%;
+  min-width: 0;
+  border-top: 1px solid var(--border2);
+  padding-top: 8px;
+}
+
+.multi-dose-details summary {
+  min-height: var(--tap-min);
+  display: flex;
+  align-items: center;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.multi-dose-details summary:focus-visible,
+.multi-dose-register:focus-visible,
+.dose-undo:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.multi-dose-detail-list,
+.multi-dose-extra-list {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.multi-dose-detail-row,
+.multi-dose-extra-list li {
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  background: var(--surface2);
+}
+
+.multi-dose-detail-main {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.multi-dose-detail-status {
+  color: var(--acc, var(--primary));
+  font-weight: 700;
+}
+
+.multi-dose-detail-meta,
+.multi-dose-extra-list li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  color: var(--muted);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+.multi-dose-extra-heading {
+  margin-top: 10px;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+html.high-contrast .multi-dose-register,
+html.high-contrast .multi-dose-detail-row,
+html.high-contrast .multi-dose-extra-list li {
+  border-width: 2px;
+}
+
+@media (max-width: 600px) {
+  .card:has(.multi-dose-controls) {
+    flex-wrap: wrap;
+  }
+
+  .card:has(.multi-dose-controls) .info {
+    flex-basis: 100%;
+    padding-right: 88px;
+  }
+
+  .multi-dose-controls,
+  .multi-dose-register {
+    width: 100%;
+  }
+
+  .multi-dose-controls {
+    flex: 1 0 100%;
+  }
 }
 .history-filter-grid select.txt:hover,
 .history-custom-dates select.txt:hover { border-color: var(--primary); }
