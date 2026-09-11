@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from "vitest";
 import {
   t,
   resolveNestedKey,
@@ -9,12 +9,20 @@ import {
   formatNumberLocale,
   SUPPORTED_LOCALES,
   DEFAULT_LOCALE,
-  LOCALES
+  LOCALES,
+  loadLocale
 } from "../../src/domain/i18n/index.js";
 import { I18nService } from "../../src/services/i18n.js";
 import { ptBR } from "../../src/domain/i18n/locales/pt-BR.js";
-import { en } from "../../src/domain/i18n/locales/en.js";
-import { es } from "../../src/domain/i18n/locales/es.js";
+
+let en;
+let es;
+
+beforeAll(async () => {
+  await Promise.all([loadLocale("en"), loadLocale("es")]);
+  en = LOCALES.en;
+  es = LOCALES.es;
+});
 
 describe("Domínio de Internacionalização (i18n)", () => {
   describe("Paridade de Estrutura dos Dicionários", () => {
@@ -31,19 +39,26 @@ describe("Domínio de Internacionalização (i18n)", () => {
       return keys;
     }
 
-    const ptKeys = getLeafKeys(ptBR).sort();
-    const enKeys = getLeafKeys(en).sort();
-    const esKeys = getLeafKeys(es).sort();
+    function getLocaleKeys() {
+      return {
+        pt: getLeafKeys(ptBR).sort(),
+        en: getLeafKeys(en).sort(),
+        es: getLeafKeys(es).sort()
+      };
+    }
 
     it("possui o mesmo conjunto de chaves em pt-BR e en", () => {
-      expect(enKeys).toEqual(ptKeys);
+      const keys = getLocaleKeys();
+      expect(keys.en).toEqual(keys.pt);
     });
 
     it("possui o mesmo conjunto de chaves em pt-BR e es", () => {
-      expect(esKeys).toEqual(ptKeys);
+      const keys = getLocaleKeys();
+      expect(keys.es).toEqual(keys.pt);
     });
 
     it("nenhuma chave folha é vazia ou indefinida em qualquer dos idiomas", () => {
+      const { pt: ptKeys } = getLocaleKeys();
       for (const key of ptKeys) {
         const valPt = resolveNestedKey(ptBR, key);
         const valEn = resolveNestedKey(en, key);
@@ -221,32 +236,32 @@ describe("I18nService (Serviço de Internacionalização)", () => {
     expect(service.getLocale()).toBe("en");
   });
 
-  it("permite alterar idioma e persiste no storage", () => {
+  it("permite alterar idioma e persiste no storage", async () => {
     const service = new I18nService(mockStorage);
     expect(service.getLocale()).toBe("pt-BR");
 
-    const changed = service.setLocale("es");
+    const changed = await service.setLocale("es");
     expect(changed).toBe(true);
     expect(service.getLocale()).toBe("es");
     expect(mockStorage.setItem).toHaveBeenCalledWith("pep_user_language", "es");
   });
 
-  it("notifica observadores inscritos na mudança de idioma", () => {
+  it("notifica observadores inscritos na mudança de idioma", async () => {
     const service = new I18nService(mockStorage);
     const listener = vi.fn();
     const unsubscribe = service.subscribe(listener);
 
-    service.setLocale("en");
+    await service.setLocale("en");
     expect(listener).toHaveBeenCalledWith("en");
 
     unsubscribe();
-    service.setLocale("pt-BR");
+    await service.setLocale("pt-BR");
     expect(listener).toHaveBeenCalledTimes(1);
   });
 
-  it("traduz e formata delegando para o domínio", () => {
+  it("traduz e formata delegando para o domínio", async () => {
     const service = new I18nService(mockStorage);
-    service.setLocale("en");
+    await service.setLocale("en");
 
     expect(service.t("common.save")).toBe("Save");
     expect(service.getSupportedLocales()).toEqual(SUPPORTED_LOCALES);

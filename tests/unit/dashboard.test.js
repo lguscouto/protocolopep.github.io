@@ -1,10 +1,15 @@
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
+import { loadLocale } from "../../src/domain/i18n/index.js";
 import {
   createDoseCardViewModel,
   createDashboardFocusViewModel,
   renderDashboardFocusHTML,
   renderEmptyDashboardHTML
 } from "../../src/ui/dashboard.js";
+
+beforeAll(async () => {
+  await loadLocale("en");
+});
 
 describe("Dashboard UI Module", () => {
   it("cria view model correta para dose pendente", () => {

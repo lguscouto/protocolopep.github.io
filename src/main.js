@@ -394,6 +394,9 @@ async function initApp() {
   await theme.init({ deferNative: true });
   const storageState = storage.init();
   if (storageState.error) void dialogService.alert({ title: "Falha no armazenamento", message: storageState.error, isDanger: true });
+  if (i18nService.getLocale() !== "pt-BR") {
+    await i18nService.ensureLocaleLoaded();
+  }
   await notifications.init({ deferNative: true });
   notifications.setupActionListener({
     onRegister: ({ peptideId, scheduledDate }) => {

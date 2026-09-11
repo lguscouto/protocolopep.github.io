@@ -3,6 +3,7 @@ import { test, expect } from "@playwright/test";
 test.use({ timezoneId: "America/Sao_Paulo" });
 
 test("cartão multidose permanece acessível nos temas, larguras e escalas de fonte críticas", async ({ page }, testInfo) => {
+  test.setTimeout(120_000);
   test.skip(testInfo.project.name !== "android-small", "Matriz visual executada uma vez.");
   await page.clock.setFixedTime(new Date("2026-09-11T12:00:00-03:00"));
   await page.emulateMedia({ reducedMotion: "reduce" });

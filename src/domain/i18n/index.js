@@ -9,8 +9,6 @@
  */
 
 import { ptBR } from "./locales/pt-BR.js";
-import { en } from "./locales/en.js";
-import { es } from "./locales/es.js";
 
 export const SUPPORTED_LOCALES = ["pt-BR", "en", "es"];
 export const DEFAULT_LOCALE = "pt-BR";
@@ -22,10 +20,48 @@ export const LOCALE_LABELS = {
 };
 
 export const LOCALES = {
-  "pt-BR": ptBR,
-  en: en,
-  es: es
+  "pt-BR": ptBR
 };
+
+const localeLoaders = Object.freeze({
+  en: () => import("./locales/en.js").then(({ en }) => en),
+  es: () => import("./locales/es.js").then(({ es }) => es)
+});
+
+const pendingLocaleLoads = new Map();
+
+/**
+ * Carrega um dicionário opcional sem rede. O português permanece disponível
+ * no primeiro pacote para que a interface sempre tenha um fallback local.
+ * @param {string} [locale=DEFAULT_LOCALE]
+ * @returns {Promise<Object>}
+ */
+export function loadLocale(locale = DEFAULT_LOCALE) {
+  const activeLocale = normalizeLocale(locale);
+  if (LOCALES[activeLocale]) {
+    return Promise.resolve(LOCALES[activeLocale]);
+  }
+
+  const loader = localeLoaders[activeLocale];
+  if (!loader) {
+    return Promise.resolve(LOCALES[DEFAULT_LOCALE]);
+  }
+
+  if (!pendingLocaleLoads.has(activeLocale)) {
+    const request = loader()
+      .then(dictionary => {
+        if (!dictionary || typeof dictionary !== "object") {
+          throw new Error(`Dicionário inválido para ${activeLocale}`);
+        }
+        LOCALES[activeLocale] = dictionary;
+        return dictionary;
+      })
+      .finally(() => pendingLocaleLoads.delete(activeLocale));
+    pendingLocaleLoads.set(activeLocale, request);
+  }
+
+  return pendingLocaleLoads.get(activeLocale);
+}
 
 /**
  * Resolução pura de chave aninhada em um objeto (ex: "common.save" -> obj.common.save)

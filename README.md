@@ -17,6 +17,7 @@ Aplicativo Android/PWA para registrar aplicações de peptídeos com poucos toqu
 - **Estoque preservado:** aplicações confirmadas continuam debitando uma única vez do frasco vinculado; puladas/não realizadas não mexem no saldo, e “Desfazer última” só estorna o débito comprovadamente associado.
 - **Compatibilidade mantida:** alteração restrita à apresentação multidose, sem migrar `pep_protocol_v2`, logs, backups ou o schema 10. Rotinas de aplicação única permanecem com o controle anterior.
 - **Release Android versionada:** `versionName 3.5.0` e `versionCode 33`.
+- **Inicialização enxuta:** os dicionários em inglês e espanhol continuam embarcados e disponíveis offline, mas são carregados apenas quando selecionados.
 
 ## 🚀 Novidades da Versão 3.4.1 (Internacionalização Trilíngue Completa)
 

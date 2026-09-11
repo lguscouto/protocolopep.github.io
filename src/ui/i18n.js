@@ -110,7 +110,7 @@ export function setupI18nUI({ i18nService, onLocaleChange = () => {} }) {
     btnPt.addEventListener("click", (e) => {
       e.stopPropagation();
       haptics.selection();
-      i18nService.setLocale("pt-BR");
+      void i18nService.setLocale("pt-BR");
     });
   }
 
@@ -118,7 +118,7 @@ export function setupI18nUI({ i18nService, onLocaleChange = () => {} }) {
     btnEn.addEventListener("click", (e) => {
       e.stopPropagation();
       haptics.selection();
-      i18nService.setLocale("en");
+      void i18nService.setLocale("en");
     });
   }
 
@@ -126,7 +126,7 @@ export function setupI18nUI({ i18nService, onLocaleChange = () => {} }) {
     btnEs.addEventListener("click", (e) => {
       e.stopPropagation();
       haptics.selection();
-      i18nService.setLocale("es");
+      void i18nService.setLocale("es");
     });
   }
 

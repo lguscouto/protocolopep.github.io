@@ -11,6 +11,7 @@ import {
   SUPPORTED_LOCALES,
   normalizeLocale,
   detectDeviceLocale,
+  loadLocale as loadDomainLocale,
   t as domainTranslate,
   formatDateLocale,
   formatNumberLocale,
@@ -85,11 +86,15 @@ export class I18nService {
   /**
    * Define e persiste um novo idioma
    * @param {string} newLocale 
-   * @returns {boolean}
+   * @returns {Promise<boolean>}
    */
-  setLocale(newLocale) {
+  async setLocale(newLocale) {
     const normalized = normalizeLocale(newLocale);
     if (this.currentLocale === normalized) {
+      return false;
+    }
+
+    if (!await this.ensureLocaleLoaded(normalized)) {
       return false;
     }
 
@@ -106,6 +111,22 @@ export class I18nService {
     // Notificar observadores
     this.notifyListeners();
     return true;
+  }
+
+  /**
+   * Garante que o dicionário do idioma informado esteja disponível antes de
+   * traduzir ou notificar a interface. Uma falha preserva o idioma atual.
+   * @param {string} [locale=this.currentLocale]
+   * @returns {Promise<boolean>}
+   */
+  async ensureLocaleLoaded(locale = this.currentLocale) {
+    try {
+      await loadDomainLocale(locale);
+      return true;
+    } catch (error) {
+      console.warn("[i18n] Falha ao carregar dicionário local:", error);
+      return false;
+    }
   }
 
   /**
