@@ -9,10 +9,43 @@ import {
   filterMeasurements,
   haveMeasurementsChanged,
   formatSymptomLabel,
+  normalizeMeasurementGoals,
+  calculateWeightGoalIndicators,
   DEFAULT_SYMPTOM_SUGGESTIONS
 } from "../../src/domain/measurements.js";
 
 describe("Measurements Domain (V12)", () => {
+  it("normaliza meta de peso com vírgula sem alterar a entrada", () => {
+    const source = { goalWeightKg: "75,678" };
+    expect(normalizeMeasurementGoals(source)).toEqual({ goalWeightKg: 75.68 });
+    expect(source).toEqual({ goalWeightKg: "75,678" });
+    expect(normalizeMeasurementGoals({})).toEqual({ goalWeightKg: null });
+    expect(() => normalizeMeasurementGoals({ goalWeightKg: 0 })).toThrow("meta de peso");
+    expect(() => normalizeMeasurementGoals({ goalWeightKg: 401 })).toThrow("meta de peso");
+  });
+
+  it("calcula indicadores por último peso de cada dia, sem estimar intervalos", () => {
+    const entries = [
+      { id: "first", date: "2026-09-01", time: "08:00", weightKg: 80 },
+      { id: "same-day", date: "2026-09-01", time: "20:00", weightKg: 79.5 },
+      { id: "last", date: "2026-09-15", time: "09:00", weightKg: 77 }
+    ];
+    const result = calculateWeightGoalIndicators(entries, { goalWeightKg: 75 });
+    expect(result.dailyWeights).toHaveLength(2);
+    expect(result.latestWeight).toBe(77);
+    expect(result.absoluteChangeKg).toBe(-2.5);
+    expect(result.percentChange).toBe(-3.14);
+    expect(result.weeklyObservedChangeKg).toBe(-1.25);
+    expect(result.goalDifferenceKg).toBe(2);
+    expect(result.goalStatus).toBe("above");
+    expect(entries[0].weightKg).toBe(80);
+  });
+
+  it("omite variação semanal quando não há dois dias distintos", () => {
+    const single = calculateWeightGoalIndicators([{ id: "one", date: "2026-09-01", weightKg: 80 }]);
+    expect(single.weeklyObservedChangeKg).toBeNull();
+    expect(single.goalDifferenceKg).toBeNull();
+  });
   it("preserva sintomas personalizados com intensidade opcional", () => {
     const entry = createMeasurementEntry({ date: "2026-08-29", symptomDetails: [{ name: "Sintoma pessoal", intensity: "leve" }] });
     expect(entry.symptoms).toEqual(["Sintoma pessoal"]);

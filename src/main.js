@@ -128,6 +128,7 @@ let historyBodyMetric = "weight";
 let getDoseDisplayData = null;
 let buildReviewModel = null;
 let buildBodyMetricChartModel = null;
+let calculateWeightGoalIndicators = null;
 let calculateAdherenceSummary = null;
 let renderAdherenceSummaryHTML = null;
 let exportFile = null;
@@ -215,15 +216,17 @@ const agendaFeature = createFeatureLoader(async () => {
 const historyFeature = createFeatureLoader(async () => {
   restoreFeatureDom("history");
   applyTranslations(document, i18nService);
-  const [report, adherence, adherenceUi, measurementsModule] = await Promise.all([
+  const [report, adherence, adherenceUi, measurementsModule, measurementsDomain] = await Promise.all([
     import("./domain/report.js"),
     import("./domain/adherence.js"),
     import("./ui/adherence.js"),
-    import("./ui/measurements.js")
+    import("./ui/measurements.js"),
+    import("./domain/measurements.js")
   ]);
   getDoseDisplayData = report.getDoseDisplayData;
   buildReviewModel = report.buildReviewModel;
   buildBodyMetricChartModel = measurementsModule.buildBodyMetricChartModel;
+  calculateWeightGoalIndicators = measurementsDomain.calculateWeightGoalIndicators;
   calculateAdherenceSummary = adherence.calculateAdherenceSummary;
   renderAdherenceSummaryHTML = adherenceUi.renderAdherenceSummaryHTML;
   measurementsUI = measurementsModule.setupMeasurementsUI({
@@ -283,7 +286,7 @@ const settingsFeature = createFeatureLoader(async () => {
   diagnostics.setupDiagnosticsModal({
     storage,
     getNotificationsActive: () => (window.pepNotifications ? window.pepNotifications.hasActiveReminders() : false),
-    appVersion: "3.6.0"
+    appVersion: "3.7.0"
   });
   const widgetToggle = document.getElementById("widget-discrete-toggle");
   if (widgetToggle && widgetToggle.dataset.widgetBound !== "true") {
@@ -689,6 +692,16 @@ function setupRenderedEventDelegation() {
       measurementsUI?.openMeasurementById(target.dataset.measurementId);
       return;
     }
+    if (target.id === "history-goal-clear-btn") {
+      const result = storage.setMeasurementGoals({ goalWeightKg: null });
+      if (!result.success) {
+        void dialogService.alert({ title: "Meta não salva", message: result.error, isDanger: true });
+        return;
+      }
+      haptics.success();
+      invalidateViews("history");
+      return;
+    }
     if (target.matches("[data-adherence-days]")) {
       const days = Number.parseInt(target.dataset.adherenceDays, 10);
       if ([7, 30].includes(days) && days !== adherencePeriodDays) {
@@ -723,6 +736,18 @@ function setupRenderedEventDelegation() {
   document.getElementById("view-history")?.addEventListener("change", (event) => {
     if (event.target.id !== "history-body-metric") return;
     historyBodyMetric = event.target.value;
+    invalidateViews("history");
+  });
+  document.getElementById("view-history")?.addEventListener("submit", (event) => {
+    if (event.target.id !== "history-weight-goal-form") return;
+    event.preventDefault();
+    const input = document.getElementById("history-goal-weight-input");
+    const result = storage.setMeasurementGoals({ goalWeightKg: input?.value ?? null });
+    if (!result.success) {
+      void dialogService.alert({ title: "Meta não salva", message: result.error, isDanger: true });
+      return;
+    }
+    haptics.success();
     invalidateViews("history");
   });
 }
@@ -1396,6 +1421,13 @@ function renderHistoryEvolution(model) {
   if (!target) return;
   const stats = model.measurementStats;
   const weightRecords = model.measurements.filter((entry) => entry.weightKg !== null);
+  const weightIndicators = calculateWeightGoalIndicators(model.measurements, storage.getMeasurementGoals());
+  const formatSigned = (value, suffix = "kg") => value === null ? "—" : `${value > 0 ? "+" : ""}${value} ${suffix}`;
+  const goalDifference = weightIndicators.goalDifferenceKg === null
+    ? "Defina uma meta para comparar"
+    : weightIndicators.goalStatus === "at_goal"
+      ? "Na meta"
+      : `${Math.abs(weightIndicators.goalDifferenceKg)} kg ${weightIndicators.goalStatus === "above" ? "acima" : "abaixo"} da meta`;
   const metricDefinitions = [
     { key: "weight", label: "Peso", unit: "kg", getValue: (entry) => entry.weightKg },
     { key: "abdomen", label: "Abdômen", unit: "cm", getValue: (entry) => entry.circumferencesCm?.abdomen },
@@ -1410,16 +1442,22 @@ function renderHistoryEvolution(model) {
   const bodyMetricChart = buildBodyMetricChartModel(model.measurements, selectedMetric.key);
   const symptomRows = Object.entries(stats.symptomsFrequency).sort((a, b) => b[1] - a[1]);
   if (model.measurements.length === 0) {
-    target.innerHTML = `<div class="empty-state-illustrated empty-state-illustrated--measurements"><img class="empty-state-illustration" src="/assets/illustrations/empty-measurements.png" alt="" aria-hidden="true"><div class="empty-state-title">Registre seu primeiro acompanhamento</div><div class="empty-state-description">Peso, medidas e sintomas ficam organizados no histórico local.</div><button type="button" class="btn-primary empty-state-action" id="empty-add-measurement-btn">+ Medidas / Sintomas</button></div>`;
+    target.innerHTML = `<section class="history-evolution"><form class="history-weight-goal" id="history-weight-goal-form"><div><strong>Meta pessoal de peso</strong><span>Opcional e salva apenas neste dispositivo.</span></div><label for="history-goal-weight-input" class="sr-only">Meta de peso em quilogramas</label><div class="history-weight-goal-controls"><input id="history-goal-weight-input" class="txt" type="text" inputmode="decimal" pattern="[0-9]+([,.][0-9]+)?" placeholder="Meta em kg" value="${weightIndicators.goalWeightKg ?? ""}"><button type="submit" class="btn-primary" id="history-goal-save-btn">Salvar meta</button><button type="button" class="btn-secondary" id="history-goal-clear-btn" ${weightIndicators.goalWeightKg === null ? "disabled" : ""}>Apagar</button></div></form><div class="empty-state-illustrated empty-state-illustrated--measurements"><img class="empty-state-illustration" src="/assets/illustrations/empty-measurements.png" alt="" aria-hidden="true"><div class="empty-state-title">Registre seu primeiro acompanhamento</div><div class="empty-state-description">Peso, medidas e sintomas ficam organizados no histórico local.</div><button type="button" class="btn-primary empty-state-action" id="empty-add-measurement-btn">+ Medidas / Sintomas</button></div></section>`;
     return;
   }
   target.innerHTML = `<section class="history-evolution" aria-labelledby="history-evolution-title">
     <div class="history-section-heading"><h3 id="history-evolution-title">Evolução descritiva</h3><span>${model.observations.count} data${model.observations.count === 1 ? "" : "s"} com observações</span></div>
+    <form class="history-weight-goal" id="history-weight-goal-form">
+      <div><strong>Meta pessoal de peso</strong><span>Opcional e salva apenas neste dispositivo.</span></div>
+      <label for="history-goal-weight-input" class="sr-only">Meta de peso em quilogramas</label>
+      <div class="history-weight-goal-controls"><input id="history-goal-weight-input" class="txt" type="text" inputmode="decimal" pattern="[0-9]+([,.][0-9]+)?" placeholder="Meta em kg" value="${weightIndicators.goalWeightKg ?? ""}"><button type="submit" class="btn-primary" id="history-goal-save-btn">Salvar meta</button><button type="button" class="btn-secondary" id="history-goal-clear-btn" ${weightIndicators.goalWeightKg === null ? "disabled" : ""}>Apagar</button></div>
+    </form>
     <div class="report-preview-summary-grid">
-      <span class="measurement-chip--weight"><b>${esc(String(stats.latestWeight ?? "—"))}${stats.latestWeight !== null ? " kg" : ""}</b> último peso</span>
-      <span><b>${stats.weightDelta === null ? "—" : `${stats.weightDelta > 0 ? "+" : ""}${esc(String(stats.weightDelta))} kg`}</b> variação entre registros</span>
-      <span><b>${esc(String(weightRecords.length))}</b> pesos registrados</span>
-      <span><b>${esc(String(symptomRows.reduce((sum, [, count]) => sum + count, 0)))}</b> relatos de sintomas</span>
+      <span class="measurement-chip--weight"><b>${weightIndicators.latestWeight ?? "—"}${weightIndicators.latestWeight !== null ? " kg" : ""}</b> peso mais recente</span>
+      <span><b>${formatSigned(weightIndicators.absoluteChangeKg)}</b> variação absoluta</span>
+      <span><b>${weightIndicators.percentChange === null ? "—" : `${weightIndicators.percentChange > 0 ? "+" : ""}${weightIndicators.percentChange}%`}</b> variação percentual</span>
+      <span><b>${formatSigned(weightIndicators.weeklyObservedChangeKg)}</b> variação semanal observada</span>
+      <span><b>${esc(goalDifference)}</b> diferença até a meta</span>
     </div>
     ${availableMetrics.length ? `<label class="history-metric-selector" for="history-body-metric"><span>Métrica do gráfico</span><select id="history-body-metric" class="txt">${availableMetrics.map((metric) => `<option value="${metric.key}" ${metric.key === selectedMetric.key ? "selected" : ""}>${metric.label}</option>`).join("")}</select></label>` : ""}
     ${renderBodyMetricChart(bodyMetricChart)}

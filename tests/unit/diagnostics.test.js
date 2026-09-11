@@ -29,7 +29,8 @@ describe("Diagnósticos Técnicos Desidentificados (V09)", () => {
         "2026-08-27": {
           "pep-2": ["09:00"]
         }
-      })
+      }),
+      getMeasurementGoals: () => ({ goalWeightKg: 72.5 })
     };
 
     const report = generateDiagnosticReport({
@@ -43,6 +44,7 @@ describe("Diagnósticos Técnicos Desidentificados (V09)", () => {
     expect(report.metrics.totalLogDatesCount).toBe(2);
     expect(report.metrics.totalRecordedDosesCount).toBe(2);
     expect(report.subsystems.notificationsConfigured).toBe(true);
+    expect(report.subsystems.measurementGoalConfigured).toBe(true);
 
     const jsonString = JSON.stringify(report);
     // Verificação estrita de privacidade: nenhum dado sintético de saúde pode constar no JSON
@@ -53,6 +55,7 @@ describe("Diagnósticos Técnicos Desidentificados (V09)", () => {
     expect(jsonString).not.toContain("diabetes");
     expect(jsonString).not.toContain("tratamento");
     expect(jsonString).not.toContain("pep-1");
+    expect(jsonString).not.toContain("72.5");
   });
 
   it("sanitizeTechnicalReport deve bloquear e lançar exceção se detectar campos sensíveis", () => {

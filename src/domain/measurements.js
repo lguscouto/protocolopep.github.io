@@ -84,6 +84,54 @@ export const BODY_METRICS = Object.freeze({
 });
 
 const CIRCUMFERENCE_KEYS = Object.freeze(["abdomen", "waist", "hips"]);
+const MIN_WEIGHT_KG = 20;
+const MAX_WEIGHT_KG = 400;
+
+/** Normaliza a meta pessoal sem alterar o objeto recebido. */
+export function normalizeMeasurementGoals(value = {}) {
+  const source = value && typeof value === "object" && !Array.isArray(value) ? value : {};
+  const raw = source.goalWeightKg;
+  if (raw === null || raw === undefined || raw === "") return { goalWeightKg: null };
+  const parsed = typeof raw === "number" ? raw : Number(String(raw).replace(",", "."));
+  if (!Number.isFinite(parsed) || parsed < MIN_WEIGHT_KG || parsed > MAX_WEIGHT_KG) {
+    throw new MeasurementValidationError("INVALID_GOAL_WEIGHT", `A meta de peso deve estar entre ${MIN_WEIGHT_KG} kg e ${MAX_WEIGHT_KG} kg.`);
+  }
+  return { goalWeightKg: Math.round(parsed * 100) / 100 };
+}
+
+/**
+ * Resume o peso diário registrado para indicadores descritivos, sem interpolar dias ausentes.
+ */
+export function calculateWeightGoalIndicators(entries, goals = {}) {
+  const goalWeightKg = normalizeMeasurementGoals(goals).goalWeightKg;
+  const daily = new Map();
+  (Array.isArray(entries) ? entries : [])
+    .map((entry, index) => ({ entry, index }))
+    .filter(({ entry }) => entry && isValidDateKey(entry.date) && typeof entry.weightKg === "number" && Number.isFinite(entry.weightKg) && entry.weightKg > 0)
+    .sort((a, b) => a.entry.date.localeCompare(b.entry.date) || String(a.entry.time || "").localeCompare(String(b.entry.time || "")) || a.index - b.index)
+    .forEach(({ entry }) => daily.set(entry.date, entry));
+  const weights = [...daily.values()];
+  if (!weights.length) return { goalWeightKg, dailyWeights: [], latestWeight: null, absoluteChangeKg: null, percentChange: null, weeklyObservedChangeKg: null, goalDifferenceKg: null, goalStatus: null };
+  const first = weights[0];
+  const latest = weights[weights.length - 1];
+  const absoluteChangeKg = Math.round((latest.weightKg - first.weightKg) * 100) / 100;
+  const percentChange = first.weightKg > 0 ? Math.round((absoluteChangeKg / first.weightKg) * 10000) / 100 : null;
+  const firstTime = Date.UTC(...first.date.split("-").map((part, index) => index === 1 ? Number(part) - 1 : Number(part)));
+  const latestTime = Date.UTC(...latest.date.split("-").map((part, index) => index === 1 ? Number(part) - 1 : Number(part)));
+  const elapsedDays = Math.round((latestTime - firstTime) / 86400000);
+  const weeklyObservedChangeKg = weights.length >= 2 && elapsedDays > 0 ? Math.round((absoluteChangeKg / elapsedDays) * 7 * 100) / 100 : null;
+  const goalDifferenceKg = goalWeightKg === null ? null : Math.round((latest.weightKg - goalWeightKg) * 100) / 100;
+  return {
+    goalWeightKg,
+    dailyWeights: weights.map((entry) => ({ id: entry.id, date: entry.date, time: entry.time || "", weightKg: entry.weightKg })),
+    latestWeight: latest.weightKg,
+    absoluteChangeKg,
+    percentChange,
+    weeklyObservedChangeKg,
+    goalDifferenceKg,
+    goalStatus: goalDifferenceKg === null ? null : (goalDifferenceKg === 0 ? "at_goal" : (goalDifferenceKg > 0 ? "above" : "below"))
+  };
+}
 
 function parseOptionalCircumference(value, key) {
   if (value === null || value === undefined || value === "") return null;

@@ -50,13 +50,14 @@ export function sanitizeTechnicalReport(rawReport) {
 
 export function generateDiagnosticReport({
   storage = null,
-  appVersion = "3.6.0",
+  appVersion = "3.7.0",
   notificationsActive = false
 } = {}) {
   let peptidesCount = 0;
   let logDatesCount = 0;
   let totalLoggedDosesCount = 0;
-  let schemaVersion = 1;
+  let schemaVersion = 11;
+  let measurementGoalConfigured = false;
 
   if (storage) {
     try {
@@ -77,6 +78,7 @@ export function generateDiagnosticReport({
           }
         });
       });
+      measurementGoalConfigured = storage.getMeasurementGoals?.().goalWeightKg !== null;
     } catch {
       // Falha silenciosa em contagem de métricas
     }
@@ -101,7 +103,8 @@ export function generateDiagnosticReport({
     subsystems: {
       notificationsConfigured: Boolean(notificationsActive),
       lastBackupExport: backupStatus.lastExport ? backupStatus.lastExport.date : null,
-      lastBackupRestore: backupStatus.lastRestore ? backupStatus.lastRestore.date : null
+      lastBackupRestore: backupStatus.lastRestore ? backupStatus.lastRestore.date : null,
+      measurementGoalConfigured
     },
     deviceContext: {
       screenResolution: typeof window !== "undefined" && window.screen ? `${window.screen.width}x${window.screen.height}` : "unknown",

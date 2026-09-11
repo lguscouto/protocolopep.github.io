@@ -4,6 +4,7 @@
 
 import { migrateAppState, CURRENT_SCHEMA_VERSION, sanitizeHealthConnectState } from "./migrations.js";
 import { normalizeSyringeMaxUI } from "./syringe.js";
+import { normalizeMeasurementGoals } from "./measurements.js";
 
 export const MAX_BACKUP_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 
@@ -37,7 +38,8 @@ export function createBackupPayload(
   inventory = [],
   sites = [],
   measurements = [],
-  healthConnectState = {}
+  healthConnectState = {},
+  measurementGoals = {}
 ) {
   const payload = {
     app: "protocolo-pep",
@@ -49,6 +51,7 @@ export function createBackupPayload(
     sites: Array.isArray(sites) ? sites : [],
     measurements: Array.isArray(measurements) ? measurements : [],
     healthConnectState: sanitizeHealthConnectState(healthConnectState),
+    measurementGoals: normalizeMeasurementGoals(measurementGoals),
     theme: normalizeBackupTheme(theme)
   };
 

@@ -1,6 +1,6 @@
 # 🧪 Protocolo PEP · App Android (Local-First)
 
-![Version](https://img.shields.io/badge/version-3.6.0-2CC5C0)
+![Version](https://img.shields.io/badge/version-3.7.0-2CC5C0)
 ![Android](https://img.shields.io/badge/Android-8.0%2B-green)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![CI](https://github.com/lguscouto/protocolopep.github.io/actions/workflows/ci.yml/badge.svg)
@@ -9,13 +9,13 @@ Aplicativo Android/PWA para registrar aplicações de peptídeos com poucos toqu
 
 ---
 
-## 🚀 Novidades da Versão 3.6.0 (Capacidade da Seringa)
+## 🚀 Novidades da Versão 3.7.0 (Meta pessoal de peso)
 
-- **Capacidade explícita:** a calculadora permite selecionar seringas de 30, 50 ou 100 UI, mantendo 100 UI como padrão seguro para cálculos e snapshots legados.
-- **Limite físico factual:** resultados acima da capacidade selecionada são bloqueados sem sugerir mudança de dose, divisão ou conduta terapêutica.
-- **Conferência rastreável:** escala visual, fórmula e trilha auditável registram a capacidade usada; protocolos, histórico, CSV, PDF e backup preservam a informação no snapshot de cálculo.
-- **Compatibilidade preservada:** snapshots antigos sem capacidade são tratados como 100 UI em leitura e exportação, sem migração nem reescrita de dados locais; o schema de backup continua em 10.
-- **Release Android versionada:** `versionName 3.6.0` e `versionCode 34`.
+- **Meta local e opcional:** em Histórico → Evolução, é possível definir, alterar ou apagar uma meta de peso sem modificar medições existentes.
+- **Indicadores descritivos:** peso mais recente, variação absoluta, variação percentual, variação semanal observada e diferença até a meta respeitam o período selecionado e usam somente pesos registrados.
+- **Sem previsão ou interpretação clínica:** não há IMC, classificação, recomendação ou data estimada; a variação semanal só é exibida quando existem dois dias distintos com peso.
+- **Backup compatível:** schema 11 inclui a configuração local de meta; backups até o schema 10 continuam restauráveis e recebem meta vazia.
+- **Release Android versionada:** `versionName 3.7.0` e `versionCode 35`.
 
 ## 🚀 Novidades da Versão 3.5.0 (Registro Simplificado de Múltiplas Aplicações)
 

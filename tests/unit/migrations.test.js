@@ -10,6 +10,7 @@ import {
   migrateV5ToV6,
   migrateV8ToV9,
   migrateV9ToV10,
+  migrateV10ToV11,
   CURRENT_SCHEMA_VERSION
 } from "../../src/domain/migrations.js";
 
@@ -145,7 +146,7 @@ describe("Migrations Domain", () => {
       ]
     });
 
-    expect(migrated.version).toBe(10);
+    expect(migrated.version).toBe(11);
     expect(migrated.sites).toHaveLength(10);
     expect(migrated.sites).toContain("Flanco (Direito)");
     expect(migrated.sites).toContain("Abdômen (Inferior Esquerdo)");
@@ -158,8 +159,8 @@ describe("Migrations Domain", () => {
     expect(migrated.sites).toEqual(customSites);
   });
 
-  it("CURRENT_SCHEMA_VERSION é 10", () => {
-    expect(CURRENT_SCHEMA_VERSION).toBe(10);
+  it("CURRENT_SCHEMA_VERSION é 11", () => {
+    expect(CURRENT_SCHEMA_VERSION).toBe(11);
   });
 
   it("V5→V6 recalcula campos pela zona IANA e marca contradição sem contexto", () => {
@@ -194,7 +195,7 @@ describe("Migrations Domain", () => {
       ]
     };
     const result = migrateAppState(v1State);
-    expect(result.version).toBe(10);
+    expect(result.version).toBe(11);
     // Medição legada deve ter updatedAt após migração completa
     const m = result.measurements.find(x => x.date === "2026-08-01");
     expect(m).toBeDefined();
@@ -210,7 +211,7 @@ describe("Migrations Domain", () => {
     const direct = migrateV8ToV9(state);
     const once = migrateAppState(direct);
     const twice = migrateAppState(once);
-    expect(once.version).toBe(10);
+    expect(once.version).toBe(11);
     expect(once.measurements[0]).toMatchObject({ id: "legacy", source: "health_connect", ownership: "external", circumferencesCm: { abdomen: null, waist: null, hips: null } });
     expect(twice).toEqual(once);
   });
@@ -232,5 +233,14 @@ describe("Migrations Domain", () => {
     expect(once.protocol[0].remindersEnabled).toBe(true);
     expect(once.protocol[0].revisions.map((revision) => revision.config.remindersEnabled)).toEqual([true, false]);
     expect(twice).toEqual(once);
+  });
+
+  it("migra V10 para V11 com meta vazia e mantém a migração idempotente", () => {
+    const source = { version: 10, protocol: [], logs: {}, measurements: [{ id: "m1", date: "2026-09-01", weightKg: 80 }] };
+    const direct = migrateV10ToV11(source);
+    const once = migrateAppState(source);
+    expect(direct.measurementGoals).toEqual({ goalWeightKg: null });
+    expect(once.measurementGoals).toEqual({ goalWeightKg: null });
+    expect(migrateAppState(once)).toEqual(once);
   });
 });

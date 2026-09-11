@@ -3879,6 +3879,13 @@ html.high-contrast .multi-dose-extra-list li {
 .history-section-heading { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; margin-bottom: 10px; }
 .history-section-heading h3 { margin: 0; font-size: 14px; }
 .history-section-heading span { color: var(--muted); font-size: 11px; }
+.history-weight-goal { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px 14px; align-items: center; margin: 0 0 12px; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: color-mix(in srgb, var(--surface2) 58%, transparent); }
+.history-weight-goal > div:first-child { display: grid; gap: 2px; }
+.history-weight-goal strong { font-size: 12.5px; }
+.history-weight-goal span { color: var(--muted); font-size: 11px; line-height: 1.35; }
+.history-weight-goal-controls { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.history-weight-goal-controls .txt { width: 112px; min-height: 44px; }
+.history-weight-goal-controls button { min-height: 44px; }
 .history-metric-selector { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin: 10px 0 -4px; color: var(--muted); font-size: 11.5px; font-weight: 700; }
 .history-metric-selector select { width: auto; min-width: 132px; min-height: 44px; }
 .weight-chart { margin-top: 14px; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: color-mix(in srgb, var(--surface2) 58%, transparent); overflow: hidden; }
@@ -3891,7 +3898,7 @@ html.high-contrast .multi-dose-extra-list li {
 .weight-chart-axis-label { fill: var(--muted); font-size: 10px; font-weight: 600; }
 .weight-chart-area { fill: color-mix(in srgb, var(--primary) 14%, transparent); pointer-events: none; }
 .weight-chart-line { fill: none; stroke: var(--primary); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; pointer-events: none; }
-.weight-chart-point { position: absolute; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 50%; background: transparent; transform: translate(-50%, -50%); cursor: pointer; }
+.weight-chart-point { position: absolute; width: 45px; height: 45px; padding: 0; border: 0; border-radius: 50%; background: transparent; transform: translate(-50%, -50%); cursor: pointer; }
 .weight-chart-point::after { content: ""; position: absolute; inset: 50% auto auto 50%; width: 10px; height: 10px; border: 4px solid var(--primary); border-radius: 50%; background: var(--surface); transform: translate(-50%, -50%); }
 .weight-chart-point:hover::after,
 .weight-chart-point:focus-visible::after { background: var(--primary); }
@@ -3929,7 +3936,7 @@ html.high-contrast .weight-chart-grid { stroke: var(--muted); }
 .symptom-intensity-select { min-height: 32px; max-width: 170px; padding: 4px 8px; border: 1px solid var(--border); border-radius: 8px; color: var(--text); background: var(--surface); font-size: 11px; }
 .report-export-actions { flex-wrap: wrap; }
 @media (max-width: 720px) { .history-filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 420px) { .history-filter-grid { grid-template-columns: 1fr; } .history-custom-dates { grid-template-columns: 1fr; } .history-metric-selector { align-items: stretch; flex-direction: column; gap: 4px; } .history-metric-selector select { width: 100%; } .weight-chart { padding: 10px 6px; } .weight-chart-heading { padding: 0 5px; } .weight-chart-svg { min-height: 140px; } .measurement-circumferences-grid { grid-template-columns: 1fr; } }
+@media (max-width: 420px) { .history-filter-grid { grid-template-columns: 1fr; } .history-custom-dates { grid-template-columns: 1fr; } .history-weight-goal { grid-template-columns: 1fr; } .history-weight-goal-controls { justify-content: stretch; } .history-weight-goal-controls .txt { width: 100%; } .history-weight-goal-controls button { flex: 1 1 120px; } .history-metric-selector { align-items: stretch; flex-direction: column; gap: 4px; } .history-metric-selector select { width: 100%; } .weight-chart { padding: 10px 6px; } .weight-chart-heading { padding: 0 5px; } .weight-chart-svg { min-height: 140px; } .measurement-circumferences-grid { grid-template-columns: 1fr; } }
 .dash-actions-collapsible {
   margin-top: 16px;
   border: 1px solid var(--border2);

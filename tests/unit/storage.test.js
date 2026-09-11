@@ -24,6 +24,16 @@ describe("Storage Service", () => {
     expect(res.sites).toContain("Flanco (Esquerdo)");
   });
 
+  it("persiste a meta de peso separadamente e preserva o valor anterior se a gravação falhar", () => {
+    storageInstance.init();
+    expect(storageInstance.setMeasurementGoals({ goalWeightKg: "76,25" }).success).toBe(true);
+    expect(storageInstance.getMeasurementGoals()).toEqual({ goalWeightKg: 76.25 });
+    global.localStorage.setItem.mockImplementationOnce(() => { throw new Error("quota"); });
+    const failed = storageInstance.setMeasurementGoals({ goalWeightKg: 75 });
+    expect(failed.success).toBe(false);
+    expect(storageInstance.getMeasurementGoals()).toEqual({ goalWeightKg: 76.25 });
+  });
+
   it("atualiza e persiste a lista padrão legada sem alterar listas personalizadas", () => {
     mockStore.pep_sites_v2 = JSON.stringify([
       "Abdômen (Direito)",
@@ -406,6 +416,28 @@ describe("Storage Service", () => {
       expect(restored.getHiddenMeasurementIds()).toContain("hc_external_hidden");
       expect(restored.getTombstones()).toHaveLength(1);
       expect(restored.getTombstones()[0].ownership).toBe("pep");
+    });
+
+    it("backup e restore preservam a meta e fazem rollback se a escrita local falhar", () => {
+      storageInstance.init();
+      storageInstance.setMeasurementGoals({ goalWeightKg: 72.5 });
+      const backup = storageInstance.exportBackup();
+      const restored = new StorageService();
+      restored.init();
+      restored.setMeasurementGoals({ goalWeightKg: 80 });
+      expect(restored.importBackup(backup).success).toBe(true);
+      expect(restored.getMeasurementGoals()).toEqual({ goalWeightKg: 72.5 });
+      restored.setMeasurementGoals({ goalWeightKg: 80 });
+
+      const originalSetItem = global.localStorage.setItem;
+      global.localStorage.setItem = vi.fn((key, value) => {
+        if (key === "pep_measurement_goals_v1") throw new Error("QuotaExceededError");
+        mockStore[key] = String(value);
+      });
+      const failed = restored.importBackup(backup);
+      expect(failed.success).toBe(false);
+      expect(restored.getMeasurementGoals()).toEqual({ goalWeightKg: 80 });
+      global.localStorage.setItem = originalSetItem;
     });
 
     it("Item 7: deleteMeasurement registra tombstone para registro PEP reimportado (source: health_connect, ownership: pep)", () => {

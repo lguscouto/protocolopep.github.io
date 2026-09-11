@@ -10,7 +10,7 @@ import {
 import { validateAndParseBackup, createBackupPayload } from "../domain/backup.js";
 import { debitVialDose, creditVialDose } from "../domain/inventory.js";
 import { getDefaultSites, migrateLegacyDefaultSites } from "../domain/injection-sites.js";
-import { createMeasurementEntry, validateMeasurementEntry } from "../domain/measurements.js";
+import { createMeasurementEntry, validateMeasurementEntry, normalizeMeasurementGoals } from "../domain/measurements.js";
 
 const LAST_DATA_CHANGE_KEY = "pep_last_data_change";
 
@@ -29,6 +29,7 @@ const KEYS = {
   INVENTORY: "pep_inventory_v2",
   SITES: "pep_sites_v3",
   MEASUREMENTS: "pep_measurements_v2",
+  MEASUREMENT_GOALS: "pep_measurement_goals_v1",
   TOMBSTONES: "pep_hc_tombstones_v2",
   HIDDEN_MEASUREMENTS: "pep_hidden_measurements_v2",
   SETTINGS: "pep_settings_v2",
@@ -57,6 +58,7 @@ export class StorageService {
     this.inventory = [];
     this.sites = getDefaultSites();
     this.measurements = [];
+    this.measurementGoals = { goalWeightKg: null };
     this.tombstones = [];
     this.hiddenMeasurementIds = [];
     this.listeners = new Set();
@@ -156,6 +158,13 @@ export class StorageService {
         this.measurements = [];
       }
 
+      const storedMeasurementGoals = localStorage.getItem(KEYS.MEASUREMENT_GOALS);
+      try {
+        this.measurementGoals = normalizeMeasurementGoals(storedMeasurementGoals ? JSON.parse(storedMeasurementGoals) : {});
+      } catch (e) {
+        this.measurementGoals = { goalWeightKg: null };
+      }
+
       // 6. Carregar Tombstones do Health Connect
       let storedTombstones = localStorage.getItem(KEYS.TOMBSTONES);
       if (storedTombstones) {
@@ -196,6 +205,7 @@ export class StorageService {
       this.inventory = [];
       this.sites = getDefaultSites();
       this.measurements = [];
+      this.measurementGoals = { goalWeightKg: null };
       this.tombstones = [];
       this.hiddenMeasurementIds = [];
     }
@@ -223,6 +233,7 @@ export class StorageService {
       inventory: this.inventory,
       sites: this.sites,
       measurements: this.measurements,
+      measurementGoals: this.measurementGoals,
       error: this.doseStateError
     };
   }
@@ -236,7 +247,7 @@ export class StorageService {
   }
 
   readSnapshot(fields = ["peptides", "logs", "inventory", "sites", "measurements"]) {
-    const allowed = ["peptides", "logs", "inventory", "sites", "measurements", "tombstones", "hiddenMeasurementIds"];
+    const allowed = ["peptides", "logs", "inventory", "sites", "measurements", "measurementGoals", "tombstones", "hiddenMeasurementIds"];
     const requested = [...new Set(Array.isArray(fields) ? fields : [])]
       .filter((field) => allowed.includes(field))
       .sort();
@@ -413,6 +424,23 @@ export class StorageService {
 
   getMeasurements() {
     return Array.isArray(this.measurements) ? deepClone(this.measurements) : [];
+  }
+
+  getMeasurementGoals() {
+    return deepClone(this.measurementGoals);
+  }
+
+  setMeasurementGoals(value) {
+    let nextGoals;
+    try {
+      nextGoals = normalizeMeasurementGoals(value);
+      localStorage.setItem(KEYS.MEASUREMENT_GOALS, JSON.stringify(nextGoals));
+    } catch (error) {
+      return { success: false, error: error?.message || "Não foi possível salvar a meta de peso." };
+    }
+    this.measurementGoals = nextGoals;
+    this.notify();
+    return { success: true, measurementGoals: this.getMeasurementGoals() };
   }
 
   setMeasurements(newMeasurements) {
@@ -661,6 +689,15 @@ export class StorageService {
     }
   }
 
+  saveMeasurementGoals() {
+    try {
+      localStorage.setItem(KEYS.MEASUREMENT_GOALS, JSON.stringify(this.measurementGoals));
+      return { success: true };
+    } catch (e) {
+      return { success: false, error: e.message || "Falha ao gravar a meta de peso no armazenamento local" };
+    }
+  }
+
   takeSnapshot() {
     return {
       peptides: deepClone(this.peptides),
@@ -668,6 +705,7 @@ export class StorageService {
       inventory: deepClone(this.inventory),
       sites: deepClone(this.sites),
       measurements: deepClone(this.measurements),
+      measurementGoals: deepClone(this.measurementGoals),
       tombstones: deepClone(this.tombstones),
       hiddenMeasurementIds: deepClone(this.hiddenMeasurementIds)
     };
@@ -680,6 +718,7 @@ export class StorageService {
     this.inventory = snapshot.inventory || [];
     this.sites = snapshot.sites || getDefaultSites();
     this.measurements = snapshot.measurements || [];
+    this.measurementGoals = snapshot.measurementGoals || { goalWeightKg: null };
     this.tombstones = snapshot.tombstones || [];
     this.hiddenMeasurementIds = snapshot.hiddenMeasurementIds || [];
     try {
@@ -689,6 +728,7 @@ export class StorageService {
       localStorage.setItem(KEYS.INVENTORY, JSON.stringify(this.inventory));
       localStorage.setItem(KEYS.SITES, JSON.stringify(this.sites));
       localStorage.setItem(KEYS.MEASUREMENTS, JSON.stringify(this.measurements));
+      localStorage.setItem(KEYS.MEASUREMENT_GOALS, JSON.stringify(this.measurementGoals));
       localStorage.setItem(KEYS.TOMBSTONES, JSON.stringify(this.tombstones));
       localStorage.setItem(KEYS.HIDDEN_MEASUREMENTS, JSON.stringify(this.hiddenMeasurementIds));
     } catch (e) {
@@ -708,7 +748,8 @@ export class StorageService {
       {
         tombstones: this.tombstones,
         hiddenMeasurementIds: this.hiddenMeasurementIds
-      }
+      },
+      this.measurementGoals
     );
   }
 
@@ -726,6 +767,7 @@ export class StorageService {
       this.inventory = clean.inventory || [];
       this.sites = clean.sites || getDefaultSites();
       this.measurements = clean.measurements || [];
+      this.measurementGoals = clean.measurementGoals || { goalWeightKg: null };
       this.tombstones = clean.healthConnectState?.tombstones || [];
       this.hiddenMeasurementIds = clean.healthConnectState?.hiddenMeasurementIds || [];
 
@@ -734,13 +776,14 @@ export class StorageService {
       const resInv = this.saveInventory();
       const resSites = this.saveSites();
       const resMeas = this.saveMeasurements();
+      const resGoals = this.saveMeasurementGoals();
       const resTomb = this.saveTombstones();
       const resHidden = this.saveHiddenMeasurementIds();
 
-      if (!resProto.success || !resLogs.success || !resInv.success || !resSites.success || !resMeas.success || !resTomb.success || !resHidden.success) {
+      if (!resProto.success || !resLogs.success || !resInv.success || !resSites.success || !resMeas.success || !resGoals.success || !resTomb.success || !resHidden.success) {
         throw new Error(
           resProto.error || resLogs.error || resInv.error || resSites.error || resMeas.error ||
-          resTomb.error || resHidden.error || "Falha na escrita local"
+          resGoals.error || resTomb.error || resHidden.error || "Falha na escrita local"
         );
       }
 
@@ -773,7 +816,8 @@ export class StorageService {
       logs: deepClone(this.logs),
       inventory: deepClone(this.inventory),
       sites: deepClone(this.sites),
-      measurements: deepClone(this.measurements)
+      measurements: deepClone(this.measurements),
+      measurementGoals: deepClone(this.measurementGoals)
     };
     for (const listener of this.listeners) {
       try {

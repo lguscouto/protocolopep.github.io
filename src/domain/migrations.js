@@ -6,7 +6,7 @@ import {
   getDefaultSites,
   migrateLegacyDefaultSites
 } from "./injection-sites.js";
-import { createMeasurementEntry } from "./measurements.js";
+import { createMeasurementEntry, normalizeMeasurementGoals } from "./measurements.js";
 import { isValidDateKey, isValidTime } from "./schedule.js";
 import {
   assessTemporalConsistency,
@@ -16,7 +16,7 @@ import {
   localDateTimeToIso
 } from "./time.js";
 
-export const CURRENT_SCHEMA_VERSION = 10;
+export const CURRENT_SCHEMA_VERSION = 11;
 
 function sanitizeHealthConnectId(value) {
   if (typeof value !== "string") return null;
@@ -255,6 +255,15 @@ export function migrateV9ToV10(state = {}) {
   };
 }
 
+/** V10 → V11: meta pessoal opcional, independente das medições registradas. */
+export function migrateV10ToV11(state = {}) {
+  return {
+    ...state,
+    version: 11,
+    measurementGoals: normalizeMeasurementGoals(state.measurementGoals)
+  };
+}
+
 export function migrateAppState(state = {}) {
   if (!state || typeof state !== "object") {
     state = {};
@@ -289,6 +298,9 @@ export function migrateAppState(state = {}) {
   if (version < 10) {
     current = migrateV9ToV10(current);
   }
+  if (version < 11) {
+    current = migrateV10ToV11(current);
+  }
 
   const rawProtocol = current.protocol || current.peptides || [];
   const rawLogs = current.logs || {};
@@ -304,6 +316,7 @@ export function migrateAppState(state = {}) {
     inventory: migrateInventory(rawInventory),
     sites: migrateLegacyDefaultSites(rawSites),
     measurements: migrateMeasurements(rawMeasurements),
+    measurementGoals: normalizeMeasurementGoals(current.measurementGoals),
     healthConnectState: sanitizeHealthConnectState(current.healthConnectState),
     theme: current.theme === "white" || current.theme === "light" ? "white" : "black"
   };

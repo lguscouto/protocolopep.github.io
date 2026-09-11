@@ -30,6 +30,15 @@ describe("Backup Domain", () => {
     expect(logs["2026-08-28"].pep_1[0].protocolSnapshot.calculationSnapshot).not.toHaveProperty("syringeMaxUI");
   });
 
+  it("inclui a meta pessoal no schema 11 e inicializa backups v10 sem meta", () => {
+    const payload = JSON.parse(createBackupPayload([], {}, "black", [], [], [], {}, { goalWeightKg: "72,5" }));
+    expect(payload.version).toBe(11);
+    expect(payload.measurementGoals).toEqual({ goalWeightKg: 72.5 });
+    const legacy = validateAndParseBackup(JSON.stringify({ version: 10, protocol: [], logs: {} }));
+    expect(legacy.valid).toBe(true);
+    expect(legacy.data.measurementGoals).toEqual({ goalWeightKg: null });
+  });
+
   it.each([
     ["white", "white"],
     ["branco", "white"],
@@ -57,7 +66,7 @@ describe("Backup Domain", () => {
     const result = validateAndParseBackup(payload);
 
     expect(result.valid).toBe(true);
-    expect(result.data.version).toBe(10);
+    expect(result.data.version).toBe(11);
     expect(result.data.healthConnectState.hiddenMeasurementIds).toEqual(["hc_external_1"]);
     expect(result.data.healthConnectState.tombstones).toHaveLength(1);
     expect(result.stats.hiddenMeasurementsCount).toBe(1);
