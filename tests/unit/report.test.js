@@ -74,10 +74,28 @@ describe("Relatórios de Aplicações e Exportação (V08)", () => {
 
     const csv = generateReportCSV(entries);
     expect(csv.startsWith("\uFEFF")).toBe(true); // UTF-8 BOM
-    expect(csv).toContain('"Data";"Hora";"Peptídeo";"Subtítulo";"Dose";"UI";"Tipo";"Observações"');
+    expect(csv).toContain('"Data";"Hora";"Peptídeo";"Subtítulo";"Dose";"UI";"Seringa (UI)";"Tipo";"Observações"');
     // Dados antigos sem dose registrada não herdam a dose atual do protocolo.
-    expect(csv).toContain('"28/08/2026";"08:00";"BPC-157";"reparo";"\'--";"";"Regular";"jejum"');
-    expect(csv).toContain('"27/08/2026";"20:00";"TB-500";"recuperação";"500 mcg";"20";"Retroativo";"esqueci cedo"');
+    expect(csv).toContain('"28/08/2026";"08:00";"BPC-157";"reparo";"\'--";"";"";"Regular";"jejum"');
+    expect(csv).toContain('"27/08/2026";"20:00";"TB-500";"recuperação";"500 mcg";"20";"";"Retroativo";"esqueci cedo"');
+  });
+
+  it("inclui a capacidade do snapshot no CSV e no relatório visual", () => {
+    const entries = buildReportData({
+      protocol: mockProtocol,
+      logs: {
+        "2026-08-28": {
+          "pep-1": [{
+            id: "captured", time: "08:00", dose: "250 mcg", ui: 10,
+            protocolSnapshot: { name: "BPC-157", sub: "reparo", dose: "250 mcg", ui: 10, calculationSnapshot: { syringeMaxUI: 30 } }
+          }]
+        }
+      }
+    });
+
+    expect(entries[0].syringeMaxUI).toBe(30);
+    expect(generateReportCSV(entries)).toContain('"30"');
+    expect(generateReportHTML(entries)).toContain("Seringa: 30 UI");
   });
 
   it("deve gerar HTML imprimível contendo aviso legal e estrutura válida", () => {

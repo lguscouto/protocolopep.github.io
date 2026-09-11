@@ -248,6 +248,8 @@ export const ptBR = {
     "step2Desc": "Volume de diluente (ml)",
     "step3Title": "Dose desejada por aplicação",
     "step3Desc": "Informe a dose pretendida",
+    "syringeCapacityTitle": "Capacidade da seringa",
+    "syringeCapacityDesc": "Selecione a seringa",
     "dosePlaceholder": "ex: 250",
     "doseUnitMcg": "mcg",
     "doseUnitMg": "mg",
@@ -263,7 +265,9 @@ export const ptBR = {
     "vialMgPill": "{mg} mg",
     "waterMlPill": "{ml} ml",
     "doseHint": "Informe a dose pretendida acima para calcular.",
-    "instructions": "Aspire até <b>{units} UI</b> na seringa de insulina U-100 ({volume} mL)",
+    "instructions": "Aspire até <b>{units} UI</b> na seringa de insulina U-100 de {capacity} UI ({volume} mL)",
+    "syringeVisualTitle": "Seringa {capacity} UI",
+    "syringeVisualLabel": "Seringa {capacity} UI, marca {units} UI",
     "invalidData": "Dados de cálculo inválidos"
   },
   "settings": {

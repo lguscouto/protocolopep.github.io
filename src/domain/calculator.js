@@ -1,3 +1,7 @@
+import { normalizeSyringeMaxUI, SYRINGE_CAPACITIES_UI } from "./syringe.js";
+
+export { normalizeSyringeMaxUI, SYRINGE_CAPACITIES_UI } from "./syringe.js";
+
 /**
  * Domínio da Calculadora de Reconstituição e Conversões Canônicas
  */
@@ -35,7 +39,7 @@ export function calculateReconstitution({
   const vMg = parseFloat(vialMg);
   const wMl = parseFloat(waterMl);
   const dVal = parseFloat(doseVal);
-  const sMax = parseFloat(syringeMaxUI) || 100;
+  const sMax = normalizeSyringeMaxUI(syringeMaxUI);
 
   if (!Number.isFinite(vMg) || vMg <= 0) {
     return { valid: false, error: "Quantidade do frasco deve ser um número maior que zero." };
@@ -89,6 +93,6 @@ export function calculateReconstitution({
     unitsUI: parseFloat(unitsUI.toFixed(2)),
     dosesPerVial: parseFloat(dosesPerVial.toFixed(2)),
     syringeMaxUI: sMax,
-    formula: `${dVal} ${doseUnit} / ${concentrationMgMl.toFixed(2)} mg/mL = ${volumeMl.toFixed(3)} mL (${unitsUI.toFixed(1)} UI)`
+    formula: `${dVal} ${doseUnit} / ${concentrationMgMl.toFixed(2)} mg/mL = ${volumeMl.toFixed(3)} mL (${unitsUI.toFixed(1)} UI) · Seringa U-100: ${sMax} UI`
   };
 }

@@ -3,8 +3,27 @@
  */
 
 import { migrateAppState, CURRENT_SCHEMA_VERSION, sanitizeHealthConnectState } from "./migrations.js";
+import { normalizeSyringeMaxUI } from "./syringe.js";
 
 export const MAX_BACKUP_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
+
+/**
+ * Gera uma cópia para exportação, preenchendo apenas snapshots de cálculo
+ * legados. Nunca altera protocolo ou histórico mantidos no dispositivo.
+ */
+function normalizeSnapshotsForBackup(value) {
+  if (Array.isArray(value)) return value.map(normalizeSnapshotsForBackup);
+  if (!value || typeof value !== "object") return value;
+  return Object.fromEntries(Object.entries(value).map(([key, item]) => [
+    key,
+    key === "calculationSnapshot" ? normalizeCalculationSnapshotForExport(item) : normalizeSnapshotsForBackup(item)
+  ]));
+}
+
+export function normalizeCalculationSnapshotForExport(snapshot) {
+  if (!snapshot || typeof snapshot !== "object" || Array.isArray(snapshot)) return null;
+  return { ...snapshot, syringeMaxUI: normalizeSyringeMaxUI(snapshot.syringeMaxUI) };
+}
 
 export function normalizeBackupTheme(theme) {
   const normalized = String(theme || "").trim().toLowerCase();
@@ -24,8 +43,8 @@ export function createBackupPayload(
     app: "protocolo-pep",
     version: CURRENT_SCHEMA_VERSION,
     exportedAt: new Date().toISOString(),
-    protocol: Array.isArray(protocol) ? protocol : [],
-    logs: logs && typeof logs === "object" ? logs : {},
+    protocol: normalizeSnapshotsForBackup(Array.isArray(protocol) ? protocol : []),
+    logs: normalizeSnapshotsForBackup(logs && typeof logs === "object" ? logs : {}),
     inventory: Array.isArray(inventory) ? inventory : [],
     sites: Array.isArray(sites) ? sites : [],
     measurements: Array.isArray(measurements) ? measurements : [],

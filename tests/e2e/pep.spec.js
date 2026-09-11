@@ -580,6 +580,28 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     runtime.assertCleanRuntime();
   });
 
+  test("calculadora respeita a capacidade selecionada da seringa", async ({ page }) => {
+    const runtime = trackPageRuntime(page);
+    await seedStorage(page, { skipOnboarding: true, peptides: [] });
+    await page.goto("/");
+    await page.locator("#tab-settings").click();
+    await page.locator("#open-tools-btn").click();
+    await expect(page.locator("#view-calc")).toHaveAttribute("data-feature-ready", "true");
+
+    await page.locator("#calc-dose-input").fill("1000");
+    await page.locator("#calc-syringe-toggle button[data-capacity='30']").click();
+    await expect(page.locator("#calc-use-btn")).toBeDisabled();
+    await expect(page.locator("#calc-res-sub")).toContainText("30 UI");
+
+    await page.locator("#calc-syringe-toggle button[data-capacity='50']").click();
+    await expect(page.locator("#calc-res-big")).toHaveText("40");
+    await expect(page.locator("#calc-use-btn")).toBeEnabled();
+    await expect(page.locator("#calc-syringe svg title")).toContainText("50 UI");
+    await expect(page.locator("#calc-syringe")).toHaveAttribute("aria-label", /50 UI/);
+
+    runtime.assertCleanRuntime();
+  });
+
   test("restaura backup com tema, fecha a prévia e registra a operação", async ({ page }) => {
     const runtime = trackPageRuntime(page);
     await seedStorage(page, { skipOnboarding: true, peptides: [] });

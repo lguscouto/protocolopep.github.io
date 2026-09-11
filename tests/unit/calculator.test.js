@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { calculateReconstitution, convertDoseValue } from "../../src/domain/calculator.js";
+import { calculateReconstitution, convertDoseValue, normalizeSyringeMaxUI, SYRINGE_CAPACITIES_UI } from "../../src/domain/calculator.js";
 
 describe("Calculator Domain", () => {
   it("converte valores ao alternar unidades mcg <-> mg sem multiplicar por 1000 indevidamente", () => {
@@ -75,6 +75,25 @@ describe("Calculator Domain", () => {
     });
     expect(result.valid).toBe(false);
     expect(result.error).toContain("excede a capacidade máxima da seringa");
+  });
+
+  it("aceita apenas capacidades de 30, 50 ou 100 UI e usa 100 UI como fallback", () => {
+    expect(SYRINGE_CAPACITIES_UI).toEqual([30, 50, 100]);
+    expect(normalizeSyringeMaxUI(30)).toBe(30);
+    expect(normalizeSyringeMaxUI("50")).toBe(50);
+    expect(normalizeSyringeMaxUI(100)).toBe(100);
+    expect(normalizeSyringeMaxUI(42)).toBe(100);
+    expect(normalizeSyringeMaxUI(undefined)).toBe(100);
+  });
+
+  it("bloqueia o resultado acima da capacidade selecionada sem alterar a conversão U-100", () => {
+    const base = { vialMg: 5, waterMl: 2, doseVal: 1000, doseUnit: "mcg" };
+    expect(calculateReconstitution({ ...base, syringeMaxUI: 30 }).valid).toBe(false);
+    expect(calculateReconstitution({ ...base, syringeMaxUI: 50 }).valid).toBe(true);
+    const result = calculateReconstitution({ ...base, syringeMaxUI: 50 });
+    expect(result.unitsUI).toBe(40);
+    expect(result.syringeMaxUI).toBe(50);
+    expect(result.formula).toContain("Seringa U-100: 50 UI");
   });
 
   it("rejeita explicitamente unidades não permitidas (P1 - Sec 15)", () => {

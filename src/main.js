@@ -37,7 +37,6 @@ import { renderProtocolList, renderProtocolControls, changeProtocolStatus } from
 import { isValidDateKey, isValidTime } from "./domain/schedule.js";
 import { escapeHtml, sanitizeColor, sanitizeId } from "./ui/dom.js";
 import { shouldShowOnboarding, showOnboarding } from "./ui/onboarding.js";
-import { createCalculationSnapshot, formatAuditTrail } from "./domain/calculation-record.js";
 import { createDoseLog, validateDoseLog, normalizeDoseEntry } from "./domain/dose-log.js";
 import { generateDailySummary } from "./domain/daily-summary.js";
 import { updateNotificationUI, setupNotificationListeners } from "./ui/notification-settings.js";
@@ -284,7 +283,7 @@ const settingsFeature = createFeatureLoader(async () => {
   diagnostics.setupDiagnosticsModal({
     storage,
     getNotificationsActive: () => (window.pepNotifications ? window.pepNotifications.hasActiveReminders() : false),
-    appVersion: "3.5.0"
+    appVersion: "3.6.0"
   });
   const widgetToggle = document.getElementById("widget-discrete-toggle");
   if (widgetToggle && widgetToggle.dataset.widgetBound !== "true") {

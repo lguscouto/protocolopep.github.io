@@ -1,6 +1,6 @@
 # 🧪 Protocolo PEP · App Android (Local-First)
 
-![Version](https://img.shields.io/badge/version-3.5.0-2CC5C0)
+![Version](https://img.shields.io/badge/version-3.6.0-2CC5C0)
 ![Android](https://img.shields.io/badge/Android-8.0%2B-green)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![CI](https://github.com/lguscouto/protocolopep.github.io/actions/workflows/ci.yml/badge.svg)
@@ -8,6 +8,14 @@
 Aplicativo Android/PWA para registrar aplicações de peptídeos com poucos toques, receber lembretes no dia certo e lembrar o último local aplicado. O PEP funciona offline, sem conta e sem nuvem, com arquitetura **100% Local-First**, histórico preservado e ferramentas técnicas acessíveis somente quando necessárias.
 
 ---
+
+## 🚀 Novidades da Versão 3.6.0 (Capacidade da Seringa)
+
+- **Capacidade explícita:** a calculadora permite selecionar seringas de 30, 50 ou 100 UI, mantendo 100 UI como padrão seguro para cálculos e snapshots legados.
+- **Limite físico factual:** resultados acima da capacidade selecionada são bloqueados sem sugerir mudança de dose, divisão ou conduta terapêutica.
+- **Conferência rastreável:** escala visual, fórmula e trilha auditável registram a capacidade usada; protocolos, histórico, CSV, PDF e backup preservam a informação no snapshot de cálculo.
+- **Compatibilidade preservada:** snapshots antigos sem capacidade são tratados como 100 UI em leitura e exportação, sem migração nem reescrita de dados locais; o schema de backup continua em 10.
+- **Release Android versionada:** `versionName 3.6.0` e `versionCode 34`.
 
 ## 🚀 Novidades da Versão 3.5.0 (Registro Simplificado de Múltiplas Aplicações)
 

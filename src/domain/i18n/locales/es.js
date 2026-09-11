@@ -248,6 +248,8 @@ export const es = {
     "step2Desc": "Volumen de diluyente (ml)",
     "step3Title": "Dosis deseada por aplicación",
     "step3Desc": "Introduce la dosis prescrita",
+    "syringeCapacityTitle": "Capacidad de la jeringa",
+    "syringeCapacityDesc": "Seleccione el límite físico de la jeringa",
     "dosePlaceholder": "ej: 250",
     "doseUnitMcg": "mcg",
     "doseUnitMg": "mg",
@@ -263,7 +265,9 @@ export const es = {
     "vialMgPill": "{mg} mg",
     "waterMlPill": "{ml} ml",
     "doseHint": "Ingrese la dosis prevista arriba para calcular.",
-    "instructions": "Aspire hasta <b>{units} UI</b> en la jeringa de insulina U-100 ({volume} mL)",
+    "instructions": "Aspire hasta <b>{units} UI</b> en la jeringa de insulina U-100 de {capacity} UI ({volume} mL)",
+    "syringeVisualTitle": "Jeringa de {capacity} UI",
+    "syringeVisualLabel": "Visualización de la jeringa de {capacity} UI, marcada en {units} UI",
     "invalidData": "Datos de cálculo inválidos"
   },
   "settings": {

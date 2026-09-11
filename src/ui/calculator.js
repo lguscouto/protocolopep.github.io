@@ -7,9 +7,10 @@
  * integração com a criação de protocolos e estoque.
  */
 
-import { calculateReconstitution, convertDoseValue } from "../domain/calculator.js";
+import { calculateReconstitution, convertDoseValue, normalizeSyringeMaxUI } from "../domain/calculator.js";
 import { createCalculationSnapshot, formatAuditTrail } from "../domain/calculation-record.js";
 import { escapeHtml } from "./dom.js";
+import { i18nService } from "../services/i18n.js";
 
 /**
  * Inicializa a interface e ouvintes de eventos da Calculadora.
@@ -29,12 +30,30 @@ export function setupCalculatorUI({
   let diluentMl = 2;
   let desiredDoseVal = NaN;
   let doseUnit = "mcg";
+  let syringeMaxUI = 100;
   let currentCalculationSnapshot = null;
+
+  const syringeStep = document.getElementById("calc-syringe-step");
+  if (syringeStep) {
+    syringeStep.innerHTML = `
+      <div class="step">
+        <div class="step-h">
+          <span class="step-n">4</span>
+          <div class="lab"><span data-i18n="calculator.syringeCapacityTitle">${escapeHtml(i18nService.t("calculator.syringeCapacityTitle"))}</span> <small data-i18n="calculator.syringeCapacityDesc">${escapeHtml(i18nService.t("calculator.syringeCapacityDesc"))}</small></div>
+        </div>
+        <div class="unittoggle" id="calc-syringe-toggle" role="group" aria-label="${escapeHtml(i18nService.t("calculator.syringeCapacityTitle"))}" data-i18n-aria="calculator.syringeCapacityTitle">
+          <button type="button" data-capacity="30" aria-pressed="false">30 UI</button>
+          <button type="button" data-capacity="50" aria-pressed="false">50 UI</button>
+          <button type="button" class="on" data-capacity="100" aria-pressed="true">100 UI</button>
+        </div>
+      </div>`;
+  }
 
   const mgChips = document.querySelectorAll("#calc-mg-chips .chip");
   const mlChips = document.querySelectorAll("#calc-ml-chips .chip");
   const doseInput = document.getElementById("calc-dose-input");
   const unitBtns = document.querySelectorAll("#calc-unit-toggle button");
+  const syringeBtns = document.querySelectorAll("#calc-syringe-toggle button");
   const auditCard = document.getElementById("calc-audit-card");
   const auditFormula = document.getElementById("calc-audit-formula");
   const auditTrail = document.getElementById("calc-audit-trail");
@@ -70,7 +89,7 @@ export function setupCalculatorUI({
       waterMl: diluentMl,
       doseVal: desiredDoseVal,
       doseUnit,
-      syringeMaxUI: 100
+      syringeMaxUI
     });
 
     if (!result.valid) {
@@ -87,7 +106,11 @@ export function setupCalculatorUI({
     }
 
     if (resBig) resBig.textContent = String(result.unitsUI);
-    if (resSub) resSub.innerHTML = `Aspire até <b>${result.unitsUI} UI</b> na seringa de insulina U-100 (${result.volumeMl} mL)`;
+    if (resSub) resSub.innerHTML = i18nService.t("calculator.instructions", {
+      units: result.unitsUI,
+      volume: result.volumeMl,
+      capacity: result.syringeMaxUI
+    });
     if (resDoses) resDoses.textContent = `${result.dosesPerVial} doses`;
 
     if (summaryCard && summaryValues) {
@@ -96,6 +119,7 @@ export function setupCalculatorUI({
         <span><b>Frasco:</b> ${vialMg} mg</span>
         <span><b>Diluente:</b> ${diluentMl} mL</span>
         <span><b>Dose pretendida:</b> ${desiredDoseVal} ${doseUnit}</span>
+        <span><b>Seringa:</b> ${result.syringeMaxUI} UI</span>
       `;
     }
 
@@ -110,26 +134,32 @@ export function setupCalculatorUI({
     if (useBtn) useBtn.disabled = false;
     if (saveVialBtn) saveVialBtn.disabled = false;
 
-    renderSyringe(result.unitsUI);
+    renderSyringe(result.unitsUI, result.syringeMaxUI);
   }
 
-  function renderSyringe(ui) {
+  function renderSyringe(ui, capacity = syringeMaxUI) {
     const cont = document.getElementById("calc-syringe");
     if (!cont) return;
 
-    const clampedUi = Math.min(100, Math.max(0, ui));
-    const fillWidth = (clampedUi / 100) * 240;
+    const maxUI = normalizeSyringeMaxUI(capacity);
+    const clampedUi = Math.min(maxUI, Math.max(0, ui));
+    const fillWidth = (clampedUi / maxUI) * 240;
+    const ticks = Array.from({ length: 6 }, (_, index) => (maxUI / 5) * index);
+    const label = i18nService.t("calculator.syringeVisualLabel", { capacity: maxUI, units: clampedUi });
+    cont.setAttribute("aria-label", label);
 
     cont.innerHTML = `
-      <svg viewBox="0 0 320 60" style="width:100%;max-width:340px;height:auto;" aria-hidden="true">
+      <svg viewBox="0 0 320 60" style="width:100%;max-width:340px;height:auto;" role="img" aria-labelledby="calc-syringe-title calc-syringe-desc">
+        <title id="calc-syringe-title">${escapeHtml(i18nService.t("calculator.syringeVisualTitle", { capacity: maxUI }))}</title>
+        <desc id="calc-syringe-desc">${escapeHtml(label)}</desc>
         <rect x="30" y="15" width="250" height="30" rx="4" fill="var(--surface3)" stroke="var(--border2)" stroke-width="1.5"/>
         <rect x="30" y="16" width="${fillWidth}" height="28" fill="var(--primary)" opacity="0.6"/>
         <line x1="8" y1="30" x2="30" y2="30" stroke="var(--muted2)" stroke-width="2"/>
-        ${[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map((tick) => {
-          const x = 30 + (tick / 100) * 240;
+        ${ticks.map((tick) => {
+          const x = 30 + (tick / maxUI) * 240;
           return `
-            <line x1="${x}" y1="15" x2="${x}" y2="${tick % 20 === 0 ? "27" : "22"}" stroke="var(--text)" stroke-width="1" opacity="0.7"/>
-            ${tick % 20 === 0 ? `<text x="${x}" y="38" font-size="8" font-family="var(--display)" fill="var(--muted)" text-anchor="middle">${tick}</text>` : ""}
+            <line x1="${x}" y1="15" x2="${x}" y2="27" stroke="var(--text)" stroke-width="1" opacity="0.7"/>
+            <text x="${x}" y="38" font-size="8" font-family="var(--display)" fill="var(--muted)" text-anchor="middle">${tick}</text>
           `;
         }).join("")}
         <line x1="${30 + fillWidth}" y1="10" x2="${30 + fillWidth}" y2="50" stroke="var(--danger)" stroke-width="3"/>
@@ -190,6 +220,19 @@ export function setupCalculatorUI({
     });
   });
 
+  syringeBtns.forEach((button) => {
+    button.addEventListener("click", () => {
+      syringeMaxUI = normalizeSyringeMaxUI(button.dataset.capacity);
+      syringeBtns.forEach((item) => {
+        const selected = normalizeSyringeMaxUI(item.dataset.capacity) === syringeMaxUI;
+        item.classList.toggle("on", selected);
+        item.setAttribute("aria-pressed", String(selected));
+      });
+      haptics?.light?.();
+      recalculate();
+    });
+  });
+
   if (useBtn) {
     useBtn.addEventListener("click", () => {
       if (!currentCalculationSnapshot) return;
@@ -220,7 +263,7 @@ export function setupCalculatorUI({
 
   return {
     recalculate,
-    setValues: ({ mg = null, ml = null, dose = null, unit = null } = {}) => {
+    setValues: ({ mg = null, ml = null, dose = null, unit = null, syringe = null } = {}) => {
       if (mg !== null) {
         vialMg = Number(mg) || vialMg;
         mgChips.forEach((x) => {
@@ -247,6 +290,14 @@ export function setupCalculatorUI({
         if (doseInput) {
           doseInput.value = !isNaN(desiredDoseVal) ? String(desiredDoseVal) : "";
         }
+      }
+      if (syringe !== null) {
+        syringeMaxUI = normalizeSyringeMaxUI(syringe);
+        syringeBtns.forEach((item) => {
+          const selected = normalizeSyringeMaxUI(item.dataset.capacity) === syringeMaxUI;
+          item.classList.toggle("on", selected);
+          item.setAttribute("aria-pressed", String(selected));
+        });
       }
       recalculate();
     },

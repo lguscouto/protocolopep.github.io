@@ -29,6 +29,7 @@ describe("Calculation Record Domain (V02)", () => {
     expect(snapshot.volumeMl).toBe(0.1);
     expect(snapshot.unitsUI).toBe(10);
     expect(snapshot.dosesPerVial).toBe(20);
+    expect(snapshot.syringeMaxUI).toBe(100);
     expect(snapshot.formula).toContain("250 mcg");
 
     // Imutabilidade
@@ -66,6 +67,13 @@ describe("Calculation Record Domain (V02)", () => {
     const snapshot = createCalculationSnapshot(calc);
     const trail = formatAuditTrail(snapshot);
 
-    expect(trail).toBe("Frasco: 5 mg ➔ Diluente: 2 mL ➔ Concentração: 2.5 mg/mL ➔ Dose: 500 mcg ➔ Volume: 0.2 mL ➔ Aplicação: 20 UI (U-100)");
+    expect(trail).toBe("Frasco: 5 mg ➔ Diluente: 2 mL ➔ Concentração: 2.5 mg/mL ➔ Dose: 500 mcg ➔ Volume: 0.2 mL ➔ Aplicação: 20 UI (U-100 · seringa de 100 UI)");
+  });
+
+  it("trata a capacidade ausente do snapshot legado como 100 UI sem mudá-lo", () => {
+    const legacy = { vialMg: 5, waterMl: 2, unitsUI: 10, formula: "legado" };
+    expect(formatAuditTrail(legacy)).toContain("seringa de 100 UI");
+    expect(legacy).not.toHaveProperty("syringeMaxUI");
+    expect(formatAuditTrail({ ...legacy, syringeMaxUI: 42 })).toContain("seringa de 100 UI");
   });
 });

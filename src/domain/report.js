@@ -7,6 +7,7 @@ import { calculateAdherenceSummary } from "./adherence.js";
 import { calculateMeasurementStats, filterMeasurements, normalizeSymptomDetails } from "./measurements.js";
 import { normalizeProtocolRevisions } from "./protocol-history.js";
 import { getDoseDisplayData } from "./dose-display.js";
+import { normalizeSyringeMaxUI } from "./syringe.js";
 export { getDoseDisplayData } from "./dose-display.js";
 
 const hasValue = (value) => value !== undefined && value !== null && value !== "";
@@ -96,6 +97,7 @@ export function buildReportData({
           vialConcentrationMcgPerMl: display.vial?.concentrationMcgPerMl ?? null,
           historyIntegrity: display.historyIntegrity,
           revisionId: display.revisionId,
+          syringeMaxUI: display.calculationSnapshot ? normalizeSyringeMaxUI(display.calculationSnapshot.syringeMaxUI) : null,
           retroactive: Boolean(retroactive),
           type: retroactive ? "Retroativo" : "Regular",
           note: includeNotes ? (note || "") : ""
@@ -279,7 +281,7 @@ export function escapeCSV(val) {
 export function generateReportCSV(entries = []) {
   // UTF-8 BOM para compatibilidade com Microsoft Excel e planilhas em PT-BR
   const BOM = "\uFEFF";
-  const headers = ["Data", "Hora", "Peptídeo", "Subtítulo", "Dose", "UI", "Tipo", "Observações",
+  const headers = ["Data", "Hora", "Peptídeo", "Subtítulo", "Dose", "UI", "Seringa (UI)", "Tipo", "Observações",
     "Estado", "Motivo", "Local", "Frasco", "Lote", "Concentração do frasco (mcg/mL)", "Integridade histórica", "Revisão"];
   const headerLine = headers.map(escapeCSV).join(";");
 
@@ -293,6 +295,7 @@ export function generateReportCSV(entries = []) {
       e.peptideSub,
       e.dose,
       e.ui,
+      e.syringeMaxUI,
       e.type,
       e.note,
       e.statusLabel || STATUS_LABELS[doseStatus(e)] || "Não identificado",
@@ -328,6 +331,7 @@ function getReportEntryCSVRow(e) {
     e.peptideSub,
     e.dose,
     e.ui,
+    e.syringeMaxUI,
     e.type,
     e.note,
     e.statusLabel || STATUS_LABELS[doseStatus(e)] || "Não identificado",
@@ -393,7 +397,7 @@ export function generatePersonalReportCSV({
   }
 
   addRow([]);
-  const doseHeaders = ["Data", "Hora", "Peptídeo", "Subtítulo", "Dose", "UI", "Tipo", "Observações",
+  const doseHeaders = ["Data", "Hora", "Peptídeo", "Subtítulo", "Dose", "UI", "Seringa (UI)", "Tipo", "Observações",
     "Estado", "Motivo", "Local", "Frasco", "Lote", "Concentração do frasco (mcg/mL)", "Integridade histórica", "Revisão"];
   addRow(["Aplicações", ...doseHeaders]);
   entries.forEach((entry) => addRow(["Aplicações", ...getReportEntryCSVRow(entry)]));
@@ -454,7 +458,7 @@ export function generateReportHTML(entries = [], {
         <td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;font-weight:600;">${escapeHTML(dateFmt)}</td>
         <td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;">${escapeHTML(e.time)}</td>
         <td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;font-weight:700;">${escapeHTML(e.peptideName)}${e.historyIntegrity !== "captured" ? '<div style="font-size:10px;font-weight:400;">Legado: dados históricos incompletos</div>' : ""}</td>
-        <td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;">${escapeHTML(e.dose)} (${escapeHTML(e.ui ?? "--")} UI)</td>
+        <td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;">${escapeHTML(e.dose)} (${escapeHTML(e.ui ?? "--")} UI)${e.syringeMaxUI !== null && e.syringeMaxUI !== undefined ? `<br><span style="font-size:11px;color:#64748B;">Seringa: ${escapeHTML(e.syringeMaxUI)} UI</span>` : ""}</td>
         <td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;">${escapeHTML(e.statusLabel || STATUS_LABELS[doseStatus(e)] || "Não identificado")}</td>
         <td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;">
           <span style="display:inline-block;padding:2px 6px;border-radius:4px;font-size:11px;background:${e.retroactive ? "#FEF3C7;color:#92400E" : "#E6FFFA;color:#047857"}">${escapeHTML(e.type)}</span>

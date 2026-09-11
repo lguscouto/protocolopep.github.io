@@ -248,6 +248,8 @@ export const en = {
     "step2Desc": "Diluent volume (ml)",
     "step3Title": "Desired dose per application",
     "step3Desc": "Enter prescribed dose",
+    "syringeCapacityTitle": "Syringe capacity",
+    "syringeCapacityDesc": "Select the physical syringe limit",
     "dosePlaceholder": "ex: 250",
     "doseUnitMcg": "mcg",
     "doseUnitMg": "mg",
@@ -263,7 +265,9 @@ export const en = {
     "vialMgPill": "{mg} mg",
     "waterMlPill": "{ml} ml",
     "doseHint": "Enter target dose above to calculate.",
-    "instructions": "Draw up to <b>{units} IU</b> in the U-100 insulin syringe ({volume} mL)",
+    "instructions": "Draw up to <b>{units} IU</b> in the {capacity} IU U-100 insulin syringe ({volume} mL)",
+    "syringeVisualTitle": "{capacity} IU syringe",
+    "syringeVisualLabel": "{capacity} IU syringe visualization, marked at {units} IU",
     "invalidData": "Invalid calculation data"
   },
   "settings": {

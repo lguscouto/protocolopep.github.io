@@ -19,6 +19,17 @@ describe("Backup Domain", () => {
     expect(parsed.logs["2026-08-28"]).toBeDefined();
   });
 
+  it("exporta 100 UI para snapshots legados sem alterar protocolo nem histórico local", () => {
+    const protocol = [{ id: "pep_1", calculationSnapshot: { vialMg: 5, waterMl: 2 } }];
+    const logs = { "2026-08-28": { "pep_1": [{ protocolSnapshot: { calculationSnapshot: { vialMg: 5, waterMl: 2 } } }] } };
+    const payload = JSON.parse(createBackupPayload(protocol, logs));
+
+    expect(payload.protocol[0].calculationSnapshot.syringeMaxUI).toBe(100);
+    expect(payload.logs["2026-08-28"].pep_1[0].protocolSnapshot.calculationSnapshot.syringeMaxUI).toBe(100);
+    expect(protocol[0].calculationSnapshot).not.toHaveProperty("syringeMaxUI");
+    expect(logs["2026-08-28"].pep_1[0].protocolSnapshot.calculationSnapshot).not.toHaveProperty("syringeMaxUI");
+  });
+
   it.each([
     ["white", "white"],
     ["branco", "white"],

@@ -2,6 +2,8 @@
  * Domínio de Registro Imutável e Auditável de Cálculo de Reconstituição (V02)
  */
 
+import { normalizeSyringeMaxUI } from "./syringe.js";
+
 export const CALC_ALGORITHM_VERSION = "1";
 
 export function createCalculationSnapshot(calcResult) {
@@ -23,7 +25,7 @@ export function createCalculationSnapshot(calcResult) {
     volumeMl: Number(calcResult.volumeMl),
     unitsUI: Number(calcResult.unitsUI),
     dosesPerVial: Number(calcResult.dosesPerVial),
-    syringeMaxUI: Number(calcResult.syringeMaxUI || 100),
+    syringeMaxUI: normalizeSyringeMaxUI(calcResult.syringeMaxUI),
     formula: String(calcResult.formula || "")
   };
 
@@ -50,13 +52,14 @@ export function validateCalculationSnapshot(snap) {
 }
 
 export function formatAuditTrail(snap) {
-  if (!snap) return "";
+  if (!snap || typeof snap !== "object") return "";
+  const syringeMaxUI = normalizeSyringeMaxUI(snap.syringeMaxUI);
   return [
     `Frasco: ${snap.vialMg} mg`,
     `Diluente: ${snap.waterMl} mL`,
     `Concentração: ${snap.concentrationMgMl} mg/mL`,
     `Dose: ${snap.doseVal} ${snap.doseUnit}`,
     `Volume: ${snap.volumeMl} mL`,
-    `Aplicação: ${snap.unitsUI} UI (U-100)`
+    `Aplicação: ${snap.unitsUI} UI (U-100 · seringa de ${syringeMaxUI} UI)`
   ].join(" ➔ ");
 }
