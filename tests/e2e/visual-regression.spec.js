@@ -156,7 +156,9 @@ test.describe("Protocolo PEP — Matriz de regressão visual", () => {
     for (const theme of THEMES) {
       await page.goto(`/?visualTheme=${theme.storage}&highContrast=${theme.highContrast}`);
       await page.waitForLoadState("domcontentloaded");
-      await page.waitForTimeout(400);
+      // Aguarda a transição de tema e a hidratação tardia de Mais antes da captura.
+      // Em runners compartilhados a combinação pode ultrapassar o primeiro frame.
+      await page.waitForTimeout(700);
 
       const viewportWidth = await page.evaluate(() => document.documentElement.clientWidth);
       expect([360, 412, 600], `viewport não mapeado no projeto ${testInfo.project.name}`).toContain(viewportWidth);
