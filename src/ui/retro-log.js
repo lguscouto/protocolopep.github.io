@@ -11,6 +11,7 @@ import { getDoseDisplayData } from "../domain/dose-display.js";
 import { isValidDateKey, isValidTime } from "../domain/schedule.js";
 import { i18nService } from "../services/i18n.js";
 import { resolveProtocolAt } from "../domain/protocol-history.js";
+import { accessibilityService } from "../services/accessibility.js";
 
 const esc = escapeHtml;
 let editingContext = null;
@@ -50,6 +51,11 @@ export function openRetroLogModal(prefillDate = null, prefillPepId = null, { sto
   const statusSelect = document.getElementById("retro-status-select");
   const reasonInput = document.getElementById("retro-reason-input");
   const historyPanel = document.getElementById("retro-edit-history");
+  const compactSummary = document.getElementById("retro-compact-summary");
+  const treatmentSummary = document.getElementById("retro-treatment-summary");
+  const doseSummary = document.getElementById("retro-dose-summary");
+  const timeSummary = document.getElementById("retro-time-summary");
+  const treatmentField = document.getElementById("retro-treatment-field");
   const title = document.getElementById("retro-modal-title");
   if (title) title.textContent = editingContext ? i18nService.t("phase1.editRecord") : i18nService.t("modals.retro.title");
 
@@ -64,6 +70,7 @@ export function openRetroLogModal(prefillDate = null, prefillPepId = null, { sto
   const nowTime = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
   if (timeInput) {
     timeInput.value = editingContext?.log.time || nowTime;
+    timeInput.readOnly = modal.dataset.mode === "compact" && !editingContext;
   }
 
   if (pepSelect) {
@@ -119,6 +126,12 @@ export function openRetroLogModal(prefillDate = null, prefillPepId = null, { sto
           lastSite: lastUsed?.site || ""
         });
       }
+      if (modal.dataset.mode === "compact") {
+        const current = peptides.find((entry) => entry.id === pepSelect.value);
+        if (treatmentSummary) treatmentSummary.textContent = current?.name || "—";
+        if (doseSummary) doseSummary.textContent = doseInput?.value || current?.dose || "—";
+        if (timeSummary) timeSummary.textContent = timeInput?.value || "—";
+      }
     };
 
     pepSelect.onchange = () => { doseEdited = false; unitsEdited = false; updateDoseAndUi(); };
@@ -163,19 +176,34 @@ export function openRetroLogModal(prefillDate = null, prefillPepId = null, { sto
   }
 
   const moreToggle = document.getElementById("retro-more-toggle");
+  if (compactSummary) compactSummary.hidden = modal.dataset.mode !== "compact";
+  if (treatmentField) treatmentField.hidden = modal.dataset.mode === "compact";
   if (moreToggle) {
     moreToggle.hidden = modal.dataset.mode !== "compact";
     moreToggle.setAttribute("aria-expanded", "false");
+    moreToggle.textContent = i18nService.t("modals.retro.showMore");
     moreToggle.onclick = () => {
       const expanded = modal.dataset.expanded !== "true";
       modal.dataset.expanded = String(expanded);
       moreToggle.setAttribute("aria-expanded", String(expanded));
-      moreToggle.textContent = expanded ? "Ocultar opções" : "Mais opções";
+      moreToggle.textContent = i18nService.t(expanded ? "modals.retro.hideMore" : "modals.retro.showMore");
+    };
+  }
+  const treatmentChange = document.getElementById("retro-treatment-change");
+  if (treatmentChange) {
+    treatmentChange.hidden = modal.dataset.mode !== "compact";
+    treatmentChange.onclick = () => {
+      if (treatmentField) {
+        treatmentField.hidden = false;
+        treatmentField.classList.add("is-visible");
+      }
+      pepSelect?.focus({ preventScroll: true });
     };
   }
 
   modal.classList.add("on");
   modal.setAttribute("aria-hidden", "false");
+  accessibilityService.trapFocus(modal);
 }
 
 function displayLegacyHint(log) {
@@ -312,6 +340,7 @@ export async function saveRetroLog({ doseService, storage: storageForRoute, date
       modal.classList.remove("on");
       modal.setAttribute("aria-hidden", "true");
     }
+    accessibilityService.restoreFocus();
     editingContext = null;
 
     haptics.success();

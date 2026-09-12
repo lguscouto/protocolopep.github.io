@@ -802,7 +802,19 @@
         <button type="button" class="sheet-x" id="retro-close" aria-label="Fechar registro de aplicação">✕</button>
       </div>
       <div class="sheet-body">
-        <div class="form-field">
+        <div class="retro-compact-summary" id="retro-compact-summary" hidden>
+          <div class="retro-summary-item">
+            <span class="form-field-label" data-i18n="modals.retro.peptideLabel">Tratamento</span>
+            <strong id="retro-treatment-summary">—</strong>
+            <button type="button" class="btn-subtle btn-subtle--small" id="retro-treatment-change" data-i18n="modals.retro.changeTreatment">Alterar tratamento</button>
+          </div>
+          <div class="retro-summary-grid">
+            <div class="retro-summary-item"><span class="form-field-label" data-i18n="modals.retro.doseSummary">Dose cadastrada</span><strong id="retro-dose-summary">—</strong></div>
+            <div class="retro-summary-item"><span class="form-field-label" data-i18n="modals.retro.timeSummary">Horário atual</span><strong id="retro-time-summary">—</strong></div>
+          </div>
+        </div>
+
+        <div class="form-field retro-advanced" id="retro-treatment-field">
           <label for="retro-pep-select" class="form-field-label" data-i18n="modals.retro.peptideLabel">Peptídeo</label>
           <select class="form-field-control" id="retro-pep-select"></select>
         </div>
@@ -837,7 +849,7 @@
           </div>
         </div>
 
-        <div class="form-field-grid">
+        <div class="form-field-grid retro-advanced">
           <div class="form-field">
             <label for="retro-dose-input" class="form-field-label" data-i18n="modals.retro.doseLabel">Dose registrada</label>
             <input type="text" class="form-field-control" id="retro-dose-input" placeholder="ex: 250 mcg" data-i18n-placeholder="modals.retro.dosePlaceholder" />
@@ -854,8 +866,8 @@
         </div>
 
         <button type="button" class="btn-subtle retro-more-toggle" id="retro-more-toggle" aria-expanded="false">Mais opções</button>
-        <div id="retro-audit-hint" class="retro-advanced" style="margin-bottom:14px;padding:9px 12px;background:rgba(44,197,192,0.08);border:1px solid rgba(44,197,192,0.2);border-radius:10px;font-size:11.5px;color:var(--muted);line-height:1.4;">
-          🕒 <b data-i18n="modals.retro.auditTitle">Registro Auditável:</b> Aplicações marcadas em datas passadas recebem automaticamente a marcação de auditoria <i data-i18n="modals.retro.auditRetro">Retroativo</i>.
+        <div id="retro-audit-hint" class="retro-advanced retro-audit-hint">
+          <b data-i18n="modals.retro.auditTitle">Registro auditável:</b> <span data-i18n="modals.retro.auditDescription">Aplicações em datas passadas recebem a marcação Retroativo.</span>
         </div>
         <div id="retro-edit-history" hidden style="margin-bottom:14px;font-size:12px;color:var(--muted);line-height:1.5;"></div>
       </div>

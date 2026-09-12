@@ -4052,6 +4052,15 @@ html.high-contrast .protocol-revision-line { stroke-width: 3; }
 }
 
 #retro-log-modal[data-mode="compact"][data-expanded="false"] .retro-advanced { display: none; }
+#retro-log-modal[data-mode="compact"][data-expanded="false"] .retro-treatment-field.is-visible { display: block; }
+#retro-log-modal[data-mode="compact"] .retro-compact-summary { display: grid; gap: 12px; margin-bottom: 16px; }
+#retro-log-modal[data-mode="compact"] .retro-compact-summary[hidden] { display: none; }
+.retro-summary-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.retro-summary-item { display: grid; gap: 4px; padding: 10px 12px; border: 1px solid var(--border2); border-radius: 10px; background: var(--surface2); }
+.retro-summary-item strong { font-size: 14px; color: var(--text); }
+.retro-summary-item .btn-subtle { justify-self: start; margin-top: 4px; }
+.retro-audit-hint { margin-bottom: 14px; padding: 9px 12px; background: rgba(44,197,192,0.08); border: 1px solid rgba(44,197,192,0.2); border-radius: 10px; font-size: 11.5px; color: var(--muted); line-height: 1.4; }
+.btn-subtle--small { min-height: 36px; padding: 6px 10px; font-size: 12px; }
 .retro-more-toggle { width: 100%; margin-bottom: var(--space-3); }
 
 .quick-register-fab {
