@@ -31,8 +31,9 @@ O teste em dispositivo físico **não foi executado por decisão de escopo**. A 
 - `3ab0aac` — Capacitor 8, dependências, Android e CI.
 - `4745c8c` — testes E2E da navegação, foco e períodos.
 - `d5800cc` — restauração de destinos legados de Mais e binding dinâmico de idioma.
+- `e9725c6` — remoção de `nextSite` da Home e badges funcionais com SVG/CSS.
 
-O APK foi gerado a partir do commit de implementação `d5800cc`.
+O APK foi gerado a partir do commit de implementação `e9725c6`.
 
 ## Validação automatizada
 
@@ -51,9 +52,9 @@ A matriz física permanece excluída conforme o escopo desta versão. A execuç�
 ## APK de avaliação
 
 Nome: `Protocolo-PEP-v3.9.10.apk`
-Commit de origem: `d5800cc`
-Bytes: **12.358.149**
-SHA-256: `79BD1F08D20096DADBEEDC6F44E191FC9C872B1EBA52F29601038CAFCF52C80C`
+Commit de origem: `e9725c6`
+Bytes: **12.358.041**
+SHA-256: `EBE6EAA559AE104FE9CA1B9243A25F8AC7A44AD4D65AF7A7E44B49B053FB1FF0`
 
 O APK é uma build debug para avaliação. A ausência de teste em dispositivo físico será repetida nas notas da release pública.
 
