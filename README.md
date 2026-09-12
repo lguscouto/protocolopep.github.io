@@ -1,6 +1,6 @@
 # 🧪 Protocolo PEP · App Android (Local-First)
 
-![Version](https://img.shields.io/badge/version-3.9.0-2CC5C0)
+![Version](https://img.shields.io/badge/version-3.9.9-2CC5C0)
 ![Android](https://img.shields.io/badge/Android-8.0%2B-green)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![CI](https://github.com/lguscouto/protocolopep.github.io/actions/workflows/ci.yml/badge.svg)
@@ -8,6 +8,16 @@
 Aplicativo Android/PWA para registrar aplicações de peptídeos com poucos toques, receber lembretes no dia certo e lembrar o último local aplicado. O PEP funciona offline, sem conta e sem nuvem, com arquitetura **100% Local-First**, histórico preservado e ferramentas técnicas acessíveis somente quando necessárias.
 
 ---
+
+## 🚀 Novidades da Versão 3.9.9 (Experiência 4.0)
+
+- **Navegação diária reorganizada:** a experiência principal agora é dividida em **Hoje**, **Jornada**, **Progresso** e **Mais**, mantendo o acesso aos recursos avançados fora do caminho diário.
+- **Registro global:** o botão **+ Registrar** abre aplicação, peso, sintoma ou medidas a partir de qualquer aba, reutilizando a persistência e as validações existentes.
+- **Jornada e Progresso:** próximos eventos, histórico, evolução de peso, metas, regularidade, sintomas e medidas foram separados em áreas dedicadas, com carregamento sob demanda.
+- **Medições independentes:** peso e sintomas podem ser registrados sem carregar o Histórico; a data inicial usa o dia local e os modos rápido e completo preservam os campos existentes.
+- **Hoje mais objetivo:** a tela destaca uma pendência principal, próximos registros e um resumo compacto de progresso, sem remover tratamentos, inventário, calculadora, relatórios, integrações ou configurações.
+- **Compatibilidade preservada:** dados locais, backups, Health Connect, notificações, vias de administração, estoque oral, temas, idiomas e funcionamento offline permanecem compatíveis.
+- **Release Android versionada:** `versionName 3.9.9` e `versionCode 38`.
 
 ## 🚀 Novidades da Versão 3.9.0 (Vias e estoque oral)
 
