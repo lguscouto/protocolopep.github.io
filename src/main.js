@@ -273,6 +273,7 @@ const progressFeature = createFeatureLoader(async () => {
 const settingsFeature = createFeatureLoader(async () => {
   restoreFeatureDom("settings");
   applyTranslations(document, i18nService);
+  i18nUI?.bindLanguageButtons?.();
   settingsMenuUI ||= setupSettingsMenu();
   const [backupPreview, backupStatus, exportService, diagnostics, inventory, sites, healthService, healthUi, widget] = await Promise.all([
     import("./ui/backup-preview.js"),
@@ -1793,7 +1794,9 @@ function setupSettingsMenu() {
   const showMenu = (focusRow = null) => {
     menu.hidden = false;
     back.hidden = true;
-    sections.forEach((section) => { section.hidden = true; section.classList.remove("is-active"); });
+    // Mantém os destinos legados disponíveis imediatamente; a lista também oferece
+    // uma entrada focalizada para abrir cada grupo como painel de detalhe.
+    sections.forEach((section) => { section.hidden = false; section.classList.remove("is-active"); });
     focusRow?.focus({ preventScroll: true });
   };
   const openPanel = (target, row) => {

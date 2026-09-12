@@ -76,7 +76,6 @@ export function applyTranslations(root = document, i18n) {
  */
 export function setupI18nUI({ i18nService, onLocaleChange = () => {} }) {
   const langButtons = document.querySelectorAll(".lang-select-btn");
-  const currentLangBadge = document.getElementById("current-lang-badge");
 
   function updateActiveLangUI(locale) {
     if (langButtons) {
@@ -93,6 +92,7 @@ export function setupI18nUI({ i18nService, onLocaleChange = () => {} }) {
       });
     }
 
+    const currentLangBadge = document.getElementById("current-lang-badge");
     if (currentLangBadge) {
       currentLangBadge.textContent = i18nService.getLocaleLabel(locale).toUpperCase();
     }
@@ -101,34 +101,18 @@ export function setupI18nUI({ i18nService, onLocaleChange = () => {} }) {
   // Inicializar estado dos botões
   updateActiveLangUI(i18nService.getLocale());
 
-  // Registrar listeners de clique nos seletores
-  const btnPt = document.getElementById("lang-btn-pt");
-  const btnEn = document.getElementById("lang-btn-en");
-  const btnEs = document.getElementById("lang-btn-es");
-
-  if (btnPt) {
-    btnPt.addEventListener("click", (e) => {
-      e.stopPropagation();
-      haptics.selection();
-      void i18nService.setLocale("pt-BR");
+  const bindLanguageButtons = () => {
+    document.querySelectorAll(".lang-select-btn").forEach((button) => {
+      if (button.dataset.i18nBound === "true") return;
+      button.dataset.i18nBound = "true";
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        haptics.selection();
+        void i18nService.setLocale(button.dataset.lang || "pt-BR");
+      });
     });
-  }
-
-  if (btnEn) {
-    btnEn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      haptics.selection();
-      void i18nService.setLocale("en");
-    });
-  }
-
-  if (btnEs) {
-    btnEs.addEventListener("click", (e) => {
-      e.stopPropagation();
-      haptics.selection();
-      void i18nService.setLocale("es");
-    });
-  }
+  };
+  bindLanguageButtons();
 
   // Escutar mudanças no serviço
   i18nService.subscribe(newLocale => {
@@ -139,6 +123,7 @@ export function setupI18nUI({ i18nService, onLocaleChange = () => {} }) {
 
   return {
     updateActiveLangUI,
+    bindLanguageButtons,
     applyTranslations: (root = document) => applyTranslations(root, i18nService)
   };
 }
