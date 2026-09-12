@@ -32,8 +32,9 @@ O teste em dispositivo físico **não foi executado por decisão de escopo**. A 
 - `4745c8c` — testes E2E da navegação, foco e períodos.
 - `d5800cc` — restauração de destinos legados de Mais e binding dinâmico de idioma.
 - `e9725c6` — remoção de `nextSite` da Home e badges funcionais com SVG/CSS.
+- `6e23b29` — manter o idioma acessível diretamente no menu Mais.
 
-O APK foi gerado a partir do commit de implementação `e9725c6`.
+O APK foi gerado a partir do commit de implementação `6e23b29`.
 
 ## Validação automatizada
 
@@ -52,9 +53,9 @@ A matriz física permanece excluída conforme o escopo desta versão. A execuç�
 ## APK de avaliação
 
 Nome: `Protocolo-PEP-v3.9.10.apk`
-Commit de origem: `e9725c6`
-Bytes: **12.358.041**
-SHA-256: `EBE6EAA559AE104FE9CA1B9243A25F8AC7A44AD4D65AF7A7E44B49B053FB1FF0`
+Commit de origem: `6e23b29`
+Bytes: **12.358.058**
+SHA-256: `ACD0632F996176904888E0067B95C8F8B157204A4EE662924CFD349511CCF58F`
 
 O APK é uma build debug para avaliação. A ausência de teste em dispositivo físico será repetida nas notas da release pública.
 
