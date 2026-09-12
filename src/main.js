@@ -942,7 +942,6 @@ function renderToday() {
       resolvedCount: dosesResolved(rec, peptide.id),
       skippedCount: summarizeDoseEntries(rec[peptide.id]).skipped,
       missedCount: summarizeDoseEntries(rec[peptide.id]).missed,
-      nextSite: getNextSite(configuredSites, lastUsed ? lastUsed.site : null),
       lastSite: lastUsed ? lastUsed.site : null
     };
   });
@@ -980,7 +979,6 @@ function renderToday() {
       const resolved = progress.resolved;
 
       const lastUsed = lastSiteIndex.byPeptide.get(p.id) || null;
-      const nextSite = getNextSite(configuredSites, lastUsed ? lastUsed.site : null);
 
       const activeVial = vialIndex.find(p.id, p.name);
       let vialStatus = null;
@@ -996,7 +994,6 @@ function renderToday() {
         resolvedCount: resolved,
         skippedCount: states.skipped,
         missedCount: states.missed,
-        nextSite,
         lastSite: lastUsed ? lastUsed.site : null,
         vialStatus
       });
@@ -1034,20 +1031,17 @@ function renderToday() {
       let vialBadgeHTML = "";
       if (vm.vialStatus) {
         const expAlert = vm.vialStatus.expStatus === "expired" ? " ⚠️ Vencido" : vm.vialStatus.expStatus === "expiring_soon" ? " ⏳ Vence em breve" : "";
-        vialBadgeHTML = `<span class="chip-acc" style="background:rgba(14,133,128,0.12);color:var(--success);font-size:11px;font-weight:700;" title="${esc(i18nService.t("settings.inventoryCardTitle"))}">🧪 ~${vm.vialStatus.remainingDoses} ${esc(i18nService.t("common.doses"))}${expAlert}</span>`;
+        vialBadgeHTML = `<span class="chip-acc chip-vial-badge" title="${esc(i18nService.t("settings.inventoryCardTitle"))}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6M10 3v4l-3 4v7a3 3 0 0 0 3 3h4a3 3 0 0 0 3-3v-7l-3-4V3M8 12h8"/></svg>~${vm.vialStatus.remainingDoses} ${esc(i18nService.t("common.doses"))}${expAlert}</span>`;
       }
 
       let siteBadgeHTML = "";
-      if (vm.nextSite) {
-        siteBadgeHTML = `<span class="chip-acc" style="background:rgba(99,102,241,0.12);color:var(--primary);font-size:11px;font-weight:700;" title="Próximo sítio na sua rotação">📍 ${esc(vm.nextSite)}</span>`;
-      }
       if (vm.lastSite) {
-        siteBadgeHTML += `<span class="chip-acc chip-last-site" title="Último local registrado">Último: ${esc(vm.lastSite)}</span>`;
+        siteBadgeHTML += `<span class="chip-acc chip-last-site" title="${esc(i18nService.t("dashboard.lastSite", { site: vm.lastSite }))}">${esc(i18nService.t("dashboard.lastSite", { site: vm.lastSite }))}</span>`;
       }
 
       const statusBadgeHTML = vm.isCompleted
         ? `<span class="chip-acc">${esc(i18nService.t(tomadas >= perDay ? "phase1.applied" : "phase1.resolved"))}</span>`
-        : `<span class="chip-acc" style="background:rgba(245,183,91,0.15);color:var(--warning);font-weight:700;">⏳ ${i18nService.t("common.pending") || "Pendente"}</span>`;
+        : `<span class="chip-acc chip-pending-badge">${i18nService.t("common.pending") || "Pendente"}</span>`;
 
       card.innerHTML = `
         <div class="info">
