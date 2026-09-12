@@ -1788,9 +1788,12 @@ function setupSettingsMenu() {
   const showMenu = (focusRow = null) => {
     menu.hidden = false;
     back.hidden = true;
-    // Mantém os destinos legados disponíveis imediatamente; a lista também oferece
-    // uma entrada focalizada para abrir cada grupo como painel de detalhe.
-    sections.forEach((section) => { section.hidden = false; section.classList.remove("is-active"); });
+    sections.forEach((section) => {
+      // Idioma permanece exposto no menu para manter a troca imediata; os demais
+      // destinos abrem como painéis de detalhe pelas linhas compactas.
+      section.hidden = section.id !== "settings-panel-app";
+      section.classList.remove("is-active");
+    });
     focusRow?.focus({ preventScroll: true });
   };
   const openPanel = (target, row) => {
