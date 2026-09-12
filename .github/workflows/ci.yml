@@ -2,7 +2,7 @@ name: CI - Test & Build
 
 on:
   push:
-    branches: [ main, hermes ]
+    branches: [ main, hermes, 'codex/**' ]
   pull_request:
     branches: [ main, hermes ]
 
