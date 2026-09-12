@@ -49,3 +49,14 @@ Não houve atualização de dependências: o diagnóstico do npm na instalação
 - E2E direcionado da nova experiência: 4/4 aprovados; fluxos de rotina e lembretes: 16/16 aprovados.
 - Axe no Hoje, Calculadora, Progresso, Mais e Notificações: aprovado nos fluxos exercitados.
 - A medição de desempenho completou os cenários de inicialização e acesso tardio, mas falhou na asserção do JavaScript inicial (87.791 bytes contra 81.920). Nenhum limite foi relaxado; os demais valores não foram declarados aprovados sem a saída final da asserção.
+- CI final do commit `31b88ce`: Node Test & Web Build aprovado com 169 testes E2E e 7 cenários ignorados; Android Build & Native Tests aprovado com sincronização Capacitor, `testDebugUnitTest`, `lintDebug` e `assembleDebug`.
+- Os snapshots de referência foram atualizados nos ambientes Windows e Linux. O cenário Galaxy A55 usa a navegação atual de Mais > Tratamento e o fluxo de teclado passou localmente e na CI.
+
+## APK de avaliação
+
+Arquivo gerado a partir do commit `31b88ce3481d7044e2e7077306d6fd04dedbbfe8`:
+
+`Protocolo-PEP-UX4-0-31b88ce.apk` — 12.239.206 bytes  
+SHA-256: `5639059C74E55A46925BBC816D90577A896D8742FE24D653A37D04F3B687A505`
+
+O APK é uma build debug para avaliação. Não houve validação em aparelho físico nem publicação pública nesta entrega.
