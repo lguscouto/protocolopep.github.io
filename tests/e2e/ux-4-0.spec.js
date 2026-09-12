@@ -129,4 +129,66 @@ test.describe("Experiência 4.0", () => {
     await expect(page.locator("#view-history")).not.toHaveAttribute("data-feature-ready", "true");
     runtime.assertCleanRuntime();
   });
+
+  test("navega pelas listas compactas de Mais e restaura o menu ao sair", async ({ page }) => {
+    const runtime = trackPageRuntime(page);
+    await seedStorage(page, { skipOnboarding: true, peptides: [] });
+    await page.goto("/");
+    await page.locator("#tab-settings").click();
+    await expect(page.locator("#settings-menu")).toBeVisible();
+    await expect(page.locator("#settings-menu [data-settings-target]")).toHaveCount(5);
+    await page.locator("[data-settings-target='treatment']").click();
+    await expect(page.locator("#settings-panel-treatment")).toBeVisible();
+    await expect(page.locator("#settings-detail-back")).toBeVisible();
+    await page.locator("#settings-detail-back").click();
+    await expect(page.locator("#settings-menu")).toBeVisible();
+    await page.locator("#tab-today").click();
+    await page.locator("#tab-settings").click();
+    await expect(page.locator("#settings-menu")).toBeVisible();
+    runtime.assertCleanRuntime();
+  });
+
+  test("mantém teclado e estados ARIA dos segmentos de Jornada", async ({ page }) => {
+    const runtime = trackPageRuntime(page);
+    await seedStorage(page, { skipOnboarding: true, peptides: [] });
+    await page.goto("/");
+    await page.locator("#tab-journey").click();
+    await page.locator("#journey-upcoming").focus();
+    await page.keyboard.press("ArrowRight");
+    await expect(page.locator("#journey-history")).toHaveAttribute("aria-selected", "true");
+    await expect(page.locator("#journey-history")).toHaveAttribute("tabindex", "0");
+    await expect(page.locator("#view-history")).not.toHaveAttribute("hidden");
+    await page.keyboard.press("Home");
+    await expect(page.locator("#journey-upcoming")).toHaveAttribute("aria-selected", "true");
+    await expect(page.locator("#view-week")).not.toHaveAttribute("hidden");
+    runtime.assertCleanRuntime();
+  });
+
+  test("usa chips de período no Progresso mantendo o estado canônico", async ({ page }) => {
+    const runtime = trackPageRuntime(page);
+    await seedStorage(page, { skipOnboarding: true, peptides: [] });
+    await page.goto("/");
+    await page.locator("#tab-progress").click();
+    await page.locator("[data-progress-period='90']").click();
+    await expect(page.locator("#progress-period")).toHaveValue("90");
+    await expect(page.locator("[data-progress-period='90']")).toHaveClass(/is-active/);
+    await page.locator("[data-progress-period='custom']").click();
+    await expect(page.locator("#progress-custom-dates")).toBeVisible();
+    runtime.assertCleanRuntime();
+  });
+
+  test("prende o foco no registro rápido e o devolve ao acionador", async ({ page }) => {
+    const runtime = trackPageRuntime(page);
+    await seedStorage(page, { skipOnboarding: true, peptides: [] });
+    await page.goto("/");
+    const fab = page.locator("#quick-register-fab");
+    await fab.click();
+    const first = page.locator("#quick-register-body [data-register]").first();
+    await first.focus();
+    await page.keyboard.press("Shift+Tab");
+    await expect(page.locator("#quick-register-close")).toBeFocused();
+    await page.keyboard.press("Escape");
+    await expect(fab).toBeFocused();
+    runtime.assertCleanRuntime();
+  });
 });
