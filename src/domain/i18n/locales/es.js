@@ -627,6 +627,7 @@ export const es = {
       "hipsLabel": "Cadera",
       "hipsPlaceholder": "Ej: 101",
       "circumferencesHelp": "Medidas opcionales en centímetros, guardadas solo en este dispositivo.",
+      "externalCircumferencesHelp": "Crea un registro local para editar circunferencias; los datos externos permanecen en solo lectura.",
       "energyLabel": "Nivel de Energía (1 = Muy baja, 5 = Excelente)",
       "moodLabel": "Estado de Ánimo / Bienestar (1 = Malo, 5 = Excelente)",
       "symptomsHeading": "Síntomas y Efectos Autorreportados",

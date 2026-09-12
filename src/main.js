@@ -277,6 +277,7 @@ const settingsFeature = createFeatureLoader(async () => {
   applyTranslations(document, i18nService);
   i18nUI?.bindLanguageButtons?.();
   settingsMenuUI ||= setupSettingsMenu();
+  bindRestoredSettingsControls();
   const settingsView = document.getElementById("view-settings");
   // A superfície de Mais fica disponível enquanto os módulos pouco frequentes
   // são hidratados. O guard de clique evita uma ação antes dos handlers.
@@ -430,6 +431,48 @@ function bindRestoredCoreControls() {
       button.click();
     });
   });
+}
+
+function bindRestoredSettingsControls() {
+  const bind = (id, handler) => {
+    const element = document.getElementById(id);
+    if (!element || element.dataset.settingsBound === "true") return;
+    element.dataset.settingsBound = "true";
+    element.addEventListener("click", handler);
+  };
+  bind("open-tools-btn", () => {
+    haptics.light();
+    void switchTab("calc");
+  });
+  bind("settings-theme-btn", () => {
+    haptics.medium();
+    void theme.toggle();
+  });
+  bind("reopen-onboarding-btn", () => {
+    haptics.light();
+    showOnboarding({ isReview: true });
+  });
+  bind("settings-share-btn", () => {
+    haptics.light();
+    openSharePreviewModal();
+  });
+  bind("export-btn", () => {
+    document.getElementById("dash-export-btn")?.click();
+  });
+
+  const contrastToggle = document.getElementById("high-contrast-toggle");
+  if (contrastToggle && contrastToggle.dataset.settingsBound !== "true") {
+    contrastToggle.dataset.settingsBound = "true";
+    contrastToggle.checked = accessibilityService.getHighContrast();
+    contrastToggle.setAttribute("aria-checked", contrastToggle.checked ? "true" : "false");
+    contrastToggle.addEventListener("change", () => {
+      const enabled = contrastToggle.checked;
+      accessibilityService.setHighContrast(enabled);
+      contrastToggle.setAttribute("aria-checked", enabled ? "true" : "false");
+      haptics.selection();
+      accessibilityService.announce(enabled ? "Modo de alto contraste ativado" : "Modo de alto contraste desativado");
+    });
+  }
 }
 
 async function initApp() {

@@ -627,6 +627,7 @@ export const en = {
       "hipsLabel": "Hips",
       "hipsPlaceholder": "e.g. 101",
       "circumferencesHelp": "Optional measurements in centimeters, stored only on this device.",
+      "externalCircumferencesHelp": "Create a local record to edit circumferences; external data remains read-only.",
       "energyLabel": "Energy Level (1 = Very low, 5 = Excellent)",
       "moodLabel": "Mood / Well-being (1 = Poor, 5 = Excellent)",
       "symptomsHeading": "Self-Reported Symptoms & Effects",

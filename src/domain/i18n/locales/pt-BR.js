@@ -608,7 +608,7 @@ export const ptBR = {
     },
     "measurements": {
       "title": "Registro Corporal / Sintomas",
-      "externalTitle": "Registro externo (Health Connect)",
+      "externalTitle": "Registro Externo (Health Connect)",
       "editTitle": "Editar registro corporal / sintomas",
       "weightTitle": "Registrar peso",
       "symptomTitle": "Como você está?",
@@ -627,6 +627,7 @@ export const ptBR = {
       "hipsLabel": "Quadril",
       "hipsPlaceholder": "Ex: 101",
       "circumferencesHelp": "Medidas opcionais em centímetros, registradas somente neste dispositivo.",
+      "externalCircumferencesHelp": "Crie um registro local para editar circunferências; os dados externos permanecem somente para leitura.",
       "energyLabel": "Nível de Energia (1 = Muito baixa, 5 = Excelente)",
       "moodLabel": "Humor / Bem-estar (1 = Ruim, 5 = Excelente)",
       "symptomsHeading": "Sintomas & Efeitos Autorrelatados",
