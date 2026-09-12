@@ -33,15 +33,16 @@ O teste em dispositivo físico **não foi executado por decisão de escopo**. A 
 - `d5800cc` — restauração de destinos legados de Mais e binding dinâmico de idioma.
 - `e9725c6` — remoção de `nextSite` da Home e badges funcionais com SVG/CSS.
 - `6e23b29` — manter o idioma acessível diretamente no menu Mais.
+- `277e237` — hidratar Mais fora do caminho inicial e tornar o trap de foco determinístico.
 
-O APK foi gerado a partir do commit de implementação `6e23b29`.
+O APK foi gerado a partir do commit de implementação `277e237`.
 
 ## Validação automatizada
 
 - `npm ci`: aprovado.
 - `npm test`: **555/555 testes em 54 arquivos aprovados**.
 - `npm run build`: aprovado.
-- `npm run test:performance`: aprovado; JavaScript inicial **67.722 bytes gzip (66,1 KiB)**, DOM vazio 806, first content 196 ms, DOM ready 310,6 ms, long task 159 ms, e primeiro acesso tardio Jornada 9,3 ms, Progresso 63 ms e Mais 83,3 ms. O aviso conhecido de import dinâmico de medições permanece documentado; não foi introduzido import cosmético.
+- `npm run test:performance`: aprovado; JavaScript inicial **68.091 bytes gzip (66,5 KiB)**, DOM vazio 806, first content 196 ms, DOM ready 318,4 ms, long task 169 ms, e primeiro acesso tardio Jornada 9,1 ms, Progresso 62,2 ms e Mais 15,1 ms. O aviso conhecido de import dinâmico de medições permanece documentado; não foi introduzido import cosmético.
 - E2E direcionado `tests/e2e/ux-4-0.spec.js`: **30/30** nos projetos `android-small`, `android-standard` e `wide-mobile`.
 - E2E de compatibilidade da organização de Mais: aprovado no projeto `android-small`.
 - Android: `cap sync`, `testDebugUnitTest`, `lintDebug` e `assembleDebug`: aprovados.
@@ -53,9 +54,9 @@ A matriz física permanece excluída conforme o escopo desta versão. A execuç�
 ## APK de avaliação
 
 Nome: `Protocolo-PEP-v3.9.10.apk`
-Commit de origem: `6e23b29`
-Bytes: **12.358.058**
-SHA-256: `ACD0632F996176904888E0067B95C8F8B157204A4EE662924CFD349511CCF58F`
+Commit de origem: `277e237`
+Bytes: **12.358.234**
+SHA-256: `BBFB1E5114F3DEFB847BF5A3CA794F04C38F00D725DE2BCE2625D5A00DC9F0F2`
 
 O APK é uma build debug para avaliação. A ausência de teste em dispositivo físico será repetida nas notas da release pública.
 
