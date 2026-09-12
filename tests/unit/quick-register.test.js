@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildQuickRegisterContext } from "../../src/domain/quick-register.js";
+import { resolveApplicationChoice } from "../../src/ui/quick-register.js";
 
 const routine = (id, time = "08:00") => ({ id, name: id, dose: "1 mg", perDay: 1, time, days: null, startDate: "2020-01-01" });
 
@@ -20,5 +21,17 @@ describe("contexto do registro rápido", () => {
 
   it("identifica protocolo vazio sem criar valores clínicos", () => {
     expect(buildQuickRegisterContext([], {}, now)).toMatchObject({ empty: true, selectedId: null, choices: [] });
+  });
+
+  it("exige escolha explícita para registro manual sem pendências", () => {
+    const context = buildQuickRegisterContext([routine("a")], { "2026-09-12": { a: [{ status: "applied" }] } }, now);
+    expect(resolveApplicationChoice(context)).toMatchObject({ kind: "manual", choices: context.choices });
+  });
+
+  it("mantém a escolha entre tratamentos quando não há pendências", () => {
+    const routines = [routine("a"), routine("b")];
+    const logs = { "2026-09-12": { a: [{ status: "applied" }], b: [{ status: "applied" }] } };
+    const context = buildQuickRegisterContext(routines, logs, now);
+    expect(resolveApplicationChoice(context)).toMatchObject({ kind: "manual", choices: routines });
   });
 });

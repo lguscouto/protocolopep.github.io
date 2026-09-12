@@ -71,6 +71,47 @@ test.describe("Experiência 4.0", () => {
     runtime.assertCleanRuntime();
   });
 
+  test("exige tratamento explícito para registro manual sem pendência", async ({ page }) => {
+    const runtime = trackPageRuntime(page);
+    await page.clock.setFixedTime(new Date("2026-09-12T10:35:00-03:00"));
+    await seedStorage(page, {
+      skipOnboarding: true,
+      peptides: [treatment("pep_manual", "Tratamento manual")],
+      logs: { "2026-09-12": { pep_manual: [{ id: "done", status: "applied", time: "08:00" }] } }
+    });
+    await page.goto("/");
+    await page.locator("#quick-register-fab").click();
+    await page.locator('[data-register="application"]').click();
+    await expect(page.locator("#quick-register-body")).toContainText("Nenhum registro está pendente hoje.");
+    await expect(page.locator("[data-treatment-id='pep_manual']")).toContainText("Tratamento manual");
+    await page.locator("[data-treatment-id='pep_manual']").click();
+    await expect(page.locator("#retro-pep-select option:checked")).toContainText("Tratamento manual");
+    runtime.assertCleanRuntime();
+  });
+
+  test("exige escolha entre tratamentos para registro manual sem pendências", async ({ page }) => {
+    const runtime = trackPageRuntime(page);
+    await page.clock.setFixedTime(new Date("2026-09-12T10:35:00-03:00"));
+    await seedStorage(page, {
+      skipOnboarding: true,
+      peptides: [treatment("pep_manual-a", "Tratamento A"), treatment("pep_manual-b", "Tratamento B", "20:00")],
+      logs: {
+        "2026-09-12": {
+          "pep_manual-a": [{ id: "done-a", status: "applied", time: "08:00" }],
+          "pep_manual-b": [{ id: "done-b", status: "applied", time: "20:00" }]
+        }
+      }
+    });
+    await page.goto("/");
+
+    await page.locator("#quick-register-fab").click();
+    await page.locator('[data-register="application"]').click();
+    await expect(page.locator("[data-treatment-id]")).toHaveCount(2);
+    await page.locator("[data-treatment-id='pep_manual-b']").click();
+    await expect(page.locator("#retro-pep-select option:checked")).toContainText("Tratamento B");
+    runtime.assertCleanRuntime();
+  });
+
   test("abre peso sem carregar Histórico e inicia a data pelo dia local", async ({ page }) => {
     const runtime = trackPageRuntime(page);
     await page.clock.setFixedTime(new Date("2026-09-12T00:30:00-03:00"));

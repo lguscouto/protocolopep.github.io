@@ -1,5 +1,6 @@
 import { escapeHtml, sanitizeId } from "./dom.js";
 import { i18nService } from "../services/i18n.js";
+import { accessibilityService } from "../services/accessibility.js";
 
 const ICONS = Object.freeze({
   application: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 4 6 6M12 6l6 6M4 20l5-1 10-10-4-4L5 15l-1 5Z"/></svg>',
@@ -8,16 +9,30 @@ const ICONS = Object.freeze({
   measurement: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5M4 19h16M8 16v-3M12 16V8M16 16v-6M20 16V6"/></svg>'
 });
 
-export function setupQuickRegister({ getContext, onApplication, onMeasurement, onEmpty }) {
+export function resolveApplicationChoice(context) {
+  if (context?.pending?.length === 1) {
+    return { kind: "direct", treatmentId: context.selectedId, date: context.date, choices: context.pending };
+  }
+  if ((context?.pending?.length || 0) > 1) {
+    return { kind: "pending", choices: context.pending };
+  }
+  return { kind: "manual", choices: context?.choices || [] };
+}
+
+export function setupQuickRegister({ getContext, onApplication, onMeasurement, onEmpty, accessibility = accessibilityService }) {
   const modal = document.getElementById("quick-register-modal");
   const body = document.getElementById("quick-register-body");
   const fab = document.getElementById("quick-register-fab");
   let opener = null;
+  let trapCleanup = null;
 
   const close = () => {
+    trapCleanup?.();
+    trapCleanup = null;
     modal?.classList.remove("on");
     modal?.setAttribute("aria-hidden", "true");
-    opener?.focus?.({ preventScroll: true });
+    if (accessibility?.restoreFocus) accessibility.restoreFocus();
+    else opener?.focus?.({ preventScroll: true });
   };
 
   const openApplication = () => {
@@ -27,12 +42,17 @@ export function setupQuickRegister({ getContext, onApplication, onMeasurement, o
       onEmpty();
       return;
     }
-    if (context.pending.length <= 1) {
+    const choice = resolveApplicationChoice(context);
+    if (choice.kind === "direct") {
       close();
-      onApplication(context.selectedId, context.date);
+      onApplication(choice.treatmentId, choice.date);
       return;
     }
-    body.innerHTML = `<p class="quick-register-hint">${escapeHtml(i18nService.t("experience.choosePending"))}</p><div class="quick-register-list">${context.pending.map((item) => `<button type="button" class="quick-register-treatment" data-treatment-id="${sanitizeId(item.id)}"><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml([item.dose, item.time].filter(Boolean).join(" · "))}</span></button>`).join("")}</div>`;
+    const choices = choice.choices;
+    const choiceHint = choice.kind === "pending" ? "" : `<p class="quick-register-hint">${escapeHtml(i18nService.t("experience.manualRecord"))}</p>`;
+    const choiceLabel = choice.kind === "pending" ? "" : "experience.chooseTreatment";
+    const firstHint = choice.kind === "pending" ? "experience.choosePending" : "experience.noPendingToday";
+    body.innerHTML = `<p class="quick-register-hint">${escapeHtml(i18nService.t(firstHint))}</p>${choiceHint}${choices.length > 1 ? `<p class="quick-register-hint">${escapeHtml(i18nService.t(choiceLabel))}</p>` : ""}<div class="quick-register-list">${choices.map((item) => `<button type="button" class="quick-register-treatment" data-treatment-id="${sanitizeId(item.id)}"><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml([item.dose, item.time].filter(Boolean).join(" · "))}${choice.kind === "manual" ? ` · ${escapeHtml(i18nService.t("experience.manualRecord"))}` : ""}</span></button>`).join("")}</div>`;
   };
 
   const render = () => {
@@ -49,6 +69,7 @@ export function setupQuickRegister({ getContext, onApplication, onMeasurement, o
     render();
     modal.classList.add("on");
     modal.setAttribute("aria-hidden", "false");
+    trapCleanup = accessibility?.trapFocus?.(modal) || null;
     requestAnimationFrame(() => body.querySelector("button")?.focus({ preventScroll: true }));
   };
 
