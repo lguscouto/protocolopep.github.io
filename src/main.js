@@ -128,6 +128,8 @@ let recordBackupExport = null;
 let renderBackupStatusUI = () => {};
 let widgetService = null;
 let settingsMenuUI = null;
+let settingsHydrationPromise = null;
+let settingsHydrated = false;
 const performanceIndexes = createRevisionedPerformanceIndexes(() => storage.getRevision());
 
 const deferredDom = new Map();
@@ -275,64 +277,73 @@ const settingsFeature = createFeatureLoader(async () => {
   applyTranslations(document, i18nService);
   i18nUI?.bindLanguageButtons?.();
   settingsMenuUI ||= setupSettingsMenu();
-  const [backupPreview, backupStatus, exportService, diagnostics, inventory, sites, healthService, healthUi, widget] = await Promise.all([
-    import("./ui/backup-preview.js"),
-    import("./ui/backup-status.js"),
-    import("./services/export.js"),
-    import("./ui/diagnostics.js"),
-    import("./ui/inventory.js"),
-    import("./ui/injection-sites.js"),
-    import("./services/health-connect.js"),
-    import("./ui/health-connect.js"),
-    import("./services/widget.js")
-  ]);
-  exportFile = exportService.exportFile;
-  shareExportedFile = exportService.shareExportedFile;
-  recordBackupExport = backupStatus.recordBackupExport;
-  renderBackupStatusUI = backupStatus.renderBackupStatusUI;
-  widgetService = widget.widgetService;
+  const settingsView = document.getElementById("view-settings");
+  // A superfície de Mais fica disponível enquanto os módulos pouco frequentes
+  // são hidratados. O guard de clique evita uma ação antes dos handlers.
+  settingsView?.setAttribute("data-feature-ready", "true");
+  settingsHydrated = false;
+  settingsHydrationPromise = (async () => {
+    const [backupPreview, backupStatus, exportService, diagnostics, inventory, sites, healthService, healthUi, widget] = await Promise.all([
+      import("./ui/backup-preview.js"),
+      import("./ui/backup-status.js"),
+      import("./services/export.js"),
+      import("./ui/diagnostics.js"),
+      import("./ui/inventory.js"),
+      import("./ui/injection-sites.js"),
+      import("./services/health-connect.js"),
+      import("./ui/health-connect.js"),
+      import("./services/widget.js")
+    ]);
+    exportFile = exportService.exportFile;
+    shareExportedFile = exportService.shareExportedFile;
+    recordBackupExport = backupStatus.recordBackupExport;
+    renderBackupStatusUI = backupStatus.renderBackupStatusUI;
+    widgetService = widget.widgetService;
 
-  inventoryUI = inventory.setupInventoryUI({ storage, onInventoryChange: () => invalidateViews("today", "week", "history", "progress") });
-  sitesUI = sites.setupInjectionSitesUI({ storage, onSitesChange: () => invalidateViews("today", "week", "history", "progress") });
-  healthConnectUI = healthUi.setupHealthConnectUI({
-    healthConnectService: healthService.healthConnect,
-    storage,
-    onSyncComplete: () => {
-      measurementsUI?.renderList?.();
-      invalidateViews("today", "history", "progress");
-    },
-    showToast,
-    haptics
-  });
-  backupPreview.setupBackupPreview({
-    storage,
-    theme,
-    notifications,
-    onStateRestored: () => {
-      invalidateViews("today", "week", "history", "progress");
-      updateNotificationUI(storage.getPeptides());
-    }
-  });
-  diagnostics.setupDiagnosticsModal({
-    storage,
-    getNotificationsActive: () => (window.pepNotifications ? window.pepNotifications.hasActiveReminders() : false),
-    appVersion: "3.9.10"
-  });
-  const widgetToggle = document.getElementById("widget-discrete-toggle");
-  if (widgetToggle && widgetToggle.dataset.widgetBound !== "true") {
-    widgetToggle.dataset.widgetBound = "true";
-    widgetToggle.checked = widgetService.isDiscreteModeEnabled();
-    widgetToggle.addEventListener("change", () => {
-      widgetService.setDiscreteModeEnabled(widgetToggle.checked);
-      haptics.selection();
-      syncAppWidget();
+    inventoryUI = inventory.setupInventoryUI({ storage, onInventoryChange: () => invalidateViews("today", "week", "history", "progress") });
+    sitesUI = sites.setupInjectionSitesUI({ storage, onSitesChange: () => invalidateViews("today", "week", "history", "progress") });
+    healthConnectUI = healthUi.setupHealthConnectUI({
+      healthConnectService: healthService.healthConnect,
+      storage,
+      onSyncComplete: () => {
+        measurementsUI?.renderList?.();
+        invalidateViews("today", "history", "progress");
+      },
+      showToast,
+      haptics
     });
-  }
-  bindCalculatorInventoryButton();
-  bindRestoredCoreControls();
-  renderBackupStatusUI();
-  void reportingFeature.load();
-  document.getElementById("view-settings")?.setAttribute("data-feature-ready", "true");
+    backupPreview.setupBackupPreview({
+      storage,
+      theme,
+      notifications,
+      onStateRestored: () => {
+        invalidateViews("today", "week", "history", "progress");
+        updateNotificationUI(storage.getPeptides());
+      }
+    });
+    diagnostics.setupDiagnosticsModal({
+      storage,
+      getNotificationsActive: () => (window.pepNotifications ? window.pepNotifications.hasActiveReminders() : false),
+      appVersion: "3.9.10"
+    });
+    const widgetToggle = document.getElementById("widget-discrete-toggle");
+    if (widgetToggle && widgetToggle.dataset.widgetBound !== "true") {
+      widgetToggle.dataset.widgetBound = "true";
+      widgetToggle.checked = widgetService.isDiscreteModeEnabled();
+      widgetToggle.addEventListener("change", () => {
+        widgetService.setDiscreteModeEnabled(widgetToggle.checked);
+        haptics.selection();
+        syncAppWidget();
+      });
+    }
+    bindCalculatorInventoryButton();
+    bindRestoredCoreControls();
+    renderBackupStatusUI();
+    void reportingFeature.load();
+  })().finally(() => {
+    settingsHydrated = true;
+  });
+  await settingsHydrationPromise;
 });
 
 const toolsFeature = createFeatureLoader(async () => {
@@ -492,6 +503,7 @@ async function initApp() {
   }
 
   setupNavigation();
+  setupSettingsHydrationGuard();
   journeyUI = createJourney({ onNavigate: (target) => void switchTab(target) });
   quickRegisterUI = setupQuickRegister({
     getContext: () => buildQuickRegisterContext(storage.getPeptides(), storage.getLogs(), new Date()),
@@ -585,6 +597,22 @@ async function initApp() {
 
 function initAnimatedBg() {
   startAnimatedBackground({ container: document.getElementById("bg-molecules"), theme });
+}
+
+function setupSettingsHydrationGuard() {
+  const view = document.getElementById("view-settings");
+  if (!view || view.dataset.hydrationGuardBound === "true") return;
+  view.dataset.hydrationGuardBound = "true";
+  view.addEventListener("click", (event) => {
+    if (settingsHydrated || !settingsHydrationPromise) return;
+    const control = event.target.closest?.("button, summary, input, select, textarea, [role='button']");
+    if (!control) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    void settingsHydrationPromise.then(() => {
+      if (control.isConnected) control.click();
+    });
+  }, true);
 }
 
 function setupNavigation() {
@@ -1788,12 +1816,9 @@ function setupSettingsMenu() {
   const showMenu = (focusRow = null) => {
     menu.hidden = false;
     back.hidden = true;
-    sections.forEach((section) => {
-      // Idioma permanece exposto no menu para manter a troca imediata; os demais
-      // destinos abrem como painéis de detalhe pelas linhas compactas.
-      section.hidden = section.id !== "settings-panel-app";
-      section.classList.remove("is-active");
-    });
+    // Os destinos legados continuam disponíveis na primeira abertura; as linhas
+    // compactas também permitem abrir cada grupo como painel de detalhe.
+    sections.forEach((section) => { section.hidden = false; section.classList.remove("is-active"); });
     focusRow?.focus({ preventScroll: true });
   };
   const openPanel = (target, row) => {

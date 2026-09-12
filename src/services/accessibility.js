@@ -142,24 +142,24 @@ export class AccessibilityService {
 
       const firstEl = currentFocusables[0];
       const lastEl = currentFocusables[currentFocusables.length - 1];
+      const activeIndex = currentFocusables.indexOf(document.activeElement);
+      const focusIndex = activeIndex >= 0 ? activeIndex : currentFocusables.indexOf(e.target);
 
       if (e.shiftKey) {
-        if (document.activeElement === firstEl) {
-          e.preventDefault();
-          lastEl.focus();
-        }
+        e.preventDefault();
+        focusWithoutScroll(focusIndex <= 0 ? lastEl : currentFocusables[focusIndex - 1]);
       } else {
-        if (document.activeElement === lastEl) {
+        if (focusIndex < 0 || focusIndex === currentFocusables.length - 1) {
           e.preventDefault();
-          firstEl.focus();
+          focusWithoutScroll(firstEl);
         }
       }
     };
 
-    element.addEventListener("keydown", handleKeyDown);
+    element.addEventListener("keydown", handleKeyDown, true);
 
     const cleanup = () => {
-      element.removeEventListener("keydown", handleKeyDown);
+      element.removeEventListener("keydown", handleKeyDown, true);
       this.activeTrapCleanup = null;
     };
 

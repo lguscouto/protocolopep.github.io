@@ -70,7 +70,7 @@ export function setupQuickRegister({ getContext, onApplication, onMeasurement, o
     modal.classList.add("on");
     modal.setAttribute("aria-hidden", "false");
     trapCleanup = accessibility?.trapFocus?.(modal) || null;
-    requestAnimationFrame(() => body.querySelector("button")?.focus({ preventScroll: true }));
+    body.querySelector("button")?.focus({ preventScroll: true });
   };
 
   fab?.addEventListener("click", () => open(fab));
