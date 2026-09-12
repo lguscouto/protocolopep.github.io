@@ -454,7 +454,13 @@ test.describe("Protocolo PEP — Galaxy A55 / geometria real", () => {
     const nav = NAV_MODES[0];
     await page.goto(scenarioUrl({ theme, nav, fontScale: 1, landscape: false }));
     await waitForStableLayout(page);
-    await page.locator("#today-cards .gear").first().click();
+    await page.locator("#tab-settings").click();
+    await expect(page.locator("#view-settings")).toHaveAttribute("data-feature-ready", "true");
+    const protocolDetails = page.locator("#settings-protocol-list details");
+    if (!(await protocolDetails.getAttribute("open"))) await protocolDetails.locator("summary").click();
+    const protocolItem = page.locator("#settings-protocol-list .protocol-manage-item").first();
+    await protocolItem.scrollIntoViewIfNeeded();
+    await protocolItem.click({ force: true });
     await expect(page.locator("#edit-modal")).toHaveClass(/on/);
     await page.waitForTimeout(350);
 
