@@ -55,7 +55,8 @@ test.describe("Fase 3 — relatório pessoal", () => {
     await seedStorage(page, { skipOnboarding: true, peptides: [peptide], logs, measurements });
     await page.goto("/");
     await page.waitForLoadState("domcontentloaded");
-    await page.locator("#tab-history").click();
+    await page.locator("#tab-journey").click();
+    await page.locator("#journey-history").click();
     await page.locator("#hist-report-btn").click();
 
     const modal = page.locator("#report-modal");

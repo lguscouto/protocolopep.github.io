@@ -8,8 +8,9 @@ test("carregamento sob demanda é idempotente em cliques rápidos e navegação 
   await page.waitForLoadState("domcontentloaded");
 
   await page.evaluate(() => {
-    document.getElementById("tab-history")?.click();
-    document.getElementById("tab-history")?.click();
+    document.getElementById("tab-journey")?.click();
+    document.getElementById("journey-history")?.click();
+    document.getElementById("journey-history")?.click();
   });
   await expect(page.locator("#view-history")).toHaveAttribute("data-feature-ready", "true");
   await expect(page.locator("#measurement-modal")).toHaveCount(1);
@@ -28,7 +29,12 @@ test("carregamento sob demanda é idempotente em cliques rápidos e navegação 
   await expect(page.locator("#view-calc")).toHaveAttribute("data-feature-ready", "true");
   await expect(page.locator("#research-modal")).toHaveCount(1);
 
-  for (const tab of ["week", "history", "settings", "today", "week", "today"]) {
+  await page.locator("#tab-journey").click();
+  await page.locator("#journey-upcoming").click();
+  await expect(page.locator("#view-week")).toHaveClass(/\bon\b/);
+  await page.locator("#journey-history").click();
+  await expect(page.locator("#view-history")).toHaveClass(/\bon\b/);
+  for (const tab of ["progress", "settings", "today", "journey", "today"]) {
     await page.locator(`#tab-${tab}`).click();
     await expect(page.locator(`#view-${tab}`)).toHaveClass(/\bon\b/);
   }

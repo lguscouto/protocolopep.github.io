@@ -24,7 +24,7 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     await page.goto("/");
     await page.waitForLoadState("domcontentloaded");
 
-    const tabs = ["tab-today", "tab-week", "tab-history", "tab-settings"];
+    const tabs = ["tab-today", "tab-journey", "tab-progress", "tab-settings"];
     for (const tabId of tabs) {
       const tabButton = page.locator(`[data-tab="${tabId}"], #${tabId}`);
       if (await tabButton.count() > 0) {
@@ -48,7 +48,8 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     expect(notifBox?.width).toBeGreaterThanOrEqual(44);
     expect(notifBox?.height).toBeGreaterThanOrEqual(44);
 
-    const themeBtn = page.locator("#theme-btn");
+    await page.locator("#tab-settings").click();
+    const themeBtn = page.locator("#settings-theme-btn");
     const themeBox = await themeBtn.boundingBox();
     expect(themeBox?.width).toBeGreaterThanOrEqual(44);
     expect(themeBox?.height).toBeGreaterThanOrEqual(44);
@@ -75,7 +76,7 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     await page.waitForLoadState("domcontentloaded");
     await page.waitForTimeout(400);
 
-    for (const tabId of ["today", "week", "history", "settings"]) {
+    for (const tabId of ["today", "journey", "progress", "settings"]) {
       await page.locator(`[data-tab="${tabId}"]`).click();
       await page.waitForTimeout(120);
 
@@ -112,7 +113,7 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     // Deve exibir card de boas-vindas
     const emptyTitle = page.locator(".dash-empty-title");
     await expect(emptyTitle).toBeVisible();
-    await expect(emptyTitle).toContainText("Seu protocolo começa aqui");
+    await expect(emptyTitle).toContainText("Comece adicionando seu tratamento");
 
     // O anel de progresso hero deve estar oculto
     const hero = page.locator("#dash-hero");
@@ -170,21 +171,21 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     const focusActionBox = await page.locator("#dash-focus-action").boundingBox();
     expect(focusActionBox?.height).toBeGreaterThanOrEqual(44);
 
-    // Deve renderizar os 2 cards
+    // A pendência principal fica no hero; somente as demais aparecem abaixo.
     const cards = page.locator("#today-cards article.card");
-    await expect(cards).toHaveCount(2);
+    await expect(cards).toHaveCount(1);
+    await expect(cards.first()).toContainText("Composto Beta");
 
-    // Deve renderizar a seção de próximos
-    const upcomingSection = page.locator(".upcoming-section");
-    await expect(upcomingSection).toBeVisible();
+    await expect(page.locator(".upcoming-section")).toHaveCount(0);
 
     // A ação principal registra a primeira dose e avança para a próxima pendência
     await page.locator("#dash-focus-action").click();
     await page.locator("#retro-log-modal .injection-site-point").first().click();
     await page.locator("#retro-save").click();
 
-    // Card deve estar com status de aplicado
+    await expect(cards).toHaveCount(1);
     await expect(cards.first()).toHaveClass(/done/);
+    await expect(cards.first()).toContainText("Composto Alfa");
     await expect(page.locator(".dash-focus-title")).toHaveText("Composto Beta");
 
     // Ao concluir a última pendência, o hero muda para o estado de rotina em dia
@@ -273,12 +274,13 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
       }
     };
 
-    await assertTouchTargets(".take, .multi-dose-register, .dose-undo", "ações de dose");
+    await assertTouchTargets("#dash-focus-action, #quick-register-fab", "ações de dose");
 
-    await page.locator("#tab-history").click();
-    await expect(page.locator("#view-history")).toHaveAttribute("data-feature-ready", "true");
+    await page.locator("#tab-progress").click();
+    await expect(page.locator("#view-progress")).toHaveAttribute("data-feature-ready", "true");
     await assertTouchTargets(".btn-meas-edit", "edição de medidas");
-    await page.locator("#open-measurement-modal-btn").click();
+    await page.locator("#quick-register-fab").click();
+    await page.locator('[data-register="symptom"]').click();
     await assertTouchTargets(".symptom-chip-btn", "chips de sintomas");
     await page.locator("#measurement-modal-close").click();
 
@@ -290,9 +292,9 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     await assertTouchTargets(".site-control", "controles de sítios");
     await page.locator("#sites-modal-close").click();
 
-    await page.locator("#tab-today").click();
-    await page.locator(".dash-actions-collapsible summary").click();
-    await page.locator("#dash-research-btn").click();
+    await page.locator("#tab-settings").click();
+    await page.locator("#open-tools-btn").click();
+    await page.locator("#calc-research-btn").click();
     await expect(page.locator("#research-modal")).toHaveClass(/\bon\b/);
     await assertTouchTargets("#research-clear-btn, #research-category-chips .chip", "controles da pesquisa");
     await page.locator("#research-modal-close").click();
@@ -302,8 +304,13 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     await expect(page.locator("#view-calc")).toHaveAttribute("data-feature-ready", "true");
     await assertTouchTargets("#calc-research-btn", "atalho de pesquisa da calculadora");
 
-    await page.locator("#tab-today").click();
-    await page.locator(".gear").first().click();
+    await page.locator("#tab-settings").click();
+    await expect(page.locator("#view-settings")).toHaveAttribute("data-feature-ready", "true");
+    const touchProtocolList = page.locator("#settings-protocol-list details");
+    if (!(await touchProtocolList.getAttribute("open"))) await touchProtocolList.locator("summary").click();
+    const touchProtocol = page.locator("#settings-protocol-list .protocol-manage-item").first();
+    await touchProtocol.scrollIntoViewIfNeeded();
+    await touchProtocol.click({ force: true });
     await assertTouchTargets("#edit-period-toggle button, #edit-freq-type-toggle button, #modal-swatches button", "controles do protocolo");
     await page.locator('#edit-freq-type-toggle button[data-type="especificos"]').click();
     await assertTouchTargets("#edit-days-grid .day-chip", "dias da semana");
@@ -359,7 +366,8 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     await page.goto("/");
     await page.waitForLoadState("domcontentloaded");
 
-    await page.locator("#tab-history").click();
+    await page.locator("#tab-journey").click();
+    await page.locator("#journey-history").click();
     await page.locator("#hist-retro-btn").click();
 
     const modal = page.locator("#retro-log-modal");
@@ -518,6 +526,7 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
 
     // Bloco de conferência deve estar visível
     const summaryCard = page.locator("#calc-inputs-summary");
+    await page.locator(".calc-details summary").click();
     await expect(summaryCard).toBeVisible();
     await expect(summaryCard).toContainText("Frasco: 5 mg");
     await expect(summaryCard).toContainText("Diluente: 2 mL");
@@ -549,8 +558,8 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     await page.waitForLoadState("domcontentloaded");
 
     // Navegar para a Semana
-    const weekTab = page.locator("#tab-week, [data-tab='tab-week']");
-    await weekTab.first().click();
+    await page.locator("#tab-journey").click();
+    await page.locator("#journey-upcoming").click();
 
     const timeline = page.locator(".week-timeline");
     await expect(timeline).toBeVisible();
@@ -717,7 +726,8 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     await seedStorage(page, { skipOnboarding: true, peptides: mockPeptides, logs });
     await page.goto("/");
     await page.waitForLoadState("domcontentloaded");
-    await page.locator("#tab-history").click();
+    await page.locator("#tab-journey").click();
+    await page.locator("#journey-history").click();
 
     await expect(page.locator(".history-timeline")).toBeVisible();
     await expect(page.locator(".hist-day")).toHaveCount(2);
@@ -752,10 +762,9 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     await expect(groups).toHaveCount(5);
     await expect(page.locator("#settings-group-tools")).toContainText("Ferramentas");
 
-    await expect(page.locator("#settings-group-appearance")).toContainText("Aparência");
-    await expect(page.locator("#settings-group-security")).toContainText("Segurança");
+    await expect(page.locator("#settings-group-app")).toContainText("App");
     await expect(page.locator("#settings-group-data")).toContainText("Dados");
-    await expect(page.locator("#settings-group-about")).toContainText("Sobre");
+    await expect(page.locator("#settings-group-about")).toContainText("Ajuda");
 
     if ((page.viewportSize()?.width ?? 0) <= 460) {
       const actionLayout = await page.locator("#export-btn, #import-btn").evaluateAll((buttons) =>
@@ -804,16 +813,16 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     await expect(inventoryEmpty.locator("img")).toHaveAttribute("src", "/assets/illustrations/empty-inventory.png");
     await expect.poll(() => inventoryEmpty.locator("img").evaluate((img) => img.complete && img.naturalWidth > 0)).toBe(true);
 
-    await page.locator("#tab-history").click();
+    await page.locator("#tab-progress").click();
     const measurementsEmpty = page.locator("#measurements-trend-summary .empty-state-illustrated--measurements");
     await expect(measurementsEmpty).toBeVisible();
     await expect(measurementsEmpty.locator(".empty-state-title")).toContainText("Registre seu primeiro acompanhamento");
     await expect(measurementsEmpty.locator("img")).toHaveAttribute("src", "/assets/illustrations/empty-measurements.png");
     await expect.poll(() => measurementsEmpty.locator("img").evaluate((img) => img.complete && img.naturalWidth > 0)).toBe(true);
 
-    await page.locator("#tab-today").click();
-    await page.locator(".dash-actions-collapsible summary").click();
-    await page.locator("#dash-research-btn").click();
+    await page.locator("#tab-settings").click();
+    await page.locator("#open-tools-btn").click();
+    await page.locator("#calc-research-btn").click();
     await page.locator("#research-search-input").fill("termo-sem-resultado");
     const researchEmpty = page.locator("#research-results-list .empty-state-illustrated--research");
     await expect(researchEmpty).toBeVisible();
@@ -876,9 +885,13 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     await page.goto("/");
     await page.waitForLoadState("domcontentloaded");
 
-    const openEditor = page.locator("#today-cards .gear").first();
-    await expect(openEditor).toBeVisible();
-    await openEditor.click();
+    await page.locator("#tab-settings").click();
+    await expect(page.locator("#view-settings")).toHaveAttribute("data-feature-ready", "true");
+    const openEditor = page.locator("#settings-protocol-list .protocol-manage-item").first();
+    const modalProtocolList = page.locator("#settings-protocol-list details");
+    if (!(await modalProtocolList.getAttribute("open"))) await modalProtocolList.locator("summary").click();
+    await openEditor.scrollIntoViewIfNeeded();
+    await openEditor.click({ force: true });
 
     const modal = page.locator("#edit-modal");
     const sheetBody = modal.locator(".sheet-body");
@@ -960,7 +973,8 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     };
     await assertA11y("tema escuro");
 
-    await page.locator("#theme-btn").click();
+    await page.locator("#tab-settings").click();
+    await page.locator("#settings-theme-btn").click();
     await expect(page.locator("body")).toHaveClass(/theme-light/);
     await page.waitForTimeout(400);
     const lightStyle = await readBadgeStyle();
@@ -1018,7 +1032,7 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
   });
 
   for (const scenario of [
-    { name: "Histórico e medições", tab: "history", open: "#open-measurement-modal-btn" },
+    { name: "Progresso e medições", tab: "progress", open: "#quick-register-fab", quickAction: "full" },
     { name: "Ajustes, inventário e Health Connect", tab: "settings" },
     { name: "Notificações", open: "#notif-btn" }
   ]) {
@@ -1033,6 +1047,9 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
       }
       if (scenario.open) {
         await page.locator(scenario.open).click();
+      }
+      if (scenario.quickAction) {
+        await page.locator(`[data-register="${scenario.quickAction}"]`).click();
       }
       await page.waitForTimeout(400);
 

@@ -171,20 +171,13 @@ test.describe("Protocolo PEP — Matriz de regressão visual", () => {
       await assertVisualAnchor(page, "#dash-focus-action", `ação principal (${theme.id})`);
       await assertViewportIntegrity(page, `dashboard/${theme.id}/${viewportWidth}px`);
 
-      await page.locator("#tab-week").click();
+      await page.locator("#tab-journey").click();
+      await page.locator("#journey-upcoming").click();
       await assertVisualAnchor(page, ".week-timeline", `semana (${theme.id})`);
       await assertViewportIntegrity(page, `semana/${theme.id}/${viewportWidth}px`);
 
-      await page.locator("#tab-history").click();
+      await page.locator("#journey-history").click();
       await assertVisualAnchor(page, ".history-timeline", `histórico (${theme.id})`);
-      await assertVisualAnchor(page, ".measurement-chip--weight", `medidas preenchidas (${theme.id})`);
-      await assertVisualAnchor(page, ".weight-chart", `gráfico de peso (${theme.id})`);
-      await expect(page.locator(".weight-chart-line")).toHaveAttribute("d", /^M /);
-      await expect(page.locator("#history-body-metric option")).toHaveCount(4);
-      await page.locator("#history-body-metric").selectOption("waist");
-      await expect(page.locator(".weight-chart-heading")).toContainText("Evolução de cintura");
-      await assertViewportIntegrity(page, `histórico/${theme.id}/${viewportWidth}px`);
-
       await page.locator("#hist-retro-btn").evaluate((element) => {
         element.scrollIntoView({ block: "center", inline: "nearest" });
       });
@@ -192,6 +185,16 @@ test.describe("Protocolo PEP — Matriz de regressão visual", () => {
       await assertVisualAnchor(page, "#retro-log-modal.on", `mapa de aplicação (${theme.id})`);
       await assertVisualAnchor(page, ".injection-site-map", `ilustração do mapa (${theme.id})`);
       await page.locator("#retro-close").click();
+
+      await page.locator("#tab-progress").click();
+      await expect(page.locator("#view-progress")).toHaveAttribute("data-feature-ready", "true");
+      await assertVisualAnchor(page, ".measurement-chip--weight", `medidas preenchidas (${theme.id})`);
+      await assertVisualAnchor(page, ".weight-chart", `gráfico de peso (${theme.id})`);
+      await expect(page.locator(".weight-chart-line")).toHaveAttribute("d", /^M /);
+      await expect(page.locator("#history-body-metric option")).toHaveCount(4);
+      await page.locator("#history-body-metric").selectOption("waist");
+      await expect(page.locator(".weight-chart-heading")).toContainText("Evolução de cintura");
+      await assertViewportIntegrity(page, `histórico/${theme.id}/${viewportWidth}px`);
 
       await page.locator("#tab-settings").click();
       await assertVisualAnchor(page, ".settings-section", `ajustes (${theme.id})`);
@@ -204,9 +207,8 @@ test.describe("Protocolo PEP — Matriz de regressão visual", () => {
         SCREENSHOT_OPTIONS
       );
 
-      await page.locator("#tab-today").click();
-      await page.locator(".dash-actions-collapsible summary").click();
-      await page.locator("#dash-research-btn").click();
+      await page.locator("#open-tools-btn").click();
+      await page.locator("#calc-research-btn").click();
       await assertVisualAnchor(page, "#research-modal.on", `pesquisa (${theme.id})`);
       await assertVisualAnchor(page, ".research-card", `resultado de pesquisa (${theme.id})`);
       await page.locator("#research-modal-close").click();

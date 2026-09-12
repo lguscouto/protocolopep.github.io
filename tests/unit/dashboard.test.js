@@ -65,7 +65,7 @@ describe("Dashboard UI Module", () => {
 
   it("produz HTML para o estado vazio sem 0% ou 0/0", () => {
     const html = renderEmptyDashboardHTML();
-    expect(html).toContain("Seu protocolo começa aqui");
+    expect(html).toContain("Comece adicionando seu tratamento");
     expect(html).toContain("data-action=\"create-protocol\"");
     expect(html).not.toContain("0 / 0");
     expect(html).not.toContain("dash-ring");

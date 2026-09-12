@@ -7,8 +7,13 @@ async function storedProtocol(page) {
 }
 
 async function openFirstRoutine(page) {
-  await page.locator('[data-tab="today"]').click();
-  await page.locator(".gear").first().click();
+  await page.locator('[data-tab="settings"]').click();
+  await expect(page.locator("#view-settings")).toHaveAttribute("data-feature-ready", "true");
+  const listDetails = page.locator("#settings-protocol-list details");
+  if (!(await listDetails.getAttribute("open"))) await listDetails.locator("summary").click();
+  const item = page.locator("#settings-protocol-list .protocol-manage-item").first();
+  await item.scrollIntoViewIfNeeded();
+  await item.click({ force: true });
   await expect(page.locator("#edit-modal")).toHaveClass(/on/);
 }
 
@@ -60,7 +65,7 @@ test.describe("Fase 3 — lembretes por rotina", () => {
     }] });
     await page.goto("/");
 
-    await expect(page.locator("#today-cards")).toContainText("Rotina visível");
+    await expect(page.locator(".dash-focus-title")).toContainText("Rotina visível");
     await openFirstRoutine(page);
     const toggle = page.locator("#edit-reminders-enabled");
     await expect(toggle).not.toBeChecked();
@@ -69,8 +74,9 @@ test.describe("Fase 3 — lembretes por rotina", () => {
     await page.locator("#edit-save").click();
     expect((await storedProtocol(page))[0]).toMatchObject({ times: ["09:30"], remindersEnabled: false });
 
-    await expect(page.locator("#today-cards")).toContainText("Rotina visível");
-    await page.locator('[data-tab="week"]').click();
+    await expect(page.locator(".dash-focus-title")).toContainText("Rotina visível");
+    await page.locator('[data-tab="journey"]').click();
+    await page.locator('#journey-upcoming').click();
     await expect(page.locator("#week-table-wrap")).toContainText("Rotina visível");
 
     await openFirstRoutine(page);

@@ -8,15 +8,16 @@ async function prepare(page, measurements = []) {
   await page.clock.setFixedTime(new Date("2026-09-12T12:00:00-03:00"));
   await seedStorage(page, { measurements });
   await page.goto("/");
-  await page.locator("#tab-history").click();
-  await expect(page.locator("#view-history")).toHaveAttribute("data-feature-ready", "true");
+  await page.locator("#tab-progress").click();
+  await expect(page.locator("#view-progress")).toHaveAttribute("data-feature-ready", "true");
   return runtime;
 }
 
 test.describe("Fase 2 — circunferências corporais", () => {
   test("cria, exibe, alterna o gráfico e edita circunferências", async ({ page }) => {
     const runtime = await prepare(page);
-    await page.locator("#open-measurement-modal-btn").click();
+    await page.locator("#quick-register-fab").click();
+    await page.locator('[data-register="full"]').click();
     await expect(page.locator(".measurement-circumferences")).not.toHaveAttribute("open", "");
     await page.locator(".measurement-circumferences summary").click();
     await page.locator("#meas-date-input").fill("2026-09-10");
@@ -39,9 +40,9 @@ test.describe("Fase 2 — circunferências corporais", () => {
     await page.locator("#meas-waist-input").fill("");
     await page.locator("#measurement-form button[type='submit']").click();
     await expect(page.locator("#history-body-metric option[value='waist']")).toHaveCount(0);
-    await page.locator("#history-period").selectOption("custom");
-    await page.locator("#history-start-date").fill("2026-09-11");
-    await page.locator("#history-end-date").fill("2026-09-12");
+    await page.locator("#progress-period").selectOption("custom");
+    await page.locator("#progress-start-date").fill("2026-09-11");
+    await page.locator("#progress-end-date").fill("2026-09-12");
     await expect(page.locator("#history-body-metric")).toHaveCount(0);
     await expect(page.locator("#measurements-trend-summary .empty-state-title")).toBeVisible();
     runtime.assertCleanRuntime();

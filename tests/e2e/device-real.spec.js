@@ -380,7 +380,8 @@ test.describe("Protocolo PEP — Galaxy A55 / geometria real", () => {
     await page.goto(scenarioUrl({ theme, nav, fontScale: 1, landscape }));
     await waitForStableLayout(page);
 
-    await page.locator("#tab-history").click();
+    await page.locator("#tab-journey").click();
+    await page.locator("#journey-history").click();
     await expect(page.locator("#view-history")).toHaveAttribute("data-feature-ready", "true");
     await page.locator("#tab-settings").click();
     await expect(page.locator("#view-settings")).toHaveAttribute("data-feature-ready", "true");

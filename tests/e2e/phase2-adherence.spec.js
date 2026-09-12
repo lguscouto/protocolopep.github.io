@@ -59,7 +59,7 @@ test.describe("Fase 2 — consistência descritiva", () => {
     await seedStorage(page, { skipOnboarding: true, peptides: [peptide], logs });
     await page.goto("/");
     await page.waitForLoadState("domcontentloaded");
-    await page.locator("#tab-history").click();
+    await page.locator("#tab-progress").click();
 
     const summary = page.locator("#adherence-summary");
     await expect(summary).toContainText("Consistência da rotina");
@@ -80,7 +80,7 @@ test.describe("Fase 2 — consistência descritiva", () => {
     await seedStorage(page, { skipOnboarding: true, peptides: [] });
     await page.goto("/");
     await page.waitForLoadState("domcontentloaded");
-    await page.locator("#tab-history").click();
+    await page.locator("#tab-progress").click();
 
     await expect(page.locator("#adherence-summary")).toBeEmpty();
     runtime.assertCleanRuntime();

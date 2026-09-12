@@ -26,8 +26,8 @@ describe("Acessibilidade e Navegação (WCAG 2.1 AA - V18)", () => {
   it("deve conter landmarks e roles de tabs na navegação principal", () => {
     expect(htmlContent).toContain('role="tablist"');
     expect(htmlContent).toContain('data-tab="today" role="tab"');
-    expect(htmlContent).toContain('data-tab="week" role="tab"');
-    expect(htmlContent).toContain('data-tab="history" role="tab"');
+    expect(htmlContent).toContain('data-tab="journey" role="tab"');
+    expect(htmlContent).toContain('data-tab="progress" role="tab"');
     expect(htmlContent).toContain('data-tab="settings" role="tab"');
     expect(htmlContent).toContain('id="open-tools-btn"');
   });
@@ -36,6 +36,7 @@ describe("Acessibilidade e Navegação (WCAG 2.1 AA - V18)", () => {
     expect(htmlContent).toContain('id="view-today" role="tabpanel"');
     expect(htmlContent).toContain('id="view-week" role="tabpanel"');
     expect(htmlContent).toContain('id="view-history" role="tabpanel"');
+    expect(htmlContent).toContain('id="view-progress" role="tabpanel"');
     expect(htmlContent).toContain('id="view-calc" role="tabpanel"');
     expect(htmlContent).toContain('id="view-settings" role="tabpanel"');
   });

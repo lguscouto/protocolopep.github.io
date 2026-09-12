@@ -15,8 +15,8 @@ async function prepare(page, measurements = MEASUREMENTS) {
   await page.clock.setFixedTime(new Date("2026-09-12T12:00:00-03:00"));
   await seedStorage(page, { measurements });
   await page.goto("/");
-  await page.locator("#tab-history").click();
-  await expect(page.locator("#view-history")).toHaveAttribute("data-feature-ready", "true");
+  await page.locator("#tab-progress").click();
+  await expect(page.locator("#view-progress")).toHaveAttribute("data-feature-ready", "true");
   return runtime;
 }
 
@@ -42,9 +42,9 @@ test.describe("Fase 1 — gráfico de evolução do peso", () => {
     await points.nth(1).hover();
     await expect(page.locator("#history-weight-chart-detail")).toContainText("02/09/2026 às 20:00: 80.7 kg");
 
-    await page.locator("#history-period").selectOption("custom");
-    await page.locator("#history-start-date").fill("2026-09-10");
-    await page.locator("#history-end-date").fill("2026-09-12");
+    await page.locator("#progress-period").selectOption("custom");
+    await page.locator("#progress-start-date").fill("2026-09-10");
+    await page.locator("#progress-end-date").fill("2026-09-12");
     await expect(chart.locator(".weight-chart-point")).toHaveCount(1);
     await expect(chart.locator(".weight-chart-point")).toHaveAttribute("data-measurement-id", "weight-day-11");
     runtime.assertCleanRuntime();

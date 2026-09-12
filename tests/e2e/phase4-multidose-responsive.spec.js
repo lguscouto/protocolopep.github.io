@@ -44,18 +44,16 @@ test("cartão multidose permanece acessível nos temas, larguras e escalas de fo
         await page.goto(`/?visualTheme=${theme.storage}&highContrast=${theme.highContrast}&fontScale=${fontScale}`);
         await expect(page.locator("body")).toHaveClass(new RegExp(theme.body));
         if (theme.highContrast) await expect(page.locator("html")).toHaveClass(/high-contrast/);
-        const action = page.locator(".multi-dose-register");
+        const action = page.locator("#dash-focus-action");
         await expect(action).toContainText("Registrar aplicação");
-        await expect(action).toContainText("1/3");
+        await expect(page.locator("#ring-n")).toContainText("1 / 3");
         const actionBox = await action.boundingBox();
         expect(actionBox?.width).toBeGreaterThanOrEqual(44);
         expect(actionBox?.height).toBeGreaterThanOrEqual(44);
-        await page.locator(".multi-dose-details summary").click();
-        await expect(page.locator(".multi-dose-detail-row")).toHaveCount(3);
         const layout = await page.evaluate(() => ({
           scrollWidth: document.documentElement.scrollWidth,
           clientWidth: document.documentElement.clientWidth,
-          cardRight: document.querySelector("article.card")?.getBoundingClientRect().right || 0,
+          cardRight: document.querySelector("#dash-hero")?.getBoundingClientRect().right || 0,
           viewportWidth: window.innerWidth
         }));
         expect(layout.scrollWidth).toBeLessThanOrEqual(layout.clientWidth);

@@ -20,7 +20,7 @@ test("Fase 7 — seleciona revisões persistidas sem alterar o gráfico corporal
     { id: "w2", date: "2026-09-10", time: "08:00", weightKg: 79, source: "local", ownership: "pep", symptoms: [], symptomDetails: [] }
   ] });
   await page.goto("/");
-  await page.locator("#tab-history").click();
+  await page.locator("#tab-progress").click();
   await expect(page.locator("#history-revision-compound")).toHaveValue("");
   await expect(page.locator(".protocol-revision-marker")).toHaveCount(0);
   await page.locator("#history-revision-compound").selectOption("pep_revision");

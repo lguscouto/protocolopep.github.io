@@ -8,8 +8,8 @@ async function prepare(page, measurements) {
   await page.clock.setFixedTime(new Date("2026-09-16T12:00:00-03:00"));
   await seedStorage(page, { measurements });
   await page.goto("/");
-  await page.locator("#tab-history").click();
-  await expect(page.locator("#view-history")).toHaveAttribute("data-feature-ready", "true");
+  await page.locator("#tab-progress").click();
+  await expect(page.locator("#view-progress")).toHaveAttribute("data-feature-ready", "true");
   return runtime;
 }
 
@@ -34,7 +34,9 @@ test.describe("Fase 6 — meta pessoal de peso", () => {
   test("mantém a meta disponível sem peso no período e não causa rolagem horizontal", async ({ page }) => {
     await page.setViewportSize({ width: 360, height: 800 });
     const runtime = await prepare(page, [{ id: "old", date: "2026-08-01", time: "08:00", weightKg: 80, source: "local", ownership: "pep", symptoms: [], symptomDetails: [] }]);
-    await page.locator("#history-period").selectOption("7");
+    await page.locator("#progress-period").selectOption("custom");
+    await page.locator("#progress-start-date").fill("2026-09-01");
+    await page.locator("#progress-end-date").fill("2026-09-12");
     await expect(page.locator("#history-goal-weight-input")).toBeVisible();
     await page.locator("#history-goal-weight-input").fill("70");
     await page.locator("#history-goal-save-btn").click();
