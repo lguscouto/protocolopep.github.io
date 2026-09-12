@@ -1,6 +1,6 @@
 # 🧪 Protocolo PEP · App Android (Local-First)
 
-![Version](https://img.shields.io/badge/version-3.8.0-2CC5C0)
+![Version](https://img.shields.io/badge/version-3.9.0-2CC5C0)
 ![Android](https://img.shields.io/badge/Android-8.0%2B-green)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![CI](https://github.com/lguscouto/protocolopep.github.io/actions/workflows/ci.yml/badge.svg)
@@ -9,14 +9,14 @@ Aplicativo Android/PWA para registrar aplicações de peptídeos com poucos toqu
 
 ---
 
-## 🚀 Novidades da Versão 3.8.0 (Revisões do protocolo no gráfico)
+## 🚀 Novidades da Versão 3.9.0 (Vias e estoque oral)
 
-- **Linha do tempo opcional:** em Histórico → Evolução, o seletor “Revisões do composto” começa em “Sem composto”; ao escolher um composto, exibe somente as revisões explícitas persistidas no período.
-- **Escala temporal comum:** as revisões aparecem como marcadores verticais tracejados no mesmo eixo real das medições, inclusive antes ou depois da primeira medida visível. Revisões no mesmo dia continuam separadas e preservam o horário.
-- **Detalhe histórico fiel:** ao selecionar um marcador, o painel mostra data, horário, estado e a configuração capturada naquela revisão, incluindo dose/UI, frequência, aplicações, horários e lembretes.
-- **Sem inferência causal:** os marcadores apenas registram eventos históricos; o aplicativo não associa revisões a variações corporais nem faz recomendações clínicas.
-- **Compatibilidade preservada:** não houve mudança em protocolos, medições, logs, Health Connect, backups ou schema 11.
-- **Release Android versionada:** `versionName 3.8.0` e `versionCode 36`.
+- **Rotinas por via:** protocolos podem registrar classe, via subcutânea, intramuscular ou oral, quantidade e unidade por aplicação. Combinações incompatíveis são bloqueadas.
+- **Aplicações orais:** comprimidos e cápsulas não exibem local, mapa, rotação, seringa ou concentração. Aplicações injetáveis modernas pedem a confirmação de um local; a lista intramuscular começa vazia e é configurada pela pessoa.
+- **Estoque oral:** pacotes de comprimidos ou cápsulas mantêm saldo e movimentos, aceitam quantidades fracionárias e usam o movimento original para estorno. O cálculo de reconstituição continua restrito a frascos.
+- **Catálogo local ampliado:** hormônios, esteroides e auxiliares podem ser encontrados por nome ou alias; o catálogo não fornece dose, frequência, via nem apresentação.
+- **Histórico fiel e backup:** snapshots, CSV e PDF preservam classe, via e unidade registradas. O backup usa schema 12 e continua importando esquemas anteriores.
+- **Release Android versionada:** `versionName 3.9.0` e `versionCode 37`.
 
 ## 🚀 Novidades da Versão 3.7.0 (Meta pessoal de peso)
 

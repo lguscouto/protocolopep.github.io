@@ -54,10 +54,17 @@ export function createDoseLog(data = {}) {
     statusReason: data.statusReason ? String(data.statusReason).trim() : "",
     dose: data.dose ? String(data.dose).trim() : "",
     ui: data.ui === null ? null : parseUnits(data.ui),
+    compoundClass: data.compoundClass || null,
+    administrationRoute: data.administrationRoute || null,
+    administrationQuantity: data.administrationQuantity ?? null,
+    administrationUnit: data.administrationUnit || null,
     note: data.note ? String(data.note).trim() : "",
     site: data.site ? String(data.site).trim() : "",
     vialId: data.vialId ? String(data.vialId) : null,
+    inventoryId: data.inventoryId ? String(data.inventoryId) : (data.vialId ? String(data.vialId) : null),
+    inventoryKind: data.inventoryKind || null,
     inventoryMovementId: data.inventoryMovementId ? String(data.inventoryMovementId) : null,
+    debitedQuantity: Number.isFinite(data.debitedQuantity) && data.debitedQuantity >= 0 ? data.debitedQuantity : null,
     retroactive: isRetroactive,
     createdAt: data.createdAt || now.toISOString(),
     editedAt: data.editedAt || null
@@ -84,7 +91,10 @@ export function validateDoseLog(log) {
   if (log.status !== undefined && !DOSE_STATUSES.includes(log.status)) {
     return { valid: false, error: `status de dose inválido. Deve ser um de: ${DOSE_STATUSES.join(", ")}` };
   }
-  if (log.ui === null || parseUnits(log.ui) === null) return { valid: false, error: "Unidades inválidas." };
+  const route = log.administrationRoute || "subcutaneous";
+  const unit = log.administrationUnit || "ui";
+  if (!["subcutaneous", "intramuscular", "oral"].includes(route)) return { valid: false, error: "Via de administração inválida." };
+  if (route !== "oral" && unit === "ui" && (log.ui === null || parseUnits(log.ui) === null)) return { valid: false, error: "Unidades inválidas." };
   if (log.takenAt !== undefined && !Number.isFinite(Date.parse(log.takenAt))) return { valid: false, error: "Instante do registro inválido." };
 
   const todayKey = dateToKey(new Date());

@@ -89,8 +89,13 @@ export function openRetroLogModal(prefillDate = null, prefillPepId = null, { sto
         if (doseInput && !doseEdited) doseInput.value = p.lifecycleStatus === "not_started" ? "" : (p.dose ?? "");
         if (uiInput && !unitsEdited) uiInput.value = p.lifecycleStatus === "not_started" ? "" : (p.ui ?? "");
       }
-      if (siteSelect) {
-        const configuredSites = [...storage.getSites()];
+      const route = p?.administrationRoute || editingContext?.log.administrationRoute || "subcutaneous";
+      const siteField = document.getElementById("retro-site-field");
+      const isOral = route === "oral";
+      if (siteField) siteField.hidden = isOral;
+      if (uiInput && typeof uiInput.closest === "function") uiInput.closest(".form-field")?.toggleAttribute("hidden", isOral || p?.administrationUnit === "ml");
+      if (siteSelect && !isOral) {
+        const configuredSites = route === "intramuscular" ? [...storage.getIntramuscularSites()] : [...storage.getSites()];
         const historicalSite = editingContext?.log.site || "";
         if (historicalSite && !configuredSites.includes(historicalSite)) configuredSites.push(historicalSite);
         const lastUsed = getLastUsedSite(storage.getLogs(), selectedId);
@@ -129,7 +134,8 @@ export function openRetroLogModal(prefillDate = null, prefillPepId = null, { sto
       const applied = statusSelect.value === "applied";
       const siteField = document.getElementById("retro-site-field");
       const reasonField = document.getElementById("retro-reason-field");
-      if (siteField) siteField.hidden = !applied;
+      const selected = editingContext ? { administrationRoute: editingContext.log.administrationRoute || "subcutaneous" } : resolveProtocolAt(peptides.find((entry) => entry.id === pepSelect?.value));
+      if (siteField) siteField.hidden = !applied || selected?.administrationRoute === "oral";
       if (reasonField) reasonField.hidden = applied;
     };
     statusSelect.onchange = updateStatusFields;
@@ -163,7 +169,7 @@ function displayLegacyHint(log) {
     ? `<p>${esc(i18nService.t("phase1.legacy"))}</p>` : "";
 }
 
-export async function saveRetroLog({ doseService, dateKey, haptics, renderAll }) {
+export async function saveRetroLog({ doseService, storage: storageForRoute, dateKey, haptics, renderAll }) {
   if (saving) return;
   const pepSelect = document.getElementById("retro-pep-select");
   const siteSelect = document.getElementById("retro-site-select");
@@ -186,7 +192,9 @@ export async function saveRetroLog({ doseService, dateKey, haptics, renderAll })
   const statusReason = status !== "applied" ? (reasonInput?.value || "").trim() : "";
 
   const modal = document.getElementById("retro-log-modal");
-  if (status === "applied" && modal?.dataset.requireSiteSelection === "true" && !siteVal) {
+  const selectedProtocol = storageForRoute?.getPeptides?.().find((p) => p.id === pepId);
+  const isOral = (selectedProtocol?.administrationRoute || editingContext?.log.administrationRoute) === "oral";
+  if (status === "applied" && !isOral && modal?.dataset.requireSiteSelection === "true" && !siteVal) {
     void dialogService.alert({
       title: "Escolha o local",
       message: "Confirme onde você aplicou para manter seu histórico organizado. Se não souber, use o registro retroativo no Histórico.",
@@ -220,8 +228,8 @@ export async function saveRetroLog({ doseService, dateKey, haptics, renderAll })
     return;
   }
 
-  if (!isValidTime(timeVal) || uiVal === null || !DOSE_STATUSES.includes(status)) {
-    void dialogService.alert({ title: "Dados inválidos", message: "Confira o horário, o estado e as unidades informadas. Use valores numéricos não negativos para UI, sem arredondamento automático." });
+  if (!isValidTime(timeVal) || (!isOral && selectedProtocol?.administrationUnit !== "ml" && uiVal === null) || !DOSE_STATUSES.includes(status)) {
+    void dialogService.alert({ title: "Dados inválidos", message: "Confira o horário, o estado e as unidades informadas." });
     return;
   }
 
@@ -239,7 +247,7 @@ export async function saveRetroLog({ doseService, dateKey, haptics, renderAll })
     dose: doseVal,
     ui: uiVal,
     note: noteVal,
-    site: status === "applied" ? siteVal : "",
+    site: status === "applied" && !isOral ? siteVal : "",
     status,
     statusReason
   };

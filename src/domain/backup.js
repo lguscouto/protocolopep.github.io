@@ -39,7 +39,8 @@ export function createBackupPayload(
   sites = [],
   measurements = [],
   healthConnectState = {},
-  measurementGoals = {}
+  measurementGoals = {},
+  intramuscularSites = []
 ) {
   const payload = {
     app: "protocolo-pep",
@@ -49,6 +50,7 @@ export function createBackupPayload(
     logs: normalizeSnapshotsForBackup(logs && typeof logs === "object" ? logs : {}),
     inventory: Array.isArray(inventory) ? inventory : [],
     sites: Array.isArray(sites) ? sites : [],
+    intramuscularSites: Array.isArray(intramuscularSites) ? intramuscularSites : [],
     measurements: Array.isArray(measurements) ? measurements : [],
     healthConnectState: sanitizeHealthConnectState(healthConnectState),
     measurementGoals: normalizeMeasurementGoals(measurementGoals),

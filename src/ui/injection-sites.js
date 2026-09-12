@@ -27,10 +27,13 @@ export function setupInjectionSitesUI({ storage, onSitesChange = () => {} }) {
   const closeBtn = document.getElementById("sites-modal-close");
   const openBtn = document.getElementById("open-sites-settings-btn");
   const summaryEl = document.getElementById("sites-summary-text");
+  const routeSelect = document.getElementById("sites-route-select");
+  const activeSites = () => routeSelect?.value === "intramuscular" ? storage.getIntramuscularSites() : storage.getSites();
+  const saveActiveSites = (sites) => routeSelect?.value === "intramuscular" ? storage.setIntramuscularSites(sites) : storage.setSites(sites);
 
   function updateSummary() {
     if (!summaryEl) return;
-    const sites = storage.getSites();
+    const sites = activeSites();
     if (!sites || sites.length === 0) {
       summaryEl.textContent = i18nService.t("modals.sites.noSitesInRotation");
       return;
@@ -42,7 +45,7 @@ export function setupInjectionSitesUI({ storage, onSitesChange = () => {} }) {
 
   function renderSitesList() {
     if (!listEl) return;
-    const sites = storage.getSites();
+    const sites = activeSites();
 
     if (!sites || sites.length === 0) {
       listEl.innerHTML = `
@@ -82,11 +85,11 @@ export function setupInjectionSitesUI({ storage, onSitesChange = () => {} }) {
 
   function handleMoveUp(index) {
     if (index <= 0) return;
-    const sites = storage.getSites();
+    const sites = activeSites();
     const temp = sites[index];
     sites[index] = sites[index - 1];
     sites[index - 1] = temp;
-    const res = storage.setSites(sites);
+    const res = saveActiveSites(sites);
     if (res.success) {
       haptics.selection();
       renderSitesList();
@@ -95,12 +98,12 @@ export function setupInjectionSitesUI({ storage, onSitesChange = () => {} }) {
   }
 
   function handleMoveDown(index) {
-    const sites = storage.getSites();
+    const sites = activeSites();
     if (index >= sites.length - 1) return;
     const temp = sites[index];
     sites[index] = sites[index + 1];
     sites[index + 1] = temp;
-    const res = storage.setSites(sites);
+    const res = saveActiveSites(sites);
     if (res.success) {
       haptics.selection();
       renderSitesList();
@@ -109,9 +112,9 @@ export function setupInjectionSitesUI({ storage, onSitesChange = () => {} }) {
   }
 
   function handleRemove(index) {
-    const sites = storage.getSites();
+    const sites = activeSites();
     sites.splice(index, 1);
-    const res = storage.setSites(sites);
+    const res = saveActiveSites(sites);
     if (res.success) {
       haptics.warning();
       renderSitesList();
@@ -128,14 +131,14 @@ export function setupInjectionSitesUI({ storage, onSitesChange = () => {} }) {
       return;
     }
 
-    const sites = storage.getSites();
+    const sites = activeSites();
     if (sites.some((s) => s.toLowerCase() === formatted.toLowerCase())) {
       void dialogService.alert({ title: "Local duplicado", message: `O local "${formatted}" já está na rotação.` });
       return;
     }
 
     sites.push(formatted);
-    const res = storage.setSites(sites);
+    const res = saveActiveSites(sites);
     if (res.success) {
       haptics.success();
       addInput.value = "";
@@ -147,8 +150,8 @@ export function setupInjectionSitesUI({ storage, onSitesChange = () => {} }) {
   }
 
   function handleReset() {
-    const defaults = getDefaultSites();
-    const res = storage.setSites(defaults);
+    const defaults = routeSelect?.value === "intramuscular" ? [] : getDefaultSites();
+    const res = saveActiveSites(defaults);
     if (res.success) {
       haptics.selection();
       renderSitesList();
@@ -188,6 +191,7 @@ export function setupInjectionSitesUI({ storage, onSitesChange = () => {} }) {
   }
 
   if (resetBtn) resetBtn.addEventListener("click", handleReset);
+  if (routeSelect) routeSelect.addEventListener("change", renderSitesList);
 
   if (openBtn && modal) {
     openBtn.addEventListener("click", () => {

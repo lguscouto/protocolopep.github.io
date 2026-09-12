@@ -49,6 +49,7 @@ export function createVial(data = {}) {
   ];
 
   return {
+    kind: "vial",
     id,
     peptideName,
     peptideId,
@@ -66,6 +67,67 @@ export function createVial(data = {}) {
     createdAt: data.createdAt || new Date().toISOString(),
     movements
   };
+}
+
+const positiveQuantity = (value) => {
+  const parsed = typeof value === "string" ? Number(value.replace(",", ".")) : Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+};
+
+export function createOralPackage(data = {}) {
+  const presentation = data.presentation === "capsule" ? "capsule" : "tablet";
+  const initialQuantity = positiveQuantity(data.initialQuantity ?? data.quantity) || 0;
+  const remainingQuantity = data.remainingQuantity === undefined ? initialQuantity : Math.max(0, Number(data.remainingQuantity));
+  const now = new Date();
+  return {
+    kind: "oral_package", id: data.id || `oral-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    peptideId: typeof data.peptideId === "string" ? data.peptideId.trim() : null,
+    peptideName: typeof data.peptideName === "string" ? data.peptideName.trim() : "",
+    presentation, initialQuantity, remainingQuantity,
+    lotNumber: typeof data.lotNumber === "string" ? data.lotNumber.trim() : "",
+    expirationDate: data.expirationDate || null, status: data.status || (remainingQuantity <= 0 ? "finished" : "active"),
+    finishedAt: data.finishedAt || null, notes: typeof data.notes === "string" ? data.notes.trim() : "",
+    createdAt: data.createdAt || now.toISOString(),
+    movements: Array.isArray(data.movements) ? [...data.movements] : [{
+      id: `mov-${now.getTime()}-init`, date: now.toISOString().slice(0, 10), type: "package_opened",
+      amountQuantity: initialQuantity, balanceAfterQuantity: initialQuantity, doseLogId: null,
+      note: "Pacote oral registrado", timestamp: now.toISOString()
+    }]
+  };
+}
+
+export function createInventoryItem(data = {}) {
+  return data?.kind === "oral_package" ? createOralPackage(data) : createVial(data);
+}
+
+export function validateOralPackage(item) {
+  const errors = [];
+  if (!item?.peptideName?.trim()) errors.push("Nome do composto é obrigatório.");
+  if (!["tablet", "capsule"].includes(item?.presentation)) errors.push("Apresentação oral inválida.");
+  if (positiveQuantity(item?.initialQuantity) === null) errors.push("Quantidade inicial deve ser positiva.");
+  if (!Number.isFinite(Number(item?.remainingQuantity)) || Number(item.remainingQuantity) < 0) errors.push("Saldo restante não pode ser negativo.");
+  return { valid: errors.length === 0, errors };
+}
+
+export function debitOralPackage(item, { quantity = 0, doseLogId = null, date = null, note = "" } = {}) {
+  const amount = positiveQuantity(quantity);
+  if (!amount) return { success: false, error: "INVALID_ORAL_QUANTITY", package: item };
+  const balance = Number(item?.remainingQuantity);
+  if (!Number.isFinite(balance) || balance < amount) return { success: false, error: "INSUFFICIENT_BALANCE", package: item };
+  const now = new Date(); const nextBalance = balance - amount;
+  const movement = { id: `mov-${now.getTime()}-${Math.random().toString(36).slice(2, 6)}`, date: date || now.toISOString().slice(0, 10), type: "dose", amountQuantity: -amount, balanceAfterQuantity: nextBalance, doseLogId, note: note || "Aplicação oral registrada", timestamp: now.toISOString() };
+  const updated = { ...item, remainingQuantity: nextBalance, status: nextBalance <= 0 ? "finished" : item.status, finishedAt: nextBalance <= 0 ? (item.finishedAt || now.toISOString()) : null, movements: [...(item.movements || []), movement] };
+  return { success: true, package: updated, debitedQuantity: amount, movement };
+}
+
+export function creditOralPackage(item, { quantity = 0, doseLogId = null, date = null, note = "", reversesMovementId = null } = {}) {
+  const amount = positiveQuantity(quantity);
+  const balance = Number(item?.remainingQuantity); const maximum = Number(item?.initialQuantity);
+  if (!amount || !Number.isFinite(balance) || !Number.isFinite(maximum) || balance + amount > maximum) return { success: false, error: "INVENTORY_CREDIT_MISMATCH", package: item };
+  const now = new Date(); const nextBalance = balance + amount;
+  const movement = { id: `mov-${now.getTime()}-${Math.random().toString(36).slice(2, 6)}`, date: date || now.toISOString().slice(0, 10), type: "undo_dose", amountQuantity: amount, balanceAfterQuantity: nextBalance, doseLogId, reversesMovementId, note: note || "Estorno de aplicação oral", timestamp: now.toISOString() };
+  const updated = { ...item, remainingQuantity: nextBalance, status: item.status === "finished" ? "active" : item.status, finishedAt: nextBalance > 0 ? null : item.finishedAt, movements: [...(item.movements || []), movement] };
+  return { success: true, package: updated, creditedQuantity: amount, movement };
 }
 
 /**
@@ -417,4 +479,3 @@ export function getExpirationStatus(vial, referenceDate = new Date()) {
     daysRemaining: diffDays
   };
 }
-

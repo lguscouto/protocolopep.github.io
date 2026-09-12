@@ -50,13 +50,13 @@ export function sanitizeTechnicalReport(rawReport) {
 
 export function generateDiagnosticReport({
   storage = null,
-  appVersion = "3.8.0",
+  appVersion = "3.9.0",
   notificationsActive = false
 } = {}) {
   let peptidesCount = 0;
   let logDatesCount = 0;
   let totalLoggedDosesCount = 0;
-  let schemaVersion = 11;
+  let schemaVersion = 12;
   let measurementGoalConfigured = false;
 
   if (storage) {

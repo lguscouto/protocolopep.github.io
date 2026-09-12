@@ -13,7 +13,7 @@ import { theme } from "./services/theme.js";
 import { haptics } from "./services/haptics.js";
 import { notifications } from "./services/notifications.js";
 import { appBridge } from "./services/app-bridge.js";
-import { LIBRARY, PALETTE } from "./data/default-library.js";
+import { LIBRARY, EXTENDED_COMPOUND_CATALOG, PALETTE } from "./data/default-library.js";
 import {
   dateToKey,
   daysBetween,
@@ -67,6 +67,13 @@ function fmtBR(iso) {
   const parts = iso.split("-");
   if (parts.length < 3) return iso;
   return `${parts[2]}/${parts[1]}/${parts[0]}`;
+}
+
+function administrationLabel(item = {}) {
+  const quantity = item.administrationQuantity;
+  const unit = item.administrationUnit;
+  if (quantity !== null && quantity !== undefined && unit) return `${quantity} ${unit === "tablet" ? "comprimido(s)" : unit === "capsule" ? "cápsula(s)" : unit === "ml" ? "mL" : "UI"}`;
+  return item.ui !== null && item.ui !== undefined ? `${item.ui} UI` : "";
 }
 
 function showToast(msg) {
@@ -293,7 +300,7 @@ const settingsFeature = createFeatureLoader(async () => {
   diagnostics.setupDiagnosticsModal({
     storage,
     getNotificationsActive: () => (window.pepNotifications ? window.pepNotifications.hasActiveReminders() : false),
-    appVersion: "3.8.0"
+    appVersion: "3.9.0"
   });
   const widgetToggle = document.getElementById("widget-discrete-toggle");
   if (widgetToggle && widgetToggle.dataset.widgetBound !== "true") {
@@ -992,7 +999,7 @@ function renderToday() {
           </div>
           <div class="sub">${esc(p.sub || "")}</div>
           <div class="meta">
-            <span class="ui">${esc(String(p.ui))} UI</span>
+            ${administrationLabel(p) ? `<span class="ui">${esc(administrationLabel(p))}</span>` : ""}
             <span class="freq">· ${esc(p.freq || "")}</span>
             <span class="chip-acc">${esc(p.dose || "")}/${esc(p.per || i18nService.t("modals.peptide.perDay"))}</span>
             ${vialBadgeHTML}
@@ -1063,7 +1070,11 @@ async function toggleDose(id) {
     haptics.light();
     accessibilityService.announce(`Aplicação de ${p.name} desmarcada.`);
   } else {
-    const configuredSites = storage.getSites();
+    if (p.administrationLegacy === false && p.administrationRoute !== "oral") {
+      openRetroModal(todayK, id, { storage, dateKey, requireSiteSelection: true });
+      return;
+    }
+    const configuredSites = p.administrationRoute === "intramuscular" ? storage.getIntramuscularSites() : storage.getSites();
     const lastUsed = getLastUsedSite(logs, p.id);
     const currentSite = getNextSite(configuredSites, lastUsed ? lastUsed.site : null) || "";
     let res = doseService.registerDose({
@@ -1117,7 +1128,11 @@ async function addSingleDose(id) {
   const takenCount = dosesResolved(rec, id);
   if (takenCount >= perDay) return;
 
-  const configuredSites = storage.getSites();
+  if (p.administrationLegacy === false && p.administrationRoute !== "oral") {
+    openRetroModal(todayK, id, { storage, dateKey, requireSiteSelection: true });
+    return;
+  }
+  const configuredSites = p.administrationRoute === "intramuscular" ? storage.getIntramuscularSites() : storage.getSites();
   const lastUsed = getLastUsedSite(logs, p.id);
   const currentSite = getNextSite(configuredSites, lastUsed ? lastUsed.site : null) || "";
 
@@ -1326,7 +1341,7 @@ function renderWeek() {
                 const statusKey = { applied: "applied", skipped: "skipped", missed: "missed", unrecorded: "unrecorded" }[entry.status] || "unknown";
                 const statusLabel = i18nService.t(`week.${statusKey}`);
                 const statusClass = entry.status === "applied" ? "done" : entry.status === "unrecorded" ? "pending" : "partial";
-                const doseMeta = [entry.time, entry.dose, entry.ui ? `${entry.ui} UI` : ""].filter(Boolean).join(" · ");
+                const doseMeta = [entry.time, entry.dose, administrationLabel(entry)].filter(Boolean).join(" · ");
                 const progressMeta = entry.pendingCount > 1 ? ` · ${i18nService.t("week.pendingCount", { count: entry.pendingCount })}` : "";
                 const legacyMeta = entry.legacy ? ` · ${i18nService.t("week.legacy")}` : "";
                 const ariaLabel = `${entry.name} · ${doseMeta || statusLabel} · ${statusLabel}`;
@@ -1401,6 +1416,7 @@ function openRetroLogModal(prefillDate = null, prefillPepId = null, options = {}
 async function saveRetroLog() {
   await saveRetro({
     doseService,
+    storage,
     dateKey,
     haptics,
     renderAll: () => invalidateViews("today", "week", "history")
@@ -1564,7 +1580,7 @@ function renderHistoryLegacy() {
                   <div class="hist-name">${esc(e.name)}</div>
                   <div class="hist-status">${esc(i18nService.t(`phase1.${doseStatus(e)}`))}${e.historyIntegrity === "legacy" ? ` · ${esc(i18nService.t("phase1.legacy"))}` : ""}</div>
                   <div class="hist-dose">
-                    ${esc(e.dose || "—")}${e.ui !== null ? ` · ${esc(String(e.ui))} UI` : ""}${e.site ? ` · 📍 ${esc(e.site)}` : ""}
+                    ${esc(e.dose || "—")}${administrationLabel(e) ? ` · ${esc(administrationLabel(e))}` : ""}${e.site ? ` · 📍 ${esc(e.site)}` : ""}
                   </div>
                   ${e.note ? `<div class="hist-note">💬 ${esc(e.note)}</div>` : ""}
                   ${e.statusReason ? `<div class="hist-note">${esc(e.statusReason)}</div>` : ""}
@@ -1644,7 +1660,7 @@ function renderHistory() {
         : `<span>Vigência: <b>${esc(fmtBR(event.date))} ${esc(event.time)}</b></span><span>Estado: <b>${esc(event.data.statusLabel)}</b></span>`;
     return `<article class="history-event history-event--${event.type} ${event.type === "application" ? `hist-day hist-item ${event.date === dateKey(new Date()) ? "is-today" : ""}` : ""}" role="listitem">
       <div class="history-event-head"><span class="history-event-type">${typeLabel[event.type]}</span><time datetime="${esc(event.date)}T${esc(event.time)}">${esc(fmtBR(event.date))} · ${esc(event.time || "—")}</time></div>
-      <div class="history-event-body"><strong class="${event.type === "application" ? "hist-name" : ""}">${esc(event.title)}</strong><p class="${event.type === "application" ? "hist-status" : ""}">${esc(event.type === "application" ? i18nService.t(`phase1.${event.data.status}`) : event.subtitle)}</p>${event.type === "application" ? `<p class="hist-dose">${esc(event.data.dose)}${event.data.ui !== null ? ` · ${esc(String(event.data.ui))} UI` : ""}${event.data.site ? ` · 📍 ${esc(event.data.site)}` : ""}</p>` : ""}${event.notes ? `<p class="hist-note">${esc(event.notes)}</p>` : ""}${event.retroactive ? `<span class="badge-retro">${esc(i18nService.t("history.retroactiveBadge"))}</span>` : ""}${event.contextGeneral ? `<span class="history-context-badge">${esc(i18nService.t("history.contextBadge"))}</span>` : ""}</div>
+      <div class="history-event-body"><strong class="${event.type === "application" ? "hist-name" : ""}">${esc(event.title)}</strong><p class="${event.type === "application" ? "hist-status" : ""}">${esc(event.type === "application" ? i18nService.t(`phase1.${event.data.status}`) : event.subtitle)}</p>${event.type === "application" ? `<p class="hist-dose">${esc(event.data.dose)}${administrationLabel(event.data) ? ` · ${esc(administrationLabel(event.data))}` : ""}${event.data.site ? ` · 📍 ${esc(event.data.site)}` : ""}</p>` : ""}${event.notes ? `<p class="hist-note">${esc(event.notes)}</p>` : ""}${event.retroactive ? `<span class="badge-retro">${esc(i18nService.t("history.retroactiveBadge"))}</span>` : ""}${event.contextGeneral ? `<span class="history-context-badge">${esc(i18nService.t("history.contextBadge"))}</span>` : ""}</div>
       <details class="history-event-details"><summary>Ver detalhes</summary><div>${details}</div></details>
       <div class="hist-actions">${event.type === "application" ? `<button type="button" class="hist-edit" data-date="${sanitizeId(event.date)}" data-pep="${sanitizeId(event.data.peptideId)}" data-idx="${event.data.recordIndex}">Corrigir</button><button type="button" class="hist-rm" data-date="${sanitizeId(event.date)}" data-pep="${sanitizeId(event.data.peptideId)}" data-idx="${event.data.recordIndex}">Excluir</button>` : event.type === "measurement" || event.type === "symptom" ? `<button type="button" class="history-measurement-edit btn-meas-edit" data-id="${sanitizeId(event.editableId)}">Corrigir</button>` : ""}</div>
     </article>`;
@@ -2085,11 +2101,10 @@ function renderLibraryList(filterText = "") {
   if (!cont) return;
 
   const query = normalizeStr(filterText.trim());
-  const filtered = LIBRARY.filter((item) => {
+  const catalog = [...LIBRARY.map((item) => ({ ...item, compoundClass: "peptide", aliases: [] })), ...EXTENDED_COMPOUND_CATALOG];
+  const filtered = catalog.filter((item) => {
     if (!query) return true;
-    const nameNorm = normalizeStr(item.name);
-    const subNorm = normalizeStr(item.sub);
-    return nameNorm.includes(query) || subNorm.includes(query);
+    return normalizeStr(item.name).includes(query) || normalizeStr(item.sub).includes(query) || item.aliases.some((alias) => normalizeStr(alias).includes(query));
   });
 
   if (filtered.length === 0) {
@@ -2102,7 +2117,7 @@ function renderLibraryList(filterText = "") {
   cont.innerHTML = filtered.map((item) => {
     const isSelected = item.name.trim().toLowerCase() === currentName;
     return `
-      <div class="lib-item ${isSelected ? "selected" : ""}" data-name="${esc(item.name)}" data-sub="${esc(item.sub || "")}">
+      <div class="lib-item ${isSelected ? "selected" : ""}" data-name="${esc(item.name)}" data-sub="${esc(item.sub || "")}" data-compound-class="${esc(item.compoundClass || "peptide")}">
         <span class="lib-item-name">${esc(item.name)}</span>
         <span class="lib-item-sub">${esc(item.sub || "")}</span>
       </div>
@@ -2115,6 +2130,8 @@ function renderLibraryList(filterText = "") {
       const subInput = document.getElementById("edit-sub");
       if (nameInput) nameInput.value = el.dataset.name;
       if (subInput) subInput.value = el.dataset.sub;
+      const classInput = document.getElementById("edit-compound-class");
+      if (classInput) classInput.value = el.dataset.compoundClass || "peptide";
 
       cont.querySelectorAll(".lib-item").forEach((i) => i.classList.remove("selected"));
       el.classList.add("selected");
@@ -2257,7 +2274,28 @@ function openEditModal(pepId, prefillData = null) {
   document.getElementById("edit-name").value = p ? p.name : (prefillData?.name || "");
   document.getElementById("edit-sub").value = p ? p.sub || "" : (prefillData?.sub || "");
   document.getElementById("edit-dose").value = p ? p.dose || "" : (prefillData?.dose || "");
-  document.getElementById("edit-ui").value = p && p.ui !== undefined ? p.ui : (prefillData?.ui !== undefined ? prefillData.ui : "");
+  const classInput = document.getElementById("edit-compound-class");
+  const routeInput = document.getElementById("edit-administration-route");
+  const quantityInput = document.getElementById("edit-administration-quantity");
+  const unitInput = document.getElementById("edit-administration-unit");
+  const uiInput = document.getElementById("edit-ui");
+  const activeRoute = p?.administrationRoute || prefillData?.administrationRoute || "subcutaneous";
+  const activeUnit = p?.administrationUnit || prefillData?.administrationUnit || "ui";
+  if (classInput) classInput.value = p?.compoundClass || prefillData?.compoundClass || "peptide";
+  if (routeInput) routeInput.value = activeRoute;
+  const syncAdministrationEditor = () => {
+    const oral = routeInput?.value === "oral";
+    const allowed = oral ? [["tablet", "Comprimido"], ["capsule", "Cápsula"]] : [["ui", "UI"], ["ml", "mL"]];
+    const current = unitInput?.value || activeUnit;
+    if (unitInput) { unitInput.innerHTML = allowed.map(([value, label]) => `<option value="${value}">${label}</option>`).join(""); unitInput.value = allowed.some(([value]) => value === current) ? current : allowed[0][0]; }
+    if (uiInput) { uiInput.closest(".form-field").hidden = oral || unitInput?.value === "ml"; if (oral || unitInput?.value === "ml") uiInput.value = ""; }
+  };
+  if (quantityInput) quantityInput.value = p?.administrationQuantity ?? prefillData?.administrationQuantity ?? (activeUnit === "ui" ? (p?.ui ?? prefillData?.ui ?? "") : "");
+  syncAdministrationEditor();
+  routeInput?.addEventListener("change", syncAdministrationEditor);
+  unitInput?.addEventListener("change", syncAdministrationEditor);
+  document.getElementById("edit-ui").value = p && p.ui !== undefined && p.ui !== null ? p.ui : (prefillData?.ui !== undefined ? prefillData.ui : "");
+  syncAdministrationEditor();
   document.getElementById("edit-perday").value = p ? p.perDay || 1 : 1;
   document.getElementById("edit-time").value = p ? p.time || "" : "";
   document.getElementById("edit-note").value = p ? p.note || "" : "";
@@ -2428,7 +2466,11 @@ async function saveEditedPeptide() {
 
   const sub = document.getElementById("edit-sub").value.trim();
   const dose = document.getElementById("edit-dose").value.trim();
-  const ui = parseUnits(document.getElementById("edit-ui").value);
+  const compoundClass = document.getElementById("edit-compound-class")?.value || "peptide";
+  const administrationRoute = document.getElementById("edit-administration-route")?.value || "subcutaneous";
+  const administrationUnit = document.getElementById("edit-administration-unit")?.value || "ui";
+  const administrationQuantity = document.getElementById("edit-administration-quantity")?.value || "";
+  const ui = administrationRoute === "oral" || administrationUnit === "ml" ? null : parseUnits(document.getElementById("edit-ui").value);
   const perDay = Number(document.getElementById("edit-perday").value);
   const mainTime = document.getElementById("edit-time").value.trim();
   const note = document.getElementById("edit-note").value.trim();
@@ -2442,8 +2484,10 @@ async function saveEditedPeptide() {
   });
 
   const protocolStartDate = document.getElementById("edit-protocol-start-date")?.value || null;
-  if (ui === null || !Number.isInteger(perDay) || perDay < 1 || perDay > 6 || (mainTime && !isValidTime(mainTime)) || times.some(time => !isValidTime(time)) || (protocolStartDate && !isValidDateKey(protocolStartDate))) {
-    void dialogService.alert({ title: "Dados inválidos", message: "Confira unidades, quantidade diária, horários e data de início. Valores fracionários de UI são preservados.", isDanger: true });
+  const normalizedAdministrationQuantity = Number(String(administrationQuantity || (administrationUnit === "ui" ? ui ?? "" : "")).replace(",", "."));
+  const validUnit = administrationRoute === "oral" ? ["tablet", "capsule"].includes(administrationUnit) : ["ui", "ml"].includes(administrationUnit);
+  if (!Number.isFinite(normalizedAdministrationQuantity) || normalizedAdministrationQuantity <= 0 || !validUnit || (administrationRoute !== "oral" && administrationUnit === "ui" && ui === null) || !Number.isInteger(perDay) || perDay < 1 || perDay > 6 || (mainTime && !isValidTime(mainTime)) || times.some(time => !isValidTime(time)) || (protocolStartDate && !isValidDateKey(protocolStartDate))) {
+    void dialogService.alert({ title: "Dados inválidos", message: "Confira a via, quantidade, unidade, horários e data de início.", isDanger: true });
     return;
   }
   let days = null;
@@ -2479,6 +2523,11 @@ async function saveEditedPeptide() {
     sub,
     dose,
     ui,
+    compoundClass,
+    administrationRoute,
+    administrationQuantity: normalizedAdministrationQuantity,
+    administrationUnit,
+    administrationLegacy: false,
     per: selectedPer,
     freq,
     days,

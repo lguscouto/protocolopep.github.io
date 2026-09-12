@@ -4,6 +4,7 @@ import {
   migrateLogs,
   migrateInventory,
   migrateSites,
+  migrateIntramuscularSites,
   migrateMeasurements,
   sanitizeHealthConnectState
 } from "../domain/migrations.js";
@@ -28,6 +29,7 @@ const KEYS = {
   DOSE_STATE: "pep_dose_state_v1",
   INVENTORY: "pep_inventory_v2",
   SITES: "pep_sites_v3",
+  INTRAMUSCULAR_SITES: "pep_im_sites_v1",
   MEASUREMENTS: "pep_measurements_v2",
   MEASUREMENT_GOALS: "pep_measurement_goals_v1",
   TOMBSTONES: "pep_hc_tombstones_v2",
@@ -57,6 +59,7 @@ export class StorageService {
     this.logs = {};
     this.inventory = [];
     this.sites = getDefaultSites();
+    this.intramuscularSites = [];
     this.measurements = [];
     this.measurementGoals = { goalWeightKg: null };
     this.tombstones = [];
@@ -146,6 +149,8 @@ export class StorageService {
       }
 
       // 5. Carregar Medições e Sintomas (V12)
+      const storedIntramuscularSites = localStorage.getItem(KEYS.INTRAMUSCULAR_SITES);
+      this.intramuscularSites = storedIntramuscularSites ? migrateIntramuscularSites(JSON.parse(storedIntramuscularSites)) : [];
       let storedMeasurements = localStorage.getItem(KEYS.MEASUREMENTS);
       if (storedMeasurements) {
         try {
@@ -204,6 +209,7 @@ export class StorageService {
       this.logs = {};
       this.inventory = [];
       this.sites = getDefaultSites();
+      this.intramuscularSites = [];
       this.measurements = [];
       this.measurementGoals = { goalWeightKg: null };
       this.tombstones = [];
@@ -232,6 +238,7 @@ export class StorageService {
       logs: this.logs,
       inventory: this.inventory,
       sites: this.sites,
+      intramuscularSites: this.intramuscularSites,
       measurements: this.measurements,
       measurementGoals: this.measurementGoals,
       error: this.doseStateError
@@ -247,7 +254,7 @@ export class StorageService {
   }
 
   readSnapshot(fields = ["peptides", "logs", "inventory", "sites", "measurements"]) {
-    const allowed = ["peptides", "logs", "inventory", "sites", "measurements", "measurementGoals", "tombstones", "hiddenMeasurementIds"];
+    const allowed = ["peptides", "logs", "inventory", "sites", "intramuscularSites", "measurements", "measurementGoals", "tombstones", "hiddenMeasurementIds"];
     const requested = [...new Set(Array.isArray(fields) ? fields : [])]
       .filter((field) => allowed.includes(field))
       .sort();
@@ -424,6 +431,22 @@ export class StorageService {
 
   getMeasurements() {
     return Array.isArray(this.measurements) ? deepClone(this.measurements) : [];
+  }
+
+  getIntramuscularSites() { return deepClone(this.intramuscularSites || []); }
+
+  setIntramuscularSites(newSites) {
+    const snapshot = this.takeSnapshot();
+    this.intramuscularSites = migrateIntramuscularSites(newSites);
+    const result = this.saveIntramuscularSites();
+    if (!result.success) { this.restoreSnapshot(snapshot); return result; }
+    this.notify();
+    return { success: true, sites: this.getIntramuscularSites() };
+  }
+
+  saveIntramuscularSites() {
+    try { localStorage.setItem(KEYS.INTRAMUSCULAR_SITES, JSON.stringify(this.intramuscularSites)); return { success: true }; }
+    catch (error) { return { success: false, error: error.message || "Falha ao salvar locais intramusculares." }; }
   }
 
   getMeasurementGoals() {
@@ -704,6 +727,7 @@ export class StorageService {
       logs: deepClone(this.logs),
       inventory: deepClone(this.inventory),
       sites: deepClone(this.sites),
+      intramuscularSites: deepClone(this.intramuscularSites),
       measurements: deepClone(this.measurements),
       measurementGoals: deepClone(this.measurementGoals),
       tombstones: deepClone(this.tombstones),
@@ -717,6 +741,7 @@ export class StorageService {
     this.logs = snapshot.logs || {};
     this.inventory = snapshot.inventory || [];
     this.sites = snapshot.sites || getDefaultSites();
+    this.intramuscularSites = snapshot.intramuscularSites || [];
     this.measurements = snapshot.measurements || [];
     this.measurementGoals = snapshot.measurementGoals || { goalWeightKg: null };
     this.tombstones = snapshot.tombstones || [];
@@ -727,6 +752,7 @@ export class StorageService {
       localStorage.setItem(KEYS.LOGS, JSON.stringify(this.logs));
       localStorage.setItem(KEYS.INVENTORY, JSON.stringify(this.inventory));
       localStorage.setItem(KEYS.SITES, JSON.stringify(this.sites));
+      localStorage.setItem(KEYS.INTRAMUSCULAR_SITES, JSON.stringify(this.intramuscularSites));
       localStorage.setItem(KEYS.MEASUREMENTS, JSON.stringify(this.measurements));
       localStorage.setItem(KEYS.MEASUREMENT_GOALS, JSON.stringify(this.measurementGoals));
       localStorage.setItem(KEYS.TOMBSTONES, JSON.stringify(this.tombstones));
@@ -749,7 +775,8 @@ export class StorageService {
         tombstones: this.tombstones,
         hiddenMeasurementIds: this.hiddenMeasurementIds
       },
-      this.measurementGoals
+      this.measurementGoals,
+      this.intramuscularSites
     );
   }
 
@@ -766,6 +793,7 @@ export class StorageService {
       this.logs = clean.logs;
       this.inventory = clean.inventory || [];
       this.sites = clean.sites || getDefaultSites();
+      this.intramuscularSites = clean.intramuscularSites || [];
       this.measurements = clean.measurements || [];
       this.measurementGoals = clean.measurementGoals || { goalWeightKg: null };
       this.tombstones = clean.healthConnectState?.tombstones || [];
@@ -775,15 +803,16 @@ export class StorageService {
       const resLogs = this.saveLogs();
       const resInv = this.saveInventory();
       const resSites = this.saveSites();
+      const resImSites = this.saveIntramuscularSites();
       const resMeas = this.saveMeasurements();
       const resGoals = this.saveMeasurementGoals();
       const resTomb = this.saveTombstones();
       const resHidden = this.saveHiddenMeasurementIds();
 
-      if (!resProto.success || !resLogs.success || !resInv.success || !resSites.success || !resMeas.success || !resGoals.success || !resTomb.success || !resHidden.success) {
+      if (!resProto.success || !resLogs.success || !resInv.success || !resSites.success || !resImSites.success || !resMeas.success || !resGoals.success || !resTomb.success || !resHidden.success) {
         throw new Error(
           resProto.error || resLogs.error || resInv.error || resSites.error || resMeas.error ||
-          resGoals.error || resTomb.error || resHidden.error || "Falha na escrita local"
+          resImSites.error || resGoals.error || resTomb.error || resHidden.error || "Falha na escrita local"
         );
       }
 
@@ -816,6 +845,7 @@ export class StorageService {
       logs: deepClone(this.logs),
       inventory: deepClone(this.inventory),
       sites: deepClone(this.sites),
+      intramuscularSites: deepClone(this.intramuscularSites),
       measurements: deepClone(this.measurements),
       measurementGoals: deepClone(this.measurementGoals)
     };

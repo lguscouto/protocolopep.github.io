@@ -1,5 +1,5 @@
 /** Append-only configuration revisions. No medical defaults or synthetic dose history. */
-const FIELDS = ["name", "sub", "dose", "ui", "per", "freq", "days", "interval", "start", "perDay", "times", "time", "remindersEnabled", "note", "accent", "calculationSnapshot", "numericIntegrity"];
+const FIELDS = ["name", "sub", "dose", "ui", "compoundClass", "administrationRoute", "administrationQuantity", "administrationUnit", "administrationLegacy", "per", "freq", "days", "interval", "start", "perDay", "times", "time", "remindersEnabled", "note", "accent", "calculationSnapshot", "numericIntegrity"];
 const copy = value => value === undefined ? undefined : JSON.parse(JSON.stringify(value));
 export const PROTOCOL_STATUSES = Object.freeze(["active", "paused", "ended"]);
 const validInstant = value => typeof value === "string" && /^\d{4}-\d{2}-\d{2}T/.test(value) && Number.isFinite(Date.parse(value));

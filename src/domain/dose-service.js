@@ -1,6 +1,6 @@
 /** Pure, atomic transitions for dose records and their original vial movements. */
 import { createDoseLog, normalizeDoseEntry, validateDoseLog } from "./dose-log.js";
-import { debitVialDose, creditVialDose, extractDoseInMcg } from "./inventory.js";
+import { debitVialDose, creditVialDose, debitOralPackage, creditOralPackage, extractDoseInMcg } from "./inventory.js";
 import { dateToKey, isValidDateKey, isValidTime } from "./schedule.js";
 import { parseUnits, DOSE_STATUSES } from "./dose-state.js";
 import { resolveProtocolAt } from "./protocol-history.js";
@@ -11,12 +11,19 @@ const equalAmount = (a, b) => Math.abs(a - b) < 0.0000001;
 const entries = (value, date, id) => Array.isArray(value) ? [...value] : value && typeof value === "object" ? [normalizeDoseEntry(value, date, id)] : [];
 const newId = () => `log_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 9)}`;
 
-function validateInput({ peptideId, scheduledDate, time, status, ui, dose }) {
+function validateInput({ peptideId, scheduledDate, time, status, ui, dose, administrationRoute = "subcutaneous", administrationQuantity = null, administrationUnit = "ui", site = "", requireSite = false, requireAdministration = false }) {
   if (typeof peptideId !== "string" || !peptideId.trim()) return fail("VALIDATION_FAILED", "Identificador do protocolo inválido.");
   if (!isValidDateKey(scheduledDate) || scheduledDate > dateToKey(new Date())) return fail("VALIDATION_FAILED", "Informe uma data válida, que não esteja no futuro.");
   if (!isValidTime(time)) return fail("VALIDATION_FAILED", "Informe um horário válido entre 00:00 e 23:59.");
   if (!DOSE_STATUSES.includes(status)) return fail("VALIDATION_FAILED", "Estado do registro inválido.");
-  if (ui === null || parseUnits(ui) === null) return fail("VALIDATION_FAILED", "Unidades inválidas.");
+  if (requireAdministration) {
+    if (!["subcutaneous", "intramuscular", "oral"].includes(administrationRoute)) return fail("VALIDATION_FAILED", "Via de administração inválida.");
+    if (administrationRoute === "oral" ? !["tablet", "capsule"].includes(administrationUnit) : !["ui", "ml"].includes(administrationUnit)) return fail("VALIDATION_FAILED", "Unidade incompatível com a via.");
+    const quantity = Number(typeof administrationQuantity === "string" ? administrationQuantity.replace(",", ".") : administrationQuantity);
+    if (!Number.isFinite(quantity) || quantity <= 0) return fail("VALIDATION_FAILED", "Quantidade de administração inválida.");
+    if (requireSite && administrationRoute !== "oral" && !String(site).trim()) return fail("SITE_REQUIRED", "Selecione um local para registrar a aplicação injetável.");
+    if (administrationRoute !== "oral" && administrationUnit === "ui" && (ui === null || parseUnits(ui) === null)) return fail("VALIDATION_FAILED", "Unidades inválidas.");
+  } else if (ui === null || parseUnits(ui) === null) return fail("VALIDATION_FAILED", "Unidades inválidas.");
   if (typeof dose !== "string" && typeof dose !== "number") return fail("VALIDATION_FAILED", "Dose inválida.");
   const value = String(dose).trim();
   // Free-text descriptions remain supported, but numerical entries must never be truncated.
@@ -31,20 +38,25 @@ function validateInput({ peptideId, scheduledDate, time, status, ui, dose }) {
 
 function captureProtocol(protocol, dose, ui, vial) {
   if (!protocol) return null;
+  const injectableVial = vial?.kind === "oral_package" ? null : vial;
   return clone({
     name: protocol.name || "",
     sub: protocol.sub || "",
     dose,
     ui,
+    compoundClass: protocol.compoundClass || "peptide",
+    administrationRoute: protocol.administrationRoute || "subcutaneous",
+    administrationQuantity: protocol.administrationQuantity ?? null,
+    administrationUnit: protocol.administrationUnit || "ui",
     revisionId: protocol.revisionId || null,
     calculationSnapshot: protocol.calculationSnapshot || null,
-    vial: vial ? {
-      id: vial.id,
-      peptideName: vial.peptideName || "",
-      lotNumber: vial.lotNumber || "",
-      concentrationMcgPerMl: vial.concentrationMcgPerMl,
-      totalMg: vial.totalMg,
-      waterMl: vial.waterMl
+    vial: injectableVial ? {
+      id: injectableVial.id,
+      peptideName: injectableVial.peptideName || "",
+      lotNumber: injectableVial.lotNumber || "",
+      concentrationMcgPerMl: injectableVial.concentrationMcgPerMl,
+      totalMg: injectableVial.totalMg,
+      waterMl: injectableVial.waterMl
     } : null
   });
 }
@@ -52,7 +64,13 @@ function captureProtocol(protocol, dose, ui, vial) {
 function compatibleVial(vial, peptideId, name) {
   const normalize = value => String(value || "").trim().toLowerCase();
   const identities = [normalize(peptideId), normalize(name)].filter(Boolean);
-  return vial && vial.status === "active" && identities.some(id => id === normalize(vial.peptideId) || id === normalize(vial.peptideName));
+  return vial && vial.kind !== "oral_package" && vial.status === "active" && identities.some(id => id === normalize(vial.peptideId) || id === normalize(vial.peptideName));
+}
+
+function compatibleOralPackage(item, peptideId, name, unit) {
+  const normalize = value => String(value || "").trim().toLowerCase();
+  const identities = [normalize(peptideId), normalize(name)].filter(Boolean);
+  return item?.kind === "oral_package" && item.status === "active" && item.presentation === unit && identities.some(id => id === normalize(item.peptideId) || id === normalize(item.peptideName));
 }
 
 /** Only applied entries debit stock. Skipped/missed entries carry no stock linkage. */
@@ -75,16 +93,22 @@ export function registerDoseState({
     return fail("VALIDATION_FAILED", "Revise explicitamente a dose e as unidades do protocolo antes de registrar uma aplicação.");
   }
   const doseStr = dose === undefined ? (peptide?.dose || "") : dose;
-  const uiVal = ui === undefined ? (peptide?.ui === undefined ? 0 : peptide.ui) : ui;
-  const invalid = validateInput({ peptideId, scheduledDate: targetDate, time: targetTime, status, ui: uiVal, dose: doseStr });
+  const route = peptide?.administrationRoute || "subcutaneous";
+  const unit = peptide?.administrationUnit || "ui";
+  const requireAdministration = peptide?.administrationLegacy === false;
+  const quantity = peptide?.administrationQuantity ?? (unit === "ui" ? (peptide?.ui ?? ui) : null);
+  const uiVal = route === "oral" || unit === "ml" ? null : (ui === undefined ? (peptide?.ui === undefined ? 0 : peptide.ui) : ui);
+  const invalid = validateInput({ peptideId, scheduledDate: targetDate, time: targetTime, status, ui: uiVal, dose: doseStr, administrationRoute: route, administrationQuantity: quantity, administrationUnit: unit, site, requireSite: requireAdministration, requireAdministration });
   if (invalid) return invalid;
   const normalizedUnits = parseUnits(uiVal);
   const log = createDoseLog({
     id: newId(), peptideId, scheduledDate: targetDate, time: targetTime, takenAt: takenAt.toISOString(), dose: doseStr,
-    ui: normalizedUnits, site, note, status, statusReason, retroactive,
+    ui: normalizedUnits, site: route === "oral" ? "" : site, note, status, statusReason, retroactive,
+    compoundClass: peptide?.compoundClass || "peptide", administrationRoute: route, administrationQuantity: quantity, administrationUnit: unit,
     debitedMcg: 0, protocolSnapshot: captureProtocol(peptide, String(doseStr).trim(), normalizedUnits, null)
   });
-  const targetIndex = status === "applied" ? inventory.findIndex(v => compatibleVial(v, peptideId, peptide?.name)) : -1;
+  const targetIndex = status === "applied" ? inventory.findIndex(v => route === "oral" ? compatibleOralPackage(v, peptideId, peptide?.name, unit) : compatibleVial(v, peptideId, peptide?.name)) : -1;
+  if (status === "applied" && route === "oral" && targetIndex < 0) return fail("ORAL_PACKAGE_NOT_FOUND", "Nenhum pacote oral ativo e compatível foi encontrado.");
   const result = applyStock(log, inventory, targetIndex, { allowHistoryOnlyWithoutStock });
   if (!result.success) return result;
   if (result.vial) log.protocolSnapshot = captureProtocol(peptide, log.dose, log.ui, result.vial);
@@ -95,6 +119,13 @@ function applyStock(log, inventory, vialIndex, { allowHistoryOnlyWithoutStock = 
   const updatedInventory = [...inventory];
   if (log.status !== "applied" || vialIndex < 0) return { success: true, inventory: updatedInventory, vial: null, debitedMcg: 0 };
   const vial = inventory[vialIndex];
+  if (log.administrationRoute === "oral") {
+    const debit = debitOralPackage(vial, { quantity: log.administrationQuantity, doseLogId: log.id, date: log.scheduledDate, note: log.protocolSnapshot?.name || "Aplicação oral registrada" });
+    if (!debit.success) return fail(debit.error, "O pacote oral não possui saldo suficiente.");
+    log.inventoryId = vial.id; log.inventoryKind = "oral_package"; log.inventoryMovementId = debit.movement.id; log.debitedQuantity = debit.debitedQuantity;
+    updatedInventory[vialIndex] = debit.package;
+    return { success: true, inventory: updatedInventory, vial: debit.package, debitedMcg: 0, debitedQuantity: debit.debitedQuantity };
+  }
   if (!Number.isFinite(Number(vial.remainingMcg)) || Number(vial.remainingMcg) < 0) return fail("INVENTORY_LINK_INVALID", "Saldo do frasco inválido.");
   const input = log.dose || (log.ui > 0 ? `${log.ui} UI` : "");
   const isUiDose = /\bui\b/i.test(input);
@@ -114,6 +145,8 @@ function applyStock(log, inventory, vialIndex, { allowHistoryOnlyWithoutStock = 
   if (!debit.success) return fail(debit.error, debit.message || debit.error);
   if (!equalAmount(Number(vial.remainingMcg) - debit.vial.remainingMcg, amount)) return fail("INVENTORY_LINK_INVALID", "O saldo do frasco não permite um débito exato.");
   log.vialId = vial.id;
+  log.inventoryId = vial.id;
+  log.inventoryKind = "vial";
   log.inventoryMovementId = debit.vial.movements.at(-1).id;
   log.debitedMcg = debit.debitedMcg;
   updatedInventory[vialIndex] = debit.vial;
@@ -175,6 +208,19 @@ export function undoDoseState({ logs = {}, inventory = [], peptideId, scheduledD
   if (index < 0) return fail(doseLogId ? "DOSE_NOT_FOUND" : "NO_DOSE_TO_UNDO", "Nenhuma dose encontrada para desfazer.");
   const removedLog = arr[index];
   if (!removedLog || typeof removedLog !== "object") return fail("VALIDATION_FAILED", "Registro inválido.");
+  if (removedLog.inventoryKind === "oral_package") {
+    const packageIndex = inventory.findIndex(item => item.id === removedLog.inventoryId);
+    const item = inventory[packageIndex];
+    const movement = item?.movements?.find(entry => entry.id === removedLog.inventoryMovementId && entry.doseLogId === removedLog.id && entry.type === "dose");
+    const amount = movement ? -Number(movement.amountQuantity) : Number(removedLog.debitedQuantity);
+    if (packageIndex < 0 || !Number.isFinite(amount) || amount <= 0) return fail("INVENTORY_LINK_INVALID", "O movimento original do pacote oral não está disponível.");
+    const credit = creditOralPackage(item, { quantity: amount, doseLogId: removedLog.id, date: targetDate, reversesMovementId: movement?.id || null });
+    if (!credit.success || credit.creditedQuantity !== amount) return fail("INVENTORY_CREDIT_MISMATCH", "Não foi possível estornar exatamente o pacote oral.");
+    const updatedInventory = [...inventory]; updatedInventory[packageIndex] = credit.package;
+    arr.splice(index, 1); if (arr.length) day[peptideId] = arr; else delete day[peptideId];
+    const updatedLogs = { ...logs }; if (Object.keys(day).length) updatedLogs[targetDate] = day; else delete updatedLogs[targetDate];
+    return { success: true, logs: updatedLogs, inventory: updatedInventory, removedLog, vial: credit.package, creditedQuantity: credit.creditedQuantity };
+  }
   const original = originalDebit(removedLog, inventory);
   if (!original.success) return original;
   const updatedInventory = [...inventory];
@@ -212,7 +258,7 @@ export function editDoseState({ logs = {}, inventory = [], peptideId, scheduledD
   next.status = next.status === undefined ? "applied" : next.status;
   next.dose = legacyUnknownDose ? "" : next.dose === undefined ? "" : next.dose;
   next.ui = legacyUnknownUnits ? 0 : next.ui === undefined ? 0 : next.ui;
-  const invalid = validateInput(next);
+  const invalid = validateInput({ ...next, requireAdministration: next.administrationLegacy === false, requireSite: next.administrationLegacy === false && next.administrationRoute !== "oral" });
   if (invalid) return invalid;
   const undo = undoDoseState({ logs, inventory, peptideId, scheduledDate, doseLogId });
   if (!undo.success) return undo;
@@ -229,15 +275,15 @@ export function editDoseState({ logs = {}, inventory = [], peptideId, scheduledD
     editHistory: [...(original.editHistory || []), { editedAt, previous }]
   });
   // A skipped correction may later become applied again: retain the previously confirmed vial.
-  const originalStockRecord = [original, ...(original.editHistory || []).slice().reverse().map(edit => edit.previous)].find(entry => entry?.vialId);
+  const originalStockRecord = [original, ...(original.editHistory || []).slice().reverse().map(edit => edit.previous)].find(entry => entry?.vialId || entry?.inventoryId);
   // A skipped/missed record has no original vial. When the user corrects it to
   // applied, choose the current active vial for this peptide exactly as a new
   // registration would; later edits still remain locked to this new vial.
   const referenceName = original.protocolSnapshot?.name || original.name || original.peptideName || "";
   const fallbackIndex = original.status !== "applied"
-    ? undo.inventory.findIndex(v => v?.status === "active" && (String(v.peptideId || "") === String(peptideId) || String(v.peptideName || "").trim().toLowerCase() === String(referenceName).trim().toLowerCase()))
+    ? undo.inventory.findIndex(v => v?.status === "active" && (corrected.administrationRoute !== "oral" || (v.kind === "oral_package" && v.presentation === corrected.administrationUnit)) && (String(v.peptideId || "") === String(peptideId) || String(v.peptideName || "").trim().toLowerCase() === String(referenceName).trim().toLowerCase()))
     : -1;
-  const originalIndex = originalStockRecord ? undo.inventory.findIndex(v => v.id === originalStockRecord.vialId) : fallbackIndex;
+  const originalIndex = originalStockRecord ? undo.inventory.findIndex(v => v.id === (originalStockRecord.inventoryId || originalStockRecord.vialId)) : fallbackIndex;
   if (corrected.status === "applied" && original.status !== "applied" && originalIndex < 0) return fail("ORIGINAL_VIAL_MISSING", "Nenhum frasco ativo está vinculado a este protocolo para registrar a aplicação.");
   if (corrected.status === "applied" && originalStockRecord && originalIndex < 0) return fail("ORIGINAL_VIAL_MISSING", "O frasco original não foi encontrado para corrigir a aplicação.");
   const historicalVial = originalStockRecord?.protocolSnapshot?.vial || (originalStockRecord ? { concentrationMcgPerMl: null } : null);

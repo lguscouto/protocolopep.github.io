@@ -146,7 +146,7 @@ describe("Migrations Domain", () => {
       ]
     });
 
-    expect(migrated.version).toBe(11);
+    expect(migrated.version).toBe(12);
     expect(migrated.sites).toHaveLength(10);
     expect(migrated.sites).toContain("Flanco (Direito)");
     expect(migrated.sites).toContain("Abdômen (Inferior Esquerdo)");
@@ -159,8 +159,8 @@ describe("Migrations Domain", () => {
     expect(migrated.sites).toEqual(customSites);
   });
 
-  it("CURRENT_SCHEMA_VERSION é 11", () => {
-    expect(CURRENT_SCHEMA_VERSION).toBe(11);
+  it("CURRENT_SCHEMA_VERSION é 12", () => {
+    expect(CURRENT_SCHEMA_VERSION).toBe(12);
   });
 
   it("V5→V6 recalcula campos pela zona IANA e marca contradição sem contexto", () => {
@@ -195,7 +195,7 @@ describe("Migrations Domain", () => {
       ]
     };
     const result = migrateAppState(v1State);
-    expect(result.version).toBe(11);
+    expect(result.version).toBe(12);
     // Medição legada deve ter updatedAt após migração completa
     const m = result.measurements.find(x => x.date === "2026-08-01");
     expect(m).toBeDefined();
@@ -211,7 +211,7 @@ describe("Migrations Domain", () => {
     const direct = migrateV8ToV9(state);
     const once = migrateAppState(direct);
     const twice = migrateAppState(once);
-    expect(once.version).toBe(11);
+    expect(once.version).toBe(12);
     expect(once.measurements[0]).toMatchObject({ id: "legacy", source: "health_connect", ownership: "external", circumferencesCm: { abdomen: null, waist: null, hips: null } });
     expect(twice).toEqual(once);
   });

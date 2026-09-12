@@ -1,6 +1,6 @@
 import { createPeptide } from "./protocol.js";
 import { normalizeDoseEntry } from "./dose-log.js";
-import { createVial } from "./inventory.js";
+import { createInventoryItem } from "./inventory.js";
 import {
   validateSitesList,
   getDefaultSites,
@@ -16,7 +16,7 @@ import {
   localDateTimeToIso
 } from "./time.js";
 
-export const CURRENT_SCHEMA_VERSION = 11;
+export const CURRENT_SCHEMA_VERSION = 12;
 
 function sanitizeHealthConnectId(value) {
   if (typeof value !== "string") return null;
@@ -84,7 +84,7 @@ export function migrateLogs(rawLogs = {}) {
 
 export function migrateInventory(rawInventory = []) {
   if (!Array.isArray(rawInventory)) return [];
-  return rawInventory.map((item) => createVial(item));
+  return rawInventory.map((item) => createInventoryItem({ ...item, kind: item?.kind || "vial" }));
 }
 
 export function migrateSites(rawSites) {
@@ -228,6 +228,12 @@ export function migrateV6ToV7(state = {}) {
   };
 }
 
+export function migrateIntramuscularSites(rawSites) {
+  if (!Array.isArray(rawSites)) return [];
+  const res = validateSitesList(rawSites);
+  return res.valid ? res.sites : [];
+}
+
 /** V7 → V8: symptomDetails is additive; legacy symptom labels remain intact. */
 export function migrateV7ToV8(state = {}) {
   return {
@@ -261,6 +267,18 @@ export function migrateV10ToV11(state = {}) {
     ...state,
     version: 11,
     measurementGoals: normalizeMeasurementGoals(state.measurementGoals)
+  };
+}
+
+/** V11 → V12: rotas de administração, pacotes orais e lista IM vazia. */
+export function migrateV11ToV12(state = {}) {
+  return {
+    ...state,
+    version: 12,
+    protocol: migratePeptides(state.protocol || state.peptides || []),
+    logs: migrateLogs(state.logs || {}),
+    inventory: migrateInventory(state.inventory || []),
+    intramuscularSites: migrateIntramuscularSites(state.intramuscularSites)
   };
 }
 
@@ -301,6 +319,9 @@ export function migrateAppState(state = {}) {
   if (version < 11) {
     current = migrateV10ToV11(current);
   }
+  if (version < 12) {
+    current = migrateV11ToV12(current);
+  }
 
   const rawProtocol = current.protocol || current.peptides || [];
   const rawLogs = current.logs || {};
@@ -315,6 +336,7 @@ export function migrateAppState(state = {}) {
     logs: migrateLogs(rawLogs),
     inventory: migrateInventory(rawInventory),
     sites: migrateLegacyDefaultSites(rawSites),
+    intramuscularSites: migrateIntramuscularSites(current.intramuscularSites),
     measurements: migrateMeasurements(rawMeasurements),
     measurementGoals: normalizeMeasurementGoals(current.measurementGoals),
     healthConnectState: sanitizeHealthConnectState(current.healthConnectState),

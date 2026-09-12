@@ -7,6 +7,18 @@ import { parseUnits } from "./dose-state.js";
 import { normalizeProtocolRevisions, PROTOCOL_STATUSES } from "./protocol-history.js";
 
 export const HEX_COLOR_REGEX = /^#[0-9A-Fa-f]{6}$/;
+export const COMPOUND_CLASSES = Object.freeze(["peptide", "hormone", "anabolic_steroid", "ancillary", "custom"]);
+export const ADMINISTRATION_ROUTES = Object.freeze(["subcutaneous", "intramuscular", "oral"]);
+export const ADMINISTRATION_UNITS = Object.freeze(["ui", "ml", "tablet", "capsule"]);
+
+export function parseAdministrationQuantity(value) {
+  const parsed = typeof value === "string" ? Number(value.trim().replace(",", ".")) : Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+export function isAdministrationUnitCompatible(route, unit) {
+  return route === "oral" ? unit === "tablet" || unit === "capsule" : unit === "ui" || unit === "ml";
+}
 
 export function sanitizeString(str, maxLen = 120) {
   if (typeof str !== "string") return "";
@@ -51,7 +63,16 @@ export function createPeptide(data = {}) {
   const name = sanitizeString(data.name || "Novo Peptídeo", 80);
   const sub = sanitizeString(data.sub || "", 80);
   const dose = sanitizeString(data.dose || "", 40);
-  const ui = data.ui === null && data.numericIntegrity === "needs_review" ? null : parseUnits(data.ui);
+  const compoundClass = COMPOUND_CLASSES.includes(data.compoundClass) ? data.compoundClass : "peptide";
+  const administrationRoute = ADMINISTRATION_ROUTES.includes(data.administrationRoute) ? data.administrationRoute : "subcutaneous";
+  const legacyAdministration = data.administrationLegacy === true || data.administrationQuantity === undefined || data.administrationUnit === undefined;
+  const administrationUnit = ADMINISTRATION_UNITS.includes(data.administrationUnit)
+    ? data.administrationUnit
+    : (administrationRoute === "oral" ? "tablet" : "ui");
+  const administrationQuantity = parseAdministrationQuantity(data.administrationQuantity ?? (administrationUnit === "ui" ? data.ui : null));
+  const ui = administrationRoute === "oral" || administrationUnit === "ml"
+    ? null
+    : (data.ui === null && data.numericIntegrity === "needs_review" ? null : parseUnits(data.ui));
   const per = data.per === "semana" ? "semana" : "dia";
   const perDay = Math.min(6, Math.max(1, parseInt(data.perDay, 10) || 1));
   const accent = validateHexColor(data.accent, "#2CC5C0");
@@ -85,10 +106,15 @@ export function createPeptide(data = {}) {
       ? data.id
       : `pep_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
     name,
-    numericIntegrity: ui === null || data.numericIntegrity === "needs_review" ? "needs_review" : "valid",
+    numericIntegrity: administrationRoute !== "oral" && administrationUnit === "ui" && (ui === null || data.numericIntegrity === "needs_review") ? "needs_review" : "valid",
     lifecycleStatus: PROTOCOL_STATUSES.includes(data.lifecycleStatus) ? data.lifecycleStatus : "active",
     revisions: normalizeProtocolRevisions(data.revisions),
     sub,
+    compoundClass,
+    administrationRoute,
+    administrationQuantity,
+    administrationUnit,
+    administrationLegacy: legacyAdministration,
     dose,
     ui,
     per,
@@ -111,7 +137,23 @@ export function validatePeptide(p) {
   if (!p.name || typeof p.name !== "string" || !p.name.trim()) {
     return { valid: false, error: "Nome do peptídeo é obrigatório" };
   }
-  if (p.numericIntegrity === "needs_review" || (p.ui !== undefined && parseUnits(p.ui) === null)) {
+  const legacyAdministration = p.administrationLegacy === true || (p.administrationQuantity === undefined && p.administrationUnit === undefined && p.administrationRoute === undefined && p.compoundClass === undefined);
+  const compoundClass = p.compoundClass === undefined ? "peptide" : p.compoundClass;
+  const administrationRoute = p.administrationRoute === undefined ? "subcutaneous" : p.administrationRoute;
+  const administrationUnit = p.administrationUnit === undefined ? "ui" : p.administrationUnit;
+  if (!COMPOUND_CLASSES.includes(compoundClass) || !ADMINISTRATION_ROUTES.includes(administrationRoute) || !ADMINISTRATION_UNITS.includes(administrationUnit)) {
+    return { valid: false, error: "Classe, via ou unidade de administração inválida." };
+  }
+  if (!isAdministrationUnitCompatible(administrationRoute, administrationUnit)) {
+    return { valid: false, error: "A unidade de administração não é compatível com a via escolhida." };
+  }
+  if (!legacyAdministration && parseAdministrationQuantity(p.administrationQuantity) === null) {
+    return { valid: false, error: "Informe uma quantidade de administração positiva." };
+  }
+  if (administrationRoute === "oral" && p.ui != null) {
+    return { valid: false, error: "Aplicações orais não usam unidades de seringa." };
+  }
+  if (administrationRoute !== "oral" && administrationUnit === "ui" && (p.numericIntegrity === "needs_review" || parseUnits(p.ui) === null)) {
     return { valid: false, error: "Informe unidades válidas, sem arredondamento automático." };
   }
   return { valid: true };

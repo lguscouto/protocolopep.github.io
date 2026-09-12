@@ -95,6 +95,13 @@ export const LIBRARY = [
   { name: "Água bacteriostática", sub: "diluente" }
 ];
 
+// Catálogo local apenas para organização; sem posologia, frequência ou via sugerida.
+export const EXTENDED_COMPOUND_CATALOG = [
+  ["hormone","Testosterona cipionato","testosterone cypionate"],["hormone","Testosterona enantato","testosterone enanthate"],["hormone","Testosterona propionato","testosterone propionate"],["hormone","Testosterona undecanoato","testosterone undecanoate"],["hormone","Estradiol"],["hormone","Progesterona"],["hormone","Levotiroxina"],["hormone","Somatropina","HGH"],["hormone","Insulina"],["hormone","HCG"],
+  ["anabolic_steroid","Oxandrolona","Anavar"],["anabolic_steroid","Estanozolol","Winstrol"],["anabolic_steroid","Metandrostenolona","Dianabol"],["anabolic_steroid","Turinabol"],["anabolic_steroid","Metasterona","Superdrol"],["anabolic_steroid","Fluoximesterona","Halotestin"],["anabolic_steroid","Oximetolona","Anadrol"],["anabolic_steroid","Nandrolona","Deca-Durabolin"],["anabolic_steroid","Trembolona acetato"],["anabolic_steroid","Trembolona enantato"],["anabolic_steroid","Boldenona","Equipoise"],["anabolic_steroid","Metenolona acetato","Primobolan"],["anabolic_steroid","Metenolona enantato","Primobolan"],["anabolic_steroid","Drostanolona propionato","Masteron"],["anabolic_steroid","Drostanolona enantato","Masteron"],
+  ["ancillary","Anastrozol"],["ancillary","Tamoxifeno"],["ancillary","Exemestano"],["ancillary","Clomifeno"],["ancillary","Cabergolina"],["ancillary","Finasterida"],["ancillary","Dutasterida"]
+].map(([compoundClass,name,aliases=""])=>({name, sub: compoundClass === "hormone" ? "Hormônio" : compoundClass === "anabolic_steroid" ? "Esteroide anabólico" : "Auxiliar", compoundClass, aliases: aliases ? [aliases] : []}));
+
 export const PALETTE = ["#2FD8AC", "#F59158", "#8593F7", "#D89A5C", "#2CC5C0", "#E5709B", "#67C15E", "#E2C452", "#A78BFA", "#5EC8E5"];
 
 export const DAY_FULL = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];

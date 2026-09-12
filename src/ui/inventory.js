@@ -4,6 +4,8 @@
 
 import {
   createVial,
+  createOralPackage,
+  validateOralPackage,
   validateVial,
   calculateRemainingDoses,
   getExpirationStatus,
@@ -53,6 +55,23 @@ export function setupInventoryUI({ storage, onInventoryChange }) {
     const reconDateInput = document.getElementById("vial-recon-date");
     const expiryDateInput = document.getElementById("vial-expiry-date");
     const notesInput = document.getElementById("vial-notes-input");
+    const kindInput = document.getElementById("inventory-kind-input");
+    const presentationInput = document.getElementById("oral-presentation-input");
+    const quantityInput = document.getElementById("oral-quantity-input");
+    const syncKind = () => {
+      const oral = kindInput?.value === "oral_package";
+      document.getElementById("oral-presentation-field")?.toggleAttribute("hidden", !oral);
+      document.getElementById("oral-quantity-field")?.toggleAttribute("hidden", !oral);
+      mgInput?.closest(".form-field-grid")?.toggleAttribute("hidden", oral);
+      reconDateInput?.closest(".form-field-grid")?.toggleAttribute("hidden", oral);
+      if (mgInput) mgInput.required = !oral;
+      if (waterInput) waterInput.required = !oral;
+      if (quantityInput) quantityInput.required = oral;
+    };
+    if (kindInput) { kindInput.value = vial?.kind || "vial"; kindInput.disabled = Boolean(vial); kindInput.onchange = syncKind; }
+    if (presentationInput) presentationInput.value = vial?.presentation || "tablet";
+    if (quantityInput) quantityInput.value = vial?.initialQuantity ?? "";
+    syncKind();
 
     const todayStr = new Date().toISOString().slice(0, 10);
     const hasHistory = vial ? hasVialHistory(vial, storage.getLogs()) : false;
@@ -164,6 +183,10 @@ export function setupInventoryUI({ storage, onInventoryChange }) {
     }
 
     inventoryListEl.innerHTML = inventory.map((v) => {
+      if (v.kind === "oral_package") {
+        const percent = v.initialQuantity > 0 ? Math.round((v.remainingQuantity / v.initialQuantity) * 100) : 0;
+        return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px;"><div style="display:flex;justify-content:space-between;gap:8px;"><div><b>${escapeHtml(v.peptideName)}</b><div style="font-size:12px;color:var(--muted);">Pacote oral · ${v.presentation === "capsule" ? "Cápsula" : "Comprimido"}${v.lotNumber ? ` · Lote: ${escapeHtml(v.lotNumber)}` : ""}</div></div><span class="inventory-status inventory-status--${v.status === "finished" ? "depleted" : "active"}">${v.status === "finished" ? "Esgotado" : "Ativo"}</span></div><div style="margin:10px 0 6px;font-size:12px;font-weight:700;">Saldo: ${escapeHtml(v.remainingQuantity)} / ${escapeHtml(v.initialQuantity)} ${v.presentation === "capsule" ? "cápsulas" : "comprimidos"} · ${percent}%</div><div style="height:6px;background:var(--surface);border-radius:999px;overflow:hidden;border:1px solid var(--border);"><div style="height:100%;width:${percent}%;background:var(--primary);"></div></div><div style="display:flex;gap:6px;justify-content:flex-end;margin-top:10px;"><button type="button" class="btn-compact-action edit-vial-btn" data-vial-id="${escapeHtml(v.id)}">Editar</button><button type="button" class="btn-compact-action view-vial-history-btn" data-vial-id="${escapeHtml(v.id)}">Histórico</button></div></div>`;
+      }
       const matchingPep = peptides.find((p) => (v.peptideId && p.id === v.peptideId) || (p.name.toLowerCase() === v.peptideName.toLowerCase()));
       const doseStr = matchingPep ? matchingPep.dose : null;
       const remDoses = doseStr ? calculateRemainingDoses(v, doseStr) : null;
@@ -339,10 +362,18 @@ export function setupInventoryUI({ storage, onInventoryChange }) {
       const reconDate = document.getElementById("vial-recon-date")?.value || new Date().toISOString().slice(0, 10);
       const expiryDate = document.getElementById("vial-expiry-date")?.value || null;
       const notes = document.getElementById("vial-notes-input")?.value?.trim() || "";
+      const kind = document.getElementById("inventory-kind-input")?.value || "vial";
+      const presentation = document.getElementById("oral-presentation-input")?.value || "tablet";
+      const oralQuantity = document.getElementById("oral-quantity-input")?.value || "";
 
       const inventory = storage.getInventory();
 
-      if (editingVialId) {
+      if (editingVialId && inventory.find((item) => item.id === editingVialId)?.kind === "oral_package") {
+        const idx = inventory.findIndex((item) => item.id === editingVialId);
+        const prev = inventory[idx];
+        if (Number(oralQuantity) !== Number(prev.initialQuantity)) { dialogService.alert({ title: "Dados protegidos", message: "A quantidade inicial de um pacote já criado não pode ser alterada.", isDanger: true }); return; }
+        inventory[idx] = { ...prev, peptideName: name || prev.peptideName, lotNumber: lot, expirationDate: expiryDate, notes, presentation: prev.presentation };
+      } else if (editingVialId) {
         const idx = inventory.findIndex((v) => v.id === editingVialId);
         if (idx !== -1) {
           const prev = inventory[idx];
@@ -369,6 +400,11 @@ export function setupInventoryUI({ storage, onInventoryChange }) {
           }
           inventory[idx] = updateRes.vial;
         }
+      } else if (kind === "oral_package") {
+        const oralPackage = createOralPackage({ peptideName: name, lotNumber: lot, presentation, initialQuantity: oralQuantity, expirationDate: expiryDate, notes });
+        const val = validateOralPackage(oralPackage);
+        if (!val.valid) { dialogService.alert({ title: "Dados Inválidos", message: val.errors.join("\n"), isDanger: true }); return; }
+        inventory.push(oralPackage);
       } else {
         const newVial = createVial({
           peptideName: name,
