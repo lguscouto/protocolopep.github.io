@@ -152,6 +152,7 @@ export const en = {
     "recordsInConfiguration": "{count} record(s) in this configuration",
     "symptomsRecorded": "Symptoms recorded",
     "viewAll": "View all",
+    "viewMoreDetails": "View more details",
     "applicationSaved": "Application recorded",
     "weightSaved": "Weight recorded",
     "symptomSaved": "Symptom recorded",
@@ -161,6 +162,10 @@ export const en = {
     "title": "PEP Protocol",
     "notifications": "Reminders & Notifications",
     "themeToggle": "Toggle Theme (Light / Dark)"
+  },
+  "progress": {
+    "allShort": "All",
+    "customShort": "Custom"
   },
   "dashboard": {
     "bannerText": "Help improve PEP <b>Send feedback</b>",
@@ -198,10 +203,13 @@ export const en = {
     "vialBadge": "🧪 ~{doses} doses",
     "vialBadgeTitle": "Active vial balance",
     "unrecordAria": "Unmark dose for {name}",
-    "recordAria": "Confirm dose for {name}"
+    "recordAria": "Confirm dose for {name}",
+    "lastSite": "Last recorded site: {site}",
+    "emptyTodayTitle": "Start by adding your treatment",
+    "emptyTodayDesc": "It takes less than a minute. You can record applications, receive reminders, and review your history."
   },
   "week": {
-    "heading": "Weekly View",
+    "heading": "Upcoming records",
     "subheading": "Tracking and application schedule for the next 7 days",
     "timelineLabel": "Timeline for the next 7 days",
     "today": "Today",
@@ -225,6 +233,7 @@ export const en = {
     "emptyDesc": "Add a peptide to your protocol to see applications in chronological order."
   },
   "history": {
+    "moreActions": "More actions",
     "heading": "Application History",
     "periodLabel": "Period",
     "compoundLabel": "Compound",
@@ -281,7 +290,7 @@ export const en = {
   "calculator": {
     "title": "Reconstitution Calculator",
     "subtitle": "Safely calculate dilution and syringe unit dosage",
-    "step1Title": "Peptide quantity in vial",
+    "step1Title": "Compound quantity in vial",
     "step1Desc": "Total content (mg)",
     "step2Title": "Bacteriostatic water added",
     "step2Desc": "Diluent volume (ml)",
@@ -310,13 +319,14 @@ export const en = {
     "invalidData": "Invalid calculation data"
   },
   "settings": {
+    "backToMore": "Back to More",
     "heading": "Settings & Preferences",
     "languageTitle": "Application Language",
     "languageDesc": "Select display language for PEP Protocol",
     "accessibilityTitle": "Accessibility & Vision",
     "accessibilityDesc": "Optimizations for high contrast and assistive navigation",
     "wcagBadge": "WCAG 2.1 AA",
-    "highContrastToggle": "👁️ High Contrast Mode",
+    "highContrastToggle": "High Contrast Mode",
     "siteRotationTitle": "Site Rotation",
     "siteRotationDesc": "Next in rotation: <b>{site}</b> ({count} active sites)",
     "siteConfigureBtn": "Configure",
@@ -326,7 +336,7 @@ export const en = {
     "widgetTitle": "Home Screen Widget",
     "widgetBadge": "WIDGET 3X2",
     "widgetDesc": "Add widget to Android home screen by touching and holding an empty area and selecting PEP Protocol.",
-    "widgetDiscreteToggle": "Discreet Mode (hide peptide names)",
+    "widgetDiscreteToggle": "Discreet Mode (hide treatment names)",
     "healthConnectTitle": "Health Connect (Android)",
     "healthConnectDesc": "Body weight and metrics synchronization",
     "healthConnectHelp": "Optional and private integration with Android Health subsystem to sync body weight logs.",
@@ -598,6 +608,12 @@ export const en = {
     },
     "measurements": {
       "title": "Body Log / Symptoms",
+      "externalTitle": "External record (Health Connect)",
+      "editTitle": "Edit body / symptom record",
+      "weightTitle": "Record weight",
+      "symptomTitle": "How are you feeling?",
+      "fullTitle": "Record measurements and symptoms",
+      "externalWeightTitle": "Imported from Health Connect. Edit weight or time in the source app.",
       "subtitle": "Self-reported personal tracking",
       "dateLabel": "Date",
       "timeLabel": "Time",
@@ -737,6 +753,21 @@ export const en = {
     "statusDescDefault": "Require biometrics or device PIN to open the app."
   },
   "dialogs": {
+    "emptyProtocolTitle": "Empty protocol",
+    "chooseSiteTitle": "Choose a site",
+    "requiredFieldTitle": "Required field",
+    "selectTreatmentMessage": "Select a treatment from the list.",
+    "requiredDoseTitle": "Dose required",
+    "requiredDoseMessage": "Enter the recorded dose before saving the application.",
+    "requiredDateMessage": "Enter the application date.",
+    "invalidDataTitle": "Invalid data",
+    "invalidDataMessage": "Check the time, status, and units.",
+    "futureDateTitle": "Invalid date",
+    "futureDateMessage": "Applications cannot be recorded for future dates.",
+    "noConcentrationTitle": "Undefined concentration",
+    "noConcentrationFallback": "The vial has no defined concentration.",
+    "saveRecordErrorMsg": "Could not save the record: {error}",
+    "storageUnavailable": "storage unavailable",
     "storageFailTitle": "Storage Failure",
     "unmarkErrorTitle": "Error unmarking",
     "saveErrorTitle": "Error saving",

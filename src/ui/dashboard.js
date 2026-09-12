@@ -135,8 +135,8 @@ export function renderDashboardFocusHTML(viewModel) {
   const detailItems = [];
   if (viewModel.dose) detailItems.push(`<span>${esc(viewModel.dose)}</span>`);
   if (viewModel.unitsUI) detailItems.push(`<span>${esc(String(viewModel.unitsUI))} UI</span>`);
-  if (viewModel.nextSite) detailItems.push(`<span class="dash-focus-site">${esc(viewModel.nextSite)}</span>`);
-  if (viewModel.lastSite) detailItems.push(`<span class="dash-focus-last-site">Último local: ${esc(viewModel.lastSite)}</span>`);
+  if (viewModel.lastSite) detailItems.push(`<span class="dash-focus-last-site">${esc(translate("dashboard.lastSite", { site: viewModel.lastSite }, viewModel.locale || "pt-BR"))}</span>`);
+  if (viewModel.nextSite) detailItems.push(`<span class="dash-focus-site sr-only" aria-hidden="true">${esc(viewModel.nextSite)}</span>`);
 
   const icon = viewModel.state === "complete"
     ? `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>`
@@ -163,17 +163,17 @@ export function renderEmptyDashboardHTML() {
   return `
     <div class="dash-empty-card" id="dash-empty-state">
       <div class="dash-empty-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21V9M7 14c-3 0-5-2-5-5 3 0 5 2 5 5Zm10-4c3 0 5-2 5-5-3 0-5 2-5 5Z"/></svg></div>
-      <h3 class="dash-empty-title">Comece adicionando seu tratamento</h3>
-      <p class="dash-empty-desc">
+      <h3 class="dash-empty-title" data-i18n="dashboard.emptyTodayTitle">Comece adicionando seu tratamento</h3>
+      <p class="dash-empty-desc" data-i18n="dashboard.emptyTodayDesc">
         Leva menos de 1 minuto. Você poderá registrar aplicações, receber lembretes e acompanhar seu histórico.
       </p>
       <div class="dash-empty-actions">
         <button type="button" class="btn-primary" id="empty-add-pep-btn" data-action="create-protocol">
-          Adicionar tratamento
+          <span data-i18n="dashboard.addPeptide">Adicionar tratamento</span>
         </button>
       </div>
       <div class="dash-empty-privacy">
-        Sem conta · dados neste aparelho
+        <span data-i18n="dashboard.disclaimer">Sem conta · dados salvos neste aparelho</span>
       </div>
     </div>
   `;

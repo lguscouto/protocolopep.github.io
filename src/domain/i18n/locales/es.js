@@ -152,6 +152,7 @@ export const es = {
     "recordsInConfiguration": "{count} registro(s) en esta configuración",
     "symptomsRecorded": "Síntomas registrados",
     "viewAll": "Ver todos",
+    "viewMoreDetails": "Ver más detalles",
     "applicationSaved": "Aplicación registrada",
     "weightSaved": "Peso registrado",
     "symptomSaved": "Síntoma registrado",
@@ -161,6 +162,10 @@ export const es = {
     "title": "Protocolo PEP",
     "notifications": "Recordatorios y Notificaciones",
     "themeToggle": "Cambiar Tema (Claro / Oscuro)"
+  },
+  "progress": {
+    "allShort": "Todo",
+    "customShort": "Personalizado"
   },
   "dashboard": {
     "bannerText": "Ayuda a mejorar PEP <b>Enviar sugerencia</b>",
@@ -198,10 +203,13 @@ export const es = {
     "vialBadge": "🧪 ~{doses} dosis",
     "vialBadgeTitle": "Saldo del vial activo",
     "unrecordAria": "Desmarcar dosis de {name}",
-    "recordAria": "Confirmar dosis de {name}"
+    "recordAria": "Confirmar dosis de {name}",
+    "lastSite": "Último sitio registrado: {site}",
+    "emptyTodayTitle": "Comienza agregando tu tratamiento",
+    "emptyTodayDesc": "Toma menos de un minuto. Puedes registrar aplicaciones, recibir recordatorios y revisar tu historial."
   },
   "week": {
-    "heading": "Visión Semanal",
+    "heading": "Próximos registros",
     "subheading": "Seguimiento y frecuencia de aplicaciones para los próximos 7 días",
     "timelineLabel": "Línea de tiempo de los próximos 7 días",
     "today": "Hoy",
@@ -225,6 +233,7 @@ export const es = {
     "emptyDesc": "Agrega un péptido al protocolo para ver las aplicaciones en orden cronológico."
   },
   "history": {
+    "moreActions": "Más acciones",
     "heading": "Historial de Aplicaciones",
     "periodLabel": "Período",
     "compoundLabel": "Compuesto",
@@ -281,7 +290,7 @@ export const es = {
   "calculator": {
     "title": "Calculadora de Reconstitución",
     "subtitle": "Calcula con seguridad la dilución y dosificación en jeringa",
-    "step1Title": "Cantidad de péptido en el vial",
+    "step1Title": "Cantidad del compuesto en el vial",
     "step1Desc": "Contenido total (mg)",
     "step2Title": "Agua bacteriostática añadida",
     "step2Desc": "Volumen de diluyente (ml)",
@@ -310,13 +319,14 @@ export const es = {
     "invalidData": "Datos de cálculo inválidos"
   },
   "settings": {
+    "backToMore": "Volver a Más",
     "heading": "Ajustes & Preferencias",
     "languageTitle": "Idioma de la Aplicación",
     "languageDesc": "Selecciona el idioma de visualización de Protocolo PEP",
     "accessibilityTitle": "Accesibilidad y Visión",
     "accessibilityDesc": "Optimizaciones para alto contraste y navegación asistida",
     "wcagBadge": "WCAG 2.1 AA",
-    "highContrastToggle": "👁️ Modo de Alto Contraste",
+    "highContrastToggle": "Modo de Alto Contraste",
     "siteRotationTitle": "Rotación de Sitios",
     "siteRotationDesc": "Siguiente en la rotación: <b>{site}</b> ({count} sitios activos)",
     "siteConfigureBtn": "Configurar",
@@ -326,7 +336,7 @@ export const es = {
     "widgetTitle": "Widget de Pantalla de Inicio",
     "widgetBadge": "WIDGET 3X2",
     "widgetDesc": "Añade el widget a la pantalla de inicio de Android manteniendo pulsado un espacio vacío y seleccionando Protocolo PEP.",
-    "widgetDiscreteToggle": "Modo Discreto (ocultar nombres de péptidos)",
+    "widgetDiscreteToggle": "Modo discreto (ocultar nombres de tratamientos)",
     "healthConnectTitle": "Health Connect (Android)",
     "healthConnectDesc": "Sincronización de peso y medidas corporales",
     "healthConnectHelp": "Integración opcional y privada con el subsistema de salud de Android para sincronizar registros de peso.",
@@ -598,6 +608,12 @@ export const es = {
     },
     "measurements": {
       "title": "Registro Corporal / Síntomas",
+      "externalTitle": "Registro externo (Health Connect)",
+      "editTitle": "Editar registro corporal / síntomas",
+      "weightTitle": "Registrar peso",
+      "symptomTitle": "¿Cómo te sientes?",
+      "fullTitle": "Registrar medidas y síntomas",
+      "externalWeightTitle": "Importado de Health Connect. Edita el peso o la hora en la aplicación de origen.",
       "subtitle": "Seguimiento personal autorreportado",
       "dateLabel": "Fecha",
       "timeLabel": "Hora",
@@ -737,6 +753,21 @@ export const es = {
     "statusDescDefault": "Requerir biometría o PIN del dispositivo para abrir la aplicación."
   },
   "dialogs": {
+    "emptyProtocolTitle": "Protocolo vacío",
+    "chooseSiteTitle": "Elegir sitio",
+    "requiredFieldTitle": "Campo obligatorio",
+    "selectTreatmentMessage": "Selecciona un tratamiento de la lista.",
+    "requiredDoseTitle": "Dosis obligatoria",
+    "requiredDoseMessage": "Introduce la dosis registrada antes de guardar la aplicación.",
+    "requiredDateMessage": "Introduce la fecha de aplicación.",
+    "invalidDataTitle": "Datos no válidos",
+    "invalidDataMessage": "Comprueba la hora, el estado y las unidades.",
+    "futureDateTitle": "Fecha no válida",
+    "futureDateMessage": "No se pueden registrar aplicaciones en fechas futuras.",
+    "noConcentrationTitle": "Concentración indefinida",
+    "noConcentrationFallback": "El vial no tiene concentración definida.",
+    "saveRecordErrorMsg": "No se pudo guardar el registro: {error}",
+    "storageUnavailable": "almacenamiento no disponible",
     "storageFailTitle": "Fallo en el almacenamiento",
     "unmarkErrorTitle": "Error al desmarcar",
     "saveErrorTitle": "Error al guardar",

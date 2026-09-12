@@ -100,14 +100,17 @@
           <h2 class="page-title" data-i18n="history.heading">Histórico</h2>
           <div class="hist-count" id="history-count"></div>
         </div>
-        <div class="history-actions">
-          <button type="button" class="btn-ghost" id="hist-retro-btn" data-i18n="history.addRetroactive" aria-label="Adicionar registro de dose retroativo">
-            + Dose Retroativa
-          </button>
-          <button type="button" class="btn-ghost" id="hist-report-btn" data-i18n="history.reportButton" aria-label="Gerar relatório de aplicações">
-            📄 Relatório
-          </button>
-        </div>
+        <details class="history-actions-disclosure">
+          <summary data-i18n="history.moreActions">Mais ações</summary>
+          <div class="history-actions">
+            <button type="button" class="btn-ghost" id="hist-retro-btn" data-i18n="history.addRetroactive" aria-label="Adicionar registro de dose retroativo">
+              + Dose Retroativa
+            </button>
+            <button type="button" class="btn-ghost" id="hist-report-btn" data-i18n="history.reportButton" aria-label="Gerar relatório de aplicações">
+              Relatório
+            </button>
+          </div>
+        </details>
         </div>
 
       <!-- Resumo descritivo de consistência da rotina (Fase 2) -->
@@ -141,7 +144,7 @@
       </div>
       <div class="progress-period-controls">
         <label for="progress-period"><span data-i18n="history.periodLabel">Período</span>
-          <select id="progress-period" class="txt">
+          <select id="progress-period" class="txt progress-period-select">
             <option value="30" selected data-i18n="history.thirtyDays">30 dias</option>
             <option value="90" data-i18n="history.ninetyDays">90 dias</option>
             <option value="all" data-i18n="history.allHistory">Todo o histórico</option>
@@ -152,10 +155,16 @@
           <label><span data-i18n="modals.report.startDate">Data inicial</span><input id="progress-start-date" class="txt" type="date"></label>
           <label><span data-i18n="modals.report.endDate">Data final</span><input id="progress-end-date" class="txt" type="date"></label>
         </div>
+        <div class="progress-period-chips" role="group" aria-label="Período do progresso">
+          <button type="button" class="chip progress-period-chip is-active" data-progress-period="30">30d</button>
+          <button type="button" class="chip progress-period-chip" data-progress-period="90">90d</button>
+          <button type="button" class="chip progress-period-chip" data-progress-period="all" data-i18n="progress.allShort">Tudo</button>
+          <button type="button" class="chip progress-period-chip" data-progress-period="custom" data-i18n="progress.customShort">Personalizado</button>
+        </div>
       </div>
       <div id="progress-overview"></div>
-      <div id="adherence-summary"></div>
       <div id="measurements-trend-summary"></div>
+      <div id="adherence-summary"></div>
       <div id="measurements-history-list"></div>
     </section>
 
@@ -169,7 +178,7 @@
       <div class="step">
         <div class="step-h">
           <span class="step-n">1</span>
-          <div class="lab"><span data-i18n="calculator.step1Title">Quantidade de peptídeo no frasco</span> <small data-i18n="calculator.step1Desc">Conteúdo total (mg)</small></div>
+          <div class="lab"><span data-i18n="calculator.step1Title">Quantidade do composto no frasco</span> <small data-i18n="calculator.step1Desc">Conteúdo total (mg)</small></div>
         </div>
         <div class="chips" id="calc-mg-chips">
           <button class="chip" data-v="2">2 mg</button>
@@ -245,7 +254,7 @@
         <!-- Trilha de Auditoria e Dupla Conferência (V02) -->
         <div class="calc-audit-card" id="calc-audit-card" style="display:none;margin-top:14px;">
           <div class="calc-audit-header">
-            <span data-i18n="tools.mathAudit">🔬 Conferência Matemática Auditável</span>
+            <span data-i18n="tools.mathAudit">Conferência matemática auditável</span>
           </div>
           <div class="calc-audit-formula" id="calc-audit-formula">--</div>
           <div class="calc-audit-trail" id="calc-audit-trail">--</div>
@@ -257,16 +266,16 @@
             + Usar no Protocolo
           </button>
           <button type="button" class="btn-sec" id="calc-save-vial-btn" data-i18n="calculator.saveVial" disabled>
-            🧪 Salvar Frasco
+            Salvar frasco
           </button>
         </div>
 
         <button type="button" class="btn-sec calc-research-button open-research-modal-btn" id="calc-research-btn">
-          <span aria-hidden="true">🔬</span> <span data-i18n="research.openResearchBtn">Consultar Base Científica</span>
+          <span class="icon icon-research" aria-hidden="true"></span> <span data-i18n="research.openResearchBtn">Consultar base científica</span>
         </button>
 
         <div style="margin-top:14px;padding:10px 12px;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:10px;font-size:11.5px;color:var(--muted);line-height:1.4;" data-i18n="calculator.disclaimer">
-          ⚠️ <b>Aviso Legal:</b> Ferramenta estritamente de cálculo e registro pessoal. Não constitui aconselhamento, prescrição ou recomendação clínica. Consulte sempre seu profissional de saúde.
+          <b>Aviso legal:</b> Ferramenta estritamente de cálculo e registro pessoal. Não constitui aconselhamento, prescrição ou recomendação clínica. Consulte sempre seu profissional de saúde.
         </div>
       </div>
     </section>
@@ -277,7 +286,16 @@
         <h2 class="page-title" data-i18n="nav.settings">Mais</h2>
       </div>
 
-      <section class="settings-section" aria-labelledby="settings-group-treatment">
+      <nav class="settings-list" id="settings-menu" aria-label="Seções de Mais">
+        <button type="button" class="settings-row" data-settings-target="treatment"><span class="settings-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></span><span class="settings-row-content"><strong data-i18n="experience.treatment">Tratamento</strong><small data-i18n="experience.treatmentDesc">Rotinas, frascos e locais</small></span><span class="settings-row-chevron" aria-hidden="true">›</span></button>
+        <button type="button" class="settings-row" data-settings-target="tools"><span class="settings-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m14 6 4 4M5 19l4-1 9-9-3-3-9 9-1 4ZM14 4l2-2 4 4-2 2"/></svg></span><span class="settings-row-content"><strong data-i18n="tools.title">Ferramentas</strong><small data-i18n="tools.desc">Calculadora, pesquisa e relatórios</small></span><span class="settings-row-chevron" aria-hidden="true">›</span></button>
+        <button type="button" class="settings-row" data-settings-target="data"><span class="settings-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4zM8 9h8M8 13h5"/></svg></span><span class="settings-row-content"><strong data-i18n="settings.dataSubtitle">Dados</strong><small data-i18n="settings.localFirstDesc">Backup e integrações locais</small></span><span class="settings-row-chevron" aria-hidden="true">›</span></button>
+        <button type="button" class="settings-row" data-settings-target="app"><span class="settings-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v3m0 12v3M3 12h3m12 0h3M5.6 5.6l2.1 2.1m8.6 8.6 2.1 2.1m0-12.8-2.1 2.1m-8.6 8.6-2.1 2.1M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z"/></svg></span><span class="settings-row-content"><strong data-i18n="experience.app">App</strong><small data-i18n="settings.accessibilityDesc">Idioma, aparência e segurança</small></span><span class="settings-row-chevron" aria-hidden="true">›</span></button>
+        <button type="button" class="settings-row" data-settings-target="help"><span class="settings-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 17v.01M9.4 9a2.7 2.7 0 1 1 4.9 1.6c-.9.9-2.3 1.2-2.3 2.9M5 4h14v16H5z"/></svg></span><span class="settings-row-content"><strong data-i18n="settings.aboutSubtitle">Ajuda</strong><small data-i18n="settings.aboutSubtitle">Termos, diagnósticos e contato</small></span><span class="settings-row-chevron" aria-hidden="true">›</span></button>
+      </nav>
+      <button type="button" class="settings-detail-back" id="settings-detail-back" hidden data-i18n="settings.backToMore">Voltar para Mais</button>
+
+      <section class="settings-section" id="settings-panel-treatment" data-settings-panel="treatment" aria-labelledby="settings-group-treatment">
         <h3 class="section-title settings-section-title" id="settings-group-treatment" data-i18n="experience.treatment">Tratamento</h3>
         <div class="panel settings-card">
           <div class="settings-card-header">
@@ -288,7 +306,7 @@
         </div>
       </section>
 
-      <section class="settings-section" aria-labelledby="settings-group-tools">
+      <section class="settings-section" id="settings-panel-tools" data-settings-panel="tools" aria-labelledby="settings-group-tools">
         <h3 class="section-title settings-section-title" id="settings-group-tools" data-i18n="tools.title">Ferramentas</h3>
         <div class="panel settings-card settings-tools-card">
           <div class="settings-card-header">
@@ -305,7 +323,7 @@
       </section>
 
       <!-- GRUPO 1: APARÊNCIA E ACESSIBILIDADE -->
-      <section class="settings-section" aria-labelledby="settings-group-app">
+      <section class="settings-section" id="settings-panel-app" data-settings-panel="app" aria-labelledby="settings-group-app">
         <h3 class="section-title settings-section-title" id="settings-group-app" data-i18n="experience.app">App</h3>
         
         <!-- Card de Seleção de Idioma / i18n -->
@@ -342,7 +360,7 @@
           </div>
           <div class="settings-toggle-row">
             <label for="high-contrast-toggle" class="settings-toggle-label">
-              <span data-i18n="settings.highContrastToggle">👁️ Modo de Alto Contraste</span>
+              <span data-i18n="settings.highContrastToggle">Modo de Alto Contraste</span>
             </label>
             <input type="checkbox" id="high-contrast-toggle" style="width:20px;height:20px;accent-color:var(--primary);cursor:pointer;" aria-checked="false">
           </div>
@@ -360,7 +378,7 @@
           </div>
           <div class="settings-toggle-row settings-toggle-row--spaced">
             <label for="app-lock-toggle" class="settings-toggle-label">
-              <span data-i18n="settings.securityToggle">🔒 Bloqueio por Biometria / PIN</span>
+              <span data-i18n="settings.securityToggle">Bloqueio por Biometria / PIN</span>
             </label>
             <input type="checkbox" id="app-lock-toggle" style="width:20px;height:20px;accent-color:var(--primary);cursor:pointer;">
           </div>
@@ -394,7 +412,7 @@
           </div>
           <div class="settings-toggle-row">
             <label for="widget-discrete-toggle" class="settings-toggle-label">
-              <span data-i18n="settings.widgetDiscreteToggle">👁️ Modo Discreto (ocultar nomes de peptídeos)</span>
+              <span data-i18n="settings.widgetDiscreteToggle">Modo Discreto (ocultar nomes de peptídeos)</span>
             </label>
             <input type="checkbox" id="widget-discrete-toggle" style="width:20px;height:20px;accent-color:var(--primary);cursor:pointer;">
           </div>
@@ -402,7 +420,7 @@
       </section>
 
       <!-- GRUPO 3: DADOS E INVENTÁRIO -->
-      <section class="settings-section" aria-labelledby="settings-group-data">
+      <section class="settings-section" id="settings-panel-data" data-settings-panel="data" aria-labelledby="settings-group-data">
         <h3 class="section-title settings-section-title" id="settings-group-data" data-i18n="settings.dataSubtitle">Dados e Inventário</h3>
 
         <!-- Card de Inventário de Frascos -->
@@ -427,7 +445,7 @@
               <div style="font-size:12px;color:var(--muted);" id="sites-summary-text" data-i18n="settings.siteRotationSub">Sequência de locais para alternância</div>
             </div>
             <button type="button" class="btn-primary settings-header-action" id="open-sites-settings-btn" data-i18n="settings.siteConfigureBtn">
-              ⚙ Configurar
+              Configurar
             </button>
           </div>
         </div>
@@ -446,16 +464,16 @@
           </div>
           <div class="settings-toggle-row settings-toggle-row--spaced">
             <label for="hc-enable-toggle" class="settings-toggle-label">
-              <span data-i18n="settings.healthConnectToggle">🩺 Sincronizar com Health Connect</span>
+              <span data-i18n="settings.healthConnectToggle">Sincronizar com Health Connect</span>
             </label>
             <input type="checkbox" id="hc-enable-toggle" style="width:20px;height:20px;accent-color:var(--primary);cursor:pointer;">
           </div>
           <div class="settings-actions settings-actions--pair settings-actions--health-connect">
             <button type="button" class="btn-primary" id="hc-sync-btn" style="display:none;font-size:12.5px;padding:8px 12px;" data-i18n="settings.healthConnectSyncBtn">
-              🔄 Sincronizar Agora
+              Sincronizar agora
             </button>
             <button type="button" class="btn-sec" id="hc-settings-btn" style="display:none;font-size:12.5px;padding:8px 12px;" data-i18n="settings.healthConnectSettingsBtn">
-              ⚙️ Configurações
+              Configurações
             </button>
           </div>
         </div>
@@ -481,14 +499,14 @@
       </section>
 
       <!-- GRUPO 4: SOBRE O APP E AJUDA -->
-      <section class="settings-section" aria-labelledby="settings-group-about">
+      <section class="settings-section" id="settings-panel-help" data-settings-panel="help" aria-labelledby="settings-group-about">
         <h3 class="section-title settings-section-title" id="settings-group-about" data-i18n="settings.aboutSubtitle">Ajuda</h3>
 
         <div class="panel settings-card">
           <div class="settings-card-header settings-card-header--about">
             <div class="settings-card-copy">
               <div style="font-weight:700;font-family:var(--display);" data-i18n="settings.appInfo">Protocolo PEP Android</div>
-              <div style="font-size:12px;color:var(--muted);" data-i18n="settings.appVersion">Versão 3.9.9 · Local-First Edition</div>
+              <div style="font-size:12px;color:var(--muted);" data-i18n="settings.appVersion">Versão 3.9.10 · Local-First Edition</div>
             </div>
             <div class="settings-card-actions">
               <button type="button" class="btn-ghost btn-ghost--compact" id="open-diag-btn" aria-label="Abrir diagnósticos do sistema" data-i18n="settings.diagnosticsBtn">
@@ -815,7 +833,7 @@
         </div>
 
         <div class="form-field retro-advanced" id="retro-treatment-field">
-          <label for="retro-pep-select" class="form-field-label" data-i18n="modals.retro.peptideLabel">Peptídeo</label>
+          <label for="retro-pep-select" class="form-field-label" data-i18n="modals.retro.peptideLabel">Tratamento</label>
           <select class="form-field-control" id="retro-pep-select"></select>
         </div>
 

@@ -14,6 +14,10 @@ import { resolveProtocolAt } from "../domain/protocol-history.js";
 import { accessibilityService } from "../services/accessibility.js";
 
 const esc = escapeHtml;
+const tr = (key, fallback, params) => {
+  const value = i18nService.t(key, params);
+  return value === key ? fallback : value;
+};
 let editingContext = null;
 let saving = false;
 
@@ -34,8 +38,8 @@ export function openRetroLogModal(prefillDate = null, prefillPepId = null, { sto
   const peptides = storage.getPeptides();
   if (peptides.length === 0 && !editingContext) {
     dialogService.alert({
-      title: "Protocolo Vazio",
-      message: "Cadastre ao menos um peptídeo no seu protocolo antes de registrar uma aplicação."
+      title: tr("dialogs.emptyProtocolTitle", "Protocolo Vazio"),
+      message: tr("dialogs.noPeptideRegistered", "Cadastre ao menos um tratamento no seu protocolo antes de registrar uma aplicação.")
     });
     return;
   }
@@ -238,8 +242,8 @@ export async function saveRetroLog({ doseService, storage: storageForRoute, date
   const isOral = (selectedProtocol?.administrationRoute || editingContext?.log.administrationRoute) === "oral";
   if (status === "applied" && !isOral && modal?.dataset.requireSiteSelection === "true" && !siteVal) {
     void dialogService.alert({
-      title: "Escolha o local",
-      message: "Confirme onde você aplicou para manter seu histórico organizado. Se não souber, use o registro retroativo no Histórico.",
+      title: tr("dialogs.chooseSiteTitle", "Escolha o local"),
+      message: tr("dialogs.selectSiteWarning", "Confirme onde você aplicou para manter seu histórico organizado. Se não souber, use o registro retroativo no Histórico."),
       isDanger: false
     });
     return;
@@ -247,16 +251,16 @@ export async function saveRetroLog({ doseService, storage: storageForRoute, date
 
   if (!pepId) {
     dialogService.alert({
-      title: "Campo Obrigatório",
-      message: "Selecione um peptídeo da lista."
+      title: tr("dialogs.requiredFieldTitle", "Campo Obrigatório"),
+      message: tr("dialogs.selectTreatmentMessage", "Selecione um tratamento da lista.")
     });
     return;
   }
 
   if (!editingContext && status === "applied" && !doseVal) {
     void dialogService.alert({
-      title: "Dose obrigatória",
-      message: "Informe a dose registrada antes de salvar a aplicação.",
+      title: tr("dialogs.requiredDoseTitle", "Dose obrigatória"),
+      message: tr("dialogs.requiredDoseMessage", "Informe a dose registrada antes de salvar a aplicação."),
       isDanger: true
     });
     return;
@@ -264,22 +268,22 @@ export async function saveRetroLog({ doseService, storage: storageForRoute, date
 
   if (!isValidDateKey(dKey)) {
     dialogService.alert({
-      title: "Campo Obrigatório",
-      message: "Informe a data da aplicação."
+      title: tr("dialogs.requiredFieldTitle", "Campo Obrigatório"),
+      message: tr("dialogs.requiredDateMessage", "Informe a data da aplicação.")
     });
     return;
   }
 
   if (!isValidTime(timeVal) || (!isOral && selectedProtocol?.administrationUnit !== "ml" && uiVal === null) || !DOSE_STATUSES.includes(status)) {
-    void dialogService.alert({ title: "Dados inválidos", message: "Confira o horário, o estado e as unidades informadas." });
+    void dialogService.alert({ title: tr("dialogs.invalidDataTitle", "Dados inválidos"), message: tr("dialogs.invalidDataMessage", "Confira o horário, o estado e as unidades informadas.") });
     return;
   }
 
   const todayKey = dateKey(new Date());
   if (dKey > todayKey) {
     dialogService.alert({
-      title: "Data Inválida",
-      message: "Não é possível registrar aplicações em datas futuras."
+      title: tr("dialogs.futureDateTitle", "Data Inválida"),
+      message: tr("dialogs.futureDateMessage", "Não é possível registrar aplicações em datas futuras.")
     });
     return;
   }
@@ -312,9 +316,9 @@ export async function saveRetroLog({ doseService, storage: storageForRoute, date
 
     if (!context && !res.success && res.error === "VIAL_MISSING_CONCENTRATION") {
       const confirmHistOnly = await dialogService.confirm({
-        title: "Concentração Indefinida",
-        message: `${res.message || "O frasco não possui concentração definida."}\n\nDeseja salvar a aplicação apenas no histórico sem debitar estoque?`,
-        confirmText: "Salvar no Histórico",
+        title: tr("dialogs.noConcentrationTitle", "Concentração Indefinida"),
+        message: tr("dialogs.noConcentrationMsg", `${res.message || tr("dialogs.noConcentrationFallback", "O frasco não possui concentração definida.")}\n\nDeseja salvar a aplicação apenas no histórico sem debitar estoque?`, { message: res.message || tr("dialogs.noConcentrationFallback", "O frasco não possui concentração definida.") }),
+        confirmText: tr("dialogs.logInHistoryBtn", "Salvar no Histórico"),
         cancelText: "Cancelar",
         isDanger: false
       });
@@ -329,7 +333,7 @@ export async function saveRetroLog({ doseService, storage: storageForRoute, date
     if (!res.success) {
       dialogService.alert({
         title: "Erro",
-        message: "Não foi possível salvar o registro: " + (res.message || res.error || "armazenamento indisponível"),
+        message: tr("dialogs.saveRecordErrorMsg", `Não foi possível salvar o registro: ${res.message || res.error || tr("dialogs.storageUnavailable", "armazenamento indisponível")}`, { error: res.message || res.error || tr("dialogs.storageUnavailable", "armazenamento indisponível") }),
         isDanger: true
       });
       return;

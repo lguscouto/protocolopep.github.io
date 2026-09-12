@@ -24,6 +24,7 @@ import { haptics } from "../services/haptics.js";
 import { dialogService } from "../services/dialog.js";
 import { i18nService } from "../services/i18n.js";
 import { dateToKey } from "../domain/schedule.js";
+import { accessibilityService } from "../services/accessibility.js";
 
 const esc = escapeHtml;
 
@@ -57,6 +58,12 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
   let selectedMood = null;
   let mode = "full";
   let saving = false;
+
+  const closeMeasurementModal = () => {
+    modal?.classList.remove("on");
+    modal?.setAttribute("aria-hidden", "true");
+    accessibilityService.restoreFocus();
+  };
 
   function updateLevelButtons() {
     for (let i = 1; i <= 5; i++) {
@@ -129,11 +136,11 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
     const titleEl = document.getElementById("measurement-modal-title");
     if (titleEl) {
       if (isExternal) {
-        titleEl.textContent = "Registro Externo (Health Connect)";
+        titleEl.textContent = i18nService.t("modals.measurements.externalTitle");
       } else {
-        titleEl.textContent = entry ? "Editar registro corporal / sintomas"
-          : mode === "weight" ? "Registrar peso"
-            : mode === "symptom" ? "Como você está?" : "Registrar medidas e sintomas";
+        titleEl.textContent = entry ? i18nService.t("modals.measurements.editTitle")
+          : mode === "weight" ? i18nService.t("modals.measurements.weightTitle")
+            : mode === "symptom" ? i18nService.t("modals.measurements.symptomTitle") : i18nService.t("modals.measurements.fullTitle");
       }
     }
 
@@ -153,7 +160,7 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
       weightInput.value = entry && entry.weightKg !== null ? entry.weightKg : "";
       weightInput.disabled = isExternal;
       weightInput.title = isExternal
-        ? "Registro importado do Health Connect. Para alterar peso ou horário, utilize o aplicativo de origem."
+        ? i18nService.t("modals.measurements.externalWeightTitle")
         : "";
     }
     [[abdomenInput, "abdomen"], [waistInput, "waist"], [hipsInput, "hips"]].forEach(([input, key]) => {
@@ -164,8 +171,8 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
     });
     if (circumferencesHelp) {
       circumferencesHelp.textContent = isExternal
-        ? "As circunferências não são importadas pelo Health Connect. Crie um registro local para adicioná-las."
-        : "Medidas opcionais em centímetros, registradas somente neste dispositivo.";
+        ? i18nService.t("modals.measurements.externalCircumferencesHelp")
+        : i18nService.t("modals.measurements.circumferencesHelp");
     }
     if (notesInput) notesInput.value = entry ? (entry.notes || "") : "";
 
@@ -186,6 +193,8 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
     renderSymptomChips();
     document.querySelector(".measurement-circumferences")?.toggleAttribute("open", mode === "full" && Boolean(entry));
     modal.classList.add("on");
+    modal.setAttribute("aria-hidden", "false");
+    accessibilityService.trapFocus(modal);
     requestAnimationFrame(() => {
       const target = mode === "weight" ? weightInput
         : mode === "symptom" ? chipsContainer?.querySelector("button") : dateInput;
@@ -338,13 +347,13 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
   if (closeBtn && modal) {
     closeBtn.addEventListener("click", () => {
       haptics.light();
-      modal.classList.remove("on");
+      closeMeasurementModal();
     });
   }
 
   if (modal) {
     modal.addEventListener("click", (e) => {
-      if (e.target === modal) modal.classList.remove("on");
+      if (e.target === modal) closeMeasurementModal();
     });
   }
 
@@ -460,7 +469,7 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
         const res = storage.deleteMeasurement(editingEntryId);
         if (res.success) {
           haptics.warning();
-          modal.classList.remove("on");
+          closeMeasurementModal();
           renderTrendSummary();
           renderMeasurementsHistory();
           onMeasurementsChange();
@@ -526,7 +535,7 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
       }
 
       haptics.success();
-      modal.classList.remove("on");
+      closeMeasurementModal();
       renderTrendSummary();
       renderMeasurementsHistory();
       onMeasurementsChange({ type: mode === "symptom" ? "symptom" : mode === "weight" ? "weight" : "measurement", entry: res.entry || entryPayload });

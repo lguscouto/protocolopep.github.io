@@ -79,35 +79,8 @@ function administrationLabel(item = {}) {
   return item.ui !== null && item.ui !== undefined ? `${item.ui} UI` : "";
 }
 
-function showToast(msg) {
-  if (!msg) return;
-  const existing = document.getElementById("pep-toast");
-  if (existing) existing.remove();
-  const toast = document.createElement("div");
-  toast.id = "pep-toast";
-  toast.textContent = msg;
-  toast.style.cssText = `
-    position: fixed;
-    bottom: calc(80px + var(--app-safe-bottom));
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--surface3);
-    color: var(--text);
-    padding: 10px 18px;
-    border-radius: 20px;
-    border: 1px solid var(--border2);
-    font-size: 13px;
-    font-weight: 600;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
-    z-index: 9999;
-    pointer-events: none;
-    transition: opacity 0.3s ease;
-  `;
-  document.body.appendChild(toast);
-  setTimeout(() => {
-    toast.style.opacity = "0";
-    setTimeout(() => toast.remove(), 300);
-  }, 2500);
+function showToast(msg, options = {}) {
+  showActionFeedback(msg, options);
 }
 
 const dateKey = dateToKey;
@@ -154,6 +127,7 @@ let shareExportedFile = null;
 let recordBackupExport = null;
 let renderBackupStatusUI = () => {};
 let widgetService = null;
+let settingsMenuUI = null;
 const performanceIndexes = createRevisionedPerformanceIndexes(() => storage.getRevision());
 
 const deferredDom = new Map();
@@ -202,7 +176,7 @@ function prepareDeferredDom() {
   parkFeatureDom("history", { childHosts: ["#view-history"] });
   parkFeatureDom("measurements", { elements: ["#measurement-modal"] });
   parkFeatureDom("tools", { childHosts: ["#view-calc"], elements: ["#research-modal", "#compound-detail-modal"] });
-  parkFeatureDom("settings", { elements: ["#backup-preview-modal", "#diag-modal", "#vial-modal", "#vial-history-modal", "#sites-modal"] });
+  parkFeatureDom("settings", { elements: ["#backup-preview-modal", "#diag-modal", "#vial-modal", "#vial-history-modal", "#sites-modal", "#settings-panel-treatment", "#settings-panel-tools", "#settings-panel-app", "#settings-panel-data", "#settings-panel-help"] });
   parkFeatureDom("reporting", { elements: ["#report-modal"] });
 }
 
@@ -299,6 +273,7 @@ const progressFeature = createFeatureLoader(async () => {
 const settingsFeature = createFeatureLoader(async () => {
   restoreFeatureDom("settings");
   applyTranslations(document, i18nService);
+  settingsMenuUI ||= setupSettingsMenu();
   const [backupPreview, backupStatus, exportService, diagnostics, inventory, sites, healthService, healthUi, widget] = await Promise.all([
     import("./ui/backup-preview.js"),
     import("./ui/backup-status.js"),
@@ -340,7 +315,7 @@ const settingsFeature = createFeatureLoader(async () => {
   diagnostics.setupDiagnosticsModal({
     storage,
     getNotificationsActive: () => (window.pepNotifications ? window.pepNotifications.hasActiveReminders() : false),
-    appVersion: "3.9.9"
+    appVersion: "3.9.10"
   });
   const widgetToggle = document.getElementById("widget-discrete-toggle");
   if (widgetToggle && widgetToggle.dataset.widgetBound !== "true") {
@@ -661,6 +636,7 @@ async function switchTab(tabId) {
   const primaryTab = normalized.tab;
   const journeySegment = normalized.segment;
   const previousTab = currentTab;
+  if (previousTab === "settings" && primaryTab !== "settings") settingsMenuUI?.reset?.();
   if (journeySegment === "upcoming") restoreFeatureDom("agenda");
   if (journeySegment === "history") restoreFeatureDom("history");
   if (primaryTab === "calc") restoreFeatureDom("tools");
@@ -974,6 +950,7 @@ function renderToday() {
     upcoming,
     locale: i18nService.getLocale()
   });
+  focusModel.locale = i18nService.getLocale();
 
   if (heroEl) {
     heroEl.dataset.state = focusModel.state;
@@ -1773,6 +1750,19 @@ function setupProgressFilters() {
       if (currentTab === "progress") viewCoordinator.render("progress", { force: true });
     });
   });
+  const select = document.getElementById("progress-period");
+  const chips = Array.from(document.querySelectorAll("[data-progress-period]"));
+  const syncPeriodChips = () => chips.forEach((chip) => chip.classList.toggle("is-active", chip.dataset.progressPeriod === (select?.value || "30")));
+  chips.forEach((chip) => {
+    chip.addEventListener("click", () => {
+      if (!select) return;
+      select.value = chip.dataset.progressPeriod || "30";
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+      syncPeriodChips();
+    });
+  });
+  select?.addEventListener("change", syncPeriodChips);
+  syncPeriodChips();
 }
 
 function renderProgress() {
@@ -1792,6 +1782,35 @@ function renderSettingsTreatments() {
   if (!host) return;
   host.innerHTML = "";
   renderProtocolList(host, storage.getPeptides(), openEditModal);
+}
+
+function setupSettingsMenu() {
+  const menu = document.getElementById("settings-menu");
+  const back = document.getElementById("settings-detail-back");
+  const sections = Array.from(document.querySelectorAll("[data-settings-panel]"));
+  if (!menu || !back || !sections.length) return { reset() {} };
+  const rows = Array.from(menu.querySelectorAll("[data-settings-target]"));
+  const showMenu = (focusRow = null) => {
+    menu.hidden = false;
+    back.hidden = true;
+    sections.forEach((section) => { section.hidden = true; section.classList.remove("is-active"); });
+    focusRow?.focus({ preventScroll: true });
+  };
+  const openPanel = (target, row) => {
+    menu.hidden = true;
+    back.hidden = false;
+    sections.forEach((section) => {
+      const active = section.dataset.settingsPanel === target;
+      section.hidden = !active;
+      section.classList.toggle("is-active", active);
+    });
+    sections.find((section) => section.dataset.settingsPanel === target)?.querySelector("h3")?.focus?.({ preventScroll: true });
+    if (!sections.find((section) => section.dataset.settingsPanel === target)) row?.focus({ preventScroll: true });
+  };
+  rows.forEach((row) => row.addEventListener("click", () => openPanel(row.dataset.settingsTarget, row)));
+  back.addEventListener("click", () => showMenu(rows[0]));
+  showMenu();
+  return { reset: () => showMenu() };
 }
 
 function deleteHistoryEntry(dKey, pId, idx) {

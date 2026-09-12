@@ -152,6 +152,7 @@ export const ptBR = {
     "recordsInConfiguration": "{count} registro(s) nessa configuração",
     "symptomsRecorded": "Sintomas registrados",
     "viewAll": "Ver todos",
+    "viewMoreDetails": "Ver mais detalhes",
     "applicationSaved": "Aplicação registrada",
     "weightSaved": "Peso registrado",
     "symptomSaved": "Sintoma registrado",
@@ -161,6 +162,10 @@ export const ptBR = {
     "title": "Protocolo PEP",
     "notifications": "Lembretes e Notificações",
     "themeToggle": "Alternar Tema (Claro / Escuro)"
+  },
+  "progress": {
+    "allShort": "Tudo",
+    "customShort": "Personalizado"
   },
   "dashboard": {
     "bannerText": "Ajude a melhorar o PEP <b>Enviar sugestão</b>",
@@ -198,10 +203,13 @@ export const ptBR = {
     "vialBadge": "🧪 ~{doses} doses",
     "vialBadgeTitle": "Saldo no frasco ativo",
     "unrecordAria": "Desmarcar dose de {name}",
-    "recordAria": "Confirmar dose de {name}"
+    "recordAria": "Confirmar dose de {name}",
+    "lastSite": "Último local registrado: {site}",
+    "emptyTodayTitle": "Comece adicionando seu tratamento",
+    "emptyTodayDesc": "Leva menos de 1 minuto. Você poderá registrar aplicações, receber lembretes e acompanhar seu histórico."
   },
   "week": {
-    "heading": "Visão Semanal",
+    "heading": "Próximos registros",
     "subheading": "Acompanhamento e frequência das aplicações nos próximos 7 dias",
     "timelineLabel": "Linha do tempo dos próximos 7 dias",
     "today": "Hoje",
@@ -225,6 +233,7 @@ export const ptBR = {
     "emptyDesc": "Adicione um peptídeo ao protocolo para visualizar as aplicações em ordem cronológica."
   },
   "history": {
+    "moreActions": "Mais ações",
     "heading": "Histórico de Aplicações",
     "periodLabel": "Período",
     "compoundLabel": "Composto",
@@ -281,7 +290,7 @@ export const ptBR = {
   "calculator": {
     "title": "Calculadora de Reconstituição",
     "subtitle": "Calcule com segurança a diluição e dosagem da seringa",
-    "step1Title": "Quantidade de peptídeo no frasco",
+    "step1Title": "Quantidade do composto no frasco",
     "step1Desc": "Conteúdo total (mg)",
     "step2Title": "Água bacteriostática adicionada",
     "step2Desc": "Volume de diluente (ml)",
@@ -310,13 +319,14 @@ export const ptBR = {
     "invalidData": "Dados de cálculo inválidos"
   },
   "settings": {
+    "backToMore": "Voltar para Mais",
     "heading": "Ajustes & Preferências",
     "languageTitle": "Idioma do Aplicativo",
     "languageDesc": "Selecione o idioma de exibição do Protocolo PEP",
     "accessibilityTitle": "Acessibilidade & Visão",
     "accessibilityDesc": "Otimizações para alto contraste e navegação assistiva",
     "wcagBadge": "WCAG 2.1 AA",
-    "highContrastToggle": "👁️ Modo de Alto Contraste",
+    "highContrastToggle": "Modo de Alto Contraste",
     "siteRotationTitle": "Locais de Aplicação",
     "siteRotationDesc": "Próximo na sua rotação: <b>{site}</b> ({count} locais ativos)",
     "siteConfigureBtn": "Configurar",
@@ -598,6 +608,12 @@ export const ptBR = {
     },
     "measurements": {
       "title": "Registro Corporal / Sintomas",
+      "externalTitle": "Registro externo (Health Connect)",
+      "editTitle": "Editar registro corporal / sintomas",
+      "weightTitle": "Registrar peso",
+      "symptomTitle": "Como você está?",
+      "fullTitle": "Registrar medidas e sintomas",
+      "externalWeightTitle": "Registro importado do Health Connect. Para alterar peso ou horário, utilize o aplicativo de origem.",
       "subtitle": "Acompanhamento pessoal autorrelatado",
       "dateLabel": "Data",
       "timeLabel": "Hora",
@@ -737,6 +753,21 @@ export const ptBR = {
     "statusDescDefault": "Exigir biometria ou PIN do dispositivo para abrir o aplicativo."
   },
   "dialogs": {
+    "emptyProtocolTitle": "Protocolo vazio",
+    "chooseSiteTitle": "Escolha o local",
+    "requiredFieldTitle": "Campo obrigatório",
+    "selectTreatmentMessage": "Selecione um tratamento da lista.",
+    "requiredDoseTitle": "Dose obrigatória",
+    "requiredDoseMessage": "Informe a dose registrada antes de salvar a aplicação.",
+    "requiredDateMessage": "Informe a data da aplicação.",
+    "invalidDataTitle": "Dados inválidos",
+    "invalidDataMessage": "Confira o horário, o estado e as unidades informadas.",
+    "futureDateTitle": "Data inválida",
+    "futureDateMessage": "Não é possível registrar aplicações em datas futuras.",
+    "noConcentrationTitle": "Concentração indefinida",
+    "noConcentrationFallback": "O frasco não possui concentração definida.",
+    "saveRecordErrorMsg": "Não foi possível salvar o registro: {error}",
+    "storageUnavailable": "armazenamento indisponível",
     "storageFailTitle": "Falha no armazenamento",
     "unmarkErrorTitle": "Erro ao desmarcar",
     "saveErrorTitle": "Erro ao gravar",
