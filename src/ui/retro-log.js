@@ -16,11 +16,13 @@ const esc = escapeHtml;
 let editingContext = null;
 let saving = false;
 
-export function openRetroLogModal(prefillDate = null, prefillPepId = null, { storage, dateKey, editingLog = null, requireSiteSelection = false, initialStatus = "applied" }) {
+export function openRetroLogModal(prefillDate = null, prefillPepId = null, { storage, dateKey, editingLog = null, requireSiteSelection = false, initialStatus = "applied", mode = "full" }) {
   const modal = document.getElementById("retro-log-modal");
   if (!modal || saving) return;
   if (!modal.dataset) modal.dataset = {};
   modal.dataset.requireSiteSelection = requireSiteSelection && !editingLog ? "true" : "false";
+  modal.dataset.mode = editingLog ? "full" : (mode === "compact" ? "compact" : "full");
+  modal.dataset.expanded = "false";
 
   editingContext = editingLog?.id ? {
     log: JSON.parse(JSON.stringify(editingLog)),
@@ -158,6 +160,18 @@ export function openRetroLogModal(prefillDate = null, prefillPepId = null, { sto
         return `<li>${esc(when)}: ${esc(status)} · ${esc(previous.time || "--:--")} · ${esc(prior.dose === "" ? "--" : prior.dose)} (${esc(prior.ui ?? "--")} UI)${previous.site ? ` · ${esc(previous.site)}` : ""}${previous.note ? `<br>${esc(i18nService.t("modals.retro.prevNote"))} ${esc(previous.note)}` : ""}${previous.statusReason ? `<br>${esc(i18nService.t("modals.retro.prevReason"))} ${esc(previous.statusReason)}` : ""}</li>`;
       }).join("")}</ol>` : `<p>${esc(i18nService.t("modals.retro.noPriorCorrections"))}</p>`}
     ` : "";
+  }
+
+  const moreToggle = document.getElementById("retro-more-toggle");
+  if (moreToggle) {
+    moreToggle.hidden = modal.dataset.mode !== "compact";
+    moreToggle.setAttribute("aria-expanded", "false");
+    moreToggle.onclick = () => {
+      const expanded = modal.dataset.expanded !== "true";
+      modal.dataset.expanded = String(expanded);
+      moreToggle.setAttribute("aria-expanded", String(expanded));
+      moreToggle.textContent = expanded ? "Ocultar opções" : "Mais opções";
+    };
   }
 
   modal.classList.add("on");

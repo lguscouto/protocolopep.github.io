@@ -162,21 +162,18 @@ export function renderDashboardFocusHTML(viewModel) {
 export function renderEmptyDashboardHTML() {
   return `
     <div class="dash-empty-card" id="dash-empty-state">
-      <div class="dash-empty-icon" aria-hidden="true">🌱</div>
-      <h3 class="dash-empty-title">Seu protocolo começa aqui</h3>
+      <div class="dash-empty-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21V9M7 14c-3 0-5-2-5-5 3 0 5 2 5 5Zm10-4c3 0 5-2 5-5-3 0-5 2-5 5Z"/></svg></div>
+      <h3 class="dash-empty-title">Comece adicionando seu tratamento</h3>
       <p class="dash-empty-desc">
-        Cadastre os compostos da sua rotina para acompanhar horários, doses e rotação de aplicação de forma 100% privada e local.
+        Leva menos de 1 minuto. Você poderá registrar aplicações, receber lembretes e acompanhar seu histórico.
       </p>
       <div class="dash-empty-actions">
         <button type="button" class="btn-primary" id="empty-add-pep-btn" data-action="create-protocol">
-          + Criar meu protocolo
-        </button>
-        <button type="button" class="btn-secondary" id="empty-calc-btn" data-action="open-calc">
-          Abrir ferramentas
+          Adicionar tratamento
         </button>
       </div>
       <div class="dash-empty-privacy">
-        🔒 Dados salvos exclusivamente neste aparelho
+        Sem conta · dados neste aparelho
       </div>
     </div>
   `;

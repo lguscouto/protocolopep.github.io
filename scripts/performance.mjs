@@ -208,8 +208,8 @@ try {
 
   const features = {};
   for (const feature of [
-    ["agenda", "tab-week", "#view-week"],
-    ["historico", "tab-history", "#view-history"],
+    ["jornada", "tab-journey", "#view-week"],
+    ["progresso", "tab-progress", "#view-progress"],
     ["mais", "tab-settings", "#view-settings"]
   ]) {
     const values = [];

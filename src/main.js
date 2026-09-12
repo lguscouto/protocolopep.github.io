@@ -27,8 +27,7 @@ import {
   createDoseCardViewModel,
   createDashboardFocusViewModel,
   renderDashboardFocusHTML,
-  renderEmptyDashboardHTML,
-  renderUpcomingHTML
+  renderEmptyDashboardHTML
 } from "./ui/dashboard.js";
 import { createPeptide, validatePeptide } from "./domain/protocol.js";
 import { buildDailyApplicationProgress, parseUnits, doseEntries, doseStatus, summarizeDoseEntries } from "./domain/dose-state.js";
@@ -54,6 +53,10 @@ import { setupAccessibilityUI } from "./ui/accessibility.js";
 import { setupModalController } from "./ui/modal-controller.js";
 import { DoseService } from "./services/dose-service.js";
 import { openRetroLogModal as openRetroModal, saveRetroLog as saveRetro } from "./ui/retro-log.js";
+import { buildQuickRegisterContext } from "./domain/quick-register.js";
+import { setupQuickRegister } from "./ui/quick-register.js";
+import { showActionFeedback } from "./ui/action-feedback.js";
+import { createJourney, normalizeTabTarget } from "./ui/journey.js";
 import { App } from "@capacitor/app";
 
 export { accessibilityService };
@@ -128,8 +131,11 @@ let appLockUI = null;
 let healthConnectUI = null;
 let i18nUI = null;
 let researchUI = null;
+let quickRegisterUI = null;
+let journeyUI = null;
 let adherencePeriodDays = 7;
 const historyFilters = { period: "30", compoundId: "all", eventType: "all", query: "", startDate: null, endDate: null };
+const progressFilters = { period: "30", startDate: null, endDate: null };
 let historyBodyMetric = "weight";
 let historyRevisionCompoundId = "";
 
@@ -138,6 +144,8 @@ let buildReviewModel = null;
 let buildBodyMetricChartModel = null;
 let calculateWeightGoalIndicators = null;
 let buildProtocolRevisionMarkerModel = null;
+let buildProgressSummary = null;
+let renderProgressOverviewHTML = null;
 let renderBodyMetricChart = null;
 let calculateAdherenceSummary = null;
 let renderAdherenceSummaryHTML = null;
@@ -191,7 +199,8 @@ function restoreFeatureDom(feature) {
 
 function prepareDeferredDom() {
   parkFeatureDom("agenda", { childHosts: ["#view-week"] });
-  parkFeatureDom("history", { childHosts: ["#view-history"], elements: ["#measurement-modal"] });
+  parkFeatureDom("history", { childHosts: ["#view-history"] });
+  parkFeatureDom("measurements", { elements: ["#measurement-modal"] });
   parkFeatureDom("tools", { childHosts: ["#view-calc"], elements: ["#research-modal", "#compound-detail-modal"] });
   parkFeatureDom("settings", { elements: ["#backup-preview-modal", "#diag-modal", "#vial-modal", "#vial-history-modal", "#sites-modal"] });
   parkFeatureDom("reporting", { elements: ["#report-modal"] });
@@ -223,6 +232,21 @@ const agendaFeature = createFeatureLoader(async () => {
   document.getElementById("view-week")?.setAttribute("data-feature-ready", "true");
 });
 
+const measurementsFeature = createFeatureLoader(async () => {
+  const { setupMeasurementsUI } = await import("./ui/measurements.js");
+  restoreFeatureDom("measurements");
+  applyTranslations(document, i18nService);
+  measurementsUI = setupMeasurementsUI({
+    storage,
+    onMeasurementsChange: ({ type } = {}) => {
+      invalidateViews("today", "history", "progress");
+      healthConnectUI?.triggerAutoSync?.();
+      showActionFeedback(i18nService.t(type === "weight" ? "experience.weightSaved" : type === "symptom" ? "experience.symptomSaved" : "experience.measurementsSaved"));
+    }
+  });
+  return measurementsUI;
+});
+
 const historyFeature = createFeatureLoader(async () => {
   restoreFeatureDom("history");
   applyTranslations(document, i18nService);
@@ -243,17 +267,33 @@ const historyFeature = createFeatureLoader(async () => {
   renderBodyMetricChart = bodyMetricChartUi.renderBodyMetricChart;
   calculateAdherenceSummary = adherence.calculateAdherenceSummary;
   renderAdherenceSummaryHTML = adherenceUi.renderAdherenceSummaryHTML;
-  measurementsUI = measurementsModule.setupMeasurementsUI({
-    storage,
-    onMeasurementsChange: () => {
-      invalidateViews("history");
-      if (healthConnectUI?.triggerAutoSync) healthConnectUI.triggerAutoSync();
-    }
-  });
+  await measurementsFeature.load();
+  measurementsUI.bindHistoryControls();
   setupHistoryFilters();
   bindRestoredCoreControls();
   void reportingFeature.load();
   document.getElementById("view-history")?.setAttribute("data-feature-ready", "true");
+});
+
+const progressFeature = createFeatureLoader(async () => {
+  const [report, adherence, adherenceUi, measurementsDomain, revisionMarkers, bodyMetricChartUi, progressDomain, progressUi] = await Promise.all([
+    import("./domain/report.js"), import("./domain/adherence.js"), import("./ui/adherence.js"),
+    import("./domain/measurements.js"), import("./domain/protocol-revision-markers.js"), import("./ui/body-metric-chart.js"),
+    import("./domain/progress.js"), import("./ui/progress.js")
+  ]);
+  buildReviewModel = report.buildReviewModel;
+  buildBodyMetricChartModel = measurementsDomain.buildBodyMetricChartModel;
+  calculateWeightGoalIndicators = measurementsDomain.calculateWeightGoalIndicators;
+  buildProtocolRevisionMarkerModel = revisionMarkers.buildProtocolRevisionMarkerModel;
+  renderBodyMetricChart = bodyMetricChartUi.renderBodyMetricChart;
+  calculateAdherenceSummary = adherence.calculateAdherenceSummary;
+  renderAdherenceSummaryHTML = adherenceUi.renderAdherenceSummaryHTML;
+  buildProgressSummary = progressDomain.buildProgressSummary;
+  renderProgressOverviewHTML = progressUi.renderProgressOverviewHTML;
+  await measurementsFeature.load();
+  measurementsUI.bindHistoryControls();
+  setupProgressFilters();
+  document.getElementById("view-progress")?.setAttribute("data-feature-ready", "true");
 });
 
 const settingsFeature = createFeatureLoader(async () => {
@@ -276,14 +316,14 @@ const settingsFeature = createFeatureLoader(async () => {
   renderBackupStatusUI = backupStatus.renderBackupStatusUI;
   widgetService = widget.widgetService;
 
-  inventoryUI = inventory.setupInventoryUI({ storage, onInventoryChange: () => invalidateViews("today", "week") });
-  sitesUI = sites.setupInjectionSitesUI({ storage, onSitesChange: () => invalidateViews("today", "week") });
+  inventoryUI = inventory.setupInventoryUI({ storage, onInventoryChange: () => invalidateViews("today", "week", "history", "progress") });
+  sitesUI = sites.setupInjectionSitesUI({ storage, onSitesChange: () => invalidateViews("today", "week", "history", "progress") });
   healthConnectUI = healthUi.setupHealthConnectUI({
     healthConnectService: healthService.healthConnect,
     storage,
     onSyncComplete: () => {
       measurementsUI?.renderList?.();
-      invalidateViews("history");
+      invalidateViews("today", "history", "progress");
     },
     showToast,
     haptics
@@ -293,7 +333,7 @@ const settingsFeature = createFeatureLoader(async () => {
     theme,
     notifications,
     onStateRestored: () => {
-      invalidateViews("today", "week", "history");
+      invalidateViews("today", "week", "history", "progress");
       updateNotificationUI(storage.getPeptides());
     }
   });
@@ -361,7 +401,7 @@ const toolsFeature = createFeatureLoader(async () => {
 
 const viewCoordinator = createViewCoordinator({
   initialView: "today",
-  renderers: { today: renderToday, week: renderWeek, history: renderHistory }
+  renderers: { today: renderToday, week: renderWeek, history: renderHistory, progress: renderProgress }
 });
 
 function invalidateViews(...views) {
@@ -476,19 +516,29 @@ async function initApp() {
   }
 
   setupNavigation();
+  journeyUI = createJourney({ onNavigate: (target) => void switchTab(target) });
+  quickRegisterUI = setupQuickRegister({
+    getContext: () => buildQuickRegisterContext(storage.getPeptides(), storage.getLogs(), new Date()),
+    onApplication: (peptideId, scheduledDate) => openRetroLogModal(scheduledDate, peptideId, { requireSiteSelection: true, mode: "compact" }),
+    onMeasurement: async (mode) => {
+      await loadFeature(measurementsFeature, "o registro de medidas");
+      measurementsUI.openMeasurementModal(null, null, { mode });
+    },
+    onEmpty: () => openEditModal()
+  });
   setupRenderedEventDelegation();
   setupModalsAndButtons();
   setupNotificationListeners(storage);
   appLockUI = setupAppLockUI({
     appLockService: appLock,
-    onUnlock: () => invalidateViews("today", "week", "history")
+    onUnlock: () => invalidateViews("today", "week", "history", "progress")
   });
 
   i18nUI = setupI18nUI({
     i18nService,
     onLocaleChange: () => {
       applyTranslations(document, i18nService);
-      invalidateViews("today", "week", "history");
+      invalidateViews("today", "week", "history", "progress");
       if (inventoryUI && typeof inventoryUI.renderInventoryList === "function") {
         inventoryUI.renderInventoryList();
       }
@@ -607,23 +657,32 @@ function setupNavigation() {
 }
 
 async function switchTab(tabId) {
+  const normalized = normalizeTabTarget(tabId, journeyUI?.segment || "upcoming");
+  const primaryTab = normalized.tab;
+  const journeySegment = normalized.segment;
   const previousTab = currentTab;
-  if (tabId === "week") restoreFeatureDom("agenda");
-  if (tabId === "history") restoreFeatureDom("history");
-  if (tabId === "calc") restoreFeatureDom("tools");
-  activateTabShell(tabId);
+  if (journeySegment === "upcoming") restoreFeatureDom("agenda");
+  if (journeySegment === "history") restoreFeatureDom("history");
+  if (primaryTab === "calc") restoreFeatureDom("tools");
+  activateTabShell(primaryTab);
   try {
-    if (tabId === "week") await loadFeature(agendaFeature, "a Agenda");
-    if (tabId === "history") await loadFeature(historyFeature, "o Histórico");
-    if (tabId === "settings") await loadFeature(settingsFeature, "Mais e Preferências");
-    if (tabId === "calc") await loadFeature(toolsFeature, "as Ferramentas");
+    if (journeySegment === "upcoming") await loadFeature(agendaFeature, "os próximos registros");
+    if (journeySegment === "history") await loadFeature(historyFeature, "o histórico");
+    if (primaryTab === "progress") await loadFeature(progressFeature, "o progresso");
+    if (primaryTab === "settings") await loadFeature(settingsFeature, "Mais");
+    if (primaryTab === "calc") await loadFeature(toolsFeature, "as Ferramentas");
   } catch {
     activateTabShell(previousTab);
     return false;
   }
 
-  viewCoordinator.activate(tabId);
-  if (tabId === "settings") {
+  if (primaryTab === "journey") {
+    journeyUI?.activate(journeySegment);
+    viewCoordinator.activate(journeySegment === "history" ? "history" : "week");
+  } else {
+    viewCoordinator.activate(primaryTab);
+  }
+  if (primaryTab === "settings") {
     updateNotificationUI(storage.getPeptides());
     renderBackupStatusUI();
     inventoryUI?.renderInventoryList?.();
@@ -633,6 +692,7 @@ async function switchTab(tabId) {
     if (widgetToggle && widgetService) widgetToggle.checked = widgetService.isDiscreteModeEnabled();
     healthConnectUI?.updateSettingsCard?.();
     i18nUI?.updateActiveLangUI?.(i18nService.getLocale());
+    renderSettingsTreatments();
   }
   return true;
 }
@@ -655,11 +715,13 @@ function activateTabShell(tabId) {
 
   const tabLabels = {
     today: "Hoje",
-    week: "Agenda",
-    history: "Histórico de Aplicações",
+    journey: "Jornada",
+    progress: "Progresso",
     calc: "Ferramentas",
     settings: "Mais e Preferências"
   };
+  const headerTitle = document.getElementById("header-title");
+  if (headerTitle) headerTitle.textContent = tabLabels[tabId] || tabId;
   accessibilityService.announce(`Aba ${tabLabels[tabId] || tabId} ativa.`);
 }
 
@@ -670,6 +732,7 @@ function setupRenderedEventDelegation() {
     const today = dateKey(new Date());
     if (target.matches('[data-action="create-protocol"]')) return openEditModal();
     if (target.matches('[data-action="open-calc"]')) return void switchTab("calc");
+    if (target.matches('[data-action="open-progress"]')) return void switchTab("progress");
     if (target.matches(".multi-dose-register")) return openRetroLogModal(today, target.dataset.id, { requireSiteSelection: true, initialStatus: "applied" });
     if (target.matches(".take")) {
       return target.classList.contains("done") ? void toggleDose(target.dataset.id) : openRetroLogModal(today, target.dataset.id, { requireSiteSelection: true });
@@ -756,15 +819,31 @@ function setupRenderedEventDelegation() {
     const detail = document.getElementById("history-weight-chart-detail");
     if (detail) detail.textContent = point.dataset.detail || "";
   };
-  document.getElementById("view-history")?.addEventListener("focusin", updateWeightChartDetail);
-  document.getElementById("view-history")?.addEventListener("pointerover", updateWeightChartDetail);
-  document.getElementById("view-history")?.addEventListener("change", (event) => {
+  document.getElementById("view-progress")?.addEventListener("focusin", updateWeightChartDetail);
+  document.getElementById("view-progress")?.addEventListener("pointerover", updateWeightChartDetail);
+  document.getElementById("view-progress")?.addEventListener("click", (event) => {
+    const target = event.target.closest("button, [role='button']");
+    if (!target) return;
+    if (target.dataset.progressRegister === "weight" || target.id === "empty-add-measurement-btn") {
+      measurementsUI?.openMeasurementModal(null, null, { mode: "weight" });
+    } else if (target.matches(".weight-chart-point")) {
+      measurementsUI?.openMeasurementById(target.dataset.measurementId);
+    } else if (target.id === "history-goal-clear-btn") {
+      const result = storage.setMeasurementGoals({ goalWeightKg: null });
+      if (result.success) { haptics.success(); invalidateViews("progress"); }
+      else void dialogService.alert({ title: "Meta não salva", message: result.error, isDanger: true });
+    } else if (target.matches("[data-adherence-days]")) {
+      adherencePeriodDays = Number.parseInt(target.dataset.adherenceDays, 10);
+      invalidateViews("progress");
+    }
+  });
+  document.getElementById("view-progress")?.addEventListener("change", (event) => {
     if (event.target.id === "history-body-metric") historyBodyMetric = event.target.value;
     else if (event.target.id === "history-revision-compound") historyRevisionCompoundId = event.target.value;
     else return;
-    invalidateViews("history");
+    invalidateViews("progress");
   });
-  document.getElementById("view-history")?.addEventListener("submit", (event) => {
+  document.getElementById("view-progress")?.addEventListener("submit", (event) => {
     if (event.target.id !== "history-weight-goal-form") return;
     event.preventDefault();
     const input = document.getElementById("history-goal-weight-input");
@@ -774,7 +853,7 @@ function setupRenderedEventDelegation() {
       return;
     }
     haptics.success();
-    invalidateViews("history");
+    invalidateViews("progress");
   });
 }
 
@@ -837,7 +916,7 @@ function renderMultiDoseDetails(progress) {
 }
 
 function renderToday() {
-  const { peptides, logs, inventory, sites: configuredSites } = storage.readSnapshot(["peptides", "logs", "inventory", "sites"]);
+  const { peptides, logs, inventory, sites: configuredSites, measurements } = storage.readSnapshot(["peptides", "logs", "inventory", "sites", "measurements"]);
   const indexes = performanceIndexes.get({ logs, inventory });
   const lastSiteIndex = indexes.lastSites;
   const vialIndex = indexes.activeVials;
@@ -901,7 +980,8 @@ function renderToday() {
     heroEl.setAttribute("aria-label", `${focusModel.eyebrow}: ${focusModel.title}`);
   }
   if (focusContent) focusContent.innerHTML = renderDashboardFocusHTML(focusModel);
-  if (listHeading) listHeading.style.display = scheduledToday.length > 0 ? "" : "none";
+  const remainingToday = focusModel.state === "pending" ? scheduledToday.filter((item) => item.id !== focusModel.peptideId) : [];
+  if (listHeading) listHeading.style.display = remainingToday.length > 0 ? "" : "none";
   if (listSummary) {
     listSummary.textContent = i18nService.t("phase1.dayProgress", {
       taken: dayProgress.scheduledTaken,
@@ -912,8 +992,8 @@ function renderToday() {
     });
   }
 
-  if (scheduledToday.length > 0) {
-    scheduledToday.forEach((p) => {
+  if (remainingToday.length > 0) {
+    remainingToday.forEach((p) => {
       const perDay = p.perDay || 1;
       const tomadas = dosesTaken(rec, p.id);
       const records = doseEntries(rec[p.id]);
@@ -1028,14 +1108,11 @@ function renderToday() {
     });
   }
 
-  // Próximas ocorrências (a partir de amanhã)
-  if (upcoming.length > 0) {
-    const upcomingWrap = document.createElement("div");
-    upcomingWrap.innerHTML = renderUpcomingHTML(upcoming);
-    container.appendChild(upcomingWrap);
+  const compactProgress = document.getElementById("today-progress-compact");
+  if (compactProgress) {
+    const latestWeight = [...measurements].filter((item) => Number.isFinite(item?.weightKg)).sort((a, b) => `${b.date}${b.time || ""}`.localeCompare(`${a.date}${a.time || ""}`))[0];
+    compactProgress.innerHTML = `<strong>Progresso de hoje</strong><span>${dayProgress.resolvedCount} de ${dayProgress.totalDue} registros resolvidos${latestWeight ? ` · peso mais recente ${esc(String(latestWeight.weightKg))} kg` : ""}</span><button type="button" data-action="open-progress">Ver progresso</button>`;
   }
-
-  renderProtocolList(container, peptides, openEditModal);
   // Cálculo canônico do anel diário
   const ringN = document.getElementById("ring-n");
   if (ringN) {
@@ -1113,7 +1190,7 @@ async function toggleDose(id) {
     accessibilityService.announce(`Aplicação de ${p.name} confirmada.`);
   }
 
-  invalidateViews("today", "week", "history");
+  invalidateViews("today", "week", "history", "progress");
 }
 
 async function addSingleDose(id) {
@@ -1170,7 +1247,7 @@ async function addSingleDose(id) {
   }
 
   haptics.medium();
-  invalidateViews("today", "week", "history");
+  invalidateViews("today", "week", "history", "progress");
 }
 
 function undoSingleDose(id) {
@@ -1190,7 +1267,7 @@ function undoSingleDose(id) {
   }
 
   haptics.light();
-  invalidateViews("today", "week", "history");
+  invalidateViews("today", "week", "history", "progress");
 }
 
 function getTimelineDateParts(date) {
@@ -1419,7 +1496,10 @@ async function saveRetroLog() {
     storage,
     dateKey,
     haptics,
-    renderAll: () => invalidateViews("today", "week", "history")
+    renderAll: () => {
+      invalidateViews("today", "week", "history", "progress");
+      showActionFeedback(i18nService.t("experience.applicationSaved"));
+    }
   });
 }
 
@@ -1446,12 +1526,19 @@ function setupHistoryFilters() {
       historyFilters[key] = element.value || (key === "compoundId" || key === "eventType" ? "all" : null);
       const custom = document.getElementById("history-custom-dates");
       if (custom) custom.hidden = historyFilters.period !== "custom";
-      invalidateViews("history");
+      const summary = document.getElementById("history-filter-summary");
+      if (summary) {
+        const period = historyFilters.period === "all" ? "Todo o histórico" : historyFilters.period === "custom" ? "Período personalizado" : `${historyFilters.period} dias`;
+        const selectedOption = document.querySelector("#history-compound option:checked");
+        const treatment = historyFilters.compoundId === "all" ? "Todos os tratamentos" : selectedOption?.textContent || "Tratamento selecionado";
+        summary.textContent = `${period} · ${treatment}`;
+      }
+      invalidateViews("today", "history", "progress");
     });
   });
 }
 
-function renderHistoryEvolution(model) {
+function renderHistoryEvolution(model, range = historyDateRange()) {
   const target = document.getElementById("measurements-trend-summary");
   if (!target) return;
   const stats = model.measurementStats;
@@ -1474,7 +1561,7 @@ function renderHistoryEvolution(model) {
     historyBodyMetric = availableMetrics.find((metric) => metric.key === "weight")?.key || availableMetrics[0]?.key || "weight";
   }
   const selectedMetric = metricDefinitions.find((metric) => metric.key === historyBodyMetric) || metricDefinitions[0];
-  const historyRange = historyDateRange();
+  const historyRange = range;
   const protocols = storage.getPeptides();
   const bodyMetricChart = buildBodyMetricChartModel(model.measurements, selectedMetric.key, historyRevisionCompoundId ? historyRange : {});
   const revisionCompounds = protocols.filter((protocol) => {
@@ -1648,9 +1735,6 @@ function renderHistory() {
   if (countEl) countEl.textContent = `${model.events.length} registro${model.events.length === 1 ? "" : "s"}`;
   const contextNote = document.getElementById("history-context-note");
   if (contextNote) contextNote.hidden = historyFilters.compoundId === "all";
-  const oldMeasurementList = document.getElementById("measurements-history-list");
-  if (oldMeasurementList) oldMeasurementList.innerHTML = "";
-  renderHistoryEvolution(model);
   const typeLabel = { application: i18nService.t("history.typeApplication"), measurement: i18nService.t("history.typeMeasurement"), symptom: i18nService.t("history.typeSymptom"), protocol: i18nService.t("history.typeProtocol") || "Protocolo" };
   container.innerHTML = model.events.length ? `<div class="history-timeline history-timeline--integrated" role="list">${model.events.map((event) => {
     const details = event.type === "application"
@@ -1665,7 +1749,49 @@ function renderHistory() {
       <div class="hist-actions">${event.type === "application" ? `<button type="button" class="hist-edit" data-date="${sanitizeId(event.date)}" data-pep="${sanitizeId(event.data.peptideId)}" data-idx="${event.data.recordIndex}">Corrigir</button><button type="button" class="hist-rm" data-date="${sanitizeId(event.date)}" data-pep="${sanitizeId(event.data.peptideId)}" data-idx="${event.data.recordIndex}">Excluir</button>` : event.type === "measurement" || event.type === "symptom" ? `<button type="button" class="history-measurement-edit btn-meas-edit" data-id="${sanitizeId(event.editableId)}">Corrigir</button>` : ""}</div>
     </article>`;
   }).join("")}</div>` : `<div class="timeline-empty history-empty"><div class="timeline-empty-icon" aria-hidden="true">◌</div><strong>${esc(i18nService.t("history.noRecordsFound"))}</strong><p>${esc(i18nService.t("history.adjustFiltersHint"))}</p></div>`;
+}
+
+function progressDateRange() {
+  if (progressFilters.period === "all") return { startDate: null, endDate: null };
+  if (progressFilters.period === "custom") return { startDate: progressFilters.startDate, endDate: progressFilters.endDate };
+  const end = new Date();
+  const start = new Date(end);
+  start.setDate(start.getDate() - Number(progressFilters.period || 30) + 1);
+  return { startDate: dateKey(start), endDate: dateKey(end) };
+}
+
+function setupProgressFilters() {
+  [["progress-period", "period"], ["progress-start-date", "startDate"], ["progress-end-date", "endDate"]].forEach(([id, key]) => {
+    const element = document.getElementById(id);
+    if (!element || element.dataset.progressBound === "true") return;
+    element.dataset.progressBound = "true";
+    element.addEventListener("change", () => {
+      progressFilters[key] = element.value || null;
+      const custom = document.getElementById("progress-custom-dates");
+      if (custom) custom.hidden = progressFilters.period !== "custom";
+      invalidateViews("progress");
+      if (currentTab === "progress") viewCoordinator.render("progress", { force: true });
+    });
+  });
+}
+
+function renderProgress() {
+  const state = storage.readSnapshot(["peptides", "logs", "measurements"]);
+  const { startDate, endDate } = progressDateRange();
+  const model = buildReviewModel({ protocol: state.peptides, logs: state.logs, measurements: state.measurements, startDate, endDate, includeNotes: true });
+  const summary = buildProgressSummary({ ...state, startDate, endDate });
+  const overview = document.getElementById("progress-overview");
+  if (overview) overview.innerHTML = renderProgressOverviewHTML(summary);
   renderAdherenceSummary(state);
+  renderHistoryEvolution(model, { startDate, endDate });
+  measurementsUI?.renderMeasurementsHistory?.();
+}
+
+function renderSettingsTreatments() {
+  const host = document.getElementById("settings-protocol-list");
+  if (!host) return;
+  host.innerHTML = "";
+  renderProtocolList(host, storage.getPeptides(), openEditModal);
 }
 
 function deleteHistoryEntry(dKey, pId, idx) {
@@ -1690,7 +1816,7 @@ function deleteHistoryEntry(dKey, pId, idx) {
   }
 
   haptics.light();
-  invalidateViews("today", "week", "history");
+  invalidateViews("today", "week", "history", "progress");
 }
 
 function showConfirmDialog({ title = i18nService.t("common.confirm"), message = "", confirmText = i18nService.t("common.confirm"), cancelText = i18nService.t("common.cancel"), isDanger = true } = {}) {
@@ -1717,7 +1843,8 @@ function reportReminderRefreshFailure(result) {
 function protocolSaved() {
   haptics.success();
   closeAllModals();
-  invalidateViews("today", "week", "history");
+  invalidateViews("today", "week", "history", "progress");
+  if (currentTab === "settings") renderSettingsTreatments();
   void notifications.schedulePeptideRemindersIfNeeded(storage.getPeptides(), { force: true, reason: "protocol-change" })
     .then((result) => {
       reportReminderRefreshFailure(result);
@@ -1757,7 +1884,7 @@ function setupModalsAndButtons() {
   replayAfterLoad("#dash-report-btn", reportingFeature, "os relatórios");
   replayAfterLoad("#dash-research-btn", toolsFeature, "a pesquisa");
 
-  const themeBtn = document.getElementById("theme-btn");
+  const themeBtn = document.getElementById("settings-theme-btn");
   if (themeBtn) {
     themeBtn.addEventListener("click", async () => {
       haptics.medium();
@@ -1994,7 +2121,7 @@ function setupModalsAndButtons() {
     });
   }
 
-  const dashShareBtn = document.getElementById("dash-share-btn");
+  const dashShareBtn = document.getElementById("settings-share-btn");
   if (dashShareBtn) {
     dashShareBtn.addEventListener("click", () => {
       haptics.light();
@@ -2078,6 +2205,7 @@ function setupModalsAndButtons() {
       switchTab("calc");
     });
   }
+  document.getElementById("settings-add-treatment")?.addEventListener("click", () => openEditModal(null));
   const calcBackBtn = document.getElementById("calc-back-btn");
   if (calcBackBtn) {
     calcBackBtn.addEventListener("click", () => {
@@ -2594,7 +2722,7 @@ async function saveEditedPeptide() {
     }
     if (!backfillRes.success) {
       void dialogService.alert({ title: i18nService.t("dialogs.backfillFailTitle"), message: i18nService.t("dialogs.backfillFailMsg") + (backfillRes.message || backfillRes.error), isDanger: true });
-      invalidateViews("today", "week", "history");
+      invalidateViews("today", "week", "history", "progress");
       return;
     }
   }
@@ -2606,7 +2734,7 @@ async function saveEditedPeptide() {
     accessibilityService.announce(msg);
   }
 
-  invalidateViews("today", "week", "history");
+  invalidateViews("today", "week", "history", "progress");
   const reminderResult = await notifications.schedulePeptideRemindersIfNeeded(peptides, { force: true, reason: "protocol-save" });
   await updateNotificationUI(peptides);
 

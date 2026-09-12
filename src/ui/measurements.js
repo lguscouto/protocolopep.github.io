@@ -23,6 +23,7 @@ import { escapeHtml, sanitizeId } from "./dom.js";
 import { haptics } from "../services/haptics.js";
 import { dialogService } from "../services/dialog.js";
 import { i18nService } from "../services/i18n.js";
+import { dateToKey } from "../domain/schedule.js";
 
 const esc = escapeHtml;
 
@@ -46,14 +47,16 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
   const addSymptomBtn = document.getElementById("meas-add-symptom-btn");
   const chipsContainer = document.getElementById("meas-symptoms-chips");
 
-  const trendSummaryEl = document.getElementById("measurements-trend-summary");
-  const historyListEl = document.getElementById("measurements-history-list");
+  let trendSummaryEl = null;
+  let historyListEl = null;
 
   let editingEntryId = null;
   let selectedSymptoms = new Set();
   let symptomIntensities = new Map();
   let selectedEnergy = null;
   let selectedMood = null;
+  let mode = "full";
+  let saving = false;
 
   function updateLevelButtons() {
     for (let i = 1; i <= 5; i++) {
@@ -98,21 +101,43 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
     }).join("");
   }
 
-  function openMeasurementModal(entry = null, prefillDate = null) {
+  function openMeasurementModal(entry = null, prefillDate = null, options = {}) {
     if (!modal) return;
+    mode = entry ? "full" : (["weight", "symptom", "full"].includes(options.mode) ? options.mode : "full");
+    modal.dataset.mode = mode;
     editingEntryId = entry ? entry.id : null;
     const isExternal = Boolean(entry && entry.ownership === "external");
+
+    // Os modos rápidos mostram somente o que é necessário para o registro escolhido.
+    // O modo completo continua exibindo todos os campos e é sempre usado na edição.
+    const setSectionVisibility = (selectorOrElement, visible) => {
+      const sections = typeof selectorOrElement === "string"
+        ? modal.querySelectorAll(selectorOrElement)
+        : selectorOrElement ? [selectorOrElement] : [];
+      sections.forEach((section) => {
+        section.hidden = !visible;
+        section.setAttribute("aria-hidden", visible ? "false" : "true");
+      });
+    };
+    setSectionVisibility(".measurement-section--weight", mode === "weight" || mode === "full");
+    setSectionVisibility(".measurement-circumferences", mode === "full");
+    setSectionVisibility(document.getElementById("meas-energy-1")?.closest(".measurement-section"), mode === "full");
+    setSectionVisibility(document.getElementById("meas-mood-1")?.closest(".measurement-section"), mode === "full");
+    setSectionVisibility(".measurement-section--symptoms", mode === "symptom" || mode === "full");
+    setSectionVisibility(".measurement-section--notes", mode === "symptom" || mode === "full");
 
     const titleEl = document.getElementById("measurement-modal-title");
     if (titleEl) {
       if (isExternal) {
         titleEl.textContent = "Registro Externo (Health Connect)";
       } else {
-        titleEl.textContent = entry ? "Editar Registro Corporal / Sintomas" : "Novo Registro Corporal / Sintomas";
+        titleEl.textContent = entry ? "Editar registro corporal / sintomas"
+          : mode === "weight" ? "Registrar peso"
+            : mode === "symptom" ? "Como você está?" : "Registrar medidas e sintomas";
       }
     }
 
-    const todayStr = new Date().toISOString().slice(0, 10);
+    const todayStr = dateToKey(new Date());
     const nowTimeStr = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
     if (dateInput) {
@@ -159,7 +184,13 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
 
     updateLevelButtons();
     renderSymptomChips();
+    document.querySelector(".measurement-circumferences")?.toggleAttribute("open", mode === "full" && Boolean(entry));
     modal.classList.add("on");
+    requestAnimationFrame(() => {
+      const target = mode === "weight" ? weightInput
+        : mode === "symptom" ? chipsContainer?.querySelector("button") : dateInput;
+      target?.focus?.({ preventScroll: true });
+    });
   }
 
   function openMeasurementById(id) {
@@ -387,15 +418,24 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
     });
   }
 
-  // History item edit click
-  if (historyListEl) {
-    historyListEl.addEventListener("click", (e) => {
-      const editBtn = e.target.closest(".btn-meas-edit");
-      if (editBtn) {
-        const id = editBtn.dataset.id;
-        openMeasurementById(id);
-      }
-    });
+  // The modal may be loaded before History's deferred DOM is restored.
+  function bindHistoryControls() {
+    trendSummaryEl = document.getElementById("measurements-trend-summary");
+    historyListEl = document.getElementById("measurements-history-list");
+    const historyOpen = document.getElementById("open-measurement-modal-btn");
+    if (historyOpen && historyOpen !== openBtn && !historyOpen.dataset.measurementBound) {
+      historyOpen.dataset.measurementBound = "true";
+      historyOpen.addEventListener("click", () => openMeasurementModal());
+    }
+    if (historyListEl && !historyListEl.dataset.measurementBound) {
+      historyListEl.dataset.measurementBound = "true";
+      historyListEl.addEventListener("click", (e) => {
+        const editBtn = e.target.closest(".btn-meas-edit");
+        if (editBtn) openMeasurementById(editBtn.dataset.id);
+      });
+    }
+    renderTrendSummary();
+    renderMeasurementsHistory();
   }
 
   // Delete / Ocultar measurement handler
@@ -439,6 +479,12 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
   if (form) {
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
+      if (saving) return;
+      saving = true;
+      const saveButton = form.querySelector('[type="submit"]');
+      if (saveButton) saveButton.disabled = true;
+
+      try {
 
       const existing = editingEntryId ? storage.getMeasurements().find((m) => m.id === editingEntryId) : null;
       const isExternal = Boolean(existing && existing.ownership === "external");
@@ -483,15 +529,16 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
       modal.classList.remove("on");
       renderTrendSummary();
       renderMeasurementsHistory();
-      onMeasurementsChange();
+      onMeasurementsChange({ type: mode === "symptom" ? "symptom" : mode === "weight" ? "weight" : "measurement", entry: res.entry || entryPayload });
+      } finally {
+        saving = false;
+        if (saveButton) saveButton.disabled = false;
+      }
     });
   }
 
-  // Initial renders
-  renderTrendSummary();
-  renderMeasurementsHistory();
-
   return {
+    bindHistoryControls,
     openMeasurementModal,
     openMeasurementById,
     renderTrendSummary,

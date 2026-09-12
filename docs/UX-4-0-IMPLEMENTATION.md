@@ -27,9 +27,25 @@ Os resultados são registrados após execução. Os dados de teste são sintéti
 ### Etapa 0
 
 - Instalação limpa concluída.
-- Unitários: 545 testes em 51 arquivos aprovados.
-- Build Web: aprovado; entrada inicial 84,84 kB gzip no relatório Vite.
+- Unitários: 553 testes em 54 arquivos aprovados.
+- Build Web: aprovado; a entrada inicial ficou em 87,79 kB gzip, acima do orçamento de 80 kB já excedido pela base (84,84 kB na medição inicial).
 - CI habilitada também nas branches `codex/**`.
-- E2E e medição de desempenho: em execução.
+- Baseline: E2E da base teve 150 aprovados, 7 ignorados e 6 falhas de touch/visual; a medição inicial acusou somente o orçamento de JavaScript gzip.
 
 Não houve atualização de dependências: o diagnóstico do npm na instalação é preexistente a esta refatoração.
+
+### Etapas 1–5
+
+- Medições foram isoladas do carregamento do Histórico, com modos `weight`, `symptom` e `full`, data local e listeners idempotentes.
+- `+ Registrar` abre aplicação, peso, sintoma e medidas; trata uma, várias ou nenhuma pendência e reutiliza o formulário/persistência existentes.
+- A navegação agora é `Hoje`, `Jornada`, `Progresso` e `Mais`. Jornada mantém os segmentos Próximos/Histórico; Progresso concentra evolução, aderência, metas, medidas e sintomas.
+- Hoje mantém uma pendência principal, os demais registros e um resumo compacto de progresso. Mais agrupa Tratamento, Ferramentas, Dados, App e Ajuda.
+- Calculadora, onboarding, ícones locais, safe-area e traduções foram atualizados sem dependências de rede ou bibliotecas novas.
+
+### Etapa 6 — validação da implementação
+
+- Unitários: 553/553 aprovados.
+- E2E Android pequeno: 56/56 aprovados após a atualização dos contratos de navegação; a matriz visual foi revisada e os snapshots de 360, 412 e 600 px foram atualizados.
+- E2E direcionado da nova experiência: 4/4 aprovados; fluxos de rotina e lembretes: 16/16 aprovados.
+- Axe no Hoje, Calculadora, Progresso, Mais e Notificações: aprovado nos fluxos exercitados.
+- A medição de desempenho completou os cenários de inicialização e acesso tardio, mas falhou na asserção do JavaScript inicial (87.791 bytes contra 81.920). Nenhum limite foi relaxado; os demais valores não foram declarados aprovados sem a saída final da asserção.

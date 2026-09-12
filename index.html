@@ -17,10 +17,9 @@
   <!-- Topbar Fixa -->
   <header class="topbar">
     <div class="brand">
-      <img src="/icon-192.png" alt="Logo Protocolo PEP" class="logo" />
       <div>
-        <div class="t" data-i18n="topbar.title">Protocolo <span>PEP</span></div>
-        <div class="datestrip" id="datestrip" data-i18n="common.today">Hoje</div>
+        <div class="t" id="header-title" data-i18n="dashboard.heading">Hoje</div>
+        <div class="datestrip" id="header-date"></div>
       </div>
     </div>
     <div class="acct">
@@ -28,11 +27,6 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
           <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-        </svg>
-      </button>
-      <button class="icon-b" id="theme-btn" title="Alternar Tema (Branco / Preto)" aria-label="Alternar Tema" data-i18n-title="topbar.themeToggle" data-i18n-aria="topbar.themeToggle">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
         </svg>
       </button>
     </div>
@@ -70,55 +64,7 @@
         <span id="today-list-summary"></span>
       </div>
       <div id="today-cards" role="region" aria-live="polite"></div>
-
-      <button type="button" class="add-pep" id="add-pep-btn" aria-label="Adicionar Novo Peptídeo ao Protocolo">
-        <span aria-hidden="true">+</span> <span data-i18n="dashboard.addPeptide">Adicionar Peptídeo ao Protocolo</span>
-      </button>
-
-      <!-- Recursos avançados ficam disponíveis sem competir com o registro diário. -->
-      <details class="dash-actions-wrap dash-actions-collapsible">
-        <summary class="dash-tools-summary" data-i18n="tools.moreTools">Mais ferramentas</summary>
-        <div class="dash-tools-heading" data-i18n="dashboard.tools">Ferramentas</div>
-        <div class="dash-actions-grid" role="toolbar" aria-label="Ferramentas" data-i18n-aria="dashboard.tools">
-          <button type="button" class="dash-action-btn" id="dash-share-btn" aria-label="Compartilhar resumo do dia">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-            <span data-i18n="dashboard.share">Compartilhar</span>
-          </button>
-          <button type="button" class="dash-action-btn" id="dash-export-btn" aria-label="Exportar backup dos dados">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            <span data-i18n="dashboard.export">Exportar</span>
-          </button>
-          <button type="button" class="dash-action-btn" id="dash-import-btn" aria-label="Importar backup de dados">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            <span data-i18n="dashboard.import">Importar</span>
-          </button>
-          <button type="button" class="dash-action-btn" id="dash-calc-btn" aria-label="Abrir calculadora de reconstituição">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="16" y1="14" x2="16" y2="18"/><path d="M16 10h.01M12 10h.01M8 10h.01M12 14h.01M8 14h.01M12 18h.01M8 18h.01"/></svg>
-            <span data-i18n="dashboard.calculator">Calculadora</span>
-          </button>
-          <button type="button" class="dash-action-btn" id="dash-inventory-btn" aria-label="Abrir frascos e saldo">
-            <span aria-hidden="true">🧴</span><span data-i18n="tools.vialsCardTitle">Frascos e saldo</span>
-          </button>
-          <button type="button" class="dash-action-btn" id="dash-report-btn" aria-label="Abrir relatório do histórico">
-            <span aria-hidden="true">📄</span><span data-i18n="tools.reportCardTitle">Relatório</span>
-          </button>
-          <button type="button" class="dash-action-btn dash-action-btn--wide open-research-modal-btn" id="dash-research-btn" aria-label="Abrir base de pesquisa científica">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><path d="M11 8v6M8 11h6"/></svg>
-            <span data-i18n="research.openResearchBtn">Base de Pesquisa Científica</span>
-          </button>
-        </div>
-      </details>
-
-      <!-- Feedback preservado como ação terciária, fora do foco inicial -->
-      <div class="dash-banner" id="dash-banner">
-        <a href="mailto:lguscouto@gmail.com?subject=Protocolo%20PEP%20%E2%80%94%20Sugest%C3%A3o%20%2F%20Feedback&body=Ol%C3%A1%2C%0A%0AGostaria%20de%20enviar%20o%20seguinte%20feedback%20%2F%20sugest%C3%A3o%20para%20o%20Protocolo%20PEP%3A%0A%0A%0A---%0AVers%C3%A3o%20do%20App%3A%203.9.0%0ADispositivo%3A%20Android" class="dash-banner-content" id="dash-banner-link" target="_blank" rel="noopener noreferrer" title="Toque para enviar sugestões ou feedback por e-mail" aria-label="Enviar sugestão ou feedback por e-mail">
-          <span class="dash-banner-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M4 4h16v13H7l-3 3V4Z"/><path d="M8 9h8M8 13h5"/></svg>
-          </span>
-          <span class="dash-banner-text" data-i18n-html="dashboard.bannerText">Ajude a melhorar o PEP <b>Enviar sugestão</b></span>
-        </a>
-        <button type="button" class="dash-banner-close" id="dash-banner-close" aria-label="Fechar banner">✕</button>
-      </div>
+      <div class="today-progress-compact" id="today-progress-compact"></div>
 
       <!-- Lembrete compacto; os avisos completos permanecem no onboarding e na calculadora -->
       <div class="dash-footer-disclaimer" data-i18n="dashboard.disclaimer">
@@ -126,8 +72,18 @@
       </div>
     </section>
 
-    <!-- ABA: SEMANA -->
-    <section class="view" id="view-week" role="tabpanel" aria-labelledby="tab-week">
+    <!-- ABA: JORNADA -->
+    <section class="view" id="view-journey" role="tabpanel" aria-labelledby="tab-journey">
+      <div class="page-title-wrap journey-title-wrap">
+        <h2 class="page-title" data-i18n="nav.journey">Jornada</h2>
+        <p class="page-subtitle" data-i18n="experience.journeySubtitle">Passado e futuro da sua rotina.</p>
+      </div>
+      <div class="journey-segmented" role="tablist" aria-label="Período da jornada">
+        <button type="button" role="tab" id="journey-upcoming" data-journey-segment="upcoming" aria-controls="view-week" aria-selected="true" tabindex="0" data-i18n="experience.upcoming">Próximos</button>
+        <button type="button" role="tab" id="journey-history" data-journey-segment="history" aria-controls="view-history" aria-selected="false" tabindex="-1" data-i18n="nav.history">Histórico</button>
+      </div>
+
+    <section class="journey-panel on" id="view-week" role="tabpanel" aria-labelledby="journey-upcoming">
       <div class="page-title-wrap week-title-wrap">
         <div>
           <h2 class="page-title" data-i18n="week.heading">Semana</h2>
@@ -138,16 +94,13 @@
     </section>
 
     <!-- ABA: HISTÓRICO -->
-    <section class="view" id="view-history" role="tabpanel" aria-labelledby="tab-history">
+    <section class="journey-panel" id="view-history" role="tabpanel" aria-labelledby="journey-history" hidden>
       <div class="eyebrow-row history-title-row">
         <div>
           <h2 class="page-title" data-i18n="history.heading">Histórico</h2>
           <div class="hist-count" id="history-count"></div>
         </div>
         <div class="history-actions">
-          <button type="button" class="btn-primary" id="open-measurement-modal-btn" data-i18n="history.addMeasurements" data-i18n-aria="measurements.addEntry" aria-label="Registrar peso, medidas ou sintomas">
-            + Medidas / Sintomas
-          </button>
           <button type="button" class="btn-ghost" id="hist-retro-btn" data-i18n="history.addRetroactive" aria-label="Adicionar registro de dose retroativo">
             + Dose Retroativa
           </button>
@@ -158,6 +111,8 @@
         </div>
 
       <!-- Resumo descritivo de consistência da rotina (Fase 2) -->
+      <details class="history-filter-disclosure">
+        <summary>Filtrar <span id="history-filter-summary">30 dias · Todos os tratamentos</span></summary>
       <div class="history-filter-panel" data-i18n-aria="history.filterPanelLabel" aria-label="Filtros do histórico">
         <div class="history-filter-grid">
           <label><span data-i18n="history.periodLabel">Período</span><select id="history-period" class="txt"><option value="7" data-i18n="history.sevenDays">7 dias</option><option value="30" selected data-i18n="history.thirtyDays">30 dias</option><option value="90" data-i18n="history.ninetyDays">90 dias</option><option value="all" data-i18n="history.allHistory">Todo o histórico</option><option value="custom" data-i18n="history.customPeriod">Personalizado</option></select></label>
@@ -170,17 +125,37 @@
           <label><span data-i18n="modals.report.endDate">Data final</span><input id="history-end-date" class="txt" type="date"></label>
         </div>
         <p id="history-context-note" class="history-context-note" data-i18n="history.contextNote" hidden>Sintomas e medidas são exibidos como contexto geral do período, sem atribuição ao composto filtrado.</p>
-      </div>
-
-      <div id="adherence-summary"></div>
-
-      <!-- Resumo de Tendências Autorrelatadas (V12) -->
-      <div id="measurements-trend-summary"></div>
+      </div></details>
 
       <!-- Lista de Doses Aplicadas -->
       <div id="history-list" role="region" aria-label="Linha do tempo integrada do histórico"></div>
 
-      <!-- Lista de Medições e Sintomas (V12) -->
+    </section>
+    </section>
+
+    <!-- ABA: PROGRESSO -->
+    <section class="view" id="view-progress" role="tabpanel" aria-labelledby="tab-progress">
+      <div class="page-title-wrap progress-title-wrap">
+        <h2 class="page-title" data-i18n="nav.progress">Progresso</h2>
+        <p class="page-subtitle" data-i18n="experience.progressSubtitle">Uma leitura descritiva dos dados que você registrou.</p>
+      </div>
+      <div class="progress-period-controls">
+        <label for="progress-period"><span data-i18n="history.periodLabel">Período</span>
+          <select id="progress-period" class="txt">
+            <option value="30" selected data-i18n="history.thirtyDays">30 dias</option>
+            <option value="90" data-i18n="history.ninetyDays">90 dias</option>
+            <option value="all" data-i18n="history.allHistory">Todo o histórico</option>
+            <option value="custom" data-i18n="history.customPeriod">Personalizado</option>
+          </select>
+        </label>
+        <div id="progress-custom-dates" class="history-custom-dates" hidden>
+          <label><span data-i18n="modals.report.startDate">Data inicial</span><input id="progress-start-date" class="txt" type="date"></label>
+          <label><span data-i18n="modals.report.endDate">Data final</span><input id="progress-end-date" class="txt" type="date"></label>
+        </div>
+      </div>
+      <div id="progress-overview"></div>
+      <div id="adherence-summary"></div>
+      <div id="measurements-trend-summary"></div>
       <div id="measurements-history-list"></div>
     </section>
 
@@ -248,6 +223,8 @@
 
         <div class="syringe" id="calc-syringe" role="img" aria-label="Visualização gráfica da seringa U-100"></div>
 
+        <details class="calc-details">
+          <summary data-i18n="experience.calculationDetails">Ver detalhes do cálculo</summary>
         <!-- Resumo das Entradas para Dupla Conferência -->
         <div class="calc-inputs-summary" id="calc-inputs-summary" style="display:none;margin-top:12px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:10px 14px;font-size:12.5px;">
           <div style="font-weight:700;color:var(--text);margin-bottom:4px;" data-i18n="tools.dataUsed">📋 Confira os dados usados:</div>
@@ -273,6 +250,7 @@
           <div class="calc-audit-formula" id="calc-audit-formula">--</div>
           <div class="calc-audit-trail" id="calc-audit-trail">--</div>
         </div>
+        </details>
 
         <div class="calc-actions">
           <button type="button" class="btn-primary" id="calc-use-btn" data-i18n="calculator.useInProtocol" disabled>
@@ -296,8 +274,19 @@
     <!-- ABA: CONFIGURAÇÕES & AJUSTES -->
     <section class="view" id="view-settings" role="tabpanel" aria-labelledby="tab-settings">
       <div class="page-title-wrap" style="margin-bottom: 14px;">
-        <h2 class="page-title" data-i18n="settings.heading">Ajustes</h2>
+        <h2 class="page-title" data-i18n="nav.settings">Mais</h2>
       </div>
+
+      <section class="settings-section" aria-labelledby="settings-group-treatment">
+        <h3 class="section-title settings-section-title" id="settings-group-treatment" data-i18n="experience.treatment">Tratamento</h3>
+        <div class="panel settings-card">
+          <div class="settings-card-header">
+            <div class="settings-card-copy"><div class="settings-card-title" data-i18n="experience.treatments">Tratamentos</div><div class="settings-row-description" data-i18n="experience.treatmentDesc">Rotinas e doses informadas por você</div></div>
+            <button type="button" class="btn-primary settings-header-action" id="settings-add-treatment" data-i18n="experience.add">Adicionar</button>
+          </div>
+          <div id="settings-protocol-list"></div>
+        </div>
+      </section>
 
       <section class="settings-section" aria-labelledby="settings-group-tools">
         <h3 class="section-title settings-section-title" id="settings-group-tools" data-i18n="tools.title">Ferramentas</h3>
@@ -307,14 +296,17 @@
               <div class="settings-card-title" data-i18n="tools.subtitle">Calculadora e recursos avançados</div>
               <div style="font-size:12px;color:var(--muted);" data-i18n="tools.desc">Use quando precisar conferir cálculos, pesquisar ou organizar frascos.</div>
             </div>
-            <button type="button" class="btn-primary settings-header-action" id="open-tools-btn" data-i18n="tools.openBtn">Abrir ferramentas</button>
+            <div class="settings-header-actions">
+              <button type="button" class="btn-sec settings-header-action" id="settings-report-btn" data-i18n="history.reportButton">Relatório</button>
+              <button type="button" class="btn-primary settings-header-action" id="open-tools-btn" data-i18n="tools.openBtn">Abrir ferramentas</button>
+            </div>
           </div>
         </div>
       </section>
 
       <!-- GRUPO 1: APARÊNCIA E ACESSIBILIDADE -->
-      <section class="settings-section" aria-labelledby="settings-group-appearance">
-        <h3 class="section-title settings-section-title" id="settings-group-appearance" data-i18n="settings.appearanceSubtitle">Aparência e Acessibilidade</h3>
+      <section class="settings-section" aria-labelledby="settings-group-app">
+        <h3 class="section-title settings-section-title" id="settings-group-app" data-i18n="experience.app">App</h3>
         
         <!-- Card de Seleção de Idioma / i18n -->
         <div class="panel settings-card">
@@ -325,6 +317,7 @@
             </div>
             <span class="badge badge-success" id="current-lang-badge">PORTUGUÊS (BRASIL)</span>
           </div>
+          <button type="button" class="btn-sec settings-theme-toggle" id="settings-theme-btn" data-i18n="experience.toggleTheme">Alternar tema claro / escuro</button>
           <div class="settings-language-grid" role="group" aria-label="Seletor de Idioma">
             <button type="button" class="btn-sec lang-select-btn" id="lang-btn-pt" data-lang="pt-BR">
               <span>🇧🇷</span> <span>Português</span>
@@ -354,11 +347,7 @@
             <input type="checkbox" id="high-contrast-toggle" style="width:20px;height:20px;accent-color:var(--primary);cursor:pointer;" aria-checked="false">
           </div>
         </div>
-      </section>
-
-      <!-- GRUPO 2: SEGURANÇA E NOTIFICAÇÕES -->
-      <section class="settings-section" aria-labelledby="settings-group-security">
-        <h3 class="section-title settings-section-title" id="settings-group-security" data-i18n="settings.securitySubtitle">Segurança e Notificações</h3>
+        <h4 class="settings-subsection-title" data-i18n="settings.securitySubtitle">Segurança e Notificações</h4>
 
         <!-- Card de Bloqueio Biométrico / PIN -->
         <div class="panel settings-card">
@@ -478,6 +467,7 @@
             Todos os seus dados de protocolo e histórico estão salvos diretamente na memória do seu dispositivo, funcionando offline com máxima privacidade e velocidade.
           </div>
           <div class="settings-actions settings-actions--pair">
+            <button class="btn-sec" id="settings-share-btn" data-i18n="experience.shareSummary">Compartilhar resumo</button>
             <button class="btn-primary" id="export-btn" data-i18n="settings.exportBackupBtn">
               Exportar Backup JSON
             </button>
@@ -492,7 +482,7 @@
 
       <!-- GRUPO 4: SOBRE O APP E AJUDA -->
       <section class="settings-section" aria-labelledby="settings-group-about">
-        <h3 class="section-title settings-section-title" id="settings-group-about" data-i18n="settings.aboutSubtitle">Sobre o App e Ajuda</h3>
+        <h3 class="section-title settings-section-title" id="settings-group-about" data-i18n="settings.aboutSubtitle">Ajuda</h3>
 
         <div class="panel settings-card">
           <div class="settings-card-header settings-card-header--about">
@@ -509,10 +499,15 @@
               </button>
             </div>
           </div>
+          <a href="mailto:lguscouto@gmail.com?subject=Protocolo%20PEP%20%E2%80%94%20Sugest%C3%A3o%20%2F%20Feedback&body=Ol%C3%A1%2C%0A%0AGostaria%20de%20enviar%20uma%20sugest%C3%A3o%20para%20o%20Protocolo%20PEP." class="btn-sec settings-feedback-link" data-i18n="experience.sendFeedback">Enviar sugestão</a>
         </div>
       </section>
     </section>
   </main>
+
+  <button type="button" class="quick-register-fab" id="quick-register-fab" aria-haspopup="dialog" aria-controls="quick-register-modal" aria-label="Registrar aplicação, peso, sintoma ou medidas" data-i18n-aria="experience.registerAria">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span data-i18n="experience.register">Registrar</span>
+  </button>
 
   <!-- Bottom Navigation Bar -->
   <nav class="nav" role="tablist" aria-label="Navegação Principal">
@@ -526,18 +521,18 @@
       </svg>
       <span data-i18n="nav.dashboard">Hoje</span>
     </button>
-    <button data-tab="week" role="tab" id="tab-week" aria-controls="view-week" aria-selected="false" tabindex="-1">
+    <button data-tab="journey" role="tab" id="tab-journey" aria-controls="view-journey" aria-selected="false" tabindex="-1">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/>
       </svg>
-      <span data-i18n="nav.week">Agenda</span>
+      <span data-i18n="nav.journey">Jornada</span>
     </button>
-    <button data-tab="history" role="tab" id="tab-history" aria-controls="view-history" aria-selected="false" tabindex="-1">
+    <button data-tab="progress" role="tab" id="tab-progress" aria-controls="view-progress" aria-selected="false" tabindex="-1">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <circle cx="12" cy="12" r="10"/>
         <polyline points="12 6 12 12 16 14"/>
       </svg>
-      <span data-i18n="nav.history">Histórico</span>
+      <span data-i18n="nav.progress">Progresso</span>
     </button>
     <button data-tab="settings" role="tab" id="tab-settings" aria-controls="view-settings" aria-selected="false" tabindex="-1">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -547,6 +542,16 @@
       <span data-i18n="nav.settings">Mais</span>
     </button>
   </nav>
+
+  <div class="modal quick-register-modal" id="quick-register-modal" role="dialog" aria-modal="true" aria-labelledby="quick-register-title" aria-hidden="true">
+    <div class="sheet sheet--narrow quick-register-sheet">
+      <div class="sheet-head">
+        <div class="sheet-title" id="quick-register-title" data-i18n="experience.register">Registrar</div>
+        <button type="button" class="sheet-x" id="quick-register-close" aria-label="Fechar registro rápido">✕</button>
+      </div>
+      <div class="sheet-body" id="quick-register-body"></div>
+    </div>
+  </div>
 
   <!-- Modal: Edição de Peptídeo -->
   <div class="modal" id="edit-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
@@ -802,7 +807,7 @@
           <select class="form-field-control" id="retro-pep-select"></select>
         </div>
 
-        <div class="form-field">
+        <div class="form-field retro-advanced">
           <label for="retro-status-select" class="form-field-label" data-i18n="modals.retro.statusLabel">O que aconteceu?</label>
           <select class="form-field-control" id="retro-status-select">
             <option value="applied" data-i18n="modals.retro.statusApplied">Aplicada</option>
@@ -810,7 +815,7 @@
             <option value="missed" data-i18n="modals.retro.statusMissed">Esquecida</option>
           </select>
         </div>
-        <div class="form-field" id="retro-reason-field" hidden>
+        <div class="form-field retro-advanced" id="retro-reason-field" hidden>
           <label for="retro-reason-input" class="form-field-label" data-i18n="phase1.statusReason">Motivo (opcional)</label>
           <input type="text" class="form-field-control" id="retro-reason-input" maxlength="200" />
         </div>
@@ -822,7 +827,7 @@
         </div>
 
         <div class="form-field-grid form-field-grid--date">
-          <div class="form-field">
+          <div class="form-field retro-advanced">
             <label for="retro-date-input" class="form-field-label" data-i18n="modals.retro.dateLabel">Data da Aplicação</label>
             <input type="date" class="form-field-control form-field-control--compact" id="retro-date-input" />
           </div>
@@ -843,12 +848,13 @@
           </div>
         </div>
 
-        <div class="form-field form-field--large">
+        <div class="form-field form-field--large retro-advanced">
           <label for="retro-note-input" class="form-field-label" data-i18n="modals.retro.notesLabel">Observações / Motivo</label>
           <input type="text" class="form-field-control" id="retro-note-input" placeholder="ex: esqueci de anotar ontem" data-i18n-placeholder="modals.retro.notesPlaceholder" />
         </div>
 
-        <div id="retro-audit-hint" style="margin-bottom:14px;padding:9px 12px;background:rgba(44,197,192,0.08);border:1px solid rgba(44,197,192,0.2);border-radius:10px;font-size:11.5px;color:var(--muted);line-height:1.4;">
+        <button type="button" class="btn-subtle retro-more-toggle" id="retro-more-toggle" aria-expanded="false">Mais opções</button>
+        <div id="retro-audit-hint" class="retro-advanced" style="margin-bottom:14px;padding:9px 12px;background:rgba(44,197,192,0.08);border:1px solid rgba(44,197,192,0.2);border-radius:10px;font-size:11.5px;color:var(--muted);line-height:1.4;">
           🕒 <b data-i18n="modals.retro.auditTitle">Registro Auditável:</b> Aplicações marcadas em datas passadas recebem automaticamente a marcação de auditoria <i data-i18n="modals.retro.auditRetro">Retroativo</i>.
         </div>
         <div id="retro-edit-history" hidden style="margin-bottom:14px;font-size:12px;color:var(--muted);line-height:1.5;"></div>
@@ -1128,7 +1134,7 @@
       <form id="measurement-form" class="form-shell">
         <div class="sheet-body form-sheet-body--measurement">
           <!-- Data e Hora -->
-          <div class="form-field-row">
+          <div class="form-field-row measurement-section measurement-section--date">
             <div class="form-field form-field--date">
               <label for="meas-date-input" class="form-field-label form-field-label--strong" data-i18n="modals.measurements.dateLabel">Data</label>
               <input type="date" id="meas-date-input" class="form-field-control" required>
@@ -1140,12 +1146,12 @@
           </div>
 
           <!-- Peso Corporal -->
-          <div class="form-field form-field--large">
+          <div class="form-field form-field--large measurement-section measurement-section--weight">
             <label for="meas-weight-input" class="form-field-label form-field-label--strong" data-i18n="modals.measurements.weightLabel">Peso Corporal (kg)</label>
             <input type="number" id="meas-weight-input" class="form-field-control" inputmode="decimal" step="0.1" min="20" max="400" placeholder="Ex: 82,5 (opcional)" data-i18n-placeholder="modals.measurements.weightPlaceholder">
           </div>
 
-          <details class="measurement-circumferences">
+          <details class="measurement-circumferences measurement-section measurement-section--details">
             <summary data-i18n="modals.measurements.circumferencesSummary">Circunferências (opcional)</summary>
             <div class="measurement-circumferences-grid">
               <label class="form-field" for="meas-abdomen-input"><span class="form-field-label form-field-label--strong" data-i18n="modals.measurements.abdomenLabel">Abdômen</span><span class="measurement-unit-input"><input type="text" id="meas-abdomen-input" class="form-field-control" inputmode="decimal" placeholder="Ex: 92,5" data-i18n-placeholder="modals.measurements.abdomenPlaceholder" aria-describedby="meas-circumferences-help"><span>cm</span></span></label>
@@ -1156,7 +1162,7 @@
           </details>
 
           <!-- Nível de Energia (1 a 5) -->
-          <div class="form-field form-field--large">
+          <div class="form-field form-field--large measurement-section measurement-section--details">
             <div class="form-field-label form-field-label--strong" data-i18n="modals.measurements.energyLabel">Nível de Energia (1 = Muito baixa, 5 = Excelente)</div>
             <div class="form-choice-row" role="radiogroup" aria-label="Nível de energia">
               <button type="button" class="btn-subtle form-choice-btn form-choice-btn--energy" id="meas-energy-1">1 😫</button>
@@ -1168,7 +1174,7 @@
           </div>
 
           <!-- Nível de Humor (1 a 5) -->
-          <div class="form-field form-field--large">
+          <div class="form-field form-field--large measurement-section measurement-section--details">
             <div class="form-field-label form-field-label--strong" data-i18n="modals.measurements.moodLabel">Humor / Bem-estar (1 = Ruim, 5 = Excelente)</div>
             <div class="form-choice-row" role="radiogroup" aria-label="Nível de humor">
               <button type="button" class="btn-subtle form-choice-btn form-choice-btn--mood" id="meas-mood-1">1 😞</button>
@@ -1180,7 +1186,7 @@
           </div>
 
           <!-- Sintomas e Observações Rápidas -->
-          <div class="form-field form-field--large">
+          <div class="form-field form-field--large measurement-section measurement-section--symptoms">
             <div class="form-field-label form-field-label--strong" data-i18n="modals.measurements.symptomsHeading">Sintomas & Efeitos Autorrelatados</div>
             <div id="meas-symptoms-chips" class="form-chip-list"></div>
             <p class="form-field-hint" data-i18n="modals.measurements.symptomsHelp">A intensidade é opcional e pode ser ajustada em cada sintoma selecionado.</p>
@@ -1193,7 +1199,7 @@
           </div>
 
           <!-- Observações Livres -->
-          <div class="form-field form-field--last">
+          <div class="form-field form-field--last measurement-section measurement-section--notes">
             <label for="meas-notes-input" class="form-field-label form-field-label--strong" data-i18n="modals.measurements.notesLabel">Notas Adicionais</label>
             <textarea id="meas-notes-input" class="form-field-control" rows="2" placeholder="Ex: Treino pesado, hidratação normal, sono de 8h..." maxlength="500"></textarea>
           </div>

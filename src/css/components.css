@@ -96,6 +96,33 @@
   display: block;
 }
 
+.journey-segmented { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; margin-bottom: var(--space-4); border-radius: var(--radius-md); background: var(--surface2); }
+.journey-segmented button { min-height: 44px; border: 0; border-radius: 10px; background: transparent; color: var(--muted); font-weight: 700; }
+.journey-segmented button[aria-selected="true"] { background: var(--surface3); color: var(--text); box-shadow: var(--shadow-sm); }
+.journey-panel[hidden] { display: none; }
+.history-filter-disclosure { margin-bottom: var(--space-4); }
+.history-filter-disclosure > summary { min-height: 44px; display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--text); font-weight: 700; cursor: pointer; }
+.history-filter-disclosure > summary span { color: var(--muted); font-size: 12px; font-weight: 500; }
+.progress-summary, .progress-context, .progress-empty { margin-bottom: var(--space-4); padding: var(--space-4); border-radius: var(--radius-lg); background: var(--surface); }
+.progress-period-controls { display: flex; align-items: end; gap: 10px; margin-bottom: 12px; }
+.progress-period-controls > label { display: grid; gap: 5px; color: var(--muted); font-size: 12px; }
+.progress-period-controls .history-custom-dates { margin: 0; }
+.progress-summary { display: grid; gap: 10px; }
+.progress-summary > span, .progress-context small { color: var(--muted); }
+.progress-summary > strong { font: 700 22px var(--display); }
+.progress-summary > div { display: flex; gap: 18px; }
+.progress-context h3 { margin: 0 0 12px; }
+.progress-context > div { min-height: 48px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border-top: 1px solid var(--border); }
+.progress-context > div > span:first-child { display: grid; gap: 2px; }
+.settings-subsection-title { margin: 22px 0 10px; color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: .06em; }
+.calc-details { margin-top: 12px; text-align: left; }
+.calc-details > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; color: var(--primary); font-weight: 700; }
+.today-progress-compact { margin-top: var(--space-4); padding: var(--space-3) 0; display: grid; gap: 5px; border-top: 1px solid var(--border); color: var(--muted); font-size: 12px; }
+.today-progress-compact strong { color: var(--text); font-size: 14px; }
+.today-progress-compact button { justify-self: start; min-height: 44px; padding: 0; border: 0; background: transparent; color: var(--primary); font-weight: 700; }
+.settings-theme-toggle, .settings-feedback-link { width: 100%; margin: 10px 0; text-align: center; }
+.dash-empty-icon svg { width: 32px; height: 32px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+
 @keyframes viewFade {
   from {
     opacity: 0;
@@ -4016,3 +4043,54 @@ html.high-contrast .protocol-revision-line { stroke-width: 3; }
 .routine-reminder-label input:disabled {
   cursor: not-allowed;
 }
+/* Registro corporal com revelação progressiva. */
+#measurement-modal[data-mode="weight"] .measurement-section--symptoms,
+#measurement-modal[data-mode="weight"] .measurement-section--details,
+#measurement-modal[data-mode="symptom"] .measurement-section--weight,
+#measurement-modal[data-mode="symptom"] .measurement-section--details {
+  display: none;
+}
+
+#retro-log-modal[data-mode="compact"][data-expanded="false"] .retro-advanced { display: none; }
+.retro-more-toggle { width: 100%; margin-bottom: var(--space-3); }
+
+.quick-register-fab {
+  position: fixed;
+  z-index: 90;
+  right: calc(18px + var(--app-safe-right));
+  bottom: calc(76px + var(--app-safe-bottom));
+  min-width: 132px;
+  min-height: 52px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 999px;
+  background: #0b5f59;
+  color: #fff;
+  box-shadow: 0 10px 28px rgba(0,0,0,.35);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font: 700 14px var(--font);
+}
+.quick-register-fab svg, .quick-register-option svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.quick-register-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; }
+.quick-register-option, .quick-register-treatment {
+  min-height: 76px;
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-md);
+  background: var(--surface2);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  font-weight: 700;
+}
+.quick-register-option { flex-direction: column; justify-content: center; }
+.quick-register-hint { color: var(--muted); margin: 0 0 14px; }
+.quick-register-list { display: grid; gap: 10px; }
+.quick-register-treatment { width: 100%; text-align: left; flex-direction: column; align-items: flex-start; }
+.quick-register-treatment span { color: var(--muted); font-size: 12px; font-weight: 500; }
+@media (max-width: 380px) { .quick-register-fab { min-width: 52px; padding: 0 15px; } .quick-register-fab span { display: none; } }
+body:has(.modal.on) .quick-register-fab { visibility: hidden; pointer-events: none; }
