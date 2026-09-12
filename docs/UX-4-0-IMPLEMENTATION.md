@@ -1,62 +1,62 @@
-# Nova experiência PEP — acompanhamento da implementação
+# Protocolo PEP 3.9.10 — consolidação da auditoria UI/UX
 
-Base: `234af84` (3.9.0). Branch: `codex/pep-ux-4-0`.
+Entrega de avaliação na branch `codex/pep-ux-4-0-polish`, criada a partir da tag `v3.9.9`. A implementação preserva o funcionamento Local-First/offline, os formatos de dados e os recursos avançados. Não houve merge em `main`.
 
-Entrega de avaliação, sem merge ou release pública. Desfazer exclusões permanece fora do escopo.
+## Escopo e limitação
+
+Foram implementados os achados P0, P1 e P2 da auditoria, incluindo registro rápido, foco e acessibilidade, i18n, terminologia, Hoje/Jornada/Mais, Progresso, calculadora, feedback, toolchain Capacitor 8 e carregamento tardio. Não foram adicionados recursos clínicos, dependências de rede ou migrações de storage.
+
+O teste em dispositivo físico **não foi executado por decisão de escopo**. A validação Android desta entrega usa sincronização Capacitor, testes nativos, lint, build e emulador automatizado.
 
 ## Mapa de acesso
 
-| Recurso anterior | Destino |
+| Recurso | Destino em 3.9.10 |
 | --- | --- |
-| Hoje / próxima aplicação | Hoje e + Registrar |
-| Agenda | Jornada > Próximos |
-| Histórico, correções e exclusões | Jornada > Histórico |
-| Evolução, gráficos, metas e aderência | Progresso |
-| Peso, sintomas e medidas | + Registrar |
-| Cadastro e gestão de protocolos | Mais > Tratamento |
-| Frascos e locais | Mais > Tratamento |
+| Próxima aplicação e registros do dia | Hoje e `+ Registrar` |
+| Agenda e próximos sete dias | Jornada > Próximos |
+| Histórico, edição, exclusão e registro retroativo | Jornada > Histórico |
+| Evolução, gráficos, metas e regularidade | Progresso |
+| Peso, sintomas e medidas | `+ Registrar` (modos rápidos e completo) |
+| Tratamentos, frascos e locais | Mais > Tratamento |
 | Calculadora, pesquisa e relatórios | Mais > Ferramentas |
-| Backup, importar, exportar, compartilhar e Health Connect | Mais > Dados |
-| Aparência, idioma, acessibilidade, bloqueio e notificações | Mais > App |
-| Onboarding, privacidade, feedback e diagnósticos | Mais > Ajuda |
+| Health Connect, backup, importar, exportar e compartilhar | Mais > Dados |
+| Notificações, aparência, idioma, acessibilidade, segurança e widget | Mais > App |
+| Termos, privacidade, sugestão, diagnósticos e sobre | Mais > Ajuda |
 
-## Validação por etapa
+## Commits por área
 
-Os resultados são registrados após execução. Os dados de teste são sintéticos.
+- `dbede0d` — escolha explícita no registro manual sem pendência.
+- `29be32b` — formulário compacto de aplicação e foco.
+- `a7bf87d` — Jornada, Mais, Progresso, feedback e superfícies principais.
+- `3ab0aac` — Capacitor 8, dependências, Android e CI.
+- `4745c8c` — testes E2E da navegação, foco e períodos.
+- `d5800cc` — restauração de destinos legados de Mais e binding dinâmico de idioma.
 
-### Etapa 0
+O APK foi gerado a partir do commit de implementação `d5800cc`.
 
-- Instalação limpa concluída.
-- Unitários: 553 testes em 54 arquivos aprovados.
-- Build Web: aprovado; a entrada inicial ficou em 87,79 kB gzip, acima do orçamento de 80 kB já excedido pela base (84,84 kB na medição inicial).
-- CI habilitada também nas branches `codex/**`.
-- Baseline: E2E da base teve 150 aprovados, 7 ignorados e 6 falhas de touch/visual; a medição inicial acusou somente o orçamento de JavaScript gzip.
+## Validação automatizada
 
-Não houve atualização de dependências: o diagnóstico do npm na instalação é preexistente a esta refatoração.
+- `npm ci`: aprovado.
+- `npm test`: **555/555 testes em 54 arquivos aprovados**.
+- `npm run build`: aprovado.
+- `npm run test:performance`: aprovado; JavaScript inicial **67.722 bytes gzip (66,1 KiB)**, DOM vazio 806, first content 196 ms, DOM ready 310,6 ms, long task 159 ms, e primeiro acesso tardio Jornada 9,3 ms, Progresso 63 ms e Mais 83,3 ms. O aviso conhecido de import dinâmico de medições permanece documentado; não foi introduzido import cosmético.
+- E2E direcionado `tests/e2e/ux-4-0.spec.js`: **30/30** nos projetos `android-small`, `android-standard` e `wide-mobile`.
+- E2E de compatibilidade da organização de Mais: aprovado no projeto `android-small`.
+- Android: `cap sync`, `testDebugUnitTest`, `lintDebug` e `assembleDebug`: aprovados.
+- `npm audit --omit=dev`: **0 vulnerabilidades**.
+- `npm audit` completo: três ocorrências moderadas transitivas em ferramentas de desenvolvimento (`@capacitor/cli`/`xcode`/`uuid`); não chegam ao runtime publicado e não foram corrigidas com `--force`.
 
-### Etapas 1–5
-
-- Medições foram isoladas do carregamento do Histórico, com modos `weight`, `symptom` e `full`, data local e listeners idempotentes.
-- `+ Registrar` abre aplicação, peso, sintoma e medidas; trata uma, várias ou nenhuma pendência e reutiliza o formulário/persistência existentes.
-- A navegação agora é `Hoje`, `Jornada`, `Progresso` e `Mais`. Jornada mantém os segmentos Próximos/Histórico; Progresso concentra evolução, aderência, metas, medidas e sintomas.
-- Hoje mantém uma pendência principal, os demais registros e um resumo compacto de progresso. Mais agrupa Tratamento, Ferramentas, Dados, App e Ajuda.
-- Calculadora, onboarding, ícones locais, safe-area e traduções foram atualizados sem dependências de rede ou bibliotecas novas.
-
-### Etapa 6 — validação da implementação
-
-- Unitários: 553/553 aprovados.
-- E2E Android pequeno: 56/56 aprovados após a atualização dos contratos de navegação; a matriz visual foi revisada e os snapshots de 360, 412 e 600 px foram atualizados.
-- E2E direcionado da nova experiência: 4/4 aprovados; fluxos de rotina e lembretes: 16/16 aprovados.
-- Axe no Hoje, Calculadora, Progresso, Mais e Notificações: aprovado nos fluxos exercitados.
-- A medição de desempenho completou os cenários de inicialização e acesso tardio, mas falhou na asserção do JavaScript inicial (87.791 bytes contra 81.920). Nenhum limite foi relaxado; os demais valores não foram declarados aprovados sem a saída final da asserção.
-- CI final do commit `31b88ce`: Node Test & Web Build aprovado com 169 testes E2E e 7 cenários ignorados; Android Build & Native Tests aprovado com sincronização Capacitor, `testDebugUnitTest`, `lintDebug` e `assembleDebug`.
-- Os snapshots de referência foram atualizados nos ambientes Windows e Linux. O cenário Galaxy A55 usa a navegação atual de Mais > Tratamento e o fluxo de teclado passou localmente e na CI.
+A matriz física permanece excluída conforme o escopo desta versão. A execução completa da matriz E2E legada mantém os cenários históricos de touch/visual já identificados na base; os fluxos novos e afetados possuem cobertura direcionada acima.
 
 ## APK de avaliação
 
-Arquivo gerado a partir do commit `31b88ce3481d7044e2e7077306d6fd04dedbbfe8`:
+Nome: `Protocolo-PEP-v3.9.10.apk`
+Commit de origem: `d5800cc`
+Bytes: **12.358.149**
+SHA-256: `79BD1F08D20096DADBEEDC6F44E191FC9C872B1EBA52F29601038CAFCF52C80C`
 
-`Protocolo-PEP-UX4-0-31b88ce.apk` — 12.239.206 bytes  
-SHA-256: `5639059C74E55A46925BBC816D90577A896D8742FE24D653A37D04F3B687A505`
+O APK é uma build debug para avaliação. A ausência de teste em dispositivo físico será repetida nas notas da release pública.
 
-O APK é uma build debug para avaliação. Não houve validação em aparelho físico nem publicação pública nesta entrega.
+## Release
+
+A tag anotada e a release pública `v3.9.10` serão criadas somente depois da validação final, do sucesso dos jobs Web/E2E/Performance/Android na CI e da conferência do SHA-256 do asset hospedado contra o arquivo local.

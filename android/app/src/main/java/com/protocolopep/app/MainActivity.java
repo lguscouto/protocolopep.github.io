@@ -22,7 +22,7 @@ public class MainActivity extends BridgeActivity {
     }
 
     /**
-     * Capacitor 6 does not expose the reliable CSS safe-area variables that are
+     * Capacitor does not expose reliable CSS safe-area variables that are
      * needed by Android edge-to-edge layouts. Publish the real system-bar and
      * cutout insets to the document so the web UI can reserve that space.
      */
