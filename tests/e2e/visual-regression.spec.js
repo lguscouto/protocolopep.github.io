@@ -201,6 +201,9 @@ test.describe("Protocolo PEP — Matriz de regressão visual", () => {
       await assertViewportIntegrity(page, `histórico/${theme.id}/${viewportWidth}px`);
 
       await page.locator("#tab-settings").click();
+      await expect(page.locator("#view-settings")).toHaveClass(/\bon\b/);
+      await expect(page.locator("#view-settings")).toHaveAttribute("data-feature-ready", "true");
+      await expect(page.locator("[data-settings-target='treatment']")).toBeVisible();
       await page.locator("[data-settings-target='treatment']").click();
       await assertVisualAnchor(page, ".settings-section", `ajustes (${theme.id})`);
       await assertVisualAnchor(page, ".edit-vial-btn", `inventário preenchido (${theme.id})`);
