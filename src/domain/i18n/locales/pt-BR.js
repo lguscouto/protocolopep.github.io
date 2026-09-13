@@ -256,6 +256,9 @@ export const ptBR = {
     "vialBadgeTitle": "Saldo no frasco ativo",
     "unrecordAria": "Desmarcar dose de {name}",
     "recordAria": "Confirmar dose de {name}",
+    "todayProgressTitle": "Progresso de hoje",
+    "startDateShort": "início",
+    "viewProgress": "Ver progresso",
     "lastSite": "Último local registrado: {site}",
     "emptyTodayTitle": "Comece adicionando seu tratamento",
     "emptyTodayDesc": "Leva menos de 1 minuto. Você poderá registrar aplicações, receber lembretes e acompanhar seu histórico."

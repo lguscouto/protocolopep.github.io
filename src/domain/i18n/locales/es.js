@@ -256,6 +256,9 @@ export const es = {
     "vialBadgeTitle": "Saldo del vial activo",
     "unrecordAria": "Desmarcar dosis de {name}",
     "recordAria": "Confirmar dosis de {name}",
+    "todayProgressTitle": "Progreso de hoy",
+    "startDateShort": "inicio",
+    "viewProgress": "Ver progreso",
     "lastSite": "Último sitio registrado: {site}",
     "emptyTodayTitle": "Comienza agregando tu tratamiento",
     "emptyTodayDesc": "Toma menos de un minuto. Puedes registrar aplicaciones, recibir recordatorios y revisar tu historial."

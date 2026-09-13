@@ -256,6 +256,9 @@ export const en = {
     "vialBadgeTitle": "Active vial balance",
     "unrecordAria": "Unmark dose for {name}",
     "recordAria": "Confirm dose for {name}",
+    "todayProgressTitle": "Today's progress",
+    "startDateShort": "start",
+    "viewProgress": "View progress",
     "lastSite": "Last recorded site: {site}",
     "emptyTodayTitle": "Start by adding your treatment",
     "emptyTodayDesc": "It takes less than a minute. You can record applications, receive reminders, and review your history."

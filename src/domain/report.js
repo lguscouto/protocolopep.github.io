@@ -190,7 +190,7 @@ function sanitizeMeasurementForReport(entry, includeNotes = false) {
   };
 }
 
-const normalizeSearch = (value) => String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR");
+const normalizeSearch = (value) => String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
 function revisionLocalParts(iso) {
   const date = new Date(iso);

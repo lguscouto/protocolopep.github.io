@@ -137,6 +137,33 @@ describe("Domínio de Internacionalização (i18n)", () => {
         expect(resolveNestedKey(es, key), `Chave ${key} não encontrada em es`).toBeTruthy();
       }
     });
+
+    it("não reintroduz hardcodes conhecidos nas superfícies auditadas", async () => {
+      const fs = await import("fs/promises");
+      const path = await import("path");
+      const files = [
+        "src/main.js",
+        "src/ui/injection-site-picker.js",
+        "src/ui/notification-settings.js",
+        "src/ui/retro-log.js",
+        "src/ui/report-preview.js",
+        "src/ui/calculator.js",
+        "src/domain/report.js",
+        "src/domain/measurements.js"
+      ];
+      const forbidden = [
+        /toLocaleLowerCase\(\s*["']pt-BR["']\s*\)/,
+        /toLocaleDateString\(\s*["']pt-BR["']\s*\)/,
+        /toLocaleTimeString\(\s*["']pt-BR["']\s*\)/,
+        /Progresso de hoje/,
+        /peso mais recente/,
+        /-- Não especificado --/
+      ];
+      for (const relative of files) {
+        const source = await fs.readFile(path.resolve(process.cwd(), relative), "utf8");
+        for (const pattern of forbidden) expect(source, `${relative} contém ${pattern}`).not.toMatch(pattern);
+      }
+    });
   });
 
   describe("resolveNestedKey", () => {

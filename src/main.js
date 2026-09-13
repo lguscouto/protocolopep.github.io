@@ -1124,7 +1124,7 @@ function renderToday() {
       let detailsHTML = "";
       if (perDay <= 1) {
         ctrlHTML = `
-          <button type="button" class="take ${vm.isCompleted ? "done" : ""}" data-id="${sanitizeId(p.id)}" aria-label="${vm.isCompleted ? 'Desmarcar dose de ' + esc(p.name) : 'Confirmar dose de ' + esc(p.name)}">
+          <button type="button" class="take ${vm.isCompleted ? "done" : ""}" data-id="${sanitizeId(p.id)}" aria-label="${esc(i18nService.t(vm.isCompleted ? "dashboard.unrecordAria" : "dashboard.recordAria", { name: p.name }))}">
             <span>${vm.isCompleted ? i18nService.t(`phase1.${doseStatus(records[0])}`) : i18nService.t("common.apply")}</span>
             ${vm.isCompleted && lastTime ? `<span class="at">${esc(lastTime)}</span>` : ""}
           </button>`;
@@ -1175,7 +1175,7 @@ function renderToday() {
           ${(p.start || p.note || p.time || p.calculationSnapshot) ? `
             <div class="note-line">
               ${p.time ? `<span class="note-start">⏰ ${esc(p.time)}</span>` : ""}
-              ${p.start ? `<span class="note-start">início ${fmtBR(p.start)}</span>` : ""}
+              ${p.start ? `<span class="note-start">${esc(i18nService.t("dashboard.startDateShort"))} ${fmtBR(p.start)}</span>` : ""}
               ${p.calculationSnapshot ? `<span class="note-calc" title="${esc(p.calculationSnapshot.formula || '')}">🔬 ${esc(String(p.calculationSnapshot.vialMg))}mg/${esc(String(p.calculationSnapshot.waterMl))}mL</span>` : ""}
               ${p.note ? `<span class="note-txt">${esc(p.note)}</span>` : ""}
             </div>` : ""}
@@ -1197,7 +1197,7 @@ function renderToday() {
 
   const compactProgress = document.getElementById("today-progress-compact");
   if (compactProgress) {
-    compactProgress.innerHTML = `<strong>Progresso de hoje</strong><span>${dayProgress.resolvedCount} de ${dayProgress.totalDue} registros resolvidos${latestWeight ? ` · peso mais recente ${esc(String(latestWeight.weightKg))} kg` : ""}</span><button type="button" data-action="open-progress">Ver progresso</button>`;
+    compactProgress.innerHTML = `<strong>${esc(i18nService.t("dashboard.todayProgressTitle"))}</strong><span>${esc(i18nService.t("dashboard.recordedProgress", { taken: dayProgress.resolvedCount, due: dayProgress.totalDue }))}${latestWeight ? ` · ${esc(i18nService.t("experience.latestWeight"))} ${esc(String(latestWeight.weightKg))} kg` : ""}</span><button type="button" data-action="open-progress">${esc(i18nService.t("dashboard.viewProgress"))}</button>`;
   }
   // Cálculo canônico do anel diário
   const ringN = document.getElementById("ring-n");
