@@ -1,6 +1,6 @@
 # 🧪 Protocolo PEP · App Android (Local-First)
 
-![Version](https://img.shields.io/badge/version-3.9.12-2CC5C0)
+![Version](https://img.shields.io/badge/version-3.9.13-2CC5C0)
 ![Android](https://img.shields.io/badge/Android-8.0%2B-green)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![CI](https://github.com/lguscouto/protocolopep.github.io/actions/workflows/ci.yml/badge.svg)
@@ -9,13 +9,15 @@ Aplicativo Android/PWA para registrar aplicações de peptídeos com poucos toqu
 
 ---
 
-## 🚀 Novidades da Versão 3.9.12 (Fechamento da auditoria UI/UX)
+## 🚀 Novidades da Versão 3.9.13 (Polimento final de UI/UX)
 
 - **Idiomas completos:** chamadas visíveis da experiência nova usam PT-BR, inglês e espanhol, incluindo registros, diagnósticos, compartilhamento, locais, inventário e Health Connect.
 - **Mais previsível:** a primeira abertura mostra somente as cinco categorias; cada painel abre isoladamente, tem retorno por Voltar e restaura o foco no acionador.
 - **Acabamento acessível:** superfícies auditadas usam classes CSS, controles funcionais usam SVG local e o Histórico concentra Registro retroativo e Relatório em “Mais ações”.
 - **Performance rastreável:** a medição inclui uma fixture carregada, snapshot enxuto de Hoje, paginação de históricos e limites fixos de regressão para startup e primeiro acesso às áreas sob demanda.
-- **Release Android versionada:** `versionName 3.9.12` e `versionCode 41`. O APK é debug para avaliação; teste em dispositivo físico não foi executado por decisão de escopo.
+- **Navegação refinada:** Carregar mais acumula itens, a topbar acompanha a view, o FAB evita competir com painéis e a Jornada usa hierarquia compacta.
+- **Controles acessíveis:** ícones semânticos na navegação, descrições curtas em Mais e modal de notificações com um único fechamento.
+- **Release Android versionada:** `versionName 3.9.13` e `versionCode 42`. O APK é debug para avaliação; teste em dispositivo físico não foi executado por decisão de escopo.
 
 ## 🚀 Novidades da Versão 3.9.10 (Experiência 4.0)
 

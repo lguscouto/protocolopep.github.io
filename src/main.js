@@ -352,7 +352,7 @@ const settingsFeature = createFeatureLoader(async () => {
     diagnostics.setupDiagnosticsModal({
       storage,
       getNotificationsActive: () => (window.pepNotifications ? window.pepNotifications.hasActiveReminders() : false),
-      appVersion: "3.9.12"
+      appVersion: "3.9.13"
     });
     const widgetToggle = document.getElementById("widget-discrete-toggle");
     if (widgetToggle && widgetToggle.dataset.widgetBound !== "true") {
