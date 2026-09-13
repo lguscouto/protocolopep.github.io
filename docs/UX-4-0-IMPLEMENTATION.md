@@ -1,21 +1,21 @@
-# Protocolo PEP 3.9.11 — fechamento da auditoria UI/UX
+# Protocolo PEP 3.9.12 — fechamento de UI/UX, i18n e desempenho
 
-Entrega de avaliação na branch `codex/pep-audit-3-9-11`, criada a partir da `main` já integrada com a 3.9.10. A implementação preserva o funcionamento Local-First/offline, os formatos de dados e os recursos avançados. A 3.9.10 foi integrada em `main` antes desta rodada; esta documentação mantém uma referência única ao APK oficial de cada release.
+Entrega de avaliação na branch `codex/pep-ux-3-9-12`, criada a partir da `main` no commit `badbfd6`. A versão consolida os achados P1/P2 da auditoria sem alterar schemas, chaves de storage, fórmulas, `DoseService`, inventário, Health Connect ou o funcionamento Local-First/offline.
 
 ## Escopo e limitação
 
-Foram consolidados os achados P1 e P2 desta auditoria, incluindo integridade de idiomas, navegação isolada em Mais, metadados dinâmicos, medições de performance com fixture, SVGs locais e migração de estilos inline nas superfícies tocadas. A base 3.9.10 já contém o registro rápido, foco e acessibilidade, Hoje/Jornada/Mais, Progresso, calculadora, feedback, toolchain Capacitor 8 e carregamento tardio. Não foram adicionados recursos clínicos, dependências de rede ou migrações de storage.
+Foram localizados os fluxos de aplicação e medições, relatórios/CSV/PDF, notificações, diagnósticos e mensagens de erro. A interface mantém Hoje, Jornada, Progresso, Mais e `+ Registrar`; Mais usa menu e painel único; Histórico e medições têm paginação acessível; o startup usa snapshot revisionado e prefetch em estágios; ícones funcionais são SVGs locais e os estilos tocados usam classes compatíveis com os três temas.
 
-O teste em dispositivo físico **não foi executado por decisão de escopo**. A validação Android desta entrega usa sincronização Capacitor, testes nativos, lint, build e emulador automatizado.
+O teste em aparelho físico **não foi executado por decisão de escopo**. A validação Android desta entrega usa `cap sync`, testes nativos, lint, build e emulação automatizada. O APK é debug para avaliação e não é descrito como 100% operacional.
 
 ## Mapa de acesso
 
-| Recurso | Destino em 3.9.11 |
+| Recurso | Destino em 3.9.12 |
 | --- | --- |
-| Próxima aplicação e registros do dia | Hoje e `+ Registrar` |
+| Próxima aplicação, registros do dia e registros rápidos | Hoje e `+ Registrar` |
 | Agenda e próximos sete dias | Jornada > Próximos |
-| Histórico, edição, exclusão e registro retroativo | Jornada > Histórico |
-| Evolução, gráficos, metas e regularidade | Progresso |
+| Histórico, edição, exclusão, relatório e registro retroativo | Jornada > Histórico > Mais ações |
+| Evolução, gráficos, metas, regularidade e detalhes de medidas | Progresso |
 | Peso, sintomas e medidas | `+ Registrar` (modos rápidos e completo) |
 | Tratamentos, frascos e locais | Mais > Tratamento |
 | Calculadora, pesquisa e relatórios | Mais > Ferramentas |
@@ -25,66 +25,48 @@ O teste em dispositivo físico **não foi executado por decisão de escopo**. A 
 
 ## Commits por área
 
-- `dce4b7d` — fechar chaves e textos da evolução em três idiomas.
-- `621f382` — consolidar menu Mais e orçamento de carga.
-- `0681f87` — localizar superfícies restantes e status do Health Connect.
-- `d936923` — remover estilos inline das superfícies auditadas e ajustar E2E à navegação por painel.
+- `e2807b5`, `93c9fcf`, `d1d2f33` — localizar fluxos críticos e remover hardcodes residuais.
+- `6a79cd8`, `56008ef` — localizar relatórios, CSV, PDF e cabeçalhos de exportação.
+- `6f93ffc`, `18d6a60`, `c2fabf5`, `be47883`, `472e469` — endurecer snapshots funcionais e baselines Linux/Ubuntu.
+- `b9104c7`, `7ca4a3d`, `a43425b`, `4e04327` — paginação, snapshot de Hoje, prefetch e remediação de dados legados.
+- `fa277d8`, `d168c80` — mensagens de erro estáveis, feedback e ícones SVG locais.
+- `37df4c5` — versão 3.9.12 e `versionCode 41`.
 
-- `dbede0d` — escolha explícita no registro manual sem pendência.
-- `29be32b` — formulário compacto de aplicação e foco.
-- `a7bf87d` — Jornada, Mais, Progresso, feedback e superfícies principais.
-- `3ab0aac` — Capacitor 8, dependências, Android e CI.
-- `4745c8c` — testes E2E da navegação, foco e períodos.
-- `d5800cc` — restauração de destinos legados de Mais e binding dinâmico de idioma.
-- `e9725c6` — remoção de `nextSite` da Home e badges funcionais com SVG/CSS.
-- `6e23b29` — manter o idioma acessível diretamente no menu Mais.
-- `277e237` — hidratar Mais fora do caminho inicial e tornar o trap de foco determinístico.
-- `a50a39e` — atualizar o snapshot Linux da lista compacta de Mais.
-- `639b1f7` — sincronizar lockfile com a versão 3.9.10 e Node mínimo.
-
-O APK foi gerado a partir do commit validado `639b1f7`.
+O commit que congelou o código usado para o APK é `472e469` (somente testes/documentação visual foram alterados depois; nenhum código de runtime foi modificado).
 
 ## Validação automatizada
 
-- `npm ci`: aprovado na CI com Node 22.21.1.
-- `npm test`: **557/557 testes em 54 arquivos aprovados**.
-- `npm run build`: aprovado.
-- `npm run test:performance`: aprovado; JavaScript inicial **67.942 bytes gzip (66,3 KiB)**. Medianas da fixture vazia: DOM ready 296,2 ms, first content 184 ms, long tasks 154 ms e 812 nós. Medianas da fixture carregada: DOM ready 2.460,6 ms, first content 200 ms, long tasks 2.421 ms e 1.031 nós; primeiro acesso tardio Jornada 8,8 ms, Progresso 62,5 ms e Mais 14,9 ms. O aviso conhecido de import dinâmico de medições permanece documentado; não foi introduzido import cosmético.
-- A baseline carregada fixa limites de regressão de 20% para tempos, 25% para tarefas longas e 5% para nós DOM, com teto de 80 KiB gzip e limites do cenário vazio preservados.
-- E2E completo: **187 aprovados e 7 cenários condicionais ignorados** (194 cenários) no job Web/E2E da CI, incluindo registro, Jornada, Progresso, Mais, acessibilidade, visual e emulação Galaxy A55.
-- Android: `cap sync`, `testDebugUnitTest`, `lintDebug` e `assembleDebug`: aprovados.
+- `npm ci`: aprovado no job Web/E2E da CI com Node 22.21.1.
+- `npm test`: **564/564 testes em 57 arquivos aprovados**.
+- `npm run build`: aprovado com Vite 8.3.0; entry JavaScript **68.806 bytes gzip (67,2 KiB)**, abaixo do teto de 80 KiB.
+- `npm run test:e2e`: **187 aprovados e 7 cenários condicionais ignorados** (194 cenários) no job Web/E2E; inclui registro, Jornada, Progresso, Mais, acessibilidade, visual e Galaxy A55 emulado.
+- `npm run test:performance`: aprovado. Medianas observadas no cenário vazio: DOM ready 324,9 ms, first content 204 ms, long tasks 163 e 799 nós; no cenário carregado: DOM ready 2.636 ms, first content 216 ms, long tasks 2.581 e 1.022 nós. Primeiro acesso carregado: Jornada 10,5 ms, Progresso 91,6 ms e Mais 17,3 ms. Os limites mantêm regressão máxima de 20% para tempos, 25% para long tasks, 5% para nós e o teto de 80 KiB.
+- Android: `npx cap sync android`, `testDebugUnitTest`, `lintDebug` e `assembleDebug`: aprovados localmente e no job Android.
 - `npm audit --omit=dev`: **0 vulnerabilidades**.
-- `npm audit` completo: três ocorrências moderadas transitivas em ferramentas de desenvolvimento (`@capacitor/cli`/`xcode`/`uuid`); não chegam ao runtime publicado e não foram corrigidas com `--force`.
+- `npm audit` completo: três ocorrências moderadas transitivas restritas à toolchain de desenvolvimento (`@capacitor/cli`/`xcode`/`uuid`); nenhuma correção com `--force` foi usada.
 
-A matriz física permanece excluída conforme o escopo desta versão. Os cenários Galaxy A55 são emulação automatizada de viewport e não substituem teste em aparelho.
+CI final da branch: [34769060945](https://github.com/lguscouto/protocolopep.github.io/actions/runs/34769060945), com Web/E2E, Performance e Android verdes.
 
-## APK de avaliação da 3.9.10
+## APK de avaliação da 3.9.12
 
-Nome: `Protocolo-PEP-v3.9.10.apk`
-Commit de origem: `639b1f7`
-Bytes: **12.358.600**
-SHA-256: `372579B0E518E919822B793693D29AD975086BBBA001FC53C4C87F8B09BEF833`
+Nome: `Protocolo-PEP-v3.9.12.apk`  
+Commit de origem: `472e469`  
+Bytes: **12.376.448**  
+SHA-256 local: `3A4ABAD547471BC8907545FC2CF3DB494ED42612E031179C0AB1DB22C1DE4173`
 
-O APK é uma build debug para avaliação. A ausência de teste em dispositivo físico será repetida nas notas da release pública.
+O APK é uma build debug para avaliação. O teste físico não foi executado e não é um gate desta versão.
 
-## Release
+## Releases anteriores
 
-A tag anotada `v3.9.10` aponta para `639b1f7` e a release pública está disponível em [github.com/lguscouto/protocolopep.github.io/releases/tag/v3.9.10](https://github.com/lguscouto/protocolopep.github.io/releases/tag/v3.9.10). A CI final [34720044422](https://github.com/lguscouto/protocolopep.github.io/actions/runs/34720044422) terminou verde; o asset hospedado tem 12.358.600 bytes e SHA-256 `sha256:372579b0e518e919822b793693d29ad975086bbba001fc53c4c87f8b09bef833`, igual ao APK local.
+- [v3.9.11](https://github.com/lguscouto/protocolopep.github.io/releases/tag/v3.9.11) — `Protocolo-PEP-v3.9.11.apk`.
+- [v3.9.10](https://github.com/lguscouto/protocolopep.github.io/releases/tag/v3.9.10) — `Protocolo-PEP-v3.9.10.apk`.
+
+Cada release mantém uma única referência ao seu APK oficial; o asset da 3.9.12 será confirmado após a publicação.
 
 ## Roteiro de smoke físico (execução posterior)
 
-Este roteiro fica documentado para uma rodada futura e não é gate da 3.9.11: instalar o APK debug, atualizar a partir da 3.9.10, abrir Hoje/Jornada/Progresso/Mais, registrar uma aplicação e uma medição, confirmar notificações e ações, testar widget, bloqueio biométrico, Health Connect, exportação/importação de arquivos e haptic, e verificar retomada, Voltar, rotação e teclado. **Teste em dispositivo físico: não executado por decisão de escopo.**
+Instalar o APK debug, atualizar a partir da 3.9.11, abrir Hoje/Jornada/Progresso/Mais, registrar uma aplicação e uma medição, confirmar notificações e ações, testar widget, bloqueio biométrico, Health Connect, exportação/importação de arquivos e haptic, e verificar retomada, Voltar, rotação e teclado. **Teste em aparelho físico: não executado por decisão de escopo.**
 
-## Registro da 3.9.11
+## Fechamento da release
 
-Commit validado do código e origem do APK: `a06e694` (integrado em `main` por fast-forward).
-
-APK: `Protocolo-PEP-v3.9.11.apk` (build debug de avaliação).
-
-Bytes: **12.309.306**.
-
-SHA-256 local: `A55B4A6BE2128D637C6A81B8808D8657F5962A0980F0D3D39568D7CADD46F239`.
-
-CI da branch validada: [34735315202](https://github.com/lguscouto/protocolopep.github.io/actions/runs/34735315202). CI do commit integrado em `main`: [34735685318](https://github.com/lguscouto/protocolopep.github.io/actions/runs/34735685318).
-
-Release pública: [github.com/lguscouto/protocolopep.github.io/releases/tag/v3.9.11](https://github.com/lguscouto/protocolopep.github.io/releases/tag/v3.9.11). O digest do asset hospedado será conferido contra o SHA-256 local antes da entrega.
+Após a integração fast-forward, esta seção será complementada com o commit final de `main`, o run da CI de `main`, o commit apontado pela tag anotada `v3.9.12`, a URL da release pública e o SHA-256 do asset hospedado comparado ao valor local acima.
