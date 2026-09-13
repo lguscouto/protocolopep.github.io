@@ -809,15 +809,19 @@ function activateTabShell(tabId) {
   });
 
   const tabLabels = {
-    today: "Hoje",
-    journey: "Jornada",
-    progress: "Progresso",
-    calc: "Ferramentas",
-    settings: "Mais e Preferências"
+    today: { key: "dashboard.heading", fallback: "Hoje" },
+    journey: { key: "nav.journey", fallback: "Jornada" },
+    progress: { key: "nav.progress", fallback: "Progresso" },
+    calc: { key: "tools.title", fallback: "Ferramentas" },
+    settings: { key: "nav.settings", fallback: "Mais" }
   };
+  const label = tabLabels[tabId] || { key: "nav.dashboard", fallback: tabId };
   const headerTitle = document.getElementById("header-title");
-  if (headerTitle) headerTitle.textContent = tabLabels[tabId] || tabId;
-  accessibilityService.announce(`Aba ${tabLabels[tabId] || tabId} ativa.`);
+  if (headerTitle) {
+    headerTitle.dataset.i18n = label.key;
+    headerTitle.textContent = i18nService.t(label.key) || label.fallback;
+  }
+  accessibilityService.announce(`${i18nService.t("common.tabActive", { tab: i18nService.t(label.key) || label.fallback })}`);
 }
 
 function setupRenderedEventDelegation() {
@@ -1756,7 +1760,7 @@ function renderHistoryLegacy() {
                 <strong>${esc(dateParts.weekdayLong)}</strong>
                 <span>${esc(dateParts.fullDate)}</span>
               </div>
-              <span class="hist-n">${esc(i18nService.t("history.dosesCount", { count: pepEntries.length }))}</span>
+              <span class="hist-n">${esc(historyRecordsCount(pepEntries.length))}</span>
             </div>
             <div class="hist-list">
             ${pepEntries.map((e) => `
@@ -1808,6 +1812,11 @@ function renderHistoryLegacy() {
 
 }
 
+function historyRecordsCount(count) {
+  const key = Number(count) === 1 ? "history.recordsCountOne" : "history.recordsCountOther";
+  return i18nService.t(key, { count });
+}
+
 function renderHistory() {
   const container = document.getElementById("history-list");
   if (!container) return;
@@ -1832,7 +1841,7 @@ function renderHistory() {
   });
   const page = paginate(model.events, { offset: 0, pageSize: historyFilters.visibleCount });
   const countEl = document.getElementById("history-count");
-  if (countEl) countEl.textContent = i18nService.t("history.dosesCount", { count: page.total });
+  if (countEl) countEl.textContent = historyRecordsCount(page.total);
   const contextNote = document.getElementById("history-context-note");
   if (contextNote) contextNote.hidden = historyFilters.compoundId === "all";
   const typeLabel = { application: i18nService.t("history.typeApplication"), measurement: i18nService.t("history.typeMeasurement"), symptom: i18nService.t("history.typeSymptom"), protocol: i18nService.t("history.typeProtocol") };

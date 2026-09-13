@@ -112,6 +112,7 @@ export const en = {
     "correct": "Edit",
     "completed": "Done",
     "optional": "optional"
+    ,"tabActive": "{tab} tab active."
   },
   "nav": {
     "dashboard": "Today",
@@ -264,7 +265,7 @@ export const en = {
     "emptyTodayDesc": "It takes less than a minute. You can record applications, receive reminders, and review your history."
   },
   "week": {
-    "heading": "Upcoming records",
+    "heading": "Next 7 days",
     "subheading": "Tracking and application schedule for the next 7 days",
     "timelineLabel": "Timeline for the next 7 days",
     "today": "Today",
@@ -292,7 +293,7 @@ export const en = {
     "typeProtocol": "Treatment change",
     "heading": "Application History",
     "periodLabel": "Period",
-    "compoundLabel": "Compound",
+    "compoundLabel": "Treatment",
     "typeLabel": "Type",
     "searchLabel": "Search",
     "sevenDays": "7 days",
@@ -300,7 +301,7 @@ export const en = {
     "ninetyDays": "90 days",
     "allHistory": "All history",
     "customPeriod": "Custom",
-    "allCompounds": "All compounds",
+    "allCompounds": "All treatments",
     "allRecords": "All records",
     "applications": "Applications",
     "symptoms": "Symptoms",
@@ -308,13 +309,15 @@ export const en = {
     "protocolChanges": "Protocol changes",
     "searchPlaceholder": "Name or observation",
     "addMeasurements": "+ Measurements / Symptoms",
-    "addRetroactive": "+ Retroactive dose",
+    "addRetroactive": "+ Log previous application",
     "reportButton": "Report",
     "filterPanelLabel": "History filters",
     "contextNote": "Symptoms and measurements are shown as general context for the period, without attributing them to the filtered compound.",
     "timelineLabel": "Application timeline",
     "totalCount": "{count} records logged",
-    "dosesCount": "{count} dose(s)",
+    "dosesCount": "{count} records",
+    "recordsCountOne": "{count} record",
+    "recordsCountOther": "{count} records",
     "retroactive": "Retroactive",
     "deleteDose": "Delete dose",
     "filterAll": "All",

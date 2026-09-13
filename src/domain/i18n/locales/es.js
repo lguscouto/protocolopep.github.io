@@ -112,6 +112,7 @@ export const es = {
     "correct": "Corregir",
     "completed": "Hecho",
     "optional": "opcional"
+    ,"tabActive": "Pestaña {tab} activa."
   },
   "nav": {
     "dashboard": "Hoy",
@@ -264,7 +265,7 @@ export const es = {
     "emptyTodayDesc": "Toma menos de un minuto. Puedes registrar aplicaciones, recibir recordatorios y revisar tu historial."
   },
   "week": {
-    "heading": "Próximos registros",
+    "heading": "Próximos 7 días",
     "subheading": "Seguimiento y frecuencia de aplicaciones para los próximos 7 días",
     "timelineLabel": "Línea de tiempo de los próximos 7 días",
     "today": "Hoy",
@@ -292,7 +293,7 @@ export const es = {
     "typeProtocol": "Cambio de tratamiento",
     "heading": "Historial de Aplicaciones",
     "periodLabel": "Período",
-    "compoundLabel": "Compuesto",
+    "compoundLabel": "Tratamiento",
     "typeLabel": "Tipo",
     "searchLabel": "Buscar",
     "sevenDays": "7 días",
@@ -300,7 +301,7 @@ export const es = {
     "ninetyDays": "90 días",
     "allHistory": "Todo el historial",
     "customPeriod": "Personalizado",
-    "allCompounds": "Todos los compuestos",
+    "allCompounds": "Todos los tratamientos",
     "allRecords": "Todos los registros",
     "applications": "Aplicaciones",
     "symptoms": "Síntomas",
@@ -308,13 +309,15 @@ export const es = {
     "protocolChanges": "Cambios de protocolo",
     "searchPlaceholder": "Nombre u observación",
     "addMeasurements": "+ Medidas / Síntomas",
-    "addRetroactive": "+ Dosis retroactiva",
+    "addRetroactive": "+ Registrar aplicación anterior",
     "reportButton": "Informe",
     "filterPanelLabel": "Filtros del historial",
     "contextNote": "Los síntomas y las medidas se muestran como contexto general del período, sin atribuirlos al compuesto filtrado.",
     "timelineLabel": "Línea de tiempo de aplicaciones",
     "totalCount": "{count} registros guardados",
-    "dosesCount": "{count} dosis",
+    "dosesCount": "{count} registros",
+    "recordsCountOne": "{count} registro",
+    "recordsCountOther": "{count} registros",
     "retroactive": "Retroactiva",
     "deleteDose": "Eliminar dosis",
     "filterAll": "Todos",
