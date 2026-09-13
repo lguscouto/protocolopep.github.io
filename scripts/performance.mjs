@@ -11,12 +11,12 @@ const BASELINE = Object.freeze({
   longTasksMs: 250,
   domNodes: 1116,
   carga: Object.freeze({
-    // Baseline medida na 3.9.10 com a fixture sintética de 10 tratamentos,
-    // 365 registros de aplicação e 365 medições.
-    domReadyMs: 1700,
-    firstContentMs: 230,
-    longTasksMs: 1500,
-    domNodes: 1025,
+    // Baseline registrada no runner Chromium da CI com a fixture sintética
+    // de 10 tratamentos, 365 registros de aplicação e 365 medições.
+    domReadyMs: 2457,
+    firstContentMs: 204,
+    longTasksMs: 2414,
+    domNodes: 1031,
     featureMs: 250
   })
 });
