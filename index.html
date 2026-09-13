@@ -235,9 +235,9 @@
         <details class="calc-details">
           <summary data-i18n="experience.calculationDetails">Ver detalhes do cálculo</summary>
         <!-- Resumo das Entradas para Dupla Conferência -->
-        <div class="calc-inputs-summary" id="calc-inputs-summary" style="display:none;margin-top:12px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:10px 14px;font-size:12.5px;">
-          <div style="font-weight:700;color:var(--text);margin-bottom:4px;"><svg class="ui-inline-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10v3H7zM5 7h14v13H5zM8 11h8M8 15h6"/></svg><span data-i18n="tools.dataUsed">Confira os dados usados:</span></div>
-          <div style="color:var(--muted);display:flex;flex-wrap:wrap;gap:12px;" id="calc-summary-values">--</div>
+        <div class="calc-inputs-summary is-hidden" id="calc-inputs-summary">
+          <div class="calc-summary-heading"><svg class="ui-inline-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10v3H7zM5 7h14v13H5zM8 11h8M8 15h6"/></svg><span data-i18n="tools.dataUsed">Confira os dados usados:</span></div>
+          <div class="calc-summary-values" id="calc-summary-values">--</div>
         </div>
 
         <div class="grid2" style="margin-top:12px;">
@@ -252,7 +252,7 @@
         </div>
 
         <!-- Trilha de Auditoria e Dupla Conferência (V02) -->
-        <div class="calc-audit-card" id="calc-audit-card" style="display:none;margin-top:14px;">
+        <div class="calc-audit-card is-hidden" id="calc-audit-card">
           <div class="calc-audit-header">
             <span data-i18n="tools.mathAudit">Conferência matemática auditável</span>
           </div>

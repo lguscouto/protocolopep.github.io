@@ -422,7 +422,8 @@ export const es = {
     "instructions": "Aspire hasta <b>{units} UI</b> en la jeringa de insulina U-100 de {capacity} UI ({volume} mL)",
     "syringeVisualTitle": "Jeringa de {capacity} UI",
     "syringeVisualLabel": "Visualización de la jeringa de {capacity} UI, marcada en {units} UI",
-    "invalidData": "Datos de cálculo inválidos"
+    "invalidData": "Datos de cálculo inválidos",
+    "vialLabel": "Vial", "diluentLabel": "Diluyente", "desiredDoseLabel": "Dosis deseada", "syringeLabel": "Jeringa"
   },
   "settings": {
     "backToMore": "Volver a Más",

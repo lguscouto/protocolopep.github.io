@@ -3823,6 +3823,14 @@ body.theme-light .daypick button.on {
   flex-direction: column;
   gap: 6px;
 }
+.is-hidden { display: none !important; }
+.calc-inputs-summary { margin-top: 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; font-size: 12.5px; }
+.calc-summary-heading { font-weight: 700; color: var(--text); margin-bottom: 4px; display: flex; align-items: center; gap: 4px; }
+.calc-summary-values { color: var(--muted); display: flex; flex-wrap: wrap; gap: 12px; }
+.calc-audit-card { margin-top: 14px; }
+.calc-error { color: var(--danger); display: inline-flex; align-items: center; gap: 4px; }
+.calc-syringe-svg { width: 100%; max-width: 340px; height: auto; }
+.icon-warning::before { content: ""; display: inline-block; width: 14px; height: 14px; background: currentColor; mask: url("../assets/icon-warning.svg") center/contain no-repeat; }
 
 .calc-audit-header {
   font-family: var(--display);

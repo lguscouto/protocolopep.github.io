@@ -422,7 +422,8 @@ export const en = {
     "instructions": "Draw up to <b>{units} IU</b> in the {capacity} IU U-100 insulin syringe ({volume} mL)",
     "syringeVisualTitle": "{capacity} IU syringe",
     "syringeVisualLabel": "{capacity} IU syringe visualization, marked at {units} IU",
-    "invalidData": "Invalid calculation data"
+    "invalidData": "Invalid calculation data",
+    "vialLabel": "Vial", "diluentLabel": "Diluent", "desiredDoseLabel": "Desired dose", "syringeLabel": "Syringe"
   },
   "settings": {
     "backToMore": "Back to More",

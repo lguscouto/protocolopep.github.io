@@ -422,7 +422,8 @@ export const ptBR = {
     "instructions": "Aspire até <b>{units} UI</b> na seringa de insulina U-100 de {capacity} UI ({volume} mL)",
     "syringeVisualTitle": "Seringa {capacity} UI",
     "syringeVisualLabel": "Seringa {capacity} UI, marca {units} UI",
-    "invalidData": "Dados de cálculo inválidos"
+    "invalidData": "Dados de cálculo inválidos",
+    "vialLabel": "Frasco", "diluentLabel": "Diluente", "desiredDoseLabel": "Dose pretendida", "syringeLabel": "Seringa"
   },
   "settings": {
     "backToMore": "Voltar para Mais",

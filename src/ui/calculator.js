@@ -75,8 +75,8 @@ export function setupCalculatorUI({
       if (resBig) resBig.textContent = "--";
       if (resSub) resSub.innerHTML = `Informe a dose pretendida acima para calcular as unidades (UI).`;
       if (resDoses) resDoses.textContent = "--";
-      if (auditCard) auditCard.style.display = "none";
-      if (summaryCard) summaryCard.style.display = "none";
+      auditCard?.classList.add("is-hidden");
+      summaryCard?.classList.add("is-hidden");
       if (useBtn) useBtn.disabled = true;
       if (saveVialBtn) saveVialBtn.disabled = true;
       currentCalculationSnapshot = null;
@@ -94,10 +94,10 @@ export function setupCalculatorUI({
 
     if (!result.valid) {
       if (resBig) resBig.textContent = "--";
-      if (resSub) resSub.innerHTML = `<span style="color:var(--danger)">⚠️ ${escapeHtml(result.error || "Dados de cálculo inválidos")}</span>`;
+      if (resSub) resSub.innerHTML = `<span class="calc-error"><span class="icon icon-warning" aria-hidden="true"></span>${escapeHtml(result.error || i18nService.t("calculator.invalidData"))}</span>`;
       if (resDoses) resDoses.textContent = "--";
-      if (auditCard) auditCard.style.display = "none";
-      if (summaryCard) summaryCard.style.display = "none";
+      auditCard?.classList.add("is-hidden");
+      summaryCard?.classList.add("is-hidden");
       if (useBtn) useBtn.disabled = true;
       if (saveVialBtn) saveVialBtn.disabled = true;
       currentCalculationSnapshot = null;
@@ -111,22 +111,22 @@ export function setupCalculatorUI({
       volume: result.volumeMl,
       capacity: result.syringeMaxUI
     });
-    if (resDoses) resDoses.textContent = `${result.dosesPerVial} doses`;
+    if (resDoses) resDoses.textContent = i18nService.t("calculator.yieldValue", { doses: result.dosesPerVial, dose: `${desiredDoseVal} ${doseUnit}` });
 
     if (summaryCard && summaryValues) {
-      summaryCard.style.display = "block";
+      summaryCard.classList.remove("is-hidden");
       summaryValues.innerHTML = `
-        <span><b>Frasco:</b> ${vialMg} mg</span>
-        <span><b>Diluente:</b> ${diluentMl} mL</span>
-        <span><b>Dose pretendida:</b> ${desiredDoseVal} ${doseUnit}</span>
-        <span><b>Seringa:</b> ${result.syringeMaxUI} UI</span>
+        <span><b>${escapeHtml(i18nService.t("calculator.vialLabel"))}:</b> ${vialMg} mg</span>
+        <span><b>${escapeHtml(i18nService.t("calculator.diluentLabel"))}:</b> ${diluentMl} mL</span>
+        <span><b>${escapeHtml(i18nService.t("calculator.desiredDoseLabel"))}:</b> ${desiredDoseVal} ${doseUnit}</span>
+        <span><b>${escapeHtml(i18nService.t("calculator.syringeLabel"))}:</b> ${result.syringeMaxUI} UI</span>
       `;
     }
 
     currentCalculationSnapshot = createCalculationSnapshot(result);
 
     if (auditCard) {
-      auditCard.style.display = "flex";
+      auditCard.classList.remove("is-hidden");
       if (auditFormula) auditFormula.textContent = result.formula;
       if (auditTrail) auditTrail.textContent = formatAuditTrail(currentCalculationSnapshot);
     }
@@ -149,7 +149,7 @@ export function setupCalculatorUI({
     cont.setAttribute("aria-label", label);
 
     cont.innerHTML = `
-      <svg viewBox="0 0 320 60" style="width:100%;max-width:340px;height:auto;" role="img" aria-labelledby="calc-syringe-title calc-syringe-desc">
+      <svg class="calc-syringe-svg" viewBox="0 0 320 60" role="img" aria-labelledby="calc-syringe-title calc-syringe-desc">
         <title id="calc-syringe-title">${escapeHtml(i18nService.t("calculator.syringeVisualTitle", { capacity: maxUI }))}</title>
         <desc id="calc-syringe-desc">${escapeHtml(label)}</desc>
         <rect x="30" y="15" width="250" height="30" rx="4" fill="var(--surface3)" stroke="var(--border2)" stroke-width="1.5"/>
