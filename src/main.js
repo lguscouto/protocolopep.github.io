@@ -717,6 +717,7 @@ async function switchTab(tabId) {
   const journeySegment = normalized.segment;
   const previousTab = currentTab;
   if (previousTab === "settings" && primaryTab !== "settings") settingsMenuUI?.reset?.();
+  if (primaryTab === "settings" && previousTab !== "settings") settingsMenuUI?.reset?.();
   if (journeySegment === "upcoming") restoreFeatureDom("agenda");
   if (journeySegment === "history") restoreFeatureDom("history");
   if (primaryTab === "calc") restoreFeatureDom("tools");

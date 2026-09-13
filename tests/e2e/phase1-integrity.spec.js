@@ -35,11 +35,15 @@ const state = (page) => page.evaluate(async () => {
 async function openManagedProtocol(page, id = BASE_PROTOCOL.id) {
   await page.locator('[data-tab="settings"]').click();
   await expect(page.locator("#view-settings")).toHaveAttribute("data-feature-ready", "true");
+  await expect(page.locator("#view-settings")).toHaveClass(/on/);
+  await page.locator('[data-settings-target="treatment"]').click();
   const listDetails = page.locator("#settings-protocol-list details");
+  await expect(listDetails).toBeVisible();
   if (!(await listDetails.getAttribute("open"))) await listDetails.locator("summary").click();
   const item = page.locator(`#settings-protocol-list .protocol-manage-item[data-id="${id}"]`);
+  await expect(item).toBeVisible();
   await item.scrollIntoViewIfNeeded();
-  await item.click({ force: true });
+  await item.click();
   await expect(page.locator("#edit-modal")).toHaveClass(/on/);
 }
 

@@ -4170,6 +4170,7 @@ html.high-contrast .protocol-revision-line { stroke-width: 3; }
 .history-actions-disclosure > summary { min-height: 44px; display: inline-flex; align-items: center; cursor: pointer; color: var(--muted); font-size: 12px; font-weight: 700; }
 .history-actions-disclosure .history-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .settings-list { display: grid; gap: 8px; margin-bottom: 14px; }
+.settings-list[hidden] { display: none !important; }
 .settings-row { width: 100%; min-height: 52px; display: grid; grid-template-columns: 34px minmax(0,1fr) 24px; align-items: center; gap: 10px; padding: 8px 12px; border: 1px solid var(--border2); border-radius: 12px; background: var(--surface); color: var(--text); text-align: left; cursor: pointer; }
 .settings-row:hover, .settings-row:focus-visible { border-color: var(--primary); outline: none; }
 .settings-row-icon { width: 30px; height: 30px; display: grid; place-items: center; color: var(--primary); }

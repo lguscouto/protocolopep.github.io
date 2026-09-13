@@ -57,6 +57,7 @@ test.describe("Fase 3 — relatório pessoal", () => {
     await page.waitForLoadState("domcontentloaded");
     await page.locator("#tab-journey").click();
     await page.locator("#journey-history").click();
+    await page.locator(".history-actions-disclosure > summary").click();
     await page.locator("#hist-report-btn").click();
 
     const modal = page.locator("#report-modal");

@@ -8,6 +8,7 @@ const THEMES = Object.freeze([
 ]);
 
 const today = new Date();
+today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
 const todayKey = today.toISOString().slice(0, 10);
 const yesterday = new Date(today);
 yesterday.setDate(yesterday.getDate() - 1);
@@ -180,6 +181,7 @@ test.describe("Protocolo PEP — Matriz de regressão visual", () => {
 
       await page.locator("#journey-history").click();
       await assertVisualAnchor(page, ".history-timeline", `histórico (${theme.id})`);
+      await page.locator(".history-actions-disclosure > summary").click();
       await page.locator("#hist-retro-btn").evaluate((element) => {
         element.scrollIntoView({ block: "center", inline: "nearest" });
       });
@@ -199,6 +201,7 @@ test.describe("Protocolo PEP — Matriz de regressão visual", () => {
       await assertViewportIntegrity(page, `histórico/${theme.id}/${viewportWidth}px`);
 
       await page.locator("#tab-settings").click();
+      await page.locator("[data-settings-target='treatment']").click();
       await assertVisualAnchor(page, ".settings-section", `ajustes (${theme.id})`);
       await assertVisualAnchor(page, ".edit-vial-btn", `inventário preenchido (${theme.id})`);
       await assertVisualAnchor(page, ".inventory-status--active", `status do inventário (${theme.id})`);
@@ -209,6 +212,8 @@ test.describe("Protocolo PEP — Matriz de regressão visual", () => {
         SCREENSHOT_OPTIONS
       );
 
+      await page.locator("#settings-detail-back").click();
+      await page.locator("[data-settings-target='tools']").click();
       await page.locator("#open-tools-btn").click();
       await page.locator("#calc-research-btn").click();
       await assertVisualAnchor(page, "#research-modal.on", `pesquisa (${theme.id})`);

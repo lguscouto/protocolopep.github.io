@@ -290,14 +290,16 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     await page.locator("#tab-settings").click();
     await expect(page.locator("#view-settings")).toHaveAttribute("data-feature-ready", "true");
     await page.locator("[data-settings-target='treatment']").click();
+    await page.locator("[data-settings-target='app']").click();
     await assertTouchTargets(".lang-select-btn", "seletor de idioma");
+    await page.locator("#tab-settings").click();
+    await page.locator("[data-settings-target='treatment']").click();
     await assertTouchTargets(".edit-vial-btn, .view-vial-history-btn", "ações de inventário");
     await page.locator("#open-sites-settings-btn").click();
     await assertTouchTargets(".site-control", "controles de sítios");
     await page.locator("#sites-modal-close").click();
 
     await page.locator("#tab-settings").click();
-    await page.locator("[data-settings-target='tools']").click();
     await page.locator("[data-settings-target='tools']").click();
     await page.locator("#open-tools-btn").click();
     await page.locator("#calc-research-btn").click();
@@ -315,10 +317,12 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     await expect(page.locator("#view-settings")).toHaveAttribute("data-feature-ready", "true");
     await page.locator("[data-settings-target='treatment']").click();
     const touchProtocolList = page.locator("#settings-protocol-list details");
+    await expect(touchProtocolList).toBeVisible();
     if (!(await touchProtocolList.getAttribute("open"))) await touchProtocolList.locator("summary").click();
     const touchProtocol = page.locator("#settings-protocol-list .protocol-manage-item").first();
+    await expect(touchProtocol).toBeVisible();
     await touchProtocol.scrollIntoViewIfNeeded();
-    await touchProtocol.click({ force: true });
+    await touchProtocol.click();
     await assertTouchTargets("#edit-period-toggle button, #edit-freq-type-toggle button, #modal-swatches button", "controles do protocolo");
     await page.locator('#edit-freq-type-toggle button[data-type="especificos"]').click();
     await assertTouchTargets("#edit-days-grid .day-chip", "dias da semana");

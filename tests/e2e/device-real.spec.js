@@ -385,6 +385,8 @@ test.describe("Protocolo PEP — Galaxy A55 / geometria real", () => {
     await expect(page.locator("#view-history")).toHaveAttribute("data-feature-ready", "true");
     await page.locator("#tab-settings").click();
     await expect(page.locator("#view-settings")).toHaveAttribute("data-feature-ready", "true");
+    await expect(page.locator("#view-settings")).toHaveClass(/on/);
+    await page.locator('[data-settings-target="tools"]').click();
     await page.locator("#open-tools-btn").click();
     await expect(page.locator("#view-calc")).toHaveAttribute("data-feature-ready", "true");
 
@@ -456,11 +458,15 @@ test.describe("Protocolo PEP — Galaxy A55 / geometria real", () => {
     await waitForStableLayout(page);
     await page.locator("#tab-settings").click();
     await expect(page.locator("#view-settings")).toHaveAttribute("data-feature-ready", "true");
+    await expect(page.locator("#view-settings")).toHaveClass(/on/);
+    await page.locator('[data-settings-target="treatment"]').click();
     const protocolDetails = page.locator("#settings-protocol-list details");
+    await expect(protocolDetails).toBeVisible();
     if (!(await protocolDetails.getAttribute("open"))) await protocolDetails.locator("summary").click();
     const protocolItem = page.locator("#settings-protocol-list .protocol-manage-item").first();
+    await expect(protocolItem).toBeVisible();
     await protocolItem.scrollIntoViewIfNeeded();
-    await protocolItem.click({ force: true });
+    await protocolItem.click();
     await expect(page.locator("#edit-modal")).toHaveClass(/on/);
     await page.waitForTimeout(350);
 
