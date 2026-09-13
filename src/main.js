@@ -652,7 +652,7 @@ async function initApp() {
       import("./ui/measurements.js")
     ]);
     markPrefetchGroupReady();
-  }, { delay: 300, timeout: 1200 });
+  }, { delay: 700, timeout: 1200 });
 
   scheduleIdleWork(async () => {
     await Promise.allSettled([
@@ -671,7 +671,7 @@ async function initApp() {
       import("./ui/report-preview.js")
     ]);
     markPrefetchGroupReady();
-  }, { delay: 900, timeout: 1800 });
+  }, { delay: 1200, timeout: 1800 });
 }
 
 function initAnimatedBg() {
