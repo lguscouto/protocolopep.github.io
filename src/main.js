@@ -156,7 +156,6 @@ function syncQuickRegisterVisibility() {
   const canShow = isPrimaryView || (currentTab === "settings" && !activeSettingsPanel);
   const modalOpen = Boolean(document.querySelector(".modal.on, .sheet.on, #retro-overlay[style*='flex']"));
   fab.hidden = !canShow || modalOpen;
-  fab.setAttribute("aria-hidden", fab.hidden ? "true" : "false");
 }
 
 const deferredDom = new Map();
