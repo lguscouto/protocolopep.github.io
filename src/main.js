@@ -1865,6 +1865,7 @@ function setupSettingsMenu() {
   const sections = Array.from(document.querySelectorAll("[data-settings-panel]"));
   if (!menu || !back || !sections.length) return { reset() {} };
   const rows = Array.from(menu.querySelectorAll("[data-settings-target]"));
+  let activeRow = null;
   const refresh = () => {
     const treatmentMeta = menu.querySelector('[data-settings-meta="treatment"]');
     const dataMeta = menu.querySelector('[data-settings-meta="data"]');
@@ -1873,13 +1874,15 @@ function setupSettingsMenu() {
     if (dataMeta) dataMeta.textContent = `${i18nService.t("settings.healthConnectTitle")}: ${document.getElementById("hc-status-badge")?.textContent || i18nService.t("common.disabled")}`;
     if (appMeta) appMeta.textContent = `${theme.getTheme() === "branco" ? i18nService.t("settings.lightTheme") : i18nService.t("settings.darkTheme")} · ${i18nService.getLocaleLabel()}`;
   };
-  const showMenu = (focusRow = null) => {
+  const showMenu = (focusRow = activeRow) => {
     menu.hidden = false;
     back.hidden = true;
     sections.forEach((section) => { section.hidden = true; section.classList.remove("is-active"); });
     focusRow?.focus({ preventScroll: true });
+    activeRow = null;
   };
   const openPanel = (target, row) => {
+    activeRow = row || null;
     menu.hidden = true;
     back.hidden = false;
     sections.forEach((section) => {
@@ -1891,9 +1894,9 @@ function setupSettingsMenu() {
     if (!sections.find((section) => section.dataset.settingsPanel === target)) row?.focus({ preventScroll: true });
   };
   rows.forEach((row) => row.addEventListener("click", () => openPanel(row.dataset.settingsTarget, row)));
-  back.addEventListener("click", () => showMenu(rows[0]));
+  back.addEventListener("click", () => showMenu());
   showMenu();
-  return { reset: () => showMenu(), refresh };
+  return { reset: () => showMenu(null), refresh };
 }
 
 function deleteHistoryEntry(dKey, pId, idx) {

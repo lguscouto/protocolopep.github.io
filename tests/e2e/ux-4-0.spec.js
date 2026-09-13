@@ -137,11 +137,14 @@ test.describe("Experiência 4.0", () => {
     await page.locator("#tab-settings").click();
     await expect(page.locator("#settings-menu")).toBeVisible();
     await expect(page.locator("#settings-menu [data-settings-target]")).toHaveCount(5);
+    await expect(page.locator("[data-settings-panel]")).toHaveCount(5);
+    await expect(page.locator("[data-settings-panel]:not([hidden])")).toHaveCount(0);
     await page.locator("[data-settings-target='treatment']").click();
     await expect(page.locator("#settings-panel-treatment")).toBeVisible();
     await expect(page.locator("#settings-detail-back")).toBeVisible();
     await page.locator("#settings-detail-back").click();
     await expect(page.locator("#settings-menu")).toBeVisible();
+    await expect(page.locator("[data-settings-target='treatment']")).toBeFocused();
     await page.locator("#tab-today").click();
     await page.locator("#tab-settings").click();
     await expect(page.locator("#settings-menu")).toBeVisible();

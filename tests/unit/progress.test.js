@@ -23,4 +23,12 @@ describe("resumo descritivo de progresso", () => {
     expect(buildProgressSummary().percentChange).toBeNull();
     expect(buildProgressSummary({ measurements: [{ date: "2026-09-12", weightKg: 80 }] })).toMatchObject({ absoluteChangeKg: 0, percentChange: 0 });
   });
+
+  it("mantém rótulos neutros quando o tratamento legado não tem nome ou dose", () => {
+    const result = buildProgressSummary({
+      peptides: [{ id: "legacy", name: "", dose: "" }],
+      logs: { "2026-09-12": { legacy: [{ status: "applied", dose: "" }] } }
+    });
+    expect(result.doseContexts).toEqual([{ id: "legacy", name: null, dose: null, matchingRecords: 1 }]);
+  });
 });
