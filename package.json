@@ -1,6 +1,6 @@
 {
   "name": "pep-protocol",
-  "version": "3.9.11",
+  "version": "3.9.12",
   "engines": {
     "node": ">=22.12.0"
   },
