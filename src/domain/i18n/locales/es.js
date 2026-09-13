@@ -673,6 +673,12 @@ export const es = {
       "restoreRecoveryDir": "ProtocoloPEP/Recuperacion"
     },
     "report": {
+      "issuedAtSeparator": "a las",
+      "unitsUi": "UI",
+      "weightKg": "Peso (kg)",
+      "scale15": "1–5",
+      "symptoms": "Síntomas",
+      "intensities": "Intensidades",
       "title": "Informe de Aplicaciones",
       "filterHeading": "Filtro de Período",
       "periodLabel": "Período del Informe",

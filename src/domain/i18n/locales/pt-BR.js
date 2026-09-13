@@ -673,6 +673,12 @@ export const ptBR = {
       "restoreRecoveryDir": "ProtocoloPEP/Recuperacao"
     },
     "report": {
+      "issuedAtSeparator": "às",
+      "unitsUi": "UI",
+      "weightKg": "Peso (kg)",
+      "scale15": "1–5",
+      "symptoms": "Sintomas",
+      "intensities": "Intensidades",
       "title": "Relatório de Aplicações",
       "filterHeading": "Filtro de Período",
       "periodLabel": "Período do Relatório",
