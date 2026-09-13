@@ -72,7 +72,7 @@ export function openRetroLogModal(prefillDate = null, prefillPepId = null, { sto
     dateInput.disabled = Boolean(editingContext);
   }
 
-  const nowTime = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  const nowTime = new Date().toLocaleTimeString(i18nService.getLocale(), { hour: "2-digit", minute: "2-digit" });
   if (timeInput) {
     timeInput.value = editingContext?.log.time || nowTime;
     timeInput.readOnly = modal.dataset.mode === "compact" && !editingContext;
@@ -118,7 +118,7 @@ export function openRetroLogModal(prefillDate = null, prefillPepId = null, { sto
           ? historicalSite
           : (requireSiteSelection ? "" : (nextSite || ""));
         siteSelect.innerHTML = `
-          <option value="">-- Não especificado --</option>
+          <option value="">${esc(i18nService.t("modals.retro.unspecifiedSite"))}</option>
           ${configuredSites.map((s) => `<option value="${esc(s)}" ${s === selectedSite ? "selected" : ""}>${esc(s)}</option>`).join("")}
         `;
         siteSelect.value = selectedSite;
@@ -172,9 +172,9 @@ export function openRetroLogModal(prefillDate = null, prefillPepId = null, { sto
       ${history.length ? `<ol>${history.map((item) => {
         const previous = item.previous || {};
         const editedDate = new Date(item.editedAt);
-        const when = Number.isNaN(editedDate.getTime()) ? "Data não informada" : editedDate.toLocaleString(i18nService.getLocale());
+        const when = Number.isNaN(editedDate.getTime()) ? i18nService.t("modals.retro.dateUnknown") : editedDate.toLocaleString(i18nService.getLocale());
         const prior = getDoseDisplayData(previous);
-        const status = DOSE_STATUSES.includes(previous.status) ? i18nService.t(`phase1.${previous.status}`) : "Estado não informado";
+        const status = DOSE_STATUSES.includes(previous.status) ? i18nService.t(`phase1.${previous.status}`) : i18nService.t("modals.retro.statusUnknown");
         return `<li>${esc(when)}: ${esc(status)} · ${esc(previous.time || "--:--")} · ${esc(prior.dose === "" ? "--" : prior.dose)} (${esc(prior.ui ?? "--")} UI)${previous.site ? ` · ${esc(previous.site)}` : ""}${previous.note ? `<br>${esc(i18nService.t("modals.retro.prevNote"))} ${esc(previous.note)}` : ""}${previous.statusReason ? `<br>${esc(i18nService.t("modals.retro.prevReason"))} ${esc(previous.statusReason)}` : ""}</li>`;
       }).join("")}</ol>` : `<p>${esc(i18nService.t("modals.retro.noPriorCorrections"))}</p>`}
     ` : "";
@@ -320,7 +320,7 @@ export async function saveRetroLog({ doseService, storage: storageForRoute, date
         title: tr("dialogs.noConcentrationTitle", "Concentração Indefinida"),
         message: tr("dialogs.noConcentrationMsg", `${res.message || tr("dialogs.noConcentrationFallback", "O frasco não possui concentração definida.")}\n\nDeseja salvar a aplicação apenas no histórico sem debitar estoque?`, { message: res.message || tr("dialogs.noConcentrationFallback", "O frasco não possui concentração definida.") }),
         confirmText: tr("dialogs.logInHistoryBtn", "Salvar no Histórico"),
-        cancelText: "Cancelar",
+        cancelText: i18nService.t("common.cancel"),
         isDanger: false
       });
       if (confirmHistOnly) {
@@ -333,7 +333,7 @@ export async function saveRetroLog({ doseService, storage: storageForRoute, date
 
     if (!res.success) {
       dialogService.alert({
-        title: "Erro",
+        title: i18nService.t("common.error"),
         message: resolveUiError(res, "dialogs.saveRecordErrorMsg"),
         isDanger: true
       });

@@ -137,7 +137,7 @@ function parseOptionalCircumference(value, key) {
   if (value === null || value === undefined || value === "") return null;
   const parsed = typeof value === "number" ? value : Number(String(value).replace(",", "."));
   if (!Number.isFinite(parsed) || parsed < 10 || parsed > 300) {
-    const label = BODY_METRICS[key]?.label?.toLocaleLowerCase("pt-BR") || "circunferência";
+    const label = BODY_METRICS[key]?.label?.toLowerCase() || "circunferência";
     throw new MeasurementValidationError(
       `INVALID_CIRCUMFERENCE_${key.toUpperCase()}`,
       `A medida de ${label} deve estar entre 10 cm e 300 cm.`
@@ -172,13 +172,13 @@ export function normalizeSymptomDetails(symptoms = [], symptomDetails = []) {
     symptomDetails.forEach((item) => {
       const name = formatSymptomLabel(item?.name);
       const intensity = SYMPTOM_INTENSITIES.includes(item?.intensity) ? item.intensity : null;
-      if (name) detailMap.set(name.toLocaleLowerCase("pt-BR"), { name, intensity });
+      if (name) detailMap.set(name.toLowerCase(), { name, intensity });
     });
   }
   if (Array.isArray(symptoms)) {
     symptoms.forEach((item) => {
       const name = formatSymptomLabel(item);
-      const key = name.toLocaleLowerCase("pt-BR");
+      const key = name.toLowerCase();
       if (name && !detailMap.has(key)) detailMap.set(key, { name, intensity: null });
     });
   }

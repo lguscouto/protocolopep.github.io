@@ -8,6 +8,7 @@ import { haptics } from "../services/haptics.js";
 import { dialogService } from "../services/dialog.js";
 import { i18nService } from "../services/i18n.js";
 import { escapeHtml } from "./dom.js";
+import { resolveUiError } from "./error-messages.js";
 
 const esc = escapeHtml;
 
@@ -207,10 +208,11 @@ export function setupReportModal(storage) {
           });
         }
       } catch (err) {
+        console.error("[Report] Falha ao exportar CSV de aplicações:", err);
         haptics.warning();
         void dialogService.alert({
           title: i18nService.t("modals.report.exportErrorTitle"),
-          message: i18nService.t("modals.report.exportErrorMsg", { error: err.message || err }),
+          message: resolveUiError({ error: "EXPORT_FAILED", message: err?.message }, "modals.report.exportErrorMsg"),
           isDanger: true
         });
       }
@@ -237,9 +239,10 @@ export function setupReportModal(storage) {
           if (!shared.success && !shared.aborted) void dialogService.alert({ title: i18nService.t("shareUnavailableTitle"), message: shared.error, isDanger: true });
         }
       } catch (error) {
+        console.error("[Report] Falha ao exportar CSV de medidas:", error);
         void dialogService.alert({
           title: i18nService.t("modals.report.exportErrorTitle"),
-          message: i18nService.t("modals.report.exportErrorMsg", { error: error.message || "" }),
+          message: resolveUiError({ error: "EXPORT_FAILED", message: error?.message }, "modals.report.exportErrorMsg"),
           isDanger: true
         });
       }
@@ -263,9 +266,10 @@ export function setupReportModal(storage) {
       const result = await saveReportPdf({ fileName, html });
       if (result.aborted) return;
       if (!result.success) {
+        console.error("[Report] Falha ao gerar PDF:", result.error);
         void dialogService.alert({
           title: i18nService.t("modals.report.pdfErrorTitle"),
-          message: result.error || i18nService.t("modals.report.exportErrorMsg", { error: "" }),
+          message: resolveUiError({ error: "EXPORT_FAILED", message: result.error }, "modals.report.exportErrorMsg"),
           isDanger: true
         });
         return;
