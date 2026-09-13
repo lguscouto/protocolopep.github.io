@@ -158,6 +158,16 @@ function syncQuickRegisterVisibility() {
   fab.hidden = !canShow || modalOpen;
 }
 
+function renderHeaderDate() {
+  const dateEl = document.getElementById("header-date");
+  if (!dateEl) return;
+  dateEl.textContent = new Date().toLocaleDateString(i18nService.getLocale(), {
+    weekday: "long",
+    day: "numeric",
+    month: "long"
+  });
+}
+
 const deferredDom = new Map();
 
 function parkFeatureDom(feature, { childHosts = [], elements = [] } = {}) {
@@ -574,15 +584,7 @@ async function initApp() {
     showOnboarding();
   }
 
-  const dateEl = document.getElementById("header-date");
-  if (dateEl) {
-    const today = new Date();
-    dateEl.textContent = today.toLocaleDateString(i18nService.getLocale(), {
-      weekday: "long",
-      day: "numeric",
-      month: "long"
-    });
-  }
+  renderHeaderDate();
 
   setupNavigation();
   setupSettingsHydrationGuard();
@@ -610,6 +612,7 @@ async function initApp() {
       applyTranslations(document, i18nService);
       resetHistoryPagination();
       measurementsUI?.resetPagination?.();
+      renderHeaderDate();
       invalidateViews("today", "week", "history", "progress");
       if (inventoryUI && typeof inventoryUI.renderInventoryList === "function") {
         inventoryUI.renderInventoryList();
