@@ -97,7 +97,13 @@ export function migrateMeasurements(rawMeasurements = []) {
   if (!Array.isArray(rawMeasurements)) return [];
   return rawMeasurements
     .filter((item) => item && typeof item === "object")
-    .map((item) => createMeasurementEntry(remediateTemporalFields(item)));
+    .map((item) => {
+      // Registros recém-normalizados já são validados por createMeasurementEntry.
+      // A remediação adicional fica restrita aos registros explicitamente marcados
+      // para revisão, evitando duas avaliações temporais no carregamento inicial.
+      const prepared = item.temporalIntegrity === "needs_review" ? remediateTemporalFields(item) : item;
+      return createMeasurementEntry(prepared);
+    });
 }
 
 export function remediateTemporalFields(measurement = {}) {
