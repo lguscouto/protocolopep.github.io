@@ -75,8 +75,11 @@ function fmtBR(iso) {
 function administrationLabel(item = {}) {
   const quantity = item.administrationQuantity;
   const unit = item.administrationUnit;
-  if (quantity !== null && quantity !== undefined && unit) return `${quantity} ${unit === "tablet" ? "comprimido(s)" : unit === "capsule" ? "cápsula(s)" : unit === "ml" ? "mL" : "UI"}`;
-  return item.ui !== null && item.ui !== undefined ? `${item.ui} UI` : "";
+  if (quantity !== null && quantity !== undefined && unit) {
+    const unitLabel = unit === "tablet" ? i18nService.t("inventory.tablet") : unit === "capsule" ? i18nService.t("inventory.capsule") : unit === "ml" ? i18nService.t("common.ml") : i18nService.t("common.units");
+    return `${quantity} ${unitLabel}`;
+  }
+  return item.ui !== null && item.ui !== undefined ? `${item.ui} ${i18nService.t("common.units")}` : "";
 }
 
 function showToast(msg, options = {}) {
@@ -366,13 +369,13 @@ const toolsFeature = createFeatureLoader(async () => {
     researchService: researchServiceModule.researchService,
     onOpenCalculator: (compound) => {
       void switchTab("calc");
-      showToast(`Calculadora aberta: ${compound.name}`);
+      showToast(i18nService.t("tools.calculatorOpened", { name: compound.name }));
       setTimeout(() => document.getElementById("calc-dose-input")?.focus(), 150);
     },
     onAddToProtocol: (compound) => {
       void switchTab("today");
       openEditModal(null, { name: compound.name, sub: compound.categoryLabel, accent: compound.accentColor });
-      showToast(`Iniciando cadastro de ${compound.name}`);
+      showToast(i18nService.t("tools.protocolRegisterStarted", { name: compound.name }));
     }
   });
   const vialButton = document.getElementById("calc-save-vial-btn");
@@ -1519,7 +1522,7 @@ async function toggleDateLog(id, dKey, recordIndex = null) {
   const todayK = dateKey(new Date());
 
   if (dKey > todayK) {
-    void dialogService.alert({ title: "Data inválida", message: "Não é possível registrar aplicações em datas futuras.", isDanger: true });
+    void dialogService.alert({ title: i18nService.t("dialogs.futureDateTitle"), message: i18nService.t("dialogs.futureDateMessage"), isDanger: true });
     return;
   }
 

@@ -856,6 +856,8 @@ export const ptBR = {
     "autoUpdated": "Resultado atualizado automaticamente",
     "dataUsed": "Confira os dados usados:",
     "mathAudit": "Conferência Matemática Auditável",
+    "calculatorOpened": "Calculadora aberta: {name}",
+    "protocolRegisterStarted": "Iniciando cadastro de {name}",
     "legalNotice": "Aviso Legal:"
   },
   "sites": {

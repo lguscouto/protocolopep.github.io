@@ -38,7 +38,7 @@ export function setupResearchUI({
     const allChip = document.createElement("button");
     allChip.type = "button";
     allChip.className = `chip ${activeCategory === "all" ? "sel" : ""}`;
-    allChip.style.cssText = "white-space:nowrap;flex-shrink:0;font-size:12px;padding:6px 12px;border-radius:16px;";
+    allChip.classList.add("research-category-chip");
     allChip.textContent = i18nService.t("research.allCategories");
     allChip.setAttribute("data-cat", "all");
     allChip.addEventListener("click", () => {
@@ -53,7 +53,7 @@ export function setupResearchUI({
       const chip = document.createElement("button");
       chip.type = "button";
       chip.className = `chip ${activeCategory === cat.id ? "sel" : ""}`;
-      chip.style.cssText = "white-space:nowrap;flex-shrink:0;font-size:12px;padding:6px 12px;border-radius:16px;";
+      chip.classList.add("research-category-chip");
       chip.textContent = `${cat.label} (${cat.count})`;
       chip.setAttribute("data-cat", cat.id);
       chip.addEventListener("click", () => {
@@ -89,33 +89,33 @@ export function setupResearchUI({
       const card = document.createElement("div");
       card.className = "card research-card";
       card.style.setProperty("--acc", sanitizeColor(c.accentColor || "var(--primary)"));
-      card.style.cursor = "pointer";
+      card.classList.add("research-card--interactive");
       card.setAttribute("role", "button");
       card.setAttribute("tabindex", "0");
       card.setAttribute("aria-label", `${c.name} - ${c.categoryLabel}`);
 
       const synonymsHTML = Array.isArray(c.synonyms) && c.synonyms.length > 0
-        ? `<div style="font-size:11.5px;color:var(--muted);margin-top:2px;">${esc(i18nService.t("research.synonyms", { values: c.synonyms.slice(0, 3).join(", ") }))}</div>`
+        ? `<div class="research-card-synonyms">${esc(i18nService.t("research.synonyms", { values: c.synonyms.slice(0, 3).join(", ") }))}</div>`
         : "";
 
       card.innerHTML = `
-        <div class="info" style="flex:1;min-width:0;width:100%;">
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;">
-            <div class="nm" style="color:var(--text);font-size:16px;font-weight:700;"><span class="dot"></span>${esc(c.name)}</div>
+        <div class="info research-card-info">
+          <div class="research-card-head">
+            <div class="nm"><span class="dot"></span>${esc(c.name)}</div>
             <button type="button" class="icon-b fav-btn ${isFav ? "is-favorite" : ""}" data-id="${sanitizeId(c.id)}" title="${isFav ? 'Remover favorito' : 'Favoritar'}" aria-pressed="${isFav ? "true" : "false"}">
-              <svg viewBox="0 0 24 24" fill="${isFav ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;">
+              <svg class="research-favorite-icon" viewBox="0 0 24 24" fill="${isFav ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
               </svg>
             </button>
           </div>
-          <div class="sub" style="font-size:12px;color:var(--muted);margin-top:2px;">${esc(c.fullName || "")}</div>
+          <div class="sub research-card-subtitle">${esc(c.fullName || "")}</div>
           ${synonymsHTML}
-          <div class="meta" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;">
+          <div class="meta research-card-meta">
             <span class="chip-acc">${esc(c.categoryLabel)}</span>
-            <span class="freq" style="font-size:11.5px;color:var(--muted);">⏰ ${esc(c.halfLifeLiterature)}</span>
+            <span class="freq">${esc(c.halfLifeLiterature)}</span>
           </div>
-          <div class="note-line" style="margin-top:8px;">
-            <span class="note-txt" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.4;font-size:12px;color:var(--text);">
+          <div class="note-line research-card-note">
+            <span class="note-txt">
               ${esc(c.literatureSummary)}
             </span>
           </div>
@@ -191,22 +191,22 @@ export function setupResearchUI({
       if (Array.isArray(compound.references) && compound.references.length > 0) {
         compound.references.forEach((ref) => {
           const item = document.createElement("div");
-          item.style.cssText = "padding:8px 0;border-bottom:1px solid var(--border);font-size:12px;line-height:1.4;";
+          item.className = "research-reference";
           
           let linkHTML = "";
           if (ref.pmid) {
-            linkHTML = `<a href="https://pubmed.ncbi.nlm.nih.gov/${encodeURIComponent(ref.pmid)}/" target="_blank" rel="noopener noreferrer" style="color:var(--primary);font-weight:600;display:inline-block;margin-top:2px;">PubMed: ${esc(ref.pmid)} ↗</a>`;
+            linkHTML = `<a class="research-reference-link" href="https://pubmed.ncbi.nlm.nih.gov/${encodeURIComponent(ref.pmid)}/" target="_blank" rel="noopener noreferrer">PubMed: ${esc(ref.pmid)} ↗</a>`;
           }
 
           item.innerHTML = `
-            <div style="font-weight:600;color:var(--text);">${esc(ref.title || '')}</div>
-            <div style="color:var(--muted);">${esc(ref.authors || '')} — <em>${esc(ref.journal || '')}</em> (${esc(String(ref.year || ''))})</div>
+            <div class="research-reference-title">${esc(ref.title || '')}</div>
+            <div class="research-reference-meta">${esc(ref.authors || '')} — <em>${esc(ref.journal || '')}</em> (${esc(String(ref.year || ''))})</div>
             ${linkHTML}
           `;
           refsContainer.appendChild(item);
         });
       } else {
-        refsContainer.innerHTML = `<div style="font-size:12px;color:var(--muted);">${esc(i18nService.t("research.noReferences"))}</div>`;
+        refsContainer.innerHTML = `<div class="research-reference-empty">${esc(i18nService.t("research.noReferences"))}</div>`;
       }
     }
 

@@ -134,15 +134,15 @@ export function setupInventoryUI({ storage, onInventoryChange }) {
           const formattedAmount = m.amountMcg > 0 ? `+${m.amountMcg} mcg` : `${m.amountMcg} mcg`;
           
           return `
-            <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:10px;">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-                <span style="font-weight:700;font-size:13px;color:var(--text);">${escapeHtml(typeLabel)}</span>
-                <span style="font-size:12px;font-weight:800;color:${badgeColor};">${escapeHtml(formattedAmount)}</span>
+            <div class="inventory-movement-card" style="--movement-color:${badgeColor};">
+              <div class="inventory-movement-head">
+                <span class="inventory-movement-type">${escapeHtml(typeLabel)}</span>
+                <span class="inventory-movement-amount">${escapeHtml(formattedAmount)}</span>
               </div>
-              <div style="font-size:11.5px;color:var(--muted);margin-bottom:4px;">
+              <div class="inventory-movement-date">
                 ${escapeHtml(m.date || "")} ${m.note ? `• ${escapeHtml(m.note)}` : ""}
               </div>
-              <div style="font-size:11px;color:var(--muted-2);font-weight:600;">
+              <div class="inventory-movement-balance">
                 ${escapeHtml(i18nService.t("inventory.balanceAfter"))}: ${escapeHtml(m.balanceAfterMcg)} mcg
               </div>
             </div>
@@ -187,7 +187,7 @@ export function setupInventoryUI({ storage, onInventoryChange }) {
         const percent = v.initialQuantity > 0 ? Math.round((v.remainingQuantity / v.initialQuantity) * 100) : 0;
         const presentationLabel = v.presentation === "capsule" ? i18nService.t("inventory.capsule") : i18nService.t("inventory.tablet");
         const statusLabel = v.status === "finished" ? i18nService.t("inventory.statusDepleted") : i18nService.t("inventory.statusActive");
-        return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px;"><div style="display:flex;justify-content:space-between;gap:8px;"><div><b>${escapeHtml(v.peptideName)}</b><div style="font-size:12px;color:var(--muted);">${escapeHtml(i18nService.t("inventory.oralPackage"))} · ${escapeHtml(presentationLabel)}${v.lotNumber ? ` · ${escapeHtml(i18nService.t("inventory.lot"))}: ${escapeHtml(v.lotNumber)}` : ""}</div></div><span class="inventory-status inventory-status--${v.status === "finished" ? "depleted" : "active"}">${escapeHtml(statusLabel)}</span></div><div style="margin:10px 0 6px;font-size:12px;font-weight:700;">${escapeHtml(i18nService.t("inventory.balance"))}: ${escapeHtml(v.remainingQuantity)} / ${escapeHtml(v.initialQuantity)} ${escapeHtml(presentationLabel.toLocaleLowerCase(i18nService.getLocale()))} · ${percent}%</div><div style="height:6px;background:var(--surface);border-radius:999px;overflow:hidden;border:1px solid var(--border);"><div style="height:100%;width:${percent}%;background:var(--primary);"></div></div><div style="display:flex;gap:6px;justify-content:flex-end;margin-top:10px;"><button type="button" class="btn-compact-action edit-vial-btn" data-vial-id="${escapeHtml(v.id)}">${escapeHtml(i18nService.t("inventory.edit"))}</button><button type="button" class="btn-compact-action view-vial-history-btn" data-vial-id="${escapeHtml(v.id)}">${escapeHtml(i18nService.t("inventory.history"))}</button></div></div>`;
+        return `<article class="inventory-card inventory-card--oral"><div class="inventory-card-head"><div><b class="inventory-card-name">${escapeHtml(v.peptideName)}</b><div class="inventory-card-subtitle">${escapeHtml(i18nService.t("inventory.oralPackage"))} · ${escapeHtml(presentationLabel)}${v.lotNumber ? ` · ${escapeHtml(i18nService.t("inventory.lot"))}: ${escapeHtml(v.lotNumber)}` : ""}</div></div><span class="inventory-status inventory-status--${v.status === "finished" ? "depleted" : "active"}">${escapeHtml(statusLabel)}</span></div><div class="inventory-balance-label">${escapeHtml(i18nService.t("inventory.balance"))}: ${escapeHtml(v.remainingQuantity)} / ${escapeHtml(v.initialQuantity)} ${escapeHtml(presentationLabel.toLocaleLowerCase(i18nService.getLocale()))} · ${percent}%</div><div class="inventory-progress"><div class="inventory-progress-fill" style="--progress:${percent}%;"></div></div><div class="inventory-card-actions"><button type="button" class="btn-compact-action edit-vial-btn" data-vial-id="${escapeHtml(v.id)}">${escapeHtml(i18nService.t("inventory.edit"))}</button><button type="button" class="btn-compact-action view-vial-history-btn" data-vial-id="${escapeHtml(v.id)}">${escapeHtml(i18nService.t("inventory.history"))}</button></div></article>`;
       }
       const matchingPep = peptides.find((p) => (v.peptideId && p.id === v.peptideId) || (p.name.toLowerCase() === v.peptideName.toLowerCase()));
       const doseStr = matchingPep ? matchingPep.dose : null;
@@ -208,11 +208,11 @@ export function setupInventoryUI({ storage, onInventoryChange }) {
             : i18nService.t(expStatus.status === "unknown" && !v.expirationDate ? "inventory.validityUnknown" : "inventory.validityInvalid");
 
       return `
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:var(--shadow-sm);">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+        <article class="inventory-card">
+          <div class="inventory-card-head">
             <div>
-              <div style="font-weight:800;font-size:15px;color:var(--text);">${escapeHtml(v.peptideName)}</div>
-              <div style="font-size:11.5px;color:var(--muted);">
+              <div class="inventory-card-name">${escapeHtml(v.peptideName)}</div>
+              <div class="inventory-card-subtitle">
                 ${escapeHtml(v.totalMg)} mg em ${escapeHtml(v.waterMl)} mL (${escapeHtml(v.concentrationMcgPerMl)} mcg/mL)
                 ${v.lotNumber ? `• ${escapeHtml(i18nService.t("inventory.lot"))}: ${escapeHtml(v.lotNumber)}` : ""}
               </div>
@@ -221,22 +221,22 @@ export function setupInventoryUI({ storage, onInventoryChange }) {
           </div>
 
           <!-- Barra de Saldo -->
-          <div style="margin:10px 0 6px;">
-            <div style="display:flex;justify-content:space-between;font-size:11.5px;font-weight:700;margin-bottom:4px;">
-              <span style="color:var(--text);">${escapeHtml(i18nService.t("inventory.balance"))}: ${escapeHtml(v.remainingMcg)} / ${escapeHtml(v.initialMcg)} mcg</span>
-              <span style="color:var(--muted);">${percent}%</span>
+          <div class="inventory-balance">
+            <div class="inventory-balance-label">
+              <span>${escapeHtml(i18nService.t("inventory.balance"))}: ${escapeHtml(v.remainingMcg)} / ${escapeHtml(v.initialMcg)} mcg</span>
+              <span class="inventory-balance-percent">${percent}%</span>
             </div>
-            <div style="height:6px;background:var(--surface);border-radius:999px;overflow:hidden;border:1px solid var(--border);">
-              <div style="height:100%;width:${percent}%;background:${percent < 20 ? 'var(--danger)' : 'var(--primary)'};border-radius:999px;transition:width 0.3s ease;"></div>
+            <div class="inventory-progress">
+              <div class="inventory-progress-fill ${percent < 20 ? "is-low" : ""}" style="--progress:${percent}%;"></div>
             </div>
           </div>
 
           <!-- Informações de Dose e Validade -->
-          <div style="display:flex;justify-content:space-between;align-items:center;font-size:11.5px;color:var(--muted-2);margin-top:6px;">
-            <div>
+          <div class="inventory-card-footer">
+            <div class="inventory-expiration">
               ${remDoses !== null ? `<strong>~${remDoses} ${escapeHtml(i18nService.t("inventory.remainingDoses"))}</strong>` : escapeHtml(expirationLabel)}
             </div>
-            <div style="display:flex;gap:6px;">
+            <div class="inventory-card-actions">
               <button type="button" class="btn-compact-action edit-vial-btn" data-vial-id="${escapeHtml(v.id)}">
                 ${escapeHtml(i18nService.t("inventory.edit"))}
               </button>
@@ -245,7 +245,7 @@ export function setupInventoryUI({ storage, onInventoryChange }) {
               </button>
             </div>
           </div>
-        </div>
+        </article>
       `;
     }).join("");
 

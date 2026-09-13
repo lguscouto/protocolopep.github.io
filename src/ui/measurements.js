@@ -240,34 +240,34 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
     }
 
     trendSummaryEl.innerHTML = `
-      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));gap:10px;margin-bottom:12px;">
-        <div class="panel" style="padding:12px;text-align:center;border:1px solid var(--border);border-radius:10px;background:var(--surface);">
-          <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">${esc(i18nService.t("measurements.latestWeight"))}</div>
-          <div style="font-size:18px;font-weight:800;color:var(--primary);margin-top:4px;">
+      <div class="measurements-summary-grid">
+        <div class="panel measurements-summary-card">
+          <div class="measurements-summary-label">${esc(i18nService.t("measurements.latestWeight"))}</div>
+          <div class="measurements-summary-value measurements-summary-value--primary">
             ${stats.latestWeight !== null ? `${stats.latestWeight} kg` : "--"}
             ${weightDeltaBadge}
           </div>
-          ${stats.minWeight !== null && stats.maxWeight !== null ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;">${esc(i18nService.t("measurements.range", { min: stats.minWeight, max: stats.maxWeight }))}</div>` : ""}
+          ${stats.minWeight !== null && stats.maxWeight !== null ? `<div class="measurements-summary-note">${esc(i18nService.t("measurements.range", { min: stats.minWeight, max: stats.maxWeight }))}</div>` : ""}
         </div>
 
-        <div class="panel" style="padding:12px;text-align:center;border:1px solid var(--border);border-radius:10px;background:var(--surface);">
-          <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">${esc(i18nService.t("measurements.averageEnergy"))}</div>
-          <div style="font-size:18px;font-weight:800;color:var(--warning);margin-top:4px;">
+        <div class="panel measurements-summary-card">
+          <div class="measurements-summary-label">${esc(i18nService.t("measurements.averageEnergy"))}</div>
+          <div class="measurements-summary-value measurements-summary-value--warning">
             ${stats.averageEnergy !== null ? `${stats.averageEnergy} / 5` : "--"}
           </div>
-          <div style="font-size:11px;color:var(--muted);margin-top:2px;">${esc(i18nService.t("measurements.entriesCount", { count: stats.totalEntries }))}</div>
+          <div class="measurements-summary-note">${esc(i18nService.t("measurements.entriesCount", { count: stats.totalEntries }))}</div>
         </div>
 
         ${stats.mostFrequentSymptom ? `
-        <div class="panel" style="padding:12px;text-align:center;border:1px solid var(--border);border-radius:10px;background:var(--surface);">
-          <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">${esc(i18nService.t("measurements.frequentSymptom"))}</div>
-          <div style="font-size:14px;font-weight:700;color:var(--text);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${esc(stats.mostFrequentSymptom.symptom)}">
+        <div class="panel measurements-summary-card">
+          <div class="measurements-summary-label">${esc(i18nService.t("measurements.frequentSymptom"))}</div>
+          <div class="measurements-summary-symptom" title="${esc(stats.mostFrequentSymptom.symptom)}">
             ${esc(stats.mostFrequentSymptom.symptom)}
           </div>
-          <div style="font-size:11px;color:var(--muted);margin-top:2px;">${esc(i18nService.t("measurements.reportedCount", { count: stats.mostFrequentSymptom.count }))}</div>
+          <div class="measurements-summary-note">${esc(i18nService.t("measurements.reportedCount", { count: stats.mostFrequentSymptom.count }))}</div>
         </div>` : ""}
       </div>
-      <div style="font-size:11px;color:var(--muted);text-align:center;line-height:1.4;margin-bottom:16px;">
+      <div class="measurements-self-reported-note">
         ${esc(i18nService.t("measurements.selfReportedNote"))}
       </div>
     `;
@@ -290,20 +290,20 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
     });
 
     historyListEl.innerHTML = `
-      <div style="margin-top:16px;">
-        <div style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">
+      <div class="measurements-history">
+        <div class="measurements-history-heading">
           ${esc(i18nService.t("measurements.historyHeading", { count: sorted.length }))}
         </div>
-        <div style="display:flex;flex-direction:column;gap:8px;">
+        <div class="measurements-history-list">
           ${sorted.map((m) => {
             const [y, mon, d] = (m.date || "").split("-");
             const fmtDate = y && mon && d ? `${d}/${mon}/${y}` : m.date;
 
             return `
-              <div class="panel" style="padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
-                <div style="flex:1;min-width:0;">
-                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;">
-                    <span style="font-size:13.5px;font-weight:700;color:var(--text);">${esc(fmtDate)} · ${esc(m.time || "")}</span>
+              <div class="panel measurement-history-card">
+                <div class="measurement-history-content">
+                  <div class="measurement-history-meta">
+                    <span class="measurement-history-date">${esc(fmtDate)} · ${esc(m.time || "")}</span>
                     ${m.weightKg !== null ? `<span class="chip-acc measurement-chip measurement-chip--weight">${esc(i18nService.t("measurements.weightChip"))} ${m.weightKg} kg</span>` : ""}
                     ${m.circumferencesCm?.abdomen !== null && m.circumferencesCm?.abdomen !== undefined ? `<span class="chip-acc measurement-chip measurement-chip--circumference">${esc(i18nService.t("measurements.abdomenChip"))} ${m.circumferencesCm.abdomen} cm</span>` : ""}
                     ${m.circumferencesCm?.waist !== null && m.circumferencesCm?.waist !== undefined ? `<span class="chip-acc measurement-chip measurement-chip--circumference">${esc(i18nService.t("measurements.waistChip"))} ${m.circumferencesCm.waist} cm</span>` : ""}
@@ -313,10 +313,10 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
                     ${m.ownership === "external" ? `<span class="chip-acc measurement-chip measurement-chip--external">Health Connect</span>` : ""}
                   </div>
                   ${m.symptoms && m.symptoms.length > 0 ? `
-                    <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;">
+                    <div class="measurement-symptoms">
                       ${m.symptoms.map((s) => `<span class="measurement-symptom-tag">${esc(s)}</span>`).join("")}
                     </div>` : ""}
-                  ${m.notes ? `<div style="font-size:12px;color:var(--muted);margin-top:6px;">${esc(m.notes)}</div>` : ""}
+                  ${m.notes ? `<div class="measurement-history-notes">${esc(m.notes)}</div>` : ""}
                 </div>
                 <button type="button" class="btn-compact-action btn-meas-edit" data-id="${sanitizeId(m.id)}">
                   ${esc(i18nService.t("measurements.editEntry"))}

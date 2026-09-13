@@ -856,6 +856,8 @@ export const es = {
     "autoUpdated": "Resultado actualizado automáticamente",
     "dataUsed": "Verifique los datos usados:",
     "mathAudit": "Comprobación Matemática Auditable",
+    "calculatorOpened": "Calculadora abierta: {name}",
+    "protocolRegisterStarted": "Iniciando registro de {name}",
     "legalNotice": "Aviso Legal:"
   },
   "sites": {

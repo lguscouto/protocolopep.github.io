@@ -49,7 +49,9 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     expect(notifBox?.height).toBeGreaterThanOrEqual(44);
 
     await page.locator("#tab-settings").click();
+    await page.locator("[data-settings-target='app']").click();
     const themeBtn = page.locator("#settings-theme-btn");
+    await expect(themeBtn).toBeVisible();
     const themeBox = await themeBtn.boundingBox();
     expect(themeBox?.width).toBeGreaterThanOrEqual(44);
     expect(themeBox?.height).toBeGreaterThanOrEqual(44);
@@ -97,6 +99,7 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
       expect(metrics.navRight, `navegação saiu pela direita na aba ${tabId}`).toBeLessThanOrEqual(metrics.windowWidth + 1);
     }
 
+    await page.locator("[data-settings-target='tools']").click();
     await page.locator("#open-tools-btn").click();
     await expect(page.locator("#view-calc")).toHaveClass(/on/);
 
@@ -286,6 +289,7 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
 
     await page.locator("#tab-settings").click();
     await expect(page.locator("#view-settings")).toHaveAttribute("data-feature-ready", "true");
+    await page.locator("[data-settings-target='treatment']").click();
     await assertTouchTargets(".lang-select-btn", "seletor de idioma");
     await assertTouchTargets(".edit-vial-btn, .view-vial-history-btn", "ações de inventário");
     await page.locator("#open-sites-settings-btn").click();
@@ -293,6 +297,8 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     await page.locator("#sites-modal-close").click();
 
     await page.locator("#tab-settings").click();
+    await page.locator("[data-settings-target='tools']").click();
+    await page.locator("[data-settings-target='tools']").click();
     await page.locator("#open-tools-btn").click();
     await page.locator("#calc-research-btn").click();
     await expect(page.locator("#research-modal")).toHaveClass(/\bon\b/);
@@ -300,12 +306,14 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     await page.locator("#research-modal-close").click();
 
     await page.locator("#tab-settings").click();
+    await page.locator("[data-settings-target='tools']").click();
     await page.locator("#open-tools-btn").click();
     await expect(page.locator("#view-calc")).toHaveAttribute("data-feature-ready", "true");
     await assertTouchTargets("#calc-research-btn", "atalho de pesquisa da calculadora");
 
     await page.locator("#tab-settings").click();
     await expect(page.locator("#view-settings")).toHaveAttribute("data-feature-ready", "true");
+    await page.locator("[data-settings-target='treatment']").click();
     const touchProtocolList = page.locator("#settings-protocol-list details");
     if (!(await touchProtocolList.getAttribute("open"))) await touchProtocolList.locator("summary").click();
     const touchProtocol = page.locator("#settings-protocol-list .protocol-manage-item").first();
@@ -368,6 +376,7 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
 
     await page.locator("#tab-journey").click();
     await page.locator("#journey-history").click();
+    await page.locator(".history-actions-disclosure summary").click();
     await page.locator("#hist-retro-btn").click();
 
     const modal = page.locator("#retro-log-modal");
@@ -513,6 +522,7 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
 
     // Navegar para Ferramentas por Mais
     await page.locator("#tab-settings").click();
+    await page.locator("[data-settings-target='tools']").click();
     await page.locator("#open-tools-btn").click();
     await expect(page.locator("#view-calc")).toHaveAttribute("data-feature-ready", "true");
 
@@ -594,6 +604,7 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     await seedStorage(page, { skipOnboarding: true, peptides: [] });
     await page.goto("/");
     await page.locator("#tab-settings").click();
+    await page.locator("[data-settings-target='tools']").click();
     await page.locator("#open-tools-btn").click();
     await expect(page.locator("#view-calc")).toHaveAttribute("data-feature-ready", "true");
 
@@ -619,6 +630,7 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     await page.waitForLoadState("domcontentloaded");
     await page.locator("#tab-settings").click();
     await expect(page.locator("#view-settings")).toHaveAttribute("data-feature-ready", "true");
+    await page.locator("[data-settings-target='data']").click();
 
     const backup = JSON.stringify({
       app: "protocolo-pep",
@@ -734,7 +746,7 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     await expect(page.locator(".hist-day.is-today")).toHaveCount(1);
     await expect(page.locator(".hist-item")).toHaveCount(2);
     await expect(page.locator(".hist-item").first()).toContainText("Composto Histórico");
-    await expect(page.locator(".hist-item").first()).toContainText("📍");
+    await expect(page.locator(".hist-item").first()).toContainText("Local:");
     await expect(page.locator(".hist-rm")).toHaveCount(2);
 
     const accessibilityScanResults = await new AxeBuilder({ page })
@@ -756,6 +768,7 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     // Navegar para Ajustes
     const settingsTab = page.locator("#tab-settings, [data-tab='tab-settings']");
     await settingsTab.first().click();
+    await page.locator("[data-settings-target='app']").click();
 
     // Deve conter os grupos de ajustes e a entrada de ferramentas
     const groups = page.locator("#view-settings .settings-section");
@@ -767,6 +780,7 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     await expect(page.locator("#settings-group-about")).toContainText("Ajuda");
 
     if ((page.viewportSize()?.width ?? 0) <= 460) {
+      await page.locator("[data-settings-target='data']").click();
       const actionLayout = await page.locator("#export-btn, #import-btn").evaluateAll((buttons) =>
         buttons.map((button) => {
           const box = button.getBoundingClientRect();
@@ -777,6 +791,8 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     }
 
     // Trocar idioma para English
+    await page.locator("#settings-detail-back").click();
+    await page.locator("[data-settings-target='app']").click();
     const enBtn = page.locator("#lang-btn-en");
     await enBtn.click();
 
@@ -807,6 +823,7 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     await page.waitForLoadState("domcontentloaded");
 
     await page.locator("#tab-settings").click();
+    await page.locator("[data-settings-target='treatment']").click();
     const inventoryEmpty = page.locator("#inventory-list .empty-state-illustrated--inventory");
     await expect(inventoryEmpty).toBeVisible();
     await expect(inventoryEmpty.locator(".empty-state-title")).toContainText("Seu inventário começa aqui");
@@ -821,6 +838,7 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     await expect.poll(() => measurementsEmpty.locator("img").evaluate((img) => img.complete && img.naturalWidth > 0)).toBe(true);
 
     await page.locator("#tab-settings").click();
+    await page.locator("[data-settings-target='tools']").click();
     await page.locator("#open-tools-btn").click();
     await page.locator("#calc-research-btn").click();
     await page.locator("#research-search-input").fill("termo-sem-resultado");
@@ -887,6 +905,7 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
 
     await page.locator("#tab-settings").click();
     await expect(page.locator("#view-settings")).toHaveAttribute("data-feature-ready", "true");
+    await page.locator("[data-settings-target='treatment']").click();
     const openEditor = page.locator("#settings-protocol-list .protocol-manage-item").first();
     const modalProtocolList = page.locator("#settings-protocol-list details");
     if (!(await modalProtocolList.getAttribute("open"))) await modalProtocolList.locator("summary").click();
@@ -949,6 +968,7 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     await page.waitForLoadState("domcontentloaded");
     await page.waitForTimeout(400);
     await page.locator("#tab-settings").click();
+    await page.locator("[data-settings-target='app']").click();
 
     const languageBadge = page.locator("#current-lang-badge");
     await expect(languageBadge).toBeVisible();
@@ -1020,6 +1040,7 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     await page.waitForLoadState("domcontentloaded");
 
     await page.locator("#tab-settings").click();
+    await page.locator("[data-settings-target='tools']").click();
     await page.locator("#open-tools-btn").click();
     await page.waitForTimeout(400);
 
