@@ -75,7 +75,11 @@ const SCREENSHOT_OPTIONS = Object.freeze({
   // O runner Ubuntu e o Chromium empacotado podem rasterizar fontes e
   // subpixels de forma ligeiramente diferente; o limite preserva a detecção
   // de mudanças estruturais sem reprovar apenas antialiasing do ambiente.
-  maxDiffPixelRatio: 0.08
+  // Ubuntu-latest rasteriza a fonte do sistema com pequenas diferenças em
+  // relação ao container Playwright usado para gerar os snapshots Linux.
+  // Mantemos o limite mais estrito nos runners Windows e aceitamos apenas
+  // essa margem adicional no ambiente Linux.
+  maxDiffPixelRatio: process.platform === "linux" ? 0.1 : 0.08
 });
 
 const ONBOARDING_SCREENSHOT_OPTIONS = Object.freeze({
