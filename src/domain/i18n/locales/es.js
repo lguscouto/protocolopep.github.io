@@ -498,6 +498,11 @@ export const es = {
     "feedbackBtn": "Enviar sugerencia"
     ,"lightTheme": "Claro"
     ,"darkTheme": "Oscuro"
+    ,"menuTreatmentDesc": "Rutinas, viales y sitios"
+    ,"menuToolsDesc": "Calculadora, investigación e informes"
+    ,"menuDataDesc": "Copia de seguridad, Health Connect y exportación"
+    ,"menuAppDesc": "Apariencia, idioma y seguridad"
+    ,"menuHelpDesc": "Privacidad, diagnósticos y contacto"
   },
   "modals": {
     "addPeptideTitle": "Nuevo Péptido",

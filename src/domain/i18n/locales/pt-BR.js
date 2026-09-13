@@ -498,6 +498,11 @@ export const ptBR = {
     "feedbackBtn": "Enviar sugestão"
     ,"lightTheme": "Claro"
     ,"darkTheme": "Escuro"
+    ,"menuTreatmentDesc": "Rotinas, frascos e locais"
+    ,"menuToolsDesc": "Calculadora, pesquisa e relatórios"
+    ,"menuDataDesc": "Backup, Health Connect e exportação"
+    ,"menuAppDesc": "Aparência, idioma e segurança"
+    ,"menuHelpDesc": "Privacidade, diagnósticos e contato"
   },
   "modals": {
     "addPeptideTitle": "Novo Peptídeo",

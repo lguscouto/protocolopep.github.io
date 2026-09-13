@@ -498,6 +498,11 @@ export const en = {
     "feedbackBtn": "Send suggestion"
     ,"lightTheme": "Light"
     ,"darkTheme": "Dark"
+    ,"menuTreatmentDesc": "Routines, vials, and sites"
+    ,"menuToolsDesc": "Calculator, research, and reports"
+    ,"menuDataDesc": "Backup, Health Connect, and export"
+    ,"menuAppDesc": "Appearance, language, and security"
+    ,"menuHelpDesc": "Privacy, diagnostics, and contact"
   },
   "modals": {
     "addPeptideTitle": "New Peptide",
