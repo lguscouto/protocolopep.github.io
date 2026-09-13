@@ -141,11 +141,19 @@ async function measureStartup(browser, baseUrl, fixture) {
     const metrics = await page.evaluate(() => {
       const nav = performance.getEntriesByType("navigation")[0];
       const paint = performance.getEntriesByName("first-contentful-paint")[0];
+      const duration = (start, end) => {
+        const a = performance.getEntriesByName(start)[0]?.startTime;
+        const b = performance.getEntriesByName(end)[0]?.startTime;
+        return Number.isFinite(a) && Number.isFinite(b) ? Math.max(0, b - a) : 0;
+      };
       return {
         domReadyMs: nav?.domContentLoadedEventEnd || 0,
         firstContentMs: paint?.startTime || 0,
         longTasksMs: (window.__pepLongTasks || []).reduce((total, duration) => total + duration, 0),
-        domNodes: document.querySelectorAll("*").length
+        domNodes: document.querySelectorAll("*").length,
+        storageInitMs: duration("pep:storage-init-start", "pep:storage-init-end"),
+        todayRenderMs: duration("pep:today-render-start", "pep:today-render-end"),
+        prefetchMs: duration("pep:prefetch-start", "pep:prefetch-end")
       };
     });
     if (runtimeErrors.length) throw new Error(`Erros no runtime: ${runtimeErrors.join(" | ")}`);
@@ -219,7 +227,10 @@ try {
     domReadyMs: median(runs.map((item) => item.domReadyMs)),
     firstContentMs: median(runs.map((item) => item.firstContentMs)),
     longTasksMs: median(runs.map((item) => item.longTasksMs)),
-    domNodes: median(runs.map((item) => item.domNodes))
+    domNodes: median(runs.map((item) => item.domNodes)),
+    storageInitMs: median(runs.map((item) => item.storageInitMs)),
+    todayRenderMs: median(runs.map((item) => item.todayRenderMs)),
+    prefetchMs: median(runs.map((item) => item.prefetchMs))
   }]));
 
   const features = {};

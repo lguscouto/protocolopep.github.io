@@ -344,6 +344,7 @@ export const ptBR = {
     "viewDetails": "Ver detalhes",
     "editAction": "Corrigir",
     "unknownTime": "não informado"
+    ,"loadMore": "Carregar mais"
   },
   "inventory": {
     "emptyTitle": "Seu inventário começa aqui",
@@ -385,6 +386,7 @@ export const ptBR = {
     "reportedCount": "Relatado {count}x",
     "selfReportedNote": "Registros autorrelatados informativos. Não constituem correlação clínica nem orientação médica.",
     "historyHeading": "Histórico de medições e sintomas ({count})",
+    "loadMore": "Carregar mais",
     "weightChip": "Peso",
     "abdomenChip": "Abdômen",
     "waistChip": "Cintura",
@@ -618,6 +620,8 @@ export const ptBR = {
       "auditRetro": "Retroativo",
       "cancelBtn": "Cancelar",
       "saveBtn": "Salvar Registro",
+      "dateUnknown": "Data não informada",
+      "statusUnknown": "Estado não informado",
       "noPriorCorrections": "Nenhuma correção anterior.",
       "prevNote": "Observação anterior:",
       "prevReason": "Motivo anterior:"

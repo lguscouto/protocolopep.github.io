@@ -41,7 +41,8 @@ import { generateDailySummary } from "./domain/daily-summary.js";
 import { updateNotificationUI, setupNotificationListeners } from "./ui/notification-settings.js";
 import { calculateRemainingDoses, getExpirationStatus } from "./domain/inventory.js";
 import { getNextSite, getLastUsedSite } from "./domain/injection-sites.js";
-import { createRevisionedPerformanceIndexes } from "./domain/performance-indexes.js";
+import { createRevisionedPerformanceIndexes, buildActiveVialIndex } from "./domain/performance-indexes.js";
+import { paginate } from "./domain/pagination.js";
 import { getDoseDisplayData as getDoseDisplayDataCore } from "./domain/dose-display.js";
 import { appLock } from "./services/app-lock.js";
 import { setupAppLockUI } from "./ui/app-lock.js";
@@ -65,11 +66,12 @@ let accessibilityUI = null;
 
 const esc = escapeHtml;
 
-function fmtBR(iso) {
+function fmtBR(iso, locale = i18nService.getLocale()) {
   if (!iso) return "";
   const parts = iso.split("-");
   if (parts.length < 3) return iso;
-  return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  const parsed = new Date(`${iso}T12:00:00`);
+  return Number.isNaN(parsed.getTime()) ? iso : parsed.toLocaleDateString(locale, { year: "numeric", month: "2-digit", day: "2-digit" });
 }
 
 function administrationLabel(item = {}) {
@@ -87,6 +89,14 @@ function showToast(msg, options = {}) {
 }
 
 const dateKey = dateToKey;
+
+function markPerformance(name) {
+  try {
+    if (typeof performance !== "undefined" && typeof performance.mark === "function") performance.mark(name);
+  } catch {
+    // Métricas não podem interromper a experiência offline.
+  }
+}
 
 function syncAppWidget() {
   if (!widgetService) return;
@@ -110,7 +120,8 @@ let researchUI = null;
 let quickRegisterUI = null;
 let journeyUI = null;
 let adherencePeriodDays = 7;
-const historyFilters = { period: "30", compoundId: "all", eventType: "all", query: "", startDate: null, endDate: null };
+const historyFilters = { period: "30", compoundId: "all", eventType: "all", query: "", startDate: null, endDate: null, offset: 0 };
+let historyLoadMoreFocus = false;
 const progressFilters = { period: "30", startDate: null, endDate: null };
 let historyBodyMetric = "weight";
 let historyRevisionCompoundId = "";
@@ -485,7 +496,9 @@ function bindRestoredSettingsControls() {
 async function initApp() {
   prepareDeferredDom();
   await theme.init({ deferNative: true });
+  markPerformance("pep:storage-init-start");
   const storageState = storage.init();
+  markPerformance("pep:storage-init-end");
   if (storageState.error) void dialogService.alert({ title: i18nService.t("dialogs.storageFailTitle"), message: storageState.error, isDanger: true });
   if (i18nService.getLocale() !== "pt-BR") {
     await i18nService.ensureLocaleLoaded();
@@ -545,7 +558,7 @@ async function initApp() {
   const dateEl = document.getElementById("header-date");
   if (dateEl) {
     const today = new Date();
-    dateEl.textContent = today.toLocaleDateString("pt-BR", {
+    dateEl.textContent = today.toLocaleDateString(i18nService.getLocale(), {
       weekday: "long",
       day: "numeric",
       month: "long"
@@ -622,12 +635,27 @@ async function initApp() {
     }
   });
 
+  let prefetchGroupsReady = 0;
+  const markPrefetchGroupReady = () => {
+    prefetchGroupsReady += 1;
+    if (prefetchGroupsReady === 2) {
+      markPerformance("pep:prefetch-end");
+      document.documentElement.setAttribute("data-pep-prefetch-ready", "true");
+    }
+  };
+  markPerformance("pep:prefetch-start");
   scheduleIdleWork(async () => {
     await Promise.allSettled([
       import("./domain/report.js"),
       import("./domain/adherence.js"),
       import("./ui/adherence.js"),
-      import("./ui/measurements.js"),
+      import("./ui/measurements.js")
+    ]);
+    markPrefetchGroupReady();
+  }, { delay: 300, timeout: 1200 });
+
+  scheduleIdleWork(async () => {
+    await Promise.allSettled([
       import("./ui/inventory.js"),
       import("./ui/injection-sites.js"),
       import("./ui/calculator.js"),
@@ -642,8 +670,8 @@ async function initApp() {
       import("./services/widget.js"),
       import("./ui/report-preview.js")
     ]);
-    document.documentElement.setAttribute("data-pep-prefetch-ready", "true");
-  }, { delay: 600, timeout: 1500 });
+    markPrefetchGroupReady();
+  }, { delay: 900, timeout: 1800 });
 }
 
 function initAnimatedBg() {
@@ -973,8 +1001,14 @@ function renderMultiDoseDetails(progress) {
 }
 
 function renderToday() {
-  const { peptides, logs, inventory, sites: configuredSites, measurements } = storage.readSnapshot(["peptides", "logs", "inventory", "sites", "measurements"]);
-  const indexes = performanceIndexes.get({ logs, inventory });
+  markPerformance("pep:today-render-start");
+  const dashboardSnapshot = storage.readDashboardSnapshot(dateKey(new Date()));
+  const { peptides, logs, inventory, sites: configuredSites, latestWeight } = dashboardSnapshot;
+  const indexes = {
+    activeVials: buildActiveVialIndex(inventory),
+    lastSites: { byPeptide: new Map(Object.entries(dashboardSnapshot.lastSites || {})) },
+    getRecordsForDate: (date) => logs[date] || {}
+  };
   const lastSiteIndex = indexes.lastSites;
   const vialIndex = indexes.activeVials;
   const now = new Date();
@@ -1001,6 +1035,7 @@ function renderToday() {
 
     drawRing(0, 0);
     syncAppWidget();
+    markPerformance("pep:today-render-end");
     return;
   }
 
@@ -1162,7 +1197,6 @@ function renderToday() {
 
   const compactProgress = document.getElementById("today-progress-compact");
   if (compactProgress) {
-    const latestWeight = [...measurements].filter((item) => Number.isFinite(item?.weightKg)).sort((a, b) => `${b.date}${b.time || ""}`.localeCompare(`${a.date}${a.time || ""}`))[0];
     compactProgress.innerHTML = `<strong>Progresso de hoje</strong><span>${dayProgress.resolvedCount} de ${dayProgress.totalDue} registros resolvidos${latestWeight ? ` · peso mais recente ${esc(String(latestWeight.weightKg))} kg` : ""}</span><button type="button" data-action="open-progress">Ver progresso</button>`;
   }
   // Cálculo canônico do anel diário
@@ -1173,6 +1207,7 @@ function renderToday() {
   drawRing(dayProgress.scheduledTaken, dayProgress.totalDue);
 
   syncAppWidget();
+  markPerformance("pep:today-render-end");
 }
 
 async function toggleDose(id) {
@@ -1576,6 +1611,7 @@ function setupHistoryFilters() {
     const eventName = id === "history-search" ? "input" : "change";
     element.addEventListener(eventName, () => {
       historyFilters[key] = element.value || (key === "compoundId" || key === "eventType" ? "all" : null);
+      historyFilters.offset = 0;
       const custom = document.getElementById("history-custom-dates");
       if (custom) custom.hidden = historyFilters.period !== "custom";
       const summary = document.getElementById("history-filter-summary");
@@ -1784,12 +1820,13 @@ function renderHistory() {
     query: historyFilters.query,
     includeNotes: true
   });
+  const page = paginate(model.events, { offset: historyFilters.offset, pageSize: 30 });
   const countEl = document.getElementById("history-count");
-  if (countEl) countEl.textContent = `${model.events.length} registro${model.events.length === 1 ? "" : "s"}`;
+  if (countEl) countEl.textContent = i18nService.t("history.dosesCount", { count: page.total });
   const contextNote = document.getElementById("history-context-note");
   if (contextNote) contextNote.hidden = historyFilters.compoundId === "all";
   const typeLabel = { application: i18nService.t("history.typeApplication"), measurement: i18nService.t("history.typeMeasurement"), symptom: i18nService.t("history.typeSymptom"), protocol: i18nService.t("history.typeProtocol") };
-  container.innerHTML = model.events.length ? `<div class="history-timeline history-timeline--integrated" role="list">${model.events.map((event) => {
+  container.innerHTML = page.total ? `<div class="history-timeline history-timeline--integrated" role="list">${page.items.map((event) => {
     const details = event.type === "application"
       ? `<span>${esc(i18nService.t("history.scheduledLabel"))}: <b>${esc(event.scheduledTime || i18nService.t("history.unknownTime"))}</b></span><span>${esc(i18nService.t("history.effectiveLabel"))}: <b>${esc(event.effectiveTime || i18nService.t("history.unknownTime"))}</b></span>${event.data.site ? `<span>${esc(i18nService.t("history.siteLabel"))}: <b>${esc(event.data.site)}</b></span>` : ""}`
       : event.type === "measurement" || event.type === "symptom"
@@ -1801,7 +1838,19 @@ function renderHistory() {
       <details class="history-event-details"><summary>${esc(i18nService.t("history.viewDetails"))}</summary><div>${details}</div></details>
       <div class="hist-actions">${event.type === "application" ? `<button type="button" class="hist-edit" data-date="${sanitizeId(event.date)}" data-pep="${sanitizeId(event.data.peptideId)}" data-idx="${event.data.recordIndex}">${esc(i18nService.t("history.editAction"))}</button><button type="button" class="hist-rm" data-date="${sanitizeId(event.date)}" data-pep="${sanitizeId(event.data.peptideId)}" data-idx="${event.data.recordIndex}">${esc(i18nService.t("common.delete"))}</button>` : event.type === "measurement" || event.type === "symptom" ? `<button type="button" class="history-measurement-edit btn-meas-edit" data-id="${sanitizeId(event.editableId)}">${esc(i18nService.t("history.editAction"))}</button>` : ""}</div>
     </article>`;
-  }).join("")}</div>` : `<div class="timeline-empty history-empty"><div class="timeline-empty-icon" aria-hidden="true">◌</div><strong>${esc(i18nService.t("history.noRecordsFound"))}</strong><p>${esc(i18nService.t("history.adjustFiltersHint"))}</p></div>`;
+  }).join("")}</div>${page.hasMore ? `<button type="button" class="btn-subtle history-load-more" id="history-load-more">${esc(i18nService.t("history.loadMore"))}</button>` : ""}` : `<div class="timeline-empty history-empty"><div class="timeline-empty-icon" aria-hidden="true">◌</div><strong>${esc(i18nService.t("history.noRecordsFound"))}</strong><p>${esc(i18nService.t("history.adjustFiltersHint"))}</p></div>`;
+  const loadMore = document.getElementById("history-load-more");
+  if (loadMore) {
+    loadMore.addEventListener("click", () => {
+      historyLoadMoreFocus = true;
+      historyFilters.offset += page.pageSize;
+      viewCoordinator.render("history", { force: true });
+    });
+    if (historyLoadMoreFocus) {
+      historyLoadMoreFocus = false;
+      requestAnimationFrame(() => document.getElementById("history-load-more")?.focus({ preventScroll: true }));
+    }
+  }
 }
 
 function progressDateRange() {

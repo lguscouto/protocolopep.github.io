@@ -344,6 +344,7 @@ export const en = {
     "viewDetails": "View details",
     "editAction": "Edit",
     "unknownTime": "not provided"
+    ,"loadMore": "Load more"
   },
   "inventory": {
     "emptyTitle": "Your inventory starts here",
@@ -385,6 +386,7 @@ export const en = {
     "reportedCount": "Reported {count}x",
     "selfReportedNote": "Informational self-reported records. They do not establish clinical correlation or medical guidance.",
     "historyHeading": "Measurement and symptom history ({count})",
+    "loadMore": "Load more",
     "weightChip": "Weight",
     "abdomenChip": "Abdomen",
     "waistChip": "Waist",
@@ -618,6 +620,8 @@ export const en = {
       "auditRetro": "Retroactive",
       "cancelBtn": "Cancel",
       "saveBtn": "Save Record",
+      "dateUnknown": "Date not provided",
+      "statusUnknown": "Status not provided",
       "noPriorCorrections": "No previous corrections.",
       "prevNote": "Previous note:",
       "prevReason": "Previous reason:"

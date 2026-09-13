@@ -59,6 +59,26 @@ describe("Infraestrutura de desempenho", () => {
     expect(service.readSnapshot(["logs", "peptides"])).not.toBe(first);
   });
 
+  it("cria um snapshot enxuto de Hoje sem expor o histórico completo", () => {
+    const service = new StorageService();
+    service.init();
+    service.peptides = [{ id: "p1", name: "Teste", dose: "1 mg", perDay: 1 }];
+    service.logs = {
+      "2026-09-11": { p1: [{ id: "r1", status: "applied", site: "Coxa" }] },
+      "2026-09-12": { p1: [{ id: "r2", status: "skipped", site: "Braço" }] }
+    };
+    service.measurements = [
+      { id: "m1", date: "2026-09-10", time: "08:00", weightKg: 80 },
+      { id: "m2", date: "2026-09-11", time: "08:00", weightKg: 79.5 }
+    ];
+    const snapshot = service.readDashboardSnapshot("2026-09-12");
+    expect(snapshot.logs).toEqual({ "2026-09-12": service.logs["2026-09-12"] });
+    expect(snapshot.lastSites.p1).toEqual({ site: "Coxa", date: "2026-09-11" });
+    expect(snapshot.latestWeight.id).toBe("m2");
+    expect(snapshot.measurements).toBeUndefined();
+    expect(Object.isFrozen(snapshot)).toBe(true);
+  });
+
   it("indexa último local e frasco ativo sem mudar a precedência histórica", () => {
     const logs = {
       "2026-09-08": { p1: [{ status: "applied", site: "Coxa" }] },

@@ -25,6 +25,7 @@ import { dialogService } from "../services/dialog.js";
 import { i18nService } from "../services/i18n.js";
 import { dateToKey } from "../domain/schedule.js";
 import { accessibilityService } from "../services/accessibility.js";
+import { paginate } from "../domain/pagination.js";
 
 const esc = escapeHtml;
 
@@ -58,6 +59,8 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
   let selectedMood = null;
   let mode = "full";
   let saving = false;
+  let measurementsOffset = 0;
+  let measurementsLoadMoreFocus = false;
 
   const closeMeasurementModal = () => {
     modal?.classList.remove("on");
@@ -289,13 +292,14 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
       return (b.time || "").localeCompare(a.time || "");
     });
 
+    const page = paginate(sorted, { offset: measurementsOffset, pageSize: 30 });
     historyListEl.innerHTML = `
       <div class="measurements-history">
         <div class="measurements-history-heading">
-          ${esc(i18nService.t("measurements.historyHeading", { count: sorted.length }))}
+          ${esc(i18nService.t("measurements.historyHeading", { count: page.total }))}
         </div>
         <div class="measurements-history-list">
-          ${sorted.map((m) => {
+          ${page.items.map((m) => {
             const [y, mon, d] = (m.date || "").split("-");
             const fmtDate = y && mon && d ? `${d}/${mon}/${y}` : m.date;
 
@@ -325,8 +329,21 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
             `;
           }).join("")}
         </div>
+        ${page.hasMore ? `<button type="button" class="btn-subtle measurements-load-more" id="measurements-load-more">${esc(i18nService.t("measurements.loadMore"))}</button>` : ""}
       </div>
     `;
+    const loadMore = document.getElementById("measurements-load-more");
+    if (loadMore) {
+      loadMore.addEventListener("click", () => {
+        measurementsLoadMoreFocus = true;
+        measurementsOffset += page.pageSize;
+        renderMeasurementsHistory();
+      });
+      if (measurementsLoadMoreFocus) {
+        measurementsLoadMoreFocus = false;
+        requestAnimationFrame(() => document.getElementById("measurements-load-more")?.focus({ preventScroll: true }));
+      }
+    }
   }
 
   // Event Listeners
@@ -468,6 +485,7 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
       if (confirmed) {
         const res = storage.deleteMeasurement(editingEntryId);
         if (res.success) {
+          measurementsOffset = 0;
           haptics.warning();
           closeMeasurementModal();
           renderTrendSummary();
@@ -535,6 +553,7 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
       }
 
       haptics.success();
+      measurementsOffset = 0;
       closeMeasurementModal();
       renderTrendSummary();
       renderMeasurementsHistory();

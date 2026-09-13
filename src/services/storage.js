@@ -12,6 +12,7 @@ import { validateAndParseBackup, createBackupPayload } from "../domain/backup.js
 import { debitVialDose, creditVialDose } from "../domain/inventory.js";
 import { getDefaultSites, migrateLegacyDefaultSites } from "../domain/injection-sites.js";
 import { createMeasurementEntry, validateMeasurementEntry, normalizeMeasurementGoals } from "../domain/measurements.js";
+import { doseStatus } from "../domain/dose-state.js";
 
 const LAST_DATA_CHANGE_KEY = "pep_last_data_change";
 
@@ -264,6 +265,49 @@ export class StorageService {
 
     const snapshot = {};
     for (const field of requested) snapshot[field] = deepClone(this[field]);
+    const freeze = (value) => {
+      if (!value || typeof value !== "object" || Object.isFrozen(value)) return value;
+      Object.values(value).forEach(freeze);
+      return Object.freeze(value);
+    };
+    const value = freeze(snapshot);
+    this.readCache.set(cacheKey, { revision: this.revision, value });
+    return value;
+  }
+
+  /**
+   * Selector enxuto para a tela Hoje. Evita clonar e congelar o histórico
+   * completo no startup, mas continua devolvendo um snapshot imutável.
+   */
+  readDashboardSnapshot(date) {
+    const dateKey = typeof date === "string" ? date : new Date(date || Date.now()).toISOString().slice(0, 10);
+    const cacheKey = `dashboard:${dateKey}`;
+    const cached = this.readCache.get(cacheKey);
+    if (cached?.revision === this.revision) return cached.value;
+
+    const dayLogs = deepClone(this.logs?.[dateKey] || {});
+    const lastSites = {};
+    const dates = Object.keys(this.logs || {}).sort().reverse();
+    for (const day of dates) {
+      const byPeptide = this.logs[day] || {};
+      for (const [peptideId, raw] of Object.entries(byPeptide)) {
+        if (lastSites[peptideId]) continue;
+        const records = Array.isArray(raw) ? raw : raw ? [raw] : [];
+        const record = [...records].reverse().find((item) => item && typeof item === "object" && doseStatus(item) === "applied" && item.site);
+        if (record) lastSites[peptideId] = { site: String(record.site), date: day };
+      }
+    }
+    const latestWeight = [...(this.measurements || [])]
+      .filter((entry) => Number.isFinite(entry?.weightKg))
+      .sort((a, b) => `${b.date || ""}${b.time || ""}`.localeCompare(`${a.date || ""}${a.time || ""}`))[0] || null;
+    const snapshot = {
+      peptides: deepClone(this.peptides),
+      logs: { [dateKey]: dayLogs },
+      inventory: deepClone(this.inventory),
+      sites: deepClone(this.sites),
+      lastSites,
+      latestWeight: deepClone(latestWeight)
+    };
     const freeze = (value) => {
       if (!value || typeof value !== "object" || Object.isFrozen(value)) return value;
       Object.values(value).forEach(freeze);

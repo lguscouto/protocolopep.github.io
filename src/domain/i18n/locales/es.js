@@ -344,6 +344,7 @@ export const es = {
     "viewDetails": "Ver detalles",
     "editAction": "Corregir",
     "unknownTime": "no informado"
+    ,"loadMore": "Cargar más"
   },
   "inventory": {
     "emptyTitle": "Tu inventario comienza aquí",
@@ -385,6 +386,7 @@ export const es = {
     "reportedCount": "Registrado {count}x",
     "selfReportedNote": "Registros autorreportados informativos. No establecen correlación clínica ni orientación médica.",
     "historyHeading": "Historial de mediciones y síntomas ({count})",
+    "loadMore": "Cargar más",
     "weightChip": "Peso",
     "abdomenChip": "Abdomen",
     "waistChip": "Cintura",
@@ -618,6 +620,8 @@ export const es = {
       "auditRetro": "Retroactivo",
       "cancelBtn": "Cancelar",
       "saveBtn": "Guardar Registro",
+      "dateUnknown": "Fecha no informada",
+      "statusUnknown": "Estado no informado",
       "noPriorCorrections": "Sin correcciones anteriores.",
       "prevNote": "Nota anterior:",
       "prevReason": "Motivo anterior:"
