@@ -101,7 +101,8 @@ export function migrateMeasurements(rawMeasurements = []) {
       // Registros recém-normalizados já são validados por createMeasurementEntry.
       // A remediação adicional fica restrita aos registros explicitamente marcados
       // para revisão, evitando duas avaliações temporais no carregamento inicial.
-      const prepared = item.temporalIntegrity === "needs_review" ? remediateTemporalFields(item) : item;
+      const needsRemediation = item.temporalIntegrity === "needs_review" || (item.temporalIntegrity == null && item.timestamp);
+      const prepared = needsRemediation ? remediateTemporalFields(item) : item;
       return createMeasurementEntry(prepared);
     });
 }
