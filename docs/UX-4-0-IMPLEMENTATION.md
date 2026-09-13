@@ -61,7 +61,7 @@ O APK é uma build debug para avaliação. O teste físico não foi executado e 
 - [v3.9.11](https://github.com/lguscouto/protocolopep.github.io/releases/tag/v3.9.11) — `Protocolo-PEP-v3.9.11.apk`.
 - [v3.9.10](https://github.com/lguscouto/protocolopep.github.io/releases/tag/v3.9.10) — `Protocolo-PEP-v3.9.10.apk`.
 
-Cada release mantém uma única referência ao seu APK oficial; o asset da 3.9.12 será confirmado após a publicação.
+Cada release mantém uma única referência ao seu APK oficial. O asset publicado da 3.9.12 foi conferido após o download: **12.376.448 bytes**, SHA-256 **`3A4ABAD547471BC8907545FC2CF3DB494ED42612E031179C0AB1DB22C1DE4173`**, idêntico ao arquivo local.
 
 ## Roteiro de smoke físico (execução posterior)
 
@@ -69,4 +69,4 @@ Instalar o APK debug, atualizar a partir da 3.9.11, abrir Hoje/Jornada/Progresso
 
 ## Fechamento da release
 
-Integração concluída por fast-forward: `main` aponta para `4a5d688`. A CI final de `main` é o run [34770054784](https://github.com/lguscouto/protocolopep.github.io/actions/runs/34770054784), com Web/E2E, Performance e Android verdes. A tag anotada `v3.9.12` e a release pública serão criadas neste commit após a validação documental; o digest hospedado será comparado ao SHA-256 local acima.
+Integração concluída por fast-forward: `main` aponta para `7f423c1` no commit validado. A CI final de `main` é o run [34770502166](https://github.com/lguscouto/protocolopep.github.io/actions/runs/34770502166), com Web/E2E, Performance e Android verdes. A tag anotada [`v3.9.12`](https://github.com/lguscouto/protocolopep.github.io/releases/tag/v3.9.12) aponta para `7f423c1`, e a [release pública](https://github.com/lguscouto/protocolopep.github.io/releases/tag/v3.9.12) está publicada como não draft e não prerelease. O asset hospedado mantém os mesmos bytes e SHA-256 do APK local. Esta atualização documental é posterior ao commit apontado pela tag e registra as evidências finais; o teste em aparelho físico permanece não executado.
