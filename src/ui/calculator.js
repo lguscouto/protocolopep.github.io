@@ -10,6 +10,7 @@
 import { calculateReconstitution, convertDoseValue, normalizeSyringeMaxUI } from "../domain/calculator.js";
 import { createCalculationSnapshot, formatAuditTrail } from "../domain/calculation-record.js";
 import { escapeHtml } from "./dom.js";
+import { renderIcon } from "./icons.js";
 import { i18nService } from "../services/i18n.js";
 
 /**
@@ -94,7 +95,7 @@ export function setupCalculatorUI({
 
     if (!result.valid) {
       if (resBig) resBig.textContent = "--";
-      if (resSub) resSub.innerHTML = `<span class="calc-error"><span class="icon icon-warning" aria-hidden="true"></span>${escapeHtml(result.error || i18nService.t("calculator.invalidData"))}</span>`;
+      if (resSub) resSub.innerHTML = `<span class="calc-error">${renderIcon("warning")}${escapeHtml(result.error || i18nService.t("calculator.invalidData"))}</span>`;
       if (resDoses) resDoses.textContent = "--";
       auditCard?.classList.add("is-hidden");
       summaryCard?.classList.add("is-hidden");

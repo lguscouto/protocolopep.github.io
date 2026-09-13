@@ -9,6 +9,7 @@ import { dialogService } from "../services/dialog.js";
 import { i18nService } from "../services/i18n.js";
 import { escapeHtml } from "./dom.js";
 import { resolveUiError } from "./error-messages.js";
+import { renderIcon } from "./icons.js";
 
 const esc = escapeHtml;
 
@@ -133,7 +134,7 @@ export function setupReportModal(storage) {
           <div>
             <span class="report-preview-title">${esc(e.title)}</span>
             <span class="report-preview-subtitle">${esc(e.subtitle)}</span>
-            ${e.notes ? `<div class="report-preview-notes"><span class="icon icon-note" aria-hidden="true"></span>${esc(e.notes)}</div>` : ""}
+            ${e.notes ? `<div class="report-preview-notes">${renderIcon("note")}${esc(e.notes)}</div>` : ""}
           </div>
           <div class="report-preview-meta">
             <div class="report-preview-date">${esc(dateFmt)} · ${esc(e.time)}</div>
