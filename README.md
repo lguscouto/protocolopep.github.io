@@ -1,6 +1,6 @@
 # 🧪 Protocolo PEP · App Android (Local-First)
 
-![Version](https://img.shields.io/badge/version-3.9.13-2CC5C0)
+![Version](https://img.shields.io/badge/version-3.9.14-2CC5C0)
 ![Android](https://img.shields.io/badge/Android-8.0%2B-green)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![CI](https://github.com/lguscouto/protocolopep.github.io/actions/workflows/ci.yml/badge.svg)
@@ -8,6 +8,12 @@
 Aplicativo Android/PWA para registrar aplicações de peptídeos com poucos toques, receber lembretes no dia certo e lembrar o último local aplicado. O PEP funciona offline, sem conta e sem nuvem, com arquitetura **100% Local-First**, histórico preservado e ferramentas técnicas acessíveis somente quando necessárias.
 
 ---
+
+## 🚀 Correção da Versão 3.9.14
+
+- **Cadastro de tratamento corrigido:** em Mais → Tratamento, o botão **Adicionar** volta a abrir o formulário depois que o painel é carregado sob demanda.
+- **Prevenção de regressão:** o vínculo do botão é idempotente e o E2E cobre abrir, fechar e reabrir o cadastro após retornar ao menu.
+- **Release Android versionada:** `versionName 3.9.14` e `versionCode 43`. O APK é debug para avaliação; teste em dispositivo físico não foi executado por decisão de escopo.
 
 ## 🚀 Novidades da Versão 3.9.13 (Polimento final de UI/UX)
 
