@@ -290,14 +290,17 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     await page.locator("#tab-settings").click();
     await expect(page.locator("#view-settings")).toHaveAttribute("data-feature-ready", "true");
     await page.locator("[data-settings-target='treatment']").click();
+    await page.locator("#settings-detail-back").click();
     await page.locator("[data-settings-target='app']").click();
     await assertTouchTargets(".lang-select-btn", "seletor de idioma");
+    await page.locator("#settings-detail-back").click();
     await page.locator("#tab-settings").click();
     await page.locator("[data-settings-target='treatment']").click();
     await assertTouchTargets(".edit-vial-btn, .view-vial-history-btn", "ações de inventário");
     await page.locator("#open-sites-settings-btn").click();
     await assertTouchTargets(".site-control", "controles de sítios");
     await page.locator("#sites-modal-close").click();
+    await page.locator("#settings-detail-back").click();
 
     await page.locator("#tab-settings").click();
     await page.locator("[data-settings-target='tools']").click();
@@ -784,6 +787,7 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     await expect(page.locator("#settings-group-about")).toContainText("Ajuda");
 
     if ((page.viewportSize()?.width ?? 0) <= 460) {
+      await page.locator("#settings-detail-back").click();
       await page.locator("[data-settings-target='data']").click();
       const actionLayout = await page.locator("#export-btn, #import-btn").evaluateAll((buttons) =>
         buttons.map((button) => {
