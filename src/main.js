@@ -490,6 +490,7 @@ function bindRestoredSettingsControls() {
     haptics.light();
     void switchTab("calc");
   });
+  bind("settings-add-treatment", () => openEditModal(null));
   bind("settings-theme-btn", async () => {
     haptics.medium();
     await theme.toggle();
@@ -2413,7 +2414,6 @@ function setupModalsAndButtons() {
       switchTab("calc");
     });
   }
-  document.getElementById("settings-add-treatment")?.addEventListener("click", () => openEditModal(null));
   const calcBackBtn = document.getElementById("calc-back-btn");
   if (calcBackBtn) {
     calcBackBtn.addEventListener("click", () => {

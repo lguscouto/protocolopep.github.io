@@ -151,6 +151,26 @@ test.describe("Experiência 4.0", () => {
     runtime.assertCleanRuntime();
   });
 
+  test("abre o cadastro de tratamento depois de restaurar o painel de Mais", async ({ page }) => {
+    const runtime = trackPageRuntime(page);
+    await seedStorage(page, { skipOnboarding: true, peptides: [] });
+    await page.goto("/");
+
+    await page.locator("#tab-settings").click();
+    await page.locator("[data-settings-target='treatment']").click();
+    await page.locator("#settings-add-treatment").click();
+    await expect(page.locator("#edit-modal")).toHaveClass(/\bon\b/);
+    await expect(page.locator("#edit-modal")).toHaveAttribute("aria-hidden", "false");
+
+    await page.locator("#edit-close").click();
+    await expect(page.locator("#edit-modal")).not.toHaveClass(/\bon\b/);
+    await page.locator("#settings-detail-back").click();
+    await page.locator("[data-settings-target='treatment']").click();
+    await page.locator("#settings-add-treatment").click();
+    await expect(page.locator("#edit-modal")).toHaveClass(/\bon\b/);
+    runtime.assertCleanRuntime();
+  });
+
   test("mantém teclado e estados ARIA dos segmentos de Jornada", async ({ page }) => {
     const runtime = trackPageRuntime(page);
     await seedStorage(page, { skipOnboarding: true, peptides: [] });
