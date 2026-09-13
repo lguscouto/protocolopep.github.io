@@ -411,7 +411,7 @@ test.describe("Protocolo PEP — Galaxy A55 / geometria real", () => {
       animations: "disabled",
       caret: "hide",
       scale: "css",
-      maxDiffPixelRatio: 0.08
+      maxDiffPixelRatio: 0.03
     };
 
     for (const theme of THEMES) {
@@ -419,10 +419,24 @@ test.describe("Protocolo PEP — Galaxy A55 / geometria real", () => {
       await page.goto(scenarioUrl({ theme, nav, fontScale: 1, landscape }));
       await waitForStableLayout(page);
       await page.locator("#tab-settings").click();
+      await expect(page.locator("#view-settings")).toHaveAttribute("data-feature-ready", "true");
+      await expect(page.locator("#settings-menu")).toBeVisible();
+      await expect(page.locator("[data-settings-panel]:not([hidden])")).toHaveCount(0);
       await expect(page).toHaveScreenshot(
-        `galaxy-a55-${landscape ? "landscape" : "portrait"}-${theme.id}-${viewport.width}x${viewport.height}-settings.png`,
+        `galaxy-a55-${landscape ? "landscape" : "portrait"}-${theme.id}-${viewport.width}x${viewport.height}-settings-menu.png`,
         screenshotOptions
       );
+
+      await page.locator('[data-settings-target="treatment"]').click();
+      await expect(page.locator("#settings-menu")).toBeHidden();
+      await expect(page.locator("#settings-detail-back")).toBeVisible();
+      await expect(page.locator("[data-settings-panel]:not([hidden])")).toHaveCount(1);
+      await expect(page).toHaveScreenshot(
+        `galaxy-a55-${landscape ? "landscape" : "portrait"}-${theme.id}-${viewport.width}x${viewport.height}-settings-panel.png`,
+        screenshotOptions
+      );
+      await page.locator("#settings-detail-back").click();
+      await expect(page.locator("#settings-menu")).toBeVisible();
 
       await page.locator("#notif-btn").click();
       await expect(page.locator("#notif-modal .sheet")).toHaveScreenshot(

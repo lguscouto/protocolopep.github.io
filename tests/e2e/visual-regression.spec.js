@@ -79,7 +79,7 @@ const SCREENSHOT_OPTIONS = Object.freeze({
   // relação ao container Playwright usado para gerar os snapshots Linux.
   // Mantemos o limite mais estrito nos runners Windows e aceitamos apenas
   // essa margem adicional no ambiente Linux.
-  maxDiffPixelRatio: process.platform === "linux" ? 0.1 : 0.08
+  maxDiffPixelRatio: 0.03
 });
 
 const ONBOARDING_SCREENSHOT_OPTIONS = Object.freeze({
@@ -88,7 +88,7 @@ const ONBOARDING_SCREENSHOT_OPTIONS = Object.freeze({
   // uma variação maior de antialiasing entre os stacks de renderização.
   // Mantemos o limite estrito nas telas funcionais e isolamos este orçamento
   // apenas para a captura de tela inteira do onboarding.
-  maxDiffPixelRatio: 0.14
+  maxDiffPixelRatio: 0.03
 });
 
 async function installVisualState(page, { onboarding = false } = {}) {
@@ -207,8 +207,18 @@ test.describe("Protocolo PEP — Matriz de regressão visual", () => {
       await page.locator("#tab-settings").click();
       await expect(page.locator("#view-settings")).toHaveClass(/\bon\b/);
       await expect(page.locator("#view-settings")).toHaveAttribute("data-feature-ready", "true");
+      await expect(page.locator("#settings-menu")).toBeVisible();
+      await expect(page.locator("[data-settings-panel]:not([hidden])")).toHaveCount(0);
       await expect(page.locator("[data-settings-target='treatment']")).toBeVisible();
+      await resetVisualScroll(page);
+      await expect(page).toHaveScreenshot(
+        `settings-menu-${theme.id}-${viewportWidth}.png`,
+        SCREENSHOT_OPTIONS
+      );
       await page.locator("[data-settings-target='treatment']").click();
+      await expect(page.locator("#settings-menu")).toBeHidden();
+      await expect(page.locator("#settings-detail-back")).toBeVisible();
+      await expect(page.locator("[data-settings-panel]:not([hidden])")).toHaveCount(1);
       await assertVisualAnchor(page, ".settings-section", `ajustes (${theme.id})`);
       await assertVisualAnchor(page, ".edit-vial-btn", `inventário preenchido (${theme.id})`);
       await assertVisualAnchor(page, ".inventory-status--active", `status do inventário (${theme.id})`);
@@ -249,6 +259,14 @@ test.describe("Protocolo PEP — Matriz de regressão visual", () => {
       await expect(page).toHaveScreenshot(
         `onboarding-${theme.id}.png`,
         ONBOARDING_SCREENSHOT_OPTIONS
+      );
+      await expect(page.locator("#onboarding-overlay .onboarding-card")).toHaveScreenshot(
+        `onboarding-content-${theme.id}.png`,
+        { ...SCREENSHOT_OPTIONS, maxDiffPixelRatio: 0.03 }
+      );
+      await expect(page.locator("#onboarding-overlay .onboarding-art")).toHaveScreenshot(
+        `onboarding-art-${theme.id}.png`,
+        { ...SCREENSHOT_OPTIONS, maxDiffPixelRatio: 0.06 }
       );
     }
 
