@@ -165,6 +165,7 @@ export function setupInventoryUI({ storage, onInventoryChange }) {
     if (!inventoryListEl) return;
     const inventory = storage.getInventory();
     const peptides = storage.getPeptides();
+    if (openNewVialBtn) openNewVialBtn.hidden = inventory.length === 0;
 
     if (inventory.length === 0) {
       inventoryListEl.innerHTML = `

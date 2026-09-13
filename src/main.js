@@ -147,6 +147,18 @@ let settingsHydrationPromise = null;
 let settingsHydrated = false;
 const performanceIndexes = createRevisionedPerformanceIndexes(() => storage.getRevision());
 
+function syncQuickRegisterVisibility() {
+  const fab = document.getElementById("quick-register-fab");
+  if (!fab) return;
+  const activeSettingsPanel = currentTab === "settings"
+    && document.querySelector("#view-settings [data-settings-panel].is-active:not([hidden])");
+  const isPrimaryView = ["today", "journey", "progress"].includes(currentTab);
+  const canShow = isPrimaryView || (currentTab === "settings" && !activeSettingsPanel);
+  const modalOpen = Boolean(document.querySelector(".modal.on, .sheet.on, #retro-overlay[style*='flex']"));
+  fab.hidden = !canShow || modalOpen;
+  fab.setAttribute("aria-hidden", fab.hidden ? "true" : "false");
+}
+
 const deferredDom = new Map();
 
 function parkFeatureDom(feature, { childHosts = [], elements = [] } = {}) {
@@ -747,6 +759,9 @@ function setupNavigation() {
       }
     }
   });
+  const modalObserver = new MutationObserver(() => syncQuickRegisterVisibility());
+  document.querySelectorAll(".modal, .sheet, #retro-overlay").forEach((element) => modalObserver.observe(element, { attributes: true, attributeFilter: ["class", "style", "aria-hidden"] }));
+  syncQuickRegisterVisibility();
 }
 
 async function switchTab(tabId) {
@@ -800,6 +815,7 @@ function activateTabShell(tabId) {
   });
   const activeView = document.getElementById(`view-${tabId}`);
   if (activeView) activeView.classList.add("on");
+  syncQuickRegisterVisibility();
 
   document.querySelectorAll(".nav button").forEach((btn) => {
     const isSelected = btn.dataset.tab === tabId;
@@ -1962,6 +1978,7 @@ function setupSettingsMenu() {
     sections.forEach((section) => { section.hidden = true; section.classList.remove("is-active"); });
     focusRow?.focus({ preventScroll: true });
     activeRow = null;
+    syncQuickRegisterVisibility();
   };
   const openPanel = (target, row) => {
     activeRow = row || null;
@@ -1974,6 +1991,7 @@ function setupSettingsMenu() {
     });
     sections.find((section) => section.dataset.settingsPanel === target)?.querySelector("h3")?.focus?.({ preventScroll: true });
     if (!sections.find((section) => section.dataset.settingsPanel === target)) row?.focus({ preventScroll: true });
+    syncQuickRegisterVisibility();
   };
   rows.forEach((row) => row.addEventListener("click", () => openPanel(row.dataset.settingsTarget, row)));
   back.addEventListener("click", () => showMenu());
