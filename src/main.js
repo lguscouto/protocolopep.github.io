@@ -486,7 +486,7 @@ async function initApp() {
   prepareDeferredDom();
   await theme.init({ deferNative: true });
   const storageState = storage.init();
-  if (storageState.error) void dialogService.alert({ title: "Falha no armazenamento", message: storageState.error, isDanger: true });
+  if (storageState.error) void dialogService.alert({ title: i18nService.t("dialogs.storageFailTitle"), message: storageState.error, isDanger: true });
   if (i18nService.getLocale() !== "pt-BR") {
     await i18nService.ensureLocaleLoaded();
   }
@@ -833,7 +833,7 @@ function setupRenderedEventDelegation() {
     if (target.id === "history-goal-clear-btn") {
       const result = storage.setMeasurementGoals({ goalWeightKg: null });
       if (!result.success) {
-        void dialogService.alert({ title: "Meta não salva", message: result.error, isDanger: true });
+        void dialogService.alert({ title: i18nService.t("dialogs.goalSaveErrorTitle"), message: result.error, isDanger: true });
         return;
       }
       haptics.success();
@@ -887,7 +887,7 @@ function setupRenderedEventDelegation() {
     } else if (target.id === "history-goal-clear-btn") {
       const result = storage.setMeasurementGoals({ goalWeightKg: null });
       if (result.success) { haptics.success(); invalidateViews("progress"); }
-      else void dialogService.alert({ title: "Meta não salva", message: result.error, isDanger: true });
+      else void dialogService.alert({ title: i18nService.t("dialogs.goalSaveErrorTitle"), message: result.error, isDanger: true });
     } else if (target.matches("[data-adherence-days]")) {
       adherencePeriodDays = Number.parseInt(target.dataset.adherenceDays, 10);
       invalidateViews("progress");
@@ -905,7 +905,7 @@ function setupRenderedEventDelegation() {
     const input = document.getElementById("history-goal-weight-input");
     const result = storage.setMeasurementGoals({ goalWeightKg: input?.value ?? null });
     if (!result.success) {
-      void dialogService.alert({ title: "Meta não salva", message: result.error, isDanger: true });
+      void dialogService.alert({ title: i18nService.t("dialogs.goalSaveErrorTitle"), message: result.error, isDanger: true });
       return;
     }
     haptics.success();
@@ -1109,7 +1109,7 @@ function renderToday() {
 
       let vialBadgeHTML = "";
       if (vm.vialStatus) {
-        const expAlert = vm.vialStatus.expStatus === "expired" ? " ⚠️ Vencido" : vm.vialStatus.expStatus === "expiring_soon" ? " ⏳ Vence em breve" : "";
+        const expAlert = vm.vialStatus.expStatus === "expired" ? ` · ${i18nService.t("inventory.statusExpired")}` : vm.vialStatus.expStatus === "expiring_soon" ? ` · ${i18nService.t("inventory.statusExpiring")}` : "";
         vialBadgeHTML = `<span class="chip-acc chip-vial-badge" title="${esc(i18nService.t("settings.inventoryCardTitle"))}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6M10 3v4l-3 4v7a3 3 0 0 0 3 3h4a3 3 0 0 0 3-3v-7l-3-4V3M8 12h8"/></svg>~${vm.vialStatus.remainingDoses} ${esc(i18nService.t("common.doses"))}${expAlert}</span>`;
       }
 
@@ -1196,7 +1196,7 @@ async function toggleDose(id) {
       return;
     }
     haptics.light();
-    accessibilityService.announce(`Aplicação de ${p.name} desmarcada.`);
+    accessibilityService.announce(i18nService.t("a11y.doseUnmarkedAnnounce", { name: p.name }));
   } else {
     if (p.administrationLegacy === false && p.administrationRoute !== "oral") {
       openRetroModal(todayK, id, { storage, dateKey, requireSiteSelection: true });
@@ -1215,10 +1215,10 @@ async function toggleDose(id) {
 
     if (!res.success && res.error === "VIAL_MISSING_CONCENTRATION") {
       const confirmHistOnly = await showConfirmDialog({
-        title: "Concentração Não Definida",
-        message: `${res.message || "O frasco não possui concentração definida."}\n\nDeseja registrar a aplicação apenas no histórico sem debitar do estoque?`,
-        confirmText: "Registrar no Histórico",
-        cancelText: "Cancelar",
+        title: i18nService.t("dialogs.noConcentrationTitle"),
+        message: i18nService.t("dialogs.noConcentrationMsg", { message: res.message || i18nService.t("dialogs.noConcentrationFallback") }),
+        confirmText: i18nService.t("dialogs.logInHistoryBtn"),
+        cancelText: i18nService.t("common.cancel"),
         isDanger: false
       });
       if (confirmHistOnly) {
@@ -1238,7 +1238,7 @@ async function toggleDose(id) {
       return;
     }
     haptics.success();
-    accessibilityService.announce(`Aplicação de ${p.name} confirmada.`);
+    accessibilityService.announce(i18nService.t("a11y.doseConfirmedAnnounce", { name: p.name }));
   }
 
   invalidateViews("today", "week", "history", "progress");
@@ -1274,10 +1274,10 @@ async function addSingleDose(id) {
 
   if (!res.success && res.error === "VIAL_MISSING_CONCENTRATION") {
     const confirmHistOnly = await showConfirmDialog({
-      title: "Concentração Não Definida",
-      message: `${res.message || "O frasco não possui concentração definida."}\n\nDeseja registrar a dose apenas no histórico sem debitar do estoque?`,
-      confirmText: "Registrar no Histórico",
-      cancelText: "Cancelar",
+      title: i18nService.t("dialogs.noConcentrationTitle"),
+      message: i18nService.t("dialogs.noConcentrationDoseMsg", { message: res.message || i18nService.t("dialogs.noConcentrationFallback") }),
+      confirmText: i18nService.t("dialogs.logInHistoryBtn"),
+      cancelText: i18nService.t("common.cancel"),
       isDanger: false
     });
     if (confirmHistOnly) {
@@ -2158,7 +2158,7 @@ function setupModalsAndButtons() {
       }
 
       if (!result.success) {
-        throw new Error(result.error || "Falha ao salvar backup no dispositivo.");
+        throw new Error(result.error || i18nService.t("dialogs.backupErrorTitle"));
       }
 
       recordBackupExport(result.path);
@@ -2166,10 +2166,10 @@ function setupModalsAndButtons() {
       haptics.success();
 
       const userWantsShare = await dialogService.confirm({
-        title: "Backup Exportado ✓",
-        message: `O backup foi exportado com sucesso!\n\n📁 Salvo em: ${result.path}\n\nDeseja também abrir opções de compartilhamento para enviar ou salvar no Google Drive / WhatsApp?`,
-        confirmText: "Compartilhar",
-        cancelText: "OK",
+        title: i18nService.t("dialogs.backupSuccessTitle"),
+        message: i18nService.t("dialogs.backupSuccessMessage", { path: result.path }),
+        confirmText: i18nService.t("modals.share.actionShare"),
+        cancelText: i18nService.t("common.ok"),
         isDanger: false
       });
 
@@ -2178,15 +2178,15 @@ function setupModalsAndButtons() {
           fileName,
           content: backupPayload,
           mimeType: "application/json",
-          title: "Backup Protocolo PEP"
+          title: i18nService.t("topbar.title")
         });
       }
     } catch (err) {
       console.error("[BackupExport] Falha ao exportar backup:", err);
       haptics.warning();
       void dialogService.alert({
-        title: "Erro ao Exportar Backup",
-        message: "Não foi possível gravar o arquivo de backup: " + (err.message || err),
+        title: i18nService.t("dialogs.backupErrorTitle"),
+        message: i18nService.t("modals.backup.restoreFailedMsg", { error: err.message || err }),
         isDanger: true
       });
     }
@@ -2284,9 +2284,9 @@ function setupModalsAndButtons() {
             await navigator.clipboard.writeText(text);
           }
           haptics.success();
-          void dialogService.alert({ title: "Resumo copiado", message: "Compartilhamento nativo indisponível. Resumo copiado para a área de transferência! ✓" });
+          void dialogService.alert({ title: i18nService.t("dialogs.copiedTitle"), message: i18nService.t("dialogs.nativeShareFallbackMsg") });
         } catch (err) {
-          void dialogService.alert({ title: "Compartilhamento indisponível", message: "Compartilhamento não suportado neste aparelho.", isDanger: true });
+          void dialogService.alert({ title: i18nService.t("dialogs.shareUnavailableTitle"), message: i18nService.t("dialogs.shareUnavailableMsg"), isDanger: true });
         }
       }
     });
@@ -2721,7 +2721,7 @@ async function saveEditedPeptide() {
   const normalizedAdministrationQuantity = Number(String(administrationQuantity || (administrationUnit === "ui" ? ui ?? "" : "")).replace(",", "."));
   const validUnit = administrationRoute === "oral" ? ["tablet", "capsule"].includes(administrationUnit) : ["ui", "ml"].includes(administrationUnit);
   if (!Number.isFinite(normalizedAdministrationQuantity) || normalizedAdministrationQuantity <= 0 || !validUnit || (administrationRoute !== "oral" && administrationUnit === "ui" && ui === null) || !Number.isInteger(perDay) || perDay < 1 || perDay > 6 || (mainTime && !isValidTime(mainTime)) || times.some(time => !isValidTime(time)) || (protocolStartDate && !isValidDateKey(protocolStartDate))) {
-    void dialogService.alert({ title: "Dados inválidos", message: "Confira a via, quantidade, unidade, horários e data de início.", isDanger: true });
+    void dialogService.alert({ title: i18nService.t("dialogs.invalidDataTitle"), message: i18nService.t("dialogs.invalidProtocolMessage"), isDanger: true });
     return;
   }
   let days = null;
@@ -2739,7 +2739,7 @@ async function saveEditedPeptide() {
   } else if (selectedFreqType === "intervalo") {
     const intVal = Number(document.getElementById("edit-interval-val")?.value);
     if (!Number.isInteger(intVal) || intVal < 2) {
-      void dialogService.alert({ title: "Intervalo inválido", message: "Informe um número inteiro de dias, a partir de 2.", isDanger: true });
+      void dialogService.alert({ title: i18nService.t("dialogs.intervalInvalidTitle"), message: i18nService.t("dialogs.intervalInvalidMessage"), isDanger: true });
       return;
     }
     const sDate = protocolStartDate || document.getElementById("edit-start-date")?.value || dateKey(new Date());
@@ -2779,7 +2779,7 @@ async function saveEditedPeptide() {
   const peptides = [...storage.getPeptides()];
   const valid = validatePeptide(peptideData);
   if (!valid.valid) {
-    void dialogService.alert({ title: "Dados inválidos", message: valid.error, isDanger: true });
+    void dialogService.alert({ title: i18nService.t("dialogs.invalidDataTitle"), message: valid.error, isDanger: true });
     return;
   }
 
@@ -2793,7 +2793,7 @@ async function saveEditedPeptide() {
       const effectiveDate = document.getElementById("edit-effective-date")?.value;
       const now = new Date();
       if (effectiveDate && (!isValidDateKey(effectiveDate) || effectiveDate <= dateKey(now))) {
-        void dialogService.alert({ title: "Vigência inválida", message: "Deixe vazio para aplicar agora ou escolha uma data futura.", isDanger: true });
+        void dialogService.alert({ title: i18nService.t("dialogs.effectiveDateInvalidTitle"), message: i18nService.t("dialogs.effectiveDateInvalidMessage"), isDanger: true });
         return;
       }
       try {
