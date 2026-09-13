@@ -69,4 +69,4 @@ Instalar o APK debug, atualizar a partir da 3.9.11, abrir Hoje/Jornada/Progresso
 
 ## Fechamento da release
 
-Após a integração fast-forward, esta seção será complementada com o commit final de `main`, o run da CI de `main`, o commit apontado pela tag anotada `v3.9.12`, a URL da release pública e o SHA-256 do asset hospedado comparado ao valor local acima.
+Integração concluída por fast-forward: `main` aponta para `4a5d688`. A CI final de `main` é o run [34770054784](https://github.com/lguscouto/protocolopep.github.io/actions/runs/34770054784), com Web/E2E, Performance e Android verdes. A tag anotada `v3.9.12` e a release pública serão criadas neste commit após a validação documental; o digest hospedado será comparado ao SHA-256 local acima.
