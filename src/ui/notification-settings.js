@@ -114,7 +114,7 @@ export function setupNotificationListeners(storage) {
     });
   });
 
-  const closeNotifModalBtns = document.querySelectorAll("#notif-close, #nf-done");
+  const closeNotifModalBtns = document.querySelectorAll("#notif-close");
   closeNotifModalBtns.forEach((btn) => {
     btn.addEventListener("click", closeNotifModal);
   });

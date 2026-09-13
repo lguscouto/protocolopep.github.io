@@ -2555,6 +2555,33 @@ body.modal-open {
   -webkit-overflow-scrolling: touch;
 }
 
+.sheet-body--notifications {
+  padding-bottom: calc(20px + var(--safe-area-inset-bottom, var(--app-safe-bottom)));
+}
+
+.notif-status-card,
+.notif-options-card {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+.notif-title,
+.notif-options-heading { font-size: 12.5px; font-weight: 700; color: var(--text); }
+.notif-options-heading { margin-bottom: 10px; }
+.notif-description,
+.notif-option-description,
+.notif-reassurance { color: var(--muted); line-height: 1.4; }
+.notif-description { font-size: 12px; margin-top: 4px; }
+.notif-option-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; cursor: pointer; }
+.notif-option-row--start { align-items: flex-start; }
+.notif-option-row input { accent-color: var(--primary); width: 17px; height: 17px; margin-top: 2px; flex: 0 0 auto; }
+.notif-option-title { font-size: 13px; font-weight: 600; color: var(--text); }
+.notif-option-description { font-size: 11.5px; }
+.notif-reassurance { font-size: 11px; }
+.notif-enable-btn { width: 100%; margin-bottom: 10px; }
+
 .sheet-body--sites {
   padding-top: 16px;
 }

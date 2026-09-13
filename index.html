@@ -749,57 +749,54 @@
         <div class="sheet-title" id="notif-modal-title" data-i18n="modals.notifications.title">Lembretes de aplicação</div>
         <button type="button" class="sheet-x" id="notif-close" aria-label="Fechar lembretes">✕</button>
       </div>
-      <div class="sheet-body">
-        <div class="modal-status-card" style="background:var(--surface2);border:1px solid var(--border2);border-radius:12px;padding:12px 14px;margin-bottom:14px;">
+      <div class="sheet-body sheet-body--notifications">
+        <div class="modal-status-card notif-status-card">
           <div class="modal-status-header">
-            <div class="modal-status-title" style="font-size:12.5px;font-weight:700;color:var(--text);" data-i18n="modals.notifications.subtitle">Seus lembretes</div>
+            <div class="modal-status-title notif-title" data-i18n="modals.notifications.subtitle">Seus lembretes</div>
             <span class="badge badge-neutral" id="nf-status-badge" data-i18n="common.disabled">Desativado</span>
           </div>
-          <div style="font-size:12px;color:var(--muted);line-height:1.45;" id="nf-status-msg" data-i18n="modals.notifications.enableDesc">
+          <div class="notif-description" id="nf-status-msg" data-i18n="modals.notifications.enableDesc">
             Ative os lembretes para receber notificações locais nos horários programados.
           </div>
         </div>
 
-        <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:12px;padding:12px 14px;margin-bottom:14px;">
-          <div style="font-size:12.5px;font-weight:700;color:var(--text);margin-bottom:10px;" data-i18n="modals.notifications.optionsHeading">Opções de Notificação</div>
+        <div class="notif-options-card">
+          <div class="notif-options-heading" data-i18n="modals.notifications.optionsHeading">Opções de Notificação</div>
           
-          <label for="nf-discrete-toggle" style="display:flex;align-items:flex-start;gap:10px;margin-bottom:12px;cursor:pointer;">
-            <input type="checkbox" id="nf-discrete-toggle" checked style="accent-color:var(--primary);width:17px;height:17px;margin-top:2px;" />
+          <label for="nf-discrete-toggle" class="notif-option-row notif-option-row--start">
+            <input type="checkbox" id="nf-discrete-toggle" checked />
             <div>
-              <div style="font-size:13px;font-weight:600;color:var(--text);" data-i18n="modals.notifications.discreteTitle">Conteúdo Discreto (Recomendado)</div>
-              <div style="font-size:11.5px;color:var(--muted);line-height:1.35;" data-i18n="modals.notifications.discreteDesc">Oculta nomes de compostos e doses na tela de bloqueio do aparelho.</div>
+              <div class="notif-option-title" data-i18n="modals.notifications.discreteTitle">Conteúdo Discreto (Recomendado)</div>
+              <div class="notif-option-description" data-i18n="modals.notifications.discreteDesc">Oculta nomes de compostos e doses na tela de bloqueio do aparelho.</div>
             </div>
           </label>
 
-          <label for="nf-sound-toggle" style="display:flex;align-items:center;gap:10px;margin-bottom:12px;cursor:pointer;">
-            <input type="checkbox" id="nf-sound-toggle" checked style="accent-color:var(--primary);width:17px;height:17px;" />
+          <label for="nf-sound-toggle" class="notif-option-row">
+            <input type="checkbox" id="nf-sound-toggle" checked />
             <div>
-              <div style="font-size:13px;font-weight:600;color:var(--text);" data-i18n="modals.notifications.soundVibration">Som e Vibração</div>
+              <div class="notif-option-title" data-i18n="modals.notifications.soundVibration">Som e Vibração</div>
             </div>
           </label>
 
           <div class="settings-summary-row">
             <div class="settings-summary-copy">
-              <label for="nf-summary-time" style="font-size:12.5px;font-weight:600;color:var(--text);display:block;" data-i18n="modals.notifications.dailySummaryTitle">Resumo diário</label>
-              <div style="font-size:11px;color:var(--muted);" data-i18n="modals.notifications.dailySummaryDesc">Um lembrete para conferir as aplicações do dia</div>
+              <label for="nf-summary-time" class="notif-option-title" data-i18n="modals.notifications.dailySummaryTitle">Resumo diário</label>
+              <div class="notif-option-description" data-i18n="modals.notifications.dailySummaryDesc">Um lembrete para conferir as aplicações do dia</div>
             </div>
             <input type="time" class="txt settings-summary-time" id="nf-summary-time" />
           </div>
         </div>
 
-        <button type="button" class="btn-primary" id="nf-enable" data-i18n="modals.notifications.enableBtn" style="width:100%;margin-bottom:10px;">Ativar Lembretes</button>
+        <button type="button" class="btn-primary notif-enable-btn" id="nf-enable" data-i18n="modals.notifications.enableBtn">Ativar Lembretes</button>
         
         <div class="action-row action-row--equal action-row--modal">
           <button type="button" class="btn-subtle" id="nf-test" data-i18n="modals.notifications.testAlertBtn">Testar Alerta</button>
           <button type="button" class="btn-subtle" id="nf-reschedule" data-i18n="modals.notifications.rescheduleBtn">Reagendar</button>
         </div>
 
-        <div style="font-size:11px;color:var(--muted);line-height:1.4;" data-i18n="modals.notifications.localReassurance">
+        <div class="notif-reassurance" data-i18n="modals.notifications.localReassurance">
           🔒 Os lembretes são locais e continuam funcionando sem conta, servidor ou rastreamento.
         </div>
-      </div>
-      <div class="sheet-foot">
-        <button type="button" class="btn-primary" id="nf-done" data-i18n="common.completed">Concluído</button>
       </div>
     </div>
   </div>
