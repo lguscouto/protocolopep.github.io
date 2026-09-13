@@ -117,13 +117,13 @@ export function setupInventoryUI({ storage, onInventoryChange }) {
     const listEl = document.getElementById("vial-history-list");
 
     if (titleEl) {
-      titleEl.textContent = `Movimentações: ${vial.peptideName}`;
+      titleEl.textContent = i18nService.t("modals.vial.historyTitleWithName", { name: vial.peptideName });
     }
 
     if (listEl) {
       const movements = [...(vial.movements || [])].reverse();
       if (movements.length === 0) {
-        listEl.innerHTML = `<div style="text-align:center;padding:24px;color:var(--muted);font-size:13px;">Nenhuma movimentação registrada.</div>`;
+        listEl.innerHTML = `<div class="inventory-empty-movements">${escapeHtml(i18nService.t("inventory.noMovements"))}</div>`;
       } else {
         listEl.innerHTML = movements.map((m) => {
           const typeLabel = m.type === "reconstitution" ? i18nService.t("modals.vial.typeReconstitution") :
@@ -140,10 +140,10 @@ export function setupInventoryUI({ storage, onInventoryChange }) {
                 <span style="font-size:12px;font-weight:800;color:${badgeColor};">${escapeHtml(formattedAmount)}</span>
               </div>
               <div style="font-size:11.5px;color:var(--muted);margin-bottom:4px;">
-                📅 ${escapeHtml(m.date || "")} ${m.note ? `• ${escapeHtml(m.note)}` : ""}
+                ${escapeHtml(m.date || "")} ${m.note ? `• ${escapeHtml(m.note)}` : ""}
               </div>
               <div style="font-size:11px;color:var(--muted-2);font-weight:600;">
-                Saldo após movimentação: ${escapeHtml(m.balanceAfterMcg)} mcg
+                ${escapeHtml(i18nService.t("inventory.balanceAfter"))}: ${escapeHtml(m.balanceAfterMcg)} mcg
               </div>
             </div>
           `;
@@ -185,7 +185,9 @@ export function setupInventoryUI({ storage, onInventoryChange }) {
     inventoryListEl.innerHTML = inventory.map((v) => {
       if (v.kind === "oral_package") {
         const percent = v.initialQuantity > 0 ? Math.round((v.remainingQuantity / v.initialQuantity) * 100) : 0;
-        return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px;"><div style="display:flex;justify-content:space-between;gap:8px;"><div><b>${escapeHtml(v.peptideName)}</b><div style="font-size:12px;color:var(--muted);">Pacote oral · ${v.presentation === "capsule" ? "Cápsula" : "Comprimido"}${v.lotNumber ? ` · Lote: ${escapeHtml(v.lotNumber)}` : ""}</div></div><span class="inventory-status inventory-status--${v.status === "finished" ? "depleted" : "active"}">${v.status === "finished" ? "Esgotado" : "Ativo"}</span></div><div style="margin:10px 0 6px;font-size:12px;font-weight:700;">Saldo: ${escapeHtml(v.remainingQuantity)} / ${escapeHtml(v.initialQuantity)} ${v.presentation === "capsule" ? "cápsulas" : "comprimidos"} · ${percent}%</div><div style="height:6px;background:var(--surface);border-radius:999px;overflow:hidden;border:1px solid var(--border);"><div style="height:100%;width:${percent}%;background:var(--primary);"></div></div><div style="display:flex;gap:6px;justify-content:flex-end;margin-top:10px;"><button type="button" class="btn-compact-action edit-vial-btn" data-vial-id="${escapeHtml(v.id)}">Editar</button><button type="button" class="btn-compact-action view-vial-history-btn" data-vial-id="${escapeHtml(v.id)}">Histórico</button></div></div>`;
+        const presentationLabel = v.presentation === "capsule" ? i18nService.t("inventory.capsule") : i18nService.t("inventory.tablet");
+        const statusLabel = v.status === "finished" ? i18nService.t("inventory.statusDepleted") : i18nService.t("inventory.statusActive");
+        return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px;"><div style="display:flex;justify-content:space-between;gap:8px;"><div><b>${escapeHtml(v.peptideName)}</b><div style="font-size:12px;color:var(--muted);">${escapeHtml(i18nService.t("inventory.oralPackage"))} · ${escapeHtml(presentationLabel)}${v.lotNumber ? ` · ${escapeHtml(i18nService.t("inventory.lot"))}: ${escapeHtml(v.lotNumber)}` : ""}</div></div><span class="inventory-status inventory-status--${v.status === "finished" ? "depleted" : "active"}">${escapeHtml(statusLabel)}</span></div><div style="margin:10px 0 6px;font-size:12px;font-weight:700;">${escapeHtml(i18nService.t("inventory.balance"))}: ${escapeHtml(v.remainingQuantity)} / ${escapeHtml(v.initialQuantity)} ${escapeHtml(presentationLabel.toLocaleLowerCase(i18nService.getLocale()))} · ${percent}%</div><div style="height:6px;background:var(--surface);border-radius:999px;overflow:hidden;border:1px solid var(--border);"><div style="height:100%;width:${percent}%;background:var(--primary);"></div></div><div style="display:flex;gap:6px;justify-content:flex-end;margin-top:10px;"><button type="button" class="btn-compact-action edit-vial-btn" data-vial-id="${escapeHtml(v.id)}">${escapeHtml(i18nService.t("inventory.edit"))}</button><button type="button" class="btn-compact-action view-vial-history-btn" data-vial-id="${escapeHtml(v.id)}">${escapeHtml(i18nService.t("inventory.history"))}</button></div></div>`;
       }
       const matchingPep = peptides.find((p) => (v.peptideId && p.id === v.peptideId) || (p.name.toLowerCase() === v.peptideName.toLowerCase()));
       const doseStr = matchingPep ? matchingPep.dose : null;
@@ -193,10 +195,17 @@ export function setupInventoryUI({ storage, onInventoryChange }) {
       const expStatus = getExpirationStatus(v);
 
       const percent = v.initialMcg > 0 ? Math.round((v.remainingMcg / v.initialMcg) * 100) : 0;
-      const statusBadge = v.status === "finished" ? `<span class="inventory-status inventory-status--depleted">Esgotado</span>` :
-                          expStatus.status === "expired" ? `<span class="inventory-status inventory-status--expired">Vencido</span>` :
-                          expStatus.status === "expiring_soon" ? `<span class="inventory-status inventory-status--expiring">Validade próxima</span>` :
-                          `<span class="inventory-status inventory-status--active">Ativo</span>`;
+      const statusBadge = v.status === "finished" ? `<span class="inventory-status inventory-status--depleted">${escapeHtml(i18nService.t("inventory.statusDepleted"))}</span>` :
+                          expStatus.status === "expired" ? `<span class="inventory-status inventory-status--expired">${escapeHtml(i18nService.t("inventory.statusExpired"))}</span>` :
+                          expStatus.status === "expiring_soon" ? `<span class="inventory-status inventory-status--expiring">${escapeHtml(i18nService.t("inventory.statusExpiring"))}</span>` :
+                          `<span class="inventory-status inventory-status--active">${escapeHtml(i18nService.t("inventory.statusActive"))}</span>`;
+      const expirationLabel = expStatus.status === "expired"
+        ? i18nService.t("inventory.validityExpired", { days: Math.abs(expStatus.daysRemaining || 0) })
+        : expStatus.status === "expiring_soon"
+          ? i18nService.t("inventory.validityExpiring", { days: expStatus.daysRemaining || 0 })
+          : expStatus.status === "ok"
+            ? i18nService.t("inventory.validityOk", { days: expStatus.daysRemaining || 0 })
+            : i18nService.t(expStatus.status === "unknown" && !v.expirationDate ? "inventory.validityUnknown" : "inventory.validityInvalid");
 
       return `
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:var(--shadow-sm);">
@@ -205,7 +214,7 @@ export function setupInventoryUI({ storage, onInventoryChange }) {
               <div style="font-weight:800;font-size:15px;color:var(--text);">${escapeHtml(v.peptideName)}</div>
               <div style="font-size:11.5px;color:var(--muted);">
                 ${escapeHtml(v.totalMg)} mg em ${escapeHtml(v.waterMl)} mL (${escapeHtml(v.concentrationMcgPerMl)} mcg/mL)
-                ${v.lotNumber ? `• Lote: ${escapeHtml(v.lotNumber)}` : ""}
+                ${v.lotNumber ? `• ${escapeHtml(i18nService.t("inventory.lot"))}: ${escapeHtml(v.lotNumber)}` : ""}
               </div>
             </div>
             <div>${statusBadge}</div>
@@ -214,7 +223,7 @@ export function setupInventoryUI({ storage, onInventoryChange }) {
           <!-- Barra de Saldo -->
           <div style="margin:10px 0 6px;">
             <div style="display:flex;justify-content:space-between;font-size:11.5px;font-weight:700;margin-bottom:4px;">
-              <span style="color:var(--text);">Saldo: ${escapeHtml(v.remainingMcg)} / ${escapeHtml(v.initialMcg)} mcg</span>
+              <span style="color:var(--text);">${escapeHtml(i18nService.t("inventory.balance"))}: ${escapeHtml(v.remainingMcg)} / ${escapeHtml(v.initialMcg)} mcg</span>
               <span style="color:var(--muted);">${percent}%</span>
             </div>
             <div style="height:6px;background:var(--surface);border-radius:999px;overflow:hidden;border:1px solid var(--border);">
@@ -225,14 +234,14 @@ export function setupInventoryUI({ storage, onInventoryChange }) {
           <!-- Informações de Dose e Validade -->
           <div style="display:flex;justify-content:space-between;align-items:center;font-size:11.5px;color:var(--muted-2);margin-top:6px;">
             <div>
-              ${remDoses !== null ? `🎯 <strong>~${remDoses} doses restantes</strong>` : `ℹ️ ${escapeHtml(expStatus.label)}`}
+              ${remDoses !== null ? `<strong>~${remDoses} ${escapeHtml(i18nService.t("inventory.remainingDoses"))}</strong>` : escapeHtml(expirationLabel)}
             </div>
             <div style="display:flex;gap:6px;">
               <button type="button" class="btn-compact-action edit-vial-btn" data-vial-id="${escapeHtml(v.id)}">
-                Editar
+                ${escapeHtml(i18nService.t("inventory.edit"))}
               </button>
               <button type="button" class="btn-compact-action view-vial-history-btn" data-vial-id="${escapeHtml(v.id)}">
-                Histórico
+                ${escapeHtml(i18nService.t("inventory.history"))}
               </button>
             </div>
           </div>
@@ -371,7 +380,7 @@ export function setupInventoryUI({ storage, onInventoryChange }) {
       if (editingVialId && inventory.find((item) => item.id === editingVialId)?.kind === "oral_package") {
         const idx = inventory.findIndex((item) => item.id === editingVialId);
         const prev = inventory[idx];
-        if (Number(oralQuantity) !== Number(prev.initialQuantity)) { dialogService.alert({ title: "Dados protegidos", message: "A quantidade inicial de um pacote já criado não pode ser alterada.", isDanger: true }); return; }
+        if (Number(oralQuantity) !== Number(prev.initialQuantity)) { dialogService.alert({ title: i18nService.t("inventory.protectedTitle"), message: i18nService.t("inventory.protectedMessage"), isDanger: true }); return; }
         inventory[idx] = { ...prev, peptideName: name || prev.peptideName, lotNumber: lot, expirationDate: expiryDate, notes, presentation: prev.presentation };
       } else if (editingVialId) {
         const idx = inventory.findIndex((v) => v.id === editingVialId);
@@ -392,7 +401,7 @@ export function setupInventoryUI({ storage, onInventoryChange }) {
           );
           if (!updateRes.success) {
             dialogService.alert({
-              title: "Aviso de Inventário",
+              title: i18nService.t("inventory.warningTitle"),
               message: updateRes.message || updateRes.error,
               isDanger: true
             });
@@ -403,7 +412,7 @@ export function setupInventoryUI({ storage, onInventoryChange }) {
       } else if (kind === "oral_package") {
         const oralPackage = createOralPackage({ peptideName: name, lotNumber: lot, presentation, initialQuantity: oralQuantity, expirationDate: expiryDate, notes });
         const val = validateOralPackage(oralPackage);
-        if (!val.valid) { dialogService.alert({ title: "Dados Inválidos", message: val.errors.join("\n"), isDanger: true }); return; }
+        if (!val.valid) { dialogService.alert({ title: i18nService.t("inventory.invalidTitle"), message: val.errors.join("\n"), isDanger: true }); return; }
         inventory.push(oralPackage);
       } else {
         const newVial = createVial({
@@ -418,7 +427,7 @@ export function setupInventoryUI({ storage, onInventoryChange }) {
         const val = validateVial(newVial);
         if (!val.valid) {
           dialogService.alert({
-            title: "Dados Inválidos",
+            title: i18nService.t("inventory.invalidTitle"),
             message: val.errors.join("\n"),
             isDanger: true
           });

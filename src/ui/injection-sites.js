@@ -40,7 +40,7 @@ export function setupInjectionSitesUI({ storage, onSitesChange = () => {} }) {
     }
     const lastUsed = getLastUsedSite(storage.getLogs());
     const nextSite = getNextSite(sites, lastUsed ? lastUsed.site : null);
-    summaryEl.innerHTML = `Próximo na sua rotação: <strong>${escapeHtml(nextSite || sites[0])}</strong> (${sites.length} locais ativos)`;
+    summaryEl.innerHTML = escapeHtml(i18nService.t("sites.rotationSummary", { site: nextSite || sites[0], count: sites.length })).replace(escapeHtml(nextSite || sites[0]), `<strong>${escapeHtml(nextSite || sites[0])}</strong>`);
   }
 
   function renderSitesList() {
@@ -67,13 +67,13 @@ export function setupInjectionSitesUI({ storage, onSitesChange = () => {} }) {
             <span style="font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(site)}</span>
           </div>
           <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
-            <button type="button" class="icon-button site-control btn-site-move-up" data-index="${index}" ${isFirst ? "disabled" : ""} aria-label="Subir ${escapeHtml(site)}">
+            <button type="button" class="icon-button site-control btn-site-move-up" data-index="${index}" ${isFirst ? "disabled" : ""} aria-label="${escapeHtml(i18nService.t("sites.moveUp", { site }))}">
               ▲
             </button>
-            <button type="button" class="icon-button site-control btn-site-move-down" data-index="${index}" ${isLast ? "disabled" : ""} aria-label="Descer ${escapeHtml(site)}">
+            <button type="button" class="icon-button site-control btn-site-move-down" data-index="${index}" ${isLast ? "disabled" : ""} aria-label="${escapeHtml(i18nService.t("sites.moveDown", { site }))}">
               ▼
             </button>
-            <button type="button" class="icon-button site-control site-control--danger btn-site-remove" data-index="${index}" aria-label="Remover ${escapeHtml(site)}">
+            <button type="button" class="icon-button site-control site-control--danger btn-site-remove" data-index="${index}" aria-label="${escapeHtml(i18nService.t("sites.remove", { site }))}">
               ✕
             </button>
           </div>
@@ -127,13 +127,13 @@ export function setupInjectionSitesUI({ storage, onSitesChange = () => {} }) {
     const rawVal = addInput.value;
     const formatted = formatSiteLabel(rawVal);
     if (!formatted) {
-      void dialogService.alert({ title: "Nome inválido", message: "Informe um nome válido para o local.", isDanger: true });
+      void dialogService.alert({ title: i18nService.t("sites.invalidNameTitle"), message: i18nService.t("sites.invalidNameMessage"), isDanger: true });
       return;
     }
 
     const sites = activeSites();
     if (sites.some((s) => s.toLowerCase() === formatted.toLowerCase())) {
-      void dialogService.alert({ title: "Local duplicado", message: `O local "${formatted}" já está na rotação.` });
+      void dialogService.alert({ title: i18nService.t("sites.duplicateTitle"), message: i18nService.t("sites.duplicateMessage", { site: formatted }) });
       return;
     }
 

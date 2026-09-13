@@ -1,6 +1,5 @@
 import {
   HEALTH_CONNECT_STATUS,
-  getHealthConnectStatusLabel,
   haveMeasurementsChanged
 } from "../domain/health-connect.js";
 import { accessibilityService } from "../services/accessibility.js";
@@ -30,6 +29,22 @@ export function setupHealthConnectUI({
   const settingsBtn = document.getElementById("hc-settings-btn");
   let autoSyncDebounceTimer = null;
 
+  const statusLabel = (status) => {
+    const keyByStatus = {
+      [HEALTH_CONNECT_STATUS.AVAILABLE]: "settings.healthStatusAvailable",
+      [HEALTH_CONNECT_STATUS.NOT_AUTHORIZED]: "settings.healthStatusPermission",
+      [HEALTH_CONNECT_STATUS.PERMISSION_REQUIRED]: "settings.healthStatusPermission",
+      [HEALTH_CONNECT_STATUS.PARTIALLY_AUTHORIZED]: "settings.healthStatusPartial",
+      [HEALTH_CONNECT_STATUS.UPDATE_REQUIRED]: "settings.healthStatusUpdate",
+      [HEALTH_CONNECT_STATUS.UNAVAILABLE]: "settings.healthStatusNotInstalled",
+      [HEALTH_CONNECT_STATUS.NOT_INSTALLED]: "settings.healthStatusNotInstalled",
+      [HEALTH_CONNECT_STATUS.NOT_SUPPORTED]: "settings.healthStatusUnsupported",
+      [HEALTH_CONNECT_STATUS.ERROR]: "settings.healthStatusError",
+      [HEALTH_CONNECT_STATUS.DISABLED]: "common.disabled"
+    };
+    return i18nService.t(keyByStatus[status] || "settings.healthStatusError");
+  };
+
   async function updateSettingsCard() {
     if (!statusBadge) return;
 
@@ -49,7 +64,7 @@ export function setupHealthConnectUI({
 
     const avail = await healthConnectService.checkAvailability();
     if (!avail.available) {
-      statusBadge.textContent = getHealthConnectStatusLabel(avail.status).toUpperCase();
+      statusBadge.textContent = statusLabel(avail.status).toUpperCase();
       statusBadge.className = "badge-status pending";
       if (syncBtn) syncBtn.style.display = "none";
       if (settingsBtn) settingsBtn.style.display = "inline-flex";
@@ -58,7 +73,7 @@ export function setupHealthConnectUI({
 
     const perm = await healthConnectService.checkPermissions();
     if (!perm.granted) {
-      statusBadge.textContent = getHealthConnectStatusLabel(perm.status).toUpperCase();
+      statusBadge.textContent = statusLabel(perm.status).toUpperCase();
       statusBadge.className = "badge-status pending";
       if (syncBtn) syncBtn.style.display = "none";
       if (settingsBtn) settingsBtn.style.display = "inline-flex";
@@ -79,7 +94,7 @@ export function setupHealthConnectUI({
     if (shouldEnable) {
       const avail = await healthConnectService.checkAvailability();
       if (!avail.available) {
-        showToast(avail.message || i18nService.t("settings.healthConnectUnavailable"));
+        showToast(statusLabel(avail.status) || i18nService.t("settings.healthConnectUnavailable"));
         haptics.warning();
         toggle.checked = false;
         toggle.setAttribute("aria-checked", "false");
@@ -165,7 +180,11 @@ export function setupHealthConnectUI({
       accessibilityService.announce(msg);
     } else {
       haptics.warning();
-      const err = result.reason || i18nService.t("settings.healthSyncError");
+      const err = result.reason === "PERMISSION_DENIED"
+        ? i18nService.t("settings.healthPermissionsDenied")
+        : result.reason === "SYNC_IN_PROGRESS"
+          ? i18nService.t("settings.healthSyncInProgress")
+          : i18nService.t("settings.healthSyncError");
       showToast(err);
       accessibilityService.announce(err, "assertive");
     }

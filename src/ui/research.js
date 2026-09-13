@@ -95,7 +95,7 @@ export function setupResearchUI({
       card.setAttribute("aria-label", `${c.name} - ${c.categoryLabel}`);
 
       const synonymsHTML = Array.isArray(c.synonyms) && c.synonyms.length > 0
-        ? `<div style="font-size:11.5px;color:var(--muted);margin-top:2px;">Sinônimos: ${esc(c.synonyms.slice(0, 3).join(", "))}</div>`
+        ? `<div style="font-size:11.5px;color:var(--muted);margin-top:2px;">${esc(i18nService.t("research.synonyms", { values: c.synonyms.slice(0, 3).join(", ") }))}</div>`
         : "";
 
       card.innerHTML = `
@@ -183,7 +183,7 @@ export function setupResearchUI({
     if (storageEl) storageEl.textContent = compound.storageGuidelines;
     if (solventEl) solventEl.textContent = `${compound.suggestedSolvent} · ${compound.typicalReconstitution || ''}`;
     if (mechanismEl) mechanismEl.textContent = compound.mechanism;
-    if (safetyEl) safetyEl.textContent = compound.safetyNotes || "Substância para pesquisa.";
+    if (safetyEl) safetyEl.textContent = compound.safetyNotes || i18nService.t("research.researchSubstanceFallback");
     if (summaryEl) summaryEl.textContent = compound.literatureSummary;
 
     if (refsContainer) {
@@ -206,7 +206,7 @@ export function setupResearchUI({
           refsContainer.appendChild(item);
         });
       } else {
-        refsContainer.innerHTML = `<div style="font-size:12px;color:var(--muted);">Nenhuma referência bibliográfica indexada.</div>`;
+        refsContainer.innerHTML = `<div style="font-size:12px;color:var(--muted);">${esc(i18nService.t("research.noReferences"))}</div>`;
       }
     }
 

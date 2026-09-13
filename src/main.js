@@ -340,9 +340,12 @@ const settingsFeature = createFeatureLoader(async () => {
     bindCalculatorInventoryButton();
     bindRestoredCoreControls();
     renderBackupStatusUI();
+    await healthConnectUI.updateSettingsCard();
+    settingsMenuUI?.refresh?.();
     void reportingFeature.load();
   })().finally(() => {
     settingsHydrated = true;
+    settingsMenuUI?.refresh?.();
   });
   await settingsHydrationPromise;
 });
@@ -1573,9 +1576,9 @@ function setupHistoryFilters() {
       if (custom) custom.hidden = historyFilters.period !== "custom";
       const summary = document.getElementById("history-filter-summary");
       if (summary) {
-        const period = historyFilters.period === "all" ? "Todo o histórico" : historyFilters.period === "custom" ? "Período personalizado" : `${historyFilters.period} dias`;
+        const period = historyFilters.period === "all" ? i18nService.t("history.allHistory") : historyFilters.period === "custom" ? i18nService.t("history.periodCustomSummary") : i18nService.t("history.periodDaysSummary", { days: historyFilters.period });
         const selectedOption = document.querySelector("#history-compound option:checked");
-        const treatment = historyFilters.compoundId === "all" ? "Todos os tratamentos" : selectedOption?.textContent || "Tratamento selecionado";
+        const treatment = historyFilters.compoundId === "all" ? i18nService.t("history.allTreatments") : selectedOption?.textContent || i18nService.t("history.selectedTreatment");
         summary.textContent = `${period} · ${treatment}`;
       }
       invalidateViews("today", "history", "progress");
@@ -1784,15 +1787,15 @@ function renderHistory() {
   const typeLabel = { application: i18nService.t("history.typeApplication"), measurement: i18nService.t("history.typeMeasurement"), symptom: i18nService.t("history.typeSymptom"), protocol: i18nService.t("history.typeProtocol") };
   container.innerHTML = model.events.length ? `<div class="history-timeline history-timeline--integrated" role="list">${model.events.map((event) => {
     const details = event.type === "application"
-      ? `<span>Previsto: <b>${esc(event.scheduledTime || "não informado")}</b></span><span>Efetivo: <b>${esc(event.effectiveTime || "não informado")}</b></span>${event.data.site ? `<span>Local: <b>${esc(event.data.site)}</b></span>` : ""}`
+      ? `<span>${esc(i18nService.t("history.scheduledLabel"))}: <b>${esc(event.scheduledTime || i18nService.t("history.unknownTime"))}</b></span><span>${esc(i18nService.t("history.effectiveLabel"))}: <b>${esc(event.effectiveTime || i18nService.t("history.unknownTime"))}</b></span>${event.data.site ? `<span>${esc(i18nService.t("history.siteLabel"))}: <b>${esc(event.data.site)}</b></span>` : ""}`
       : event.type === "measurement" || event.type === "symptom"
-        ? `<span>Origem: <b>${esc(event.data.source)}</b></span>${event.data.ownership === "external" ? `<span>Propriedade: <b>Health Connect</b></span>` : ""}`
-        : `<span>Vigência: <b>${esc(fmtBR(event.date))} ${esc(event.time)}</b></span><span>Estado: <b>${esc(event.data.statusLabel)}</b></span>`;
+        ? `<span>${esc(i18nService.t("history.sourceLabel"))}: <b>${esc(event.data.source)}</b></span>${event.data.ownership === "external" ? `<span>${esc(i18nService.t("history.ownershipLabel"))}: <b>${esc(i18nService.t("history.healthConnectSource"))}</b></span>` : ""}`
+        : `<span>${esc(i18nService.t("history.effectiveFromLabel"))}: <b>${esc(fmtBR(event.date))} ${esc(event.time)}</b></span><span>${esc(i18nService.t("history.stateLabel"))}: <b>${esc(event.data.statusLabel)}</b></span>`;
     return `<article class="history-event history-event--${event.type} ${event.type === "application" ? `hist-day hist-item ${event.date === dateKey(new Date()) ? "is-today" : ""}` : ""}" role="listitem">
       <div class="history-event-head"><span class="history-event-type">${typeLabel[event.type]}</span><time datetime="${esc(event.date)}T${esc(event.time)}">${esc(fmtBR(event.date))} · ${esc(event.time || "—")}</time></div>
-      <div class="history-event-body"><strong class="${event.type === "application" ? "hist-name" : ""}">${esc(event.title)}</strong><p class="${event.type === "application" ? "hist-status" : ""}">${esc(event.type === "application" ? i18nService.t(`phase1.${event.data.status}`) : event.subtitle)}</p>${event.type === "application" ? `<p class="hist-dose">${esc(event.data.dose)}${administrationLabel(event.data) ? ` · ${esc(administrationLabel(event.data))}` : ""}${event.data.site ? ` · 📍 ${esc(event.data.site)}` : ""}</p>` : ""}${event.notes ? `<p class="hist-note">${esc(event.notes)}</p>` : ""}${event.retroactive ? `<span class="badge-retro">${esc(i18nService.t("history.retroactiveBadge"))}</span>` : ""}${event.contextGeneral ? `<span class="history-context-badge">${esc(i18nService.t("history.contextBadge"))}</span>` : ""}</div>
-      <details class="history-event-details"><summary>Ver detalhes</summary><div>${details}</div></details>
-      <div class="hist-actions">${event.type === "application" ? `<button type="button" class="hist-edit" data-date="${sanitizeId(event.date)}" data-pep="${sanitizeId(event.data.peptideId)}" data-idx="${event.data.recordIndex}">Corrigir</button><button type="button" class="hist-rm" data-date="${sanitizeId(event.date)}" data-pep="${sanitizeId(event.data.peptideId)}" data-idx="${event.data.recordIndex}">Excluir</button>` : event.type === "measurement" || event.type === "symptom" ? `<button type="button" class="history-measurement-edit btn-meas-edit" data-id="${sanitizeId(event.editableId)}">Corrigir</button>` : ""}</div>
+      <div class="history-event-body"><strong class="${event.type === "application" ? "hist-name" : ""}">${esc(event.title)}</strong><p class="${event.type === "application" ? "hist-status" : ""}">${esc(event.type === "application" ? i18nService.t(`phase1.${event.data.status}`) : event.subtitle)}</p>${event.type === "application" ? `<p class="hist-dose">${esc(event.data.dose)}${administrationLabel(event.data) ? ` · ${esc(administrationLabel(event.data))}` : ""}${event.data.site ? ` · ${esc(i18nService.t("history.siteLabel"))}: ${esc(event.data.site)}` : ""}</p>` : ""}${event.notes ? `<p class="hist-note">${esc(event.notes)}</p>` : ""}${event.retroactive ? `<span class="badge-retro">${esc(i18nService.t("history.retroactiveBadge"))}</span>` : ""}${event.contextGeneral ? `<span class="history-context-badge">${esc(i18nService.t("history.contextBadge"))}</span>` : ""}</div>
+      <details class="history-event-details"><summary>${esc(i18nService.t("history.viewDetails"))}</summary><div>${details}</div></details>
+      <div class="hist-actions">${event.type === "application" ? `<button type="button" class="hist-edit" data-date="${sanitizeId(event.date)}" data-pep="${sanitizeId(event.data.peptideId)}" data-idx="${event.data.recordIndex}">${esc(i18nService.t("history.editAction"))}</button><button type="button" class="hist-rm" data-date="${sanitizeId(event.date)}" data-pep="${sanitizeId(event.data.peptideId)}" data-idx="${event.data.recordIndex}">${esc(i18nService.t("common.delete"))}</button>` : event.type === "measurement" || event.type === "symptom" ? `<button type="button" class="history-measurement-edit btn-meas-edit" data-id="${sanitizeId(event.editableId)}">${esc(i18nService.t("history.editAction"))}</button>` : ""}</div>
     </article>`;
   }).join("")}</div>` : `<div class="timeline-empty history-empty"><div class="timeline-empty-icon" aria-hidden="true">◌</div><strong>${esc(i18nService.t("history.noRecordsFound"))}</strong><p>${esc(i18nService.t("history.adjustFiltersHint"))}</p></div>`;
 }

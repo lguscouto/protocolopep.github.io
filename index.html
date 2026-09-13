@@ -221,8 +221,8 @@
 
       <!-- Resultado e Seringa -->
       <div class="result">
-        <div style="font-size:11.5px;color:var(--muted-2);margin-bottom:8px;text-align:center;" aria-hidden="true" data-i18n="tools.autoUpdated">
-          ⚡ Resultado atualizado automaticamente
+        <div style="font-size:11.5px;color:var(--muted-2);margin-bottom:8px;text-align:center;" aria-hidden="true">
+          <svg class="ui-inline-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m13 2-8 12h6l-1 8 8-12h-6l1-8Z"/></svg><span data-i18n="tools.autoUpdated">Resultado atualizado automaticamente</span>
         </div>
         <div class="res-main">
           <span class="big" id="calc-res-big">--</span>
@@ -236,7 +236,7 @@
           <summary data-i18n="experience.calculationDetails">Ver detalhes do cálculo</summary>
         <!-- Resumo das Entradas para Dupla Conferência -->
         <div class="calc-inputs-summary" id="calc-inputs-summary" style="display:none;margin-top:12px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:10px 14px;font-size:12.5px;">
-          <div style="font-weight:700;color:var(--text);margin-bottom:4px;" data-i18n="tools.dataUsed">📋 Confira os dados usados:</div>
+          <div style="font-weight:700;color:var(--text);margin-bottom:4px;"><svg class="ui-inline-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10v3H7zM5 7h14v13H5zM8 11h8M8 15h6"/></svg><span data-i18n="tools.dataUsed">Confira os dados usados:</span></div>
           <div style="color:var(--muted);display:flex;flex-wrap:wrap;gap:12px;" id="calc-summary-values">--</div>
         </div>
 
@@ -296,7 +296,7 @@
       <button type="button" class="settings-detail-back" id="settings-detail-back" hidden data-i18n="settings.backToMore">Voltar para Mais</button>
 
       <section class="settings-section" id="settings-panel-treatment" data-settings-panel="treatment" aria-labelledby="settings-group-treatment" hidden>
-        <h3 class="section-title settings-section-title" id="settings-group-treatment" data-i18n="experience.treatment">Tratamento</h3>
+        <h3 tabindex="-1" class="section-title settings-section-title" id="settings-group-treatment" data-i18n="experience.treatment">Tratamento</h3>
         <div class="panel settings-card">
           <div class="settings-card-header">
             <div class="settings-card-copy"><div class="settings-card-title" data-i18n="experience.treatments">Tratamentos</div><div class="settings-row-description" data-i18n="experience.treatmentDesc">Rotinas e doses informadas por você</div></div>
@@ -328,7 +328,7 @@
       </section>
 
       <section class="settings-section" id="settings-panel-tools" data-settings-panel="tools" aria-labelledby="settings-group-tools" hidden>
-        <h3 class="section-title settings-section-title" id="settings-group-tools" data-i18n="tools.title">Ferramentas</h3>
+        <h3 tabindex="-1" class="section-title settings-section-title" id="settings-group-tools" data-i18n="tools.title">Ferramentas</h3>
         <div class="panel settings-card settings-tools-card">
           <div class="settings-card-header">
             <div class="settings-card-copy">
@@ -345,7 +345,7 @@
 
       <!-- GRUPO 1: APARÊNCIA E ACESSIBILIDADE -->
       <section class="settings-section" id="settings-panel-app" data-settings-panel="app" aria-labelledby="settings-group-app" hidden>
-        <h3 class="section-title settings-section-title" id="settings-group-app" data-i18n="experience.app">App</h3>
+        <h3 tabindex="-1" class="section-title settings-section-title" id="settings-group-app" data-i18n="experience.app">App</h3>
         
         <!-- Card de Seleção de Idioma / i18n -->
         <div class="panel settings-card">
@@ -442,7 +442,7 @@
 
       <!-- GRUPO 3: DADOS E INVENTÁRIO -->
       <section class="settings-section" id="settings-panel-data" data-settings-panel="data" aria-labelledby="settings-group-data" hidden>
-        <h3 class="section-title settings-section-title" id="settings-group-data" data-i18n="settings.dataSubtitle">Dados e Inventário</h3>
+        <h3 tabindex="-1" class="section-title settings-section-title" id="settings-group-data" data-i18n="settings.dataSubtitle">Dados e Inventário</h3>
 
         <!-- Card de Health Connect Android -->
         <div class="panel settings-card">
@@ -494,7 +494,7 @@
 
       <!-- GRUPO 4: SOBRE O APP E AJUDA -->
       <section class="settings-section" id="settings-panel-help" data-settings-panel="help" aria-labelledby="settings-group-about" hidden>
-        <h3 class="section-title settings-section-title" id="settings-group-about" data-i18n="settings.aboutSubtitle">Ajuda</h3>
+        <h3 tabindex="-1" class="section-title settings-section-title" id="settings-group-about" data-i18n="settings.aboutSubtitle">Ajuda</h3>
 
         <div class="panel settings-card">
           <div class="settings-card-header settings-card-header--about">
@@ -625,7 +625,7 @@
 
         <!-- Detalhe do Cálculo Vinculado (V02) -->
         <div id="modal-calc-info" style="display:none;margin-bottom:12px;padding:8px 10px;background:rgba(44,197,192,0.08);border:1px solid rgba(44,197,192,0.2);border-radius:10px;font-size:11.5px;color:var(--text);" role="status">
-          <span style="font-weight:700;color:var(--primary);" data-i18n="modals.peptide.linkedRecon">🔬 Reconstituição Vinculada:</span>
+          <span style="font-weight:700;color:var(--primary);"><svg class="ui-inline-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3h8v4H8zM6 7h12v14H6zM9 11h6M9 15h6"/></svg><span data-i18n="modals.peptide.linkedRecon">Reconstituição Vinculada:</span></span>
           <div id="modal-calc-info-txt" style="margin-top:2px;font-family:monospace;color:var(--muted);">--</div>
         </div>
 
@@ -1189,11 +1189,11 @@
           <div class="form-field form-field--large measurement-section measurement-section--details">
             <div class="form-field-label form-field-label--strong" data-i18n="modals.measurements.energyLabel">Nível de Energia (1 = Muito baixa, 5 = Excelente)</div>
             <div class="form-choice-row" role="radiogroup" aria-label="Nível de energia">
-              <button type="button" class="btn-subtle form-choice-btn form-choice-btn--energy" id="meas-energy-1">1 😫</button>
-              <button type="button" class="btn-subtle form-choice-btn form-choice-btn--energy" id="meas-energy-2">2 🥱</button>
-              <button type="button" class="btn-subtle form-choice-btn form-choice-btn--energy" id="meas-energy-3">3 😐</button>
-              <button type="button" class="btn-subtle form-choice-btn form-choice-btn--energy" id="meas-energy-4">4 ⚡</button>
-              <button type="button" class="btn-subtle form-choice-btn form-choice-btn--energy" id="meas-energy-5">5 🔥</button>
+              <button type="button" class="btn-subtle form-choice-btn form-choice-btn--energy" id="meas-energy-1">1</button>
+              <button type="button" class="btn-subtle form-choice-btn form-choice-btn--energy" id="meas-energy-2">2</button>
+              <button type="button" class="btn-subtle form-choice-btn form-choice-btn--energy" id="meas-energy-3">3</button>
+              <button type="button" class="btn-subtle form-choice-btn form-choice-btn--energy" id="meas-energy-4">4</button>
+              <button type="button" class="btn-subtle form-choice-btn form-choice-btn--energy" id="meas-energy-5">5</button>
             </div>
           </div>
 
@@ -1201,11 +1201,11 @@
           <div class="form-field form-field--large measurement-section measurement-section--details">
             <div class="form-field-label form-field-label--strong" data-i18n="modals.measurements.moodLabel">Humor / Bem-estar (1 = Ruim, 5 = Excelente)</div>
             <div class="form-choice-row" role="radiogroup" aria-label="Nível de humor">
-              <button type="button" class="btn-subtle form-choice-btn form-choice-btn--mood" id="meas-mood-1">1 😞</button>
-              <button type="button" class="btn-subtle form-choice-btn form-choice-btn--mood" id="meas-mood-2">2 😕</button>
-              <button type="button" class="btn-subtle form-choice-btn form-choice-btn--mood" id="meas-mood-3">3 😐</button>
-              <button type="button" class="btn-subtle form-choice-btn form-choice-btn--mood" id="meas-mood-4">4 😊</button>
-              <button type="button" class="btn-subtle form-choice-btn form-choice-btn--mood" id="meas-mood-5">5 🤩</button>
+              <button type="button" class="btn-subtle form-choice-btn form-choice-btn--mood" id="meas-mood-1">1</button>
+              <button type="button" class="btn-subtle form-choice-btn form-choice-btn--mood" id="meas-mood-2">2</button>
+              <button type="button" class="btn-subtle form-choice-btn form-choice-btn--mood" id="meas-mood-3">3</button>
+              <button type="button" class="btn-subtle form-choice-btn form-choice-btn--mood" id="meas-mood-4">4</button>
+              <button type="button" class="btn-subtle form-choice-btn form-choice-btn--mood" id="meas-mood-5">5</button>
             </div>
           </div>
 
