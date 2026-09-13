@@ -9,7 +9,16 @@ const BASELINE = Object.freeze({
   domReadyMs: 366,
   firstContentMs: 228,
   longTasksMs: 250,
-  domNodes: 1116
+  domNodes: 1116,
+  carga: Object.freeze({
+    // Baseline medida na 3.9.10 com a fixture sintética de 10 tratamentos,
+    // 365 registros de aplicação e 365 medições.
+    domReadyMs: 1700,
+    firstContentMs: 230,
+    longTasksMs: 1500,
+    domNodes: 1025,
+    featureMs: 250
+  })
 });
 const LIMITS = Object.freeze({
   initialGzipBytes: Math.min(80 * 1024, BASELINE.initialGzipBytes * 0.75),
@@ -20,7 +29,14 @@ const LIMITS = Object.freeze({
   firstContentMs: 250,
   longTasksMs: BASELINE.longTasksMs * 0.7,
   domNodes: Math.floor(BASELINE.domNodes * 0.75),
-  featureMs: 200
+  featureMs: 200,
+  carga: Object.freeze({
+    domReadyMs: BASELINE.carga.domReadyMs * 1.2,
+    firstContentMs: BASELINE.carga.firstContentMs * 1.2,
+    longTasksMs: BASELINE.carga.longTasksMs * 1.25,
+    domNodes: Math.ceil(BASELINE.carga.domNodes * 1.05),
+    featureMs: Math.max(200, BASELINE.carga.featureMs * 1.2)
+  })
 });
 
 const median = (values) => [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)];
@@ -139,8 +155,8 @@ async function measureStartup(browser, baseUrl, fixture) {
   }
 }
 
-async function measureFeature(browser, baseUrl, tabId, readySelector, beforeClick) {
-  const { context, page, runtimeErrors } = await preparePage(browser, baseUrl, { peptides: [], logs: {}, measurements: [] });
+async function measureFeature(browser, baseUrl, tabId, readySelector, beforeClick, fixture = { peptides: [], logs: {}, measurements: [] }) {
+  const { context, page, runtimeErrors } = await preparePage(browser, baseUrl, fixture);
   try {
     await page.goto(baseUrl, { waitUntil: "domcontentloaded" });
     await page.locator("#view-today.on").waitFor();
@@ -207,6 +223,8 @@ try {
   }]));
 
   const features = {};
+  const loadedFeatures = {};
+  const loadedFixture = scenarios.carga;
   for (const feature of [
     ["jornada", "tab-journey", "#view-week"],
     ["progresso", "tab-progress", "#view-progress"],
@@ -215,6 +233,9 @@ try {
     const values = [];
     for (let run = 0; run < RUNS; run += 1) values.push(await measureFeature(browser, baseUrl, feature[1], feature[2]));
     features[feature[0]] = median(values);
+    const loadedValues = [];
+    for (let run = 0; run < RUNS; run += 1) loadedValues.push(await measureFeature(browser, baseUrl, feature[1], feature[2], null, loadedFixture));
+    loadedFeatures[feature[0]] = median(loadedValues);
   }
 
   assertAtMost("JavaScript inicial gzip (bytes)", initialGzipBytes, LIMITS.initialGzipBytes);
@@ -224,13 +245,28 @@ try {
   assertAtMost("vazio: tarefas longas", metrics.longTasksMs, LIMITS.longTasksMs);
   assertAtMost("vazio: elementos no DOM", metrics.domNodes, LIMITS.domNodes);
   for (const [name, elapsed] of Object.entries(features)) assertAtMost(`Primeiro acesso a ${name}`, elapsed, LIMITS.featureMs);
+  const loadedMetrics = medians.carga;
+  assertAtMost("carga: DOM pronto", loadedMetrics.domReadyMs, LIMITS.carga.domReadyMs);
+  assertAtMost("carga: primeiro conteúdo", loadedMetrics.firstContentMs, LIMITS.carga.firstContentMs);
+  assertAtMost("carga: tarefas longas", loadedMetrics.longTasksMs, LIMITS.carga.longTasksMs);
+  assertAtMost("carga: elementos no DOM", loadedMetrics.domNodes, LIMITS.carga.domNodes);
+  for (const [name, elapsed] of Object.entries(loadedFeatures)) assertAtMost(`Primeiro acesso carregado a ${name}`, elapsed, LIMITS.carga.featureMs);
 
   console.log(JSON.stringify({
     profile: { runs: RUNS, viewport: "412x915", cpuThrottle: 4 },
     initialJavaScript: { bytes: initialGzipBytes, gzipKb: round(initialGzipBytes / 1024) },
     medians: Object.fromEntries(Object.entries(medians).map(([name, data]) => [name, Object.fromEntries(Object.entries(data).map(([key, value]) => [key, round(value)]))])),
     firstAccessMs: Object.fromEntries(Object.entries(features).map(([name, value]) => [name, round(value)])),
-    limits: Object.fromEntries(Object.entries(LIMITS).map(([key, value]) => [key, round(value)]))
+    loadedFirstAccessMs: Object.fromEntries(Object.entries(loadedFeatures).map(([name, value]) => [name, round(value)])),
+    limits: {
+      initialGzipBytes: round(LIMITS.initialGzipBytes),
+      domReadyMs: round(LIMITS.domReadyMs),
+      firstContentMs: round(LIMITS.firstContentMs),
+      longTasksMs: round(LIMITS.longTasksMs),
+      domNodes: round(LIMITS.domNodes),
+      featureMs: round(LIMITS.featureMs),
+      carga: Object.fromEntries(Object.entries(LIMITS.carga).map(([key, value]) => [key, round(value)]))
+    }
   }, null, 2));
 } finally {
   await browser.close();

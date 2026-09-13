@@ -100,7 +100,7 @@
           <h2 class="page-title" data-i18n="history.heading">Histórico</h2>
           <div class="hist-count" id="history-count"></div>
         </div>
-        <details class="history-actions-disclosure" open>
+        <details class="history-actions-disclosure">
           <summary data-i18n="history.moreActions">Mais ações</summary>
           <div class="history-actions">
             <button type="button" class="btn-ghost" id="hist-retro-btn" data-i18n="history.addRetroactive" aria-label="Adicionar registro de dose retroativo">
@@ -287,15 +287,15 @@
       </div>
 
       <nav class="settings-list" id="settings-menu" aria-label="Seções de Mais">
-        <button type="button" class="settings-row" data-settings-target="treatment"><span class="settings-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></span><span class="settings-row-content"><strong data-i18n="experience.treatment">Tratamento</strong><small data-i18n="experience.treatmentDesc">Rotinas, frascos e locais</small></span><span class="settings-row-chevron" aria-hidden="true">›</span></button>
+        <button type="button" class="settings-row" data-settings-target="treatment"><span class="settings-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></span><span class="settings-row-content"><strong data-i18n="experience.treatment">Tratamento</strong><small data-i18n="experience.treatmentDesc">Rotinas, frascos e locais</small><small class="settings-row-meta" data-settings-meta="treatment"></small></span><span class="settings-row-chevron" aria-hidden="true">›</span></button>
         <button type="button" class="settings-row" data-settings-target="tools"><span class="settings-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m14 6 4 4M5 19l4-1 9-9-3-3-9 9-1 4ZM14 4l2-2 4 4-2 2"/></svg></span><span class="settings-row-content"><strong data-i18n="tools.title">Ferramentas</strong><small data-i18n="tools.desc">Calculadora, pesquisa e relatórios</small></span><span class="settings-row-chevron" aria-hidden="true">›</span></button>
-        <button type="button" class="settings-row" data-settings-target="data"><span class="settings-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4zM8 9h8M8 13h5"/></svg></span><span class="settings-row-content"><strong data-i18n="settings.dataSubtitle">Dados</strong><small data-i18n="settings.localFirstDesc">Backup e integrações locais</small></span><span class="settings-row-chevron" aria-hidden="true">›</span></button>
-        <button type="button" class="settings-row" data-settings-target="app"><span class="settings-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v3m0 12v3M3 12h3m12 0h3M5.6 5.6l2.1 2.1m8.6 8.6 2.1 2.1m0-12.8-2.1 2.1m-8.6 8.6-2.1 2.1M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z"/></svg></span><span class="settings-row-content"><strong data-i18n="experience.app">App</strong><small data-i18n="settings.accessibilityDesc">Idioma, aparência e segurança</small></span><span class="settings-row-chevron" aria-hidden="true">›</span></button>
+        <button type="button" class="settings-row" data-settings-target="data"><span class="settings-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4zM8 9h8M8 13h5"/></svg></span><span class="settings-row-content"><strong data-i18n="settings.dataSubtitle">Dados</strong><small data-i18n="settings.localFirstDesc">Backup e integrações locais</small><small class="settings-row-meta" data-settings-meta="data"></small></span><span class="settings-row-chevron" aria-hidden="true">›</span></button>
+        <button type="button" class="settings-row" data-settings-target="app"><span class="settings-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v3m0 12v3M3 12h3m12 0h3M5.6 5.6l2.1 2.1m8.6 8.6 2.1 2.1m0-12.8-2.1 2.1m-8.6 8.6-2.1 2.1M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z"/></svg></span><span class="settings-row-content"><strong data-i18n="experience.app">App</strong><small data-i18n="settings.accessibilityDesc">Idioma, aparência e segurança</small><small class="settings-row-meta" data-settings-meta="app"></small></span><span class="settings-row-chevron" aria-hidden="true">›</span></button>
         <button type="button" class="settings-row" data-settings-target="help"><span class="settings-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 17v.01M9.4 9a2.7 2.7 0 1 1 4.9 1.6c-.9.9-2.3 1.2-2.3 2.9M5 4h14v16H5z"/></svg></span><span class="settings-row-content"><strong data-i18n="settings.aboutSubtitle">Ajuda</strong><small data-i18n="settings.aboutSubtitle">Termos, diagnósticos e contato</small></span><span class="settings-row-chevron" aria-hidden="true">›</span></button>
       </nav>
       <button type="button" class="settings-detail-back" id="settings-detail-back" hidden data-i18n="settings.backToMore">Voltar para Mais</button>
 
-      <section class="settings-section" id="settings-panel-treatment" data-settings-panel="treatment" aria-labelledby="settings-group-treatment">
+      <section class="settings-section" id="settings-panel-treatment" data-settings-panel="treatment" aria-labelledby="settings-group-treatment" hidden>
         <h3 class="section-title settings-section-title" id="settings-group-treatment" data-i18n="experience.treatment">Tratamento</h3>
         <div class="panel settings-card">
           <div class="settings-card-header">
@@ -304,9 +304,30 @@
           </div>
           <div id="settings-protocol-list"></div>
         </div>
+
+        <div class="panel settings-card">
+          <div class="settings-card-header">
+            <div class="settings-card-copy">
+              <div class="settings-card-title" data-i18n="settings.inventoryCardTitle">Frascos e saldo</div>
+              <div class="settings-row-description" data-i18n="settings.inventoryCardDesc">Controle de reconstituição, saldo e validade</div>
+            </div>
+            <button type="button" class="btn-primary settings-header-action" id="open-new-vial-btn" data-i18n="settings.newVialBtn">+ Novo Frasco</button>
+          </div>
+          <div id="inventory-list"></div>
+        </div>
+
+        <div class="panel settings-card">
+          <div class="settings-card-header">
+            <div class="settings-card-copy">
+              <div class="settings-card-title" data-i18n="settings.siteRotationTitle">Locais de Aplicação</div>
+              <div class="settings-row-description" id="sites-summary-text" data-i18n="settings.siteRotationSub">Sequência de locais para alternância</div>
+            </div>
+            <button type="button" class="btn-primary settings-header-action" id="open-sites-settings-btn" data-i18n="settings.siteConfigureBtn">Configurar</button>
+          </div>
+        </div>
       </section>
 
-      <section class="settings-section" id="settings-panel-tools" data-settings-panel="tools" aria-labelledby="settings-group-tools">
+      <section class="settings-section" id="settings-panel-tools" data-settings-panel="tools" aria-labelledby="settings-group-tools" hidden>
         <h3 class="section-title settings-section-title" id="settings-group-tools" data-i18n="tools.title">Ferramentas</h3>
         <div class="panel settings-card settings-tools-card">
           <div class="settings-card-header">
@@ -323,7 +344,7 @@
       </section>
 
       <!-- GRUPO 1: APARÊNCIA E ACESSIBILIDADE -->
-      <section class="settings-section" id="settings-panel-app" data-settings-panel="app" aria-labelledby="settings-group-app">
+      <section class="settings-section" id="settings-panel-app" data-settings-panel="app" aria-labelledby="settings-group-app" hidden>
         <h3 class="section-title settings-section-title" id="settings-group-app" data-i18n="experience.app">App</h3>
         
         <!-- Card de Seleção de Idioma / i18n -->
@@ -420,35 +441,8 @@
       </section>
 
       <!-- GRUPO 3: DADOS E INVENTÁRIO -->
-      <section class="settings-section" id="settings-panel-data" data-settings-panel="data" aria-labelledby="settings-group-data">
+      <section class="settings-section" id="settings-panel-data" data-settings-panel="data" aria-labelledby="settings-group-data" hidden>
         <h3 class="section-title settings-section-title" id="settings-group-data" data-i18n="settings.dataSubtitle">Dados e Inventário</h3>
-
-        <!-- Card de Inventário de Frascos -->
-        <div class="panel settings-card">
-          <div class="settings-card-header">
-            <div class="settings-card-copy">
-              <div style="font-size:14px;font-weight:700;" data-i18n="settings.inventoryCardTitle">Inventário de Frascos</div>
-              <div style="font-size:12px;color:var(--muted);" data-i18n="settings.inventoryCardDesc">Controle de reconstituição, saldo e validade</div>
-            </div>
-            <button type="button" class="btn-primary settings-header-action" id="open-new-vial-btn" data-i18n="settings.newVialBtn">
-              + Novo Frasco
-            </button>
-          </div>
-          <div id="inventory-list"></div>
-        </div>
-
-        <!-- Card de Locais de Aplicação -->
-        <div class="panel settings-card">
-          <div class="settings-card-header">
-            <div class="settings-card-copy">
-              <div style="font-size:14px;font-weight:700;" data-i18n="settings.siteRotationTitle">Locais de Aplicação</div>
-              <div style="font-size:12px;color:var(--muted);" id="sites-summary-text" data-i18n="settings.siteRotationSub">Sequência de locais para alternância</div>
-            </div>
-            <button type="button" class="btn-primary settings-header-action" id="open-sites-settings-btn" data-i18n="settings.siteConfigureBtn">
-              Configurar
-            </button>
-          </div>
-        </div>
 
         <!-- Card de Health Connect Android -->
         <div class="panel settings-card">
@@ -499,7 +493,7 @@
       </section>
 
       <!-- GRUPO 4: SOBRE O APP E AJUDA -->
-      <section class="settings-section" id="settings-panel-help" data-settings-panel="help" aria-labelledby="settings-group-about">
+      <section class="settings-section" id="settings-panel-help" data-settings-panel="help" aria-labelledby="settings-group-about" hidden>
         <h3 class="section-title settings-section-title" id="settings-group-about" data-i18n="settings.aboutSubtitle">Ajuda</h3>
 
         <div class="panel settings-card">
