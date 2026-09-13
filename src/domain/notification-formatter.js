@@ -35,6 +35,8 @@ export function getNotificationVisualState({
     return {
       state: "denied",
       label: "Permissão Negada",
+      labelKey: "modals.notifications.statusDenied",
+      messageKey: "modals.notifications.statusDeniedMessage",
       message: "As notificações estão bloqueadas nas configurações do seu Android. Acesse as Configurações do sistema para permitir.",
       badgeClass: "badge-danger",
       canSchedule: false,
@@ -47,6 +49,8 @@ export function getNotificationVisualState({
     return {
       state: "disabled",
       label: "Lembretes Desativados",
+      labelKey: "modals.notifications.statusDisabled",
+      messageKey: "modals.notifications.statusDisabledMessage",
       message: "Ative os lembretes para receber alertas locais no horário das suas aplicações.",
       badgeClass: "badge-neutral",
       canSchedule: false,
@@ -59,6 +63,8 @@ export function getNotificationVisualState({
     return {
       state: "idle",
       label: "Ativo · Sem rotinas",
+      labelKey: "modals.notifications.statusIdle",
+      messageKey: "modals.notifications.statusIdleMessage",
       message: "As notificações estão ativas, mas nenhuma rotina com horário está habilitada para receber lembretes.",
       badgeClass: "badge-neutral",
       canSchedule: true,
@@ -76,6 +82,9 @@ export function getNotificationVisualState({
     return {
       state: "active",
       label: "Ativo & Agendado",
+      labelKey: "modals.notifications.statusActive",
+      messageKey: "modals.notifications.statusActiveMessage",
+      messageParams: { pendingCount, horizonDays, exactRestricted: isExactDenied },
       message: `${pendingCount} lembretes agendados no sistema para os próximos ${horizonDays} dias.${exactMsg}`,
       badgeClass: "badge-success",
       canSchedule: true,
@@ -87,6 +96,8 @@ export function getNotificationVisualState({
   return {
     state: "prompt",
     label: "Permissão Necessária",
+    labelKey: "modals.notifications.statusPrompt",
+    messageKey: "modals.notifications.statusPromptMessage",
     message: "O aplicativo precisa da sua autorização para agendar lembretes no aparelho.",
     badgeClass: "badge-warning",
     canSchedule: false,

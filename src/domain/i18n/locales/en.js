@@ -86,6 +86,8 @@ export const en = {
     "pending": "Pending",
     "success": "Success",
     "error": "Error",
+    "test": "test",
+    "genericError": "This action could not be completed. Try again.",
     "warning": "Warning",
     "enabled": "ENABLED",
     "disabled": "DISABLED",
@@ -573,7 +575,20 @@ export const en = {
       "rescheduledSuccess": "Reminders updated successfully! ({count} upcoming times on device)",
       "testTitle": "PEP Protocol",
       "testBody": "Scheduled dose time",
-      "testCustomTitle": "Reminder: {name}"
+      "testCustomTitle": "Reminder: {name}",
+      "testCustomBody": "500 mcg · 10 IU",
+      "rescheduledTitle": "Reminders rescheduled",
+      "statusDenied": "Permission denied",
+      "statusDeniedMessage": "Notifications are blocked in your Android settings. Open system Settings to allow them.",
+      "statusDisabled": "Reminders disabled",
+      "statusDisabledMessage": "Enable reminders to receive local alerts at your application times.",
+      "statusIdle": "Active · No routines",
+      "statusIdleMessage": "Notifications are active, but no routine with a schedule is enabled for reminders.",
+      "statusActive": "Active and scheduled",
+      "statusActiveMessage": "{pendingCount} reminders scheduled on the system for the next {horizonDays} days.{exactRestricted}",
+      "statusPrompt": "Permission required",
+      "statusPromptMessage": "The app needs your authorization to schedule reminders on this device.",
+      "exactAlarmRestricted": "Exact alarms are restricted; Android will use an approximate window"
     },
     "retro": {
       "title": "Log Application",
@@ -683,7 +698,15 @@ export const en = {
       "reportTitle": "PEP Protocol Report",
       "exportErrorTitle": "Export Error",
       "exportErrorMsg": "Could not save report: {error}",
-      "pdfErrorTitle": "Error generating PDF"
+      "pdfErrorTitle": "Error generating PDF",
+      "statusEnded": "Ended", "statusPaused": "Paused", "statusActive": "Active", "metricAbdomen": "Abdomen", "metricWaist": "Waist", "metricHips": "Hips", "protocolPrefix": "Protocol", "measurementEventTitle": "Self-reported measurement", "symptomEventTitle": "Self-reported symptoms", "from": "From", "until": "Until",
+      "statusApplied": "Applied", "statusSkipped": "Skipped", "statusMissed": "Missed", "statusUnknown": "Unknown",
+      "typeRetroactive": "Retroactive", "typeRegular": "Regular", "historyCaptured": "Data preserved in record", "historyLegacy": "Legacy: incomplete historical data",
+      "section": "Section", "field": "Field", "value": "Value", "summary": "Summary", "period": "Period", "allHistoryShort": "All history",
+      "scheduledDays": "Scheduled days", "expectedApplications": "Expected applications", "confirmedApplications": "Confirmed applications", "resolvedRecords": "Resolved records", "pending": "Pending", "skipped": "Skipped", "missed": "Missed", "extraApplications": "Extra applications", "applicationPercent": "Recorded applications (%)", "resolutionPercent": "Routine resolved (%)", "completeDays": "Complete days", "partialDays": "Partial days",
+      "includedRecords": "Included records", "latestWeight": "Latest weight (kg)", "weightDelta": "Weight change (kg)", "averageEnergy": "Average energy (1–5)", "averageMood": "Average mood (1–5)", "latestMetric": "Latest {metric} measurement (cm)", "metricDelta": "Change in {metric} (cm)",
+      "applications": "Applications", "measurements": "Measurements", "reportedMeasurements": "Self-reported measurements", "warning": "Warning", "use": "Use", "selfReportedWarning": "Self-reported personal record; it does not replace a medical record, prescription, or clinical assessment and does not establish a relationship between applications and measurements.",
+      "date": "Date", "time": "Time", "compound": "Compound", "subtitle": "Subtitle", "dose": "Dose", "syringe": "Syringe (IU)", "type": "Type", "notes": "Notes", "status": "Status", "reason": "Reason", "site": "Site", "vial": "Vial", "lot": "Lot", "vialConcentration": "Vial concentration (mcg/mL)", "historyIntegrity": "Historical integrity", "revision": "Revision", "ownership": "Ownership", "external": "External", "pep": "PEP", "notInformed": "not specified", "recordTitle": "PEP Protocol Report", "applicationsReportTitle": "PEP Protocol — Applications Report", "issuedAt": "Issued at", "totalApplications": "Total applications", "totalRecords": "Total records", "unknownState": "Unknown state", "descriptiveSummary": "Descriptive routine summary", "descriptiveSummaryNote": "This summary describes records in the period and does not assess effectiveness, safety, or need for adjustment.", "measurementsTitle": "Self-reported measurements", "circumferences": "Circumferences (cm)", "energy": "Energy", "mood": "Mood", "origin": "Source", "noMeasurements": "No measurements found for the selected period.", "noApplications": "No application records found for the selected period.", "noRevisions": "No revisions in the period.", "protocolRevisions": "Protocol revisions", "effectiveFrom": "Effective from", "registeredConfiguration": "Recorded configuration", "noDose": "No dose provided", "localSource": "Local", "legacyShort": "Legacy", "syringeShort": "Syringe: {value} IU", "vialNotInformed": "Vial not specified", "noValue": "--", "disclaimer": "Self-reported personal record: this document is generated locally by the PEP Protocol app. It does not replace a medical record, prescription, or clinical assessment."
     },
     "diagnostics": {
       "title": "System Diagnostics",
@@ -930,6 +953,11 @@ export const en = {
     "noConcentrationFallback": "The vial has no defined concentration.",
     "saveRecordErrorMsg": "Could not save the record: {error}",
     "storageUnavailable": "storage unavailable",
+    "storageWriteFailed": "The data could not be saved on this device.",
+    "atomicStorageUnavailable": "Local storage is unavailable to complete this action.",
+    "vialMissingConcentration": "The vial has no concentration defined.",
+    "stockInsufficient": "Available stock is insufficient to record this application.",
+    "oralPackageNotFound": "No compatible active oral package was found.",
     "storageFailTitle": "Storage Failure",
     "goalSaveErrorTitle": "Goal not saved",
     "unmarkErrorTitle": "Error unmarking",
@@ -976,6 +1004,18 @@ export const en = {
   "a11y": {
     "doseUnmarkedAnnounce": "Application of {name} unmarked.",
     "doseConfirmedAnnounce": "Application of {name} confirmed."
+  },
+  "injectionSite": {
+    "nextRotation": "Next in your rotation",
+    "lastRecorded": "Last recorded site",
+    "mapLabel": "Abdomen and flank sites",
+    "selected": "Selected: {site}",
+    "touchMap": "Tap a point on the abdomen or flank",
+    "configured": "Configured sites",
+    "otherConfigured": "Other configured sites",
+    "unknown": "I don't remember the site",
+    "disclaimer": "The map only records your choice. It does not assess skin or indicate where to apply.",
+    "select": "Select {site}"
   },
   "onboarding": {
     "slide1Title": "Your treatment, organized",

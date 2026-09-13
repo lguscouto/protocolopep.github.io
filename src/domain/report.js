@@ -14,6 +14,32 @@ const hasValue = (value) => value !== undefined && value !== null && value !== "
 const textValue = (value) => hasValue(value) ? String(value) : "";
 const STATUS_LABELS = Object.freeze({ applied: "Aplicada", skipped: "Pulada", missed: "Esquecida" });
 
+const DEFAULT_REPORT_LABELS = Object.freeze({
+  statusApplied: "Aplicada", statusSkipped: "Pulada", statusMissed: "Esquecida", statusUnknown: "Não identificado", statusEnded: "Encerrado", statusPaused: "Pausado", statusActive: "Ativo",
+  typeRetroactive: "Retroativo", typeRegular: "Regular", historyCaptured: "Dados preservados no registro", historyLegacy: "Legado: dados históricos incompletos",
+  notInformed: "não informada", localSource: "Local", external: "Externa", pep: "PEP", noValue: "--", noDose: "Sem dose informada", vialNotInformed: "Frasco não informado",
+  date: "Data", time: "Hora", compound: "Peptídeo", subtitle: "Subtítulo", dose: "Dose", syringe: "Seringa (UI)", type: "Tipo", notes: "Observações", status: "Estado", reason: "Motivo", site: "Local", vial: "Frasco", lot: "Lote", vialConcentration: "Concentração do frasco (mcg/mL)", historyIntegrity: "Integridade histórica", revision: "Revisão", ownership: "Propriedade", origin: "Origem", energy: "Energia", mood: "Humor", applications: "Aplicações", measurements: "Medições", reportedMeasurements: "Medições autorrelatadas", section: "Seção", field: "Campo", value: "Valor", summary: "Resumo", period: "Período", allHistoryShort: "Todo o histórico", warning: "Aviso", use: "Uso", noMeasurements: "Nenhuma medição encontrada para o período selecionado.", noApplications: "Nenhum registro de aplicação encontrado para o período selecionado.", noRevisions: "Nenhuma revisão no período.", protocolRevisions: "Revisões de protocolo", effectiveFrom: "Vigência", registeredConfiguration: "Configuração registrada", applicationsReportTitle: "Protocolo PEP — Relatório de Aplicações", issuedAt: "Emitido em", totalApplications: "Total de Aplicações", totalRecords: "Total de Registros", unknownState: "Estado não identificado", descriptiveSummary: "Resumo descritivo da rotina", descriptiveSummaryNote: "Este resumo descreve os registros no período e não avalia eficácia, segurança ou necessidade de ajuste.", measurementsTitle: "Medições autorrelatadas", circumferences: "Circunferências (cm)", latestWeight: "Último peso", weightDelta: "Variação no período", includedRecords: "Registros incluídos", averageEnergy: "Energia média", averageMood: "Humor médio", selfReportedWarning: "As medições são autorrelatadas e apresentadas sem correlação clínica com as aplicações.", metricAbdomen: "Abdômen", metricWaist: "Cintura", metricHips: "Quadril", protocolPrefix: "Protocolo", measurementEventTitle: "Medição autorrelatada", symptomEventTitle: "Sintomas autorrelatados", from: "A partir de", until: "Até", applicationPercent: "Aplicações registradas (%)", resolutionPercent: "Rotina resolvida (%)", pending: "Pendentes", completeDays: "Dias completos", extraApplications: "Aplicações extras", expectedApplications: "Aplicações previstas", confirmedApplications: "Aplicações confirmadas", resolvedRecords: "Registros resolvidos", scheduledDays: "Dias programados", skipped: "Puladas", missed: "Esquecidas", metricDelta: "Variação de {metric} (cm)", latestMetric: "Última medida de {metric} (cm)", syringeShort: "Seringa: {value} UI", disclaimer: "Registro Pessoal Autorrelatado: Este documento é um registro individual gerado localmente pelo usuário do aplicativo Protocolo PEP. Não substitui prontuário médico, receita nem avaliação clínica."
+});
+
+const REPORT_LOCALE_FALLBACKS = Object.freeze({
+  en: Object.freeze({ statusEnded: "Ended", statusPaused: "Paused", statusActive: "Active", metricAbdomen: "Abdomen", metricWaist: "Waist", metricHips: "Hips", protocolPrefix: "Protocol", measurementEventTitle: "Self-reported measurement", symptomEventTitle: "Self-reported symptoms", from: "From", until: "Until" }),
+  es: Object.freeze({ statusEnded: "Finalizado", statusPaused: "Pausado", statusActive: "Activo", metricAbdomen: "Abdomen", metricWaist: "Cintura", metricHips: "Caderas", protocolPrefix: "Protocolo", measurementEventTitle: "Medición autorreportada", symptomEventTitle: "Síntomas autorreportados", from: "Desde", until: "Hasta" })
+});
+
+function createReportTranslator({ locale = "pt-BR", t } = {}) {
+  const translate = typeof t === "function" ? t : null;
+  return (key, fallback = DEFAULT_REPORT_LABELS[key] || REPORT_LOCALE_FALLBACKS[locale]?.[key], params = {}) => {
+    const localizedFallback = REPORT_LOCALE_FALLBACKS[locale]?.[key] || fallback;
+    const path = `modals.report.${key}`;
+    const value = translate ? translate(path, params) : localizedFallback;
+    return value && value !== path ? value : (localizedFallback || key);
+  };
+}
+
+function lowerLocale(value, locale = "pt-BR") {
+  return String(value || "").toLocaleLowerCase(locale || "pt-BR");
+}
+
 export function summarizeReportEntries(entries = []) {
   const { applied, skipped, missed } = summarizeDoseEntries(entries, 0);
   return { total: entries.length, applied, skipped, missed, unknown: entries.length - applied - skipped - missed };
@@ -32,8 +58,11 @@ export function buildReportData({
   logs = {},
   startDate = null,
   endDate = null,
-  includeNotes = false
+  includeNotes = false,
+  locale = "pt-BR",
+  t = null
 }) {
+  const tx = createReportTranslator({ locale, t });
   const pepMap = Object.create(null);
   if (Array.isArray(protocol)) {
     protocol.forEach((p) => {
@@ -89,7 +118,7 @@ export function buildReportData({
           dose: hasValue(display.dose) ? display.dose : "--",
           ui: display.ui,
           status,
-          statusLabel: STATUS_LABELS[status] || "Não identificado",
+          statusLabel: status === "applied" ? tx("statusApplied") : status === "skipped" ? tx("statusSkipped") : status === "missed" ? tx("statusMissed") : tx("statusUnknown"),
           statusReason: includeNotes ? statusReason : "",
           site,
           vialId: display.vialId,
@@ -99,7 +128,7 @@ export function buildReportData({
           revisionId: display.revisionId,
           syringeMaxUI: display.calculationSnapshot ? normalizeSyringeMaxUI(display.calculationSnapshot.syringeMaxUI) : null,
           retroactive: Boolean(retroactive),
-          type: retroactive ? "Retroativo" : "Regular",
+          type: retroactive ? tx("typeRetroactive") : tx("typeRegular"),
           note: includeNotes ? (note || "") : ""
         });
       });
@@ -175,9 +204,11 @@ function revisionLocalParts(iso) {
 /** Modelo canônico compartilhado pela tela, prévia, CSVs e PDF. */
 export function buildReviewModel({
   protocol = [], logs = {}, measurements = [], startDate = null, endDate = null,
-  compoundId = "all", eventType = "all", query = "", includeNotes = true
+  compoundId = "all", eventType = "all", query = "", includeNotes = true,
+  locale = "pt-BR", t = null
 } = {}) {
-  const applications = buildReportData({ protocol, logs, startDate, endDate, includeNotes })
+  const tx = createReportTranslator({ locale, t });
+  const applications = buildReportData({ protocol, logs, startDate, endDate, includeNotes, locale, t })
     .filter((entry) => compoundId === "all" || entry.peptideId === compoundId);
   const measurementRecords = filterMeasurements(measurements, { startDate, endDate })
     .map((entry) => sanitizeMeasurementForReport(entry, includeNotes));
@@ -189,8 +220,8 @@ export function buildReviewModel({
       if ((startDate && parts.date < startDate) || (endDate && parts.date > endDate)) return;
       revisions.push({
         id: revision.id, date: parts.date, time: parts.time, peptideId: item.id,
-        peptideName: revision.config.name || item.name || "Protocolo sem identificação",
-        status: revision.status, statusLabel: revision.status === "ended" ? "Encerrado" : revision.status === "paused" ? "Pausado" : "Ativo",
+        peptideName: revision.config.name || item.name || tx("noValue"),
+        status: revision.status, statusLabel: revision.status === "ended" ? tx("statusEnded", "Encerrado") : revision.status === "paused" ? tx("statusPaused", "Pausado") : tx("statusActive", "Ativo"),
         effectiveFrom: revision.effectiveFrom, config: revision.config
       });
     });
@@ -206,11 +237,11 @@ export function buildReviewModel({
     editableId: entry.id, recordIndex: entry.recordIndex, data: entry
   }));
   measurementRecords.forEach((entry) => {
-    const measures = [entry.weightKg !== null ? `${entry.weightKg} kg` : "", entry.circumferencesCm.abdomen !== null ? `Abdômen ${entry.circumferencesCm.abdomen} cm` : "", entry.circumferencesCm.waist !== null ? `Cintura ${entry.circumferencesCm.waist} cm` : "", entry.circumferencesCm.hips !== null ? `Quadril ${entry.circumferencesCm.hips} cm` : "", entry.energyLevel ? `Energia ${entry.energyLevel}/5` : "", entry.moodLevel ? `Humor ${entry.moodLevel}/5` : ""].filter(Boolean);
-    if (measures.length) events.push({ id: `measurement_${entry.id}`, type: "measurement", date: entry.date, time: entry.time, title: "Medição autorrelatada", subtitle: measures.join(" · "), notes: entry.notes, contextGeneral: compoundId !== "all", editableId: entry.id, data: entry });
-    if (entry.symptomDetails.length) events.push({ id: `symptom_${entry.id}`, type: "symptom", date: entry.date, time: entry.time, title: "Sintomas autorrelatados", subtitle: entry.symptomDetails.map((item) => `${item.name}${item.intensity ? ` (${item.intensity})` : ""}`).join(" · "), notes: entry.notes, contextGeneral: compoundId !== "all", editableId: entry.id, data: entry });
+    const measures = [entry.weightKg !== null ? `${entry.weightKg} kg` : "", entry.circumferencesCm.abdomen !== null ? `${tx("metricAbdomen", "Abdomen")} ${entry.circumferencesCm.abdomen} cm` : "", entry.circumferencesCm.waist !== null ? `${tx("metricWaist", "Waist")} ${entry.circumferencesCm.waist} cm` : "", entry.circumferencesCm.hips !== null ? `${tx("metricHips", "Hips")} ${entry.circumferencesCm.hips} cm` : "", entry.energyLevel ? `${tx("energy", "Energy")} ${entry.energyLevel}/5` : "", entry.moodLevel ? `${tx("mood", "Mood")} ${entry.moodLevel}/5` : ""].filter(Boolean);
+    if (measures.length) events.push({ id: `measurement_${entry.id}`, type: "measurement", date: entry.date, time: entry.time, title: tx("measurementEventTitle", "Self-reported measurement"), subtitle: measures.join(" · "), notes: entry.notes, contextGeneral: compoundId !== "all", editableId: entry.id, data: entry });
+    if (entry.symptomDetails.length) events.push({ id: `symptom_${entry.id}`, type: "symptom", date: entry.date, time: entry.time, title: tx("symptomEventTitle", "Self-reported symptoms"), subtitle: entry.symptomDetails.map((item) => `${item.name}${item.intensity ? ` (${item.intensity})` : ""}`).join(" · "), notes: entry.notes, contextGeneral: compoundId !== "all", editableId: entry.id, data: entry });
   });
-  revisions.forEach((entry) => events.push({ id: `protocol_${entry.id}`, type: "protocol", date: entry.date, time: entry.time, title: entry.peptideName, subtitle: `Protocolo ${entry.statusLabel.toLocaleLowerCase("pt-BR")}`, notes: "", compoundId: entry.peptideId, data: entry }));
+  revisions.forEach((entry) => events.push({ id: `protocol_${entry.id}`, type: "protocol", date: entry.date, time: entry.time, title: entry.peptideName, subtitle: `${tx("protocolPrefix", "Protocol")} ${lowerLocale(entry.statusLabel, locale)}`, notes: "", compoundId: entry.peptideId, data: entry }));
 
   const needle = normalizeSearch(query);
   const filteredEvents = events.filter((event) => {
@@ -244,9 +275,10 @@ export function buildPersonalReport({
   startDate = null,
   endDate = null,
   includeNotes = false,
-  includeMeasurements = false
+  includeMeasurements = false,
+  locale = "pt-BR", t = null
 } = {}) {
-  const model = buildReviewModel({ protocol, logs, measurements, startDate, endDate, includeNotes });
+  const model = buildReviewModel({ protocol, logs, measurements, startDate, endDate, includeNotes, locale, t });
   const reportMeasurements = model.measurements.map(({ id: _internalId, ...entry }) => entry);
   return {
     ...model,
@@ -278,11 +310,12 @@ export function escapeCSV(val) {
   return `"${escaped}"`;
 }
 
-export function generateReportCSV(entries = []) {
+export function generateReportCSV(entries = [], context = {}) {
+  const tx = createReportTranslator(context);
   // UTF-8 BOM para compatibilidade com Microsoft Excel e planilhas em PT-BR
   const BOM = "\uFEFF";
-  const headers = ["Data", "Hora", "Peptídeo", "Subtítulo", "Dose", "UI", "Seringa (UI)", "Tipo", "Observações",
-    "Estado", "Motivo", "Local", "Frasco", "Lote", "Concentração do frasco (mcg/mL)", "Integridade histórica", "Revisão"];
+  const headers = [tx("date", "Data"), tx("time", "Hora"), tx("compound", "Peptídeo"), tx("subtitle", "Subtítulo"), tx("dose", "Dose"), "UI", tx("syringe", "Seringa (UI)"), tx("type", "Tipo"), tx("notes", "Observações"),
+    tx("status", "Estado"), tx("reason", "Motivo"), tx("site", "Local"), tx("vial", "Frasco"), tx("lot", "Lote"), tx("vialConcentration", "Concentração do frasco (mcg/mL)"), tx("historyIntegrity", "Integridade histórica"), tx("revision", "Revisão")];
   const headerLine = headers.map(escapeCSV).join(";");
 
   const lines = entries.map((e) => {
@@ -298,13 +331,13 @@ export function generateReportCSV(entries = []) {
       e.syringeMaxUI,
       e.type,
       e.note,
-      e.statusLabel || STATUS_LABELS[doseStatus(e)] || "Não identificado",
+      e.statusLabel || (doseStatus(e) === "applied" ? tx("statusApplied") : doseStatus(e) === "skipped" ? tx("statusSkipped") : doseStatus(e) === "missed" ? tx("statusMissed") : tx("statusUnknown")),
       e.statusReason,
       e.site,
       e.vialId,
       e.vialLot,
       e.vialConcentrationMcgPerMl,
-      e.historyIntegrity === "captured" ? "Dados preservados no registro" : "Legado: dados históricos incompletos",
+      e.historyIntegrity === "captured" ? tx("historyCaptured") : tx("historyLegacy"),
       e.revisionId
     ].map(escapeCSV).join(";");
   });
@@ -312,18 +345,19 @@ export function generateReportCSV(entries = []) {
   return BOM + [headerLine, ...lines].join("\r\n");
 }
 
-export function generateMeasurementsCSV(measurements = []) {
-  const headers = ["Data", "Hora", "Peso (kg)", "Energia (1-5)", "Humor (1-5)", "Sintomas", "Intensidades", "Observações", "Origem", "Propriedade"];
+export function generateMeasurementsCSV(measurements = [], context = {}) {
+  const tx = createReportTranslator(context);
+  const headers = [tx("date", "Data"), tx("time", "Hora"), "Peso (kg)", tx("energy", "Energia") + " (1-5)", tx("mood", "Humor") + " (1-5)", "Sintomas", "Intensidades", tx("notes", "Observações"), tx("origin", "Origem"), tx("ownership", "Propriedade")];
   const lines = measurements.map((entry) => [
     formatReportDate(entry.date), entry.time, entry.weightKg, entry.energyLevel, entry.moodLevel,
     (entry.symptoms || []).join(" · "),
-    (entry.symptomDetails || []).map((item) => `${item.name}: ${item.intensity || "não informada"}`).join(" · "),
-    entry.notes, entry.source, entry.ownership === "external" ? "Externa" : "PEP"
+    (entry.symptomDetails || []).map((item) => `${item.name}: ${item.intensity || tx("notInformed")}`).join(" · "),
+    entry.notes, entry.source || tx("localSource"), entry.ownership === "external" ? tx("external") : tx("pep")
   ].map(escapeCSV).join(";"));
   return "\uFEFF" + [headers.map(escapeCSV).join(";"), ...lines].join("\r\n");
 }
 
-function getReportEntryCSVRow(e) {
+function getReportEntryCSVRow(e, tx) {
   return [
     formatReportDate(e.date),
     e.time,
@@ -334,13 +368,13 @@ function getReportEntryCSVRow(e) {
     e.syringeMaxUI,
     e.type,
     e.note,
-    e.statusLabel || STATUS_LABELS[doseStatus(e)] || "Não identificado",
+    e.statusLabel || (doseStatus(e) === "applied" ? tx("statusApplied") : doseStatus(e) === "skipped" ? tx("statusSkipped") : doseStatus(e) === "missed" ? tx("statusMissed") : tx("statusUnknown")),
     e.statusReason,
     e.site,
     e.vialId,
     e.vialLot,
     e.vialConcentrationMcgPerMl,
-    e.historyIntegrity === "captured" ? "Dados preservados no registro" : "Legado: dados históricos incompletos",
+    e.historyIntegrity === "captured" ? tx("historyCaptured") : tx("historyLegacy"),
     e.revisionId
   ];
 }
@@ -356,57 +390,48 @@ export function generatePersonalReportCSV({
   measurements = [],
   measurementStats = null,
   startDate = null,
-  endDate = null
+  endDate = null,
+  locale = "pt-BR",
+  t = null
 } = {}) {
+  const tx = createReportTranslator({ locale, t });
   const lines = [];
   const addRow = (values) => lines.push(values.map(escapeCSV).join(";"));
 
-  addRow(["Seção", "Campo", "Valor"]);
+  addRow([tx("section"), tx("field"), tx("value")]);
   if (adherence) {
-    addRow(["Resumo", "Período", startDate && endDate
+    addRow([tx("summary"), tx("period"), startDate && endDate
       ? `${formatReportDate(startDate)} até ${formatReportDate(endDate)}`
-      : "Todo o histórico"]);
+      : tx("allHistoryShort")]);
     [
-      ["Dias programados", adherence.scheduledDays],
-      ["Aplicações previstas", adherence.due],
-      ["Aplicações confirmadas", adherence.applied],
-      ["Registros resolvidos", adherence.resolved],
-      ["Pendentes", adherence.pending],
-      ["Puladas", adherence.skipped],
-      ["Esquecidas", adherence.missed],
-      ["Aplicações extras", adherence.extraApplied],
-      ["Aplicações registradas (%)", adherence.applicationPercent],
-      ["Rotina resolvida (%)", adherence.resolutionPercent],
-      ["Dias completos", adherence.completeDays],
-      ["Dias parciais", adherence.partialDays]
-    ].forEach(([label, value]) => addRow(["Resumo", label, value]));
+      [tx("scheduledDays"), adherence.scheduledDays], [tx("expectedApplications"), adherence.due], [tx("confirmedApplications"), adherence.applied], [tx("resolvedRecords"), adherence.resolved], [tx("pending"), adherence.pending], [tx("skipped"), adherence.skipped], [tx("missed"), adherence.missed], [tx("extraApplications"), adherence.extraApplied], [tx("applicationPercent"), adherence.applicationPercent], [tx("resolutionPercent"), adherence.resolutionPercent], [tx("completeDays"), adherence.completeDays], [tx("partialDays"), adherence.partialDays]
+    ].forEach(([label, value]) => addRow([tx("summary"), label, value]));
   }
 
   if (measurementStats) {
-    addRow(["Medições", "Registros incluídos", measurementStats.totalEntries]);
-    addRow(["Medições", "Último peso (kg)", measurementStats.latestWeight]);
-    addRow(["Medições", "Variação de peso (kg)", measurementStats.weightDelta]);
-    addRow(["Medições", "Energia média (1–5)", measurementStats.averageEnergy]);
-    addRow(["Medições", "Humor médio (1–5)", measurementStats.averageMood]);
-    Object.entries({ abdomen: "Abdômen", waist: "Cintura", hips: "Quadril" }).forEach(([key, label]) => {
+    addRow([tx("measurements"), tx("includedRecords"), measurementStats.totalEntries]);
+    addRow([tx("measurements"), tx("latestWeight"), measurementStats.latestWeight]);
+    addRow([tx("measurements"), tx("weightDelta"), measurementStats.weightDelta]);
+    addRow([tx("measurements"), tx("averageEnergy"), measurementStats.averageEnergy]);
+    addRow([tx("measurements"), tx("averageMood"), measurementStats.averageMood]);
+    Object.entries({ abdomen: tx("metricAbdomen", "Abdômen"), waist: tx("metricWaist", "Cintura"), hips: tx("metricHips", "Quadril") }).forEach(([key, label]) => {
       const metric = measurementStats.bodyMetrics?.[key];
       if (!metric?.count) return;
-      addRow(["Medições", `Última medida de ${label.toLocaleLowerCase("pt-BR")} (cm)`, metric.latest]);
-      addRow(["Medições", `Variação de ${label.toLocaleLowerCase("pt-BR")} (cm)`, metric.delta]);
+      addRow([tx("measurements"), tx("latestMetric", `Última medida de ${lowerLocale(label, locale)} (cm)`, { metric: lowerLocale(label, locale) }), metric.latest]);
+      addRow([tx("measurements"), tx("metricDelta", `Variação de ${lowerLocale(label, locale)} (cm)`, { metric: lowerLocale(label, locale) }), metric.delta]);
     });
   }
 
   addRow([]);
-  const doseHeaders = ["Data", "Hora", "Peptídeo", "Subtítulo", "Dose", "UI", "Seringa (UI)", "Tipo", "Observações",
-    "Estado", "Motivo", "Local", "Frasco", "Lote", "Concentração do frasco (mcg/mL)", "Integridade histórica", "Revisão"];
-  addRow(["Aplicações", ...doseHeaders]);
-  entries.forEach((entry) => addRow(["Aplicações", ...getReportEntryCSVRow(entry)]));
+  const doseHeaders = [tx("date"), tx("time"), tx("compound", "Peptídeo"), tx("subtitle"), tx("dose"), "UI", tx("syringe"), tx("type"), tx("notes"), tx("status"), tx("reason"), tx("site"), tx("vial"), tx("lot"), tx("vialConcentration"), tx("historyIntegrity"), tx("revision")];
+  addRow([tx("applications"), ...doseHeaders]);
+  entries.forEach((entry) => addRow([tx("applications"), ...getReportEntryCSVRow(entry, tx)]));
 
   if (measurements.length > 0) {
     addRow([]);
-    addRow(["Medições autorrelatadas", "Data", "Hora", "Peso (kg)", "Abdômen (cm)", "Cintura (cm)", "Quadril (cm)", "Energia (1–5)", "Humor (1–5)", "Sintomas", "Observações", "Origem"]);
+    addRow([tx("reportedMeasurements"), tx("date"), tx("time"), "Peso (kg)", `${tx("metricAbdomen", "Abdômen")} (cm)`, `${tx("metricWaist", "Cintura")} (cm)`, `${tx("metricHips", "Quadril")} (cm)`, `${tx("energy")} (1–5)`, `${tx("mood")} (1–5)`, "Sintomas", tx("notes"), tx("origin")]);
     measurements.forEach((measurement) => addRow([
-      "Medições autorrelatadas",
+      tx("reportedMeasurements"),
       formatReportDate(measurement.date),
       measurement.time,
       measurement.weightKg,
@@ -422,7 +447,7 @@ export function generatePersonalReportCSV({
   }
 
   addRow([]);
-  addRow(["Aviso", "Uso", "Registro pessoal autorrelatado; não substitui prontuário, receita ou avaliação clínica e não estabelece correlação entre aplicações e medições."]);
+  addRow([tx("warning"), tx("use"), tx("selfReportedWarning")]);
   return "\uFEFF" + lines.join("\r\n");
 }
 
@@ -434,18 +459,21 @@ export function generateReportHTML(entries = [], {
   measurements = [],
   includeMeasurements = false,
   measurementStats = null,
-  revisions = []
+  revisions = [],
+  locale = "pt-BR",
+  t = null
 } = {}) {
-  const dStr = escapeHTML(generatedAt.toLocaleDateString("pt-BR"));
-  const tStr = escapeHTML(generatedAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }));
+  const tx = createReportTranslator({ locale, t });
+  const dStr = escapeHTML(generatedAt.toLocaleDateString(locale));
+  const tStr = escapeHTML(generatedAt.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" }));
   
-  let periodText = "Todo o Histórico";
+  let periodText = tx("allHistoryShort", "Todo o Histórico");
   if (startDate && endDate) {
     periodText = `${startDate.split("-").reverse().join("/")} até ${endDate.split("-").reverse().join("/")}`;
   } else if (startDate) {
-    periodText = `A partir de ${startDate.split("-").reverse().join("/")}`;
+    periodText = `${tx("from", "A partir de")} ${startDate.split("-").reverse().join("/")}`;
   } else if (endDate) {
-    periodText = `Até ${endDate.split("-").reverse().join("/")}`;
+    periodText = `${tx("until", "Até")} ${endDate.split("-").reverse().join("/")}`;
   }
   const safePeriodText = escapeHTML(periodText);
   const summary = summarizeReportEntries(entries);
@@ -455,32 +483,32 @@ export function generateReportHTML(entries = [], {
     const dateFmt = d && m && y ? `${d}/${m}/${y}` : e.date;
     return `
       <tr>
-        <td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;font-weight:600;">${escapeHTML(dateFmt)}</td>
-        <td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;">${escapeHTML(e.time)}</td>
-        <td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;font-weight:700;">${escapeHTML(e.peptideName)}${e.historyIntegrity !== "captured" ? '<div style="font-size:10px;font-weight:400;">Legado: dados históricos incompletos</div>' : ""}</td>
-        <td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;">${escapeHTML(e.dose)}${e.administrationQuantity !== null && e.administrationQuantity !== undefined ? ` · ${escapeHTML(e.administrationQuantity)} ${escapeHTML(e.administrationUnit || "")}` : ""}${e.ui !== null && e.ui !== undefined ? ` (${escapeHTML(e.ui)} UI)` : (e.administrationQuantity === null || e.administrationQuantity === undefined ? " (-- UI)" : "")}${e.syringeMaxUI !== null && e.syringeMaxUI !== undefined ? `<br><span style="font-size:11px;color:#64748B;">Seringa: ${escapeHTML(e.syringeMaxUI)} UI</span>` : ""}</td>
-        <td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;">${escapeHTML(e.statusLabel || STATUS_LABELS[doseStatus(e)] || "Não identificado")}</td>
-        <td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;">
-          <span style="display:inline-block;padding:2px 6px;border-radius:4px;font-size:11px;background:${e.retroactive ? "#FEF3C7;color:#92400E" : "#E6FFFA;color:#047857"}">${escapeHTML(e.type)}</span>
+        <td class="report-cell report-cell-date">${escapeHTML(dateFmt)}</td>
+        <td class="report-cell">${escapeHTML(e.time)}</td>
+        <td class="report-cell report-cell-name">${escapeHTML(e.peptideName)}${e.historyIntegrity !== "captured" ? `<div class="report-legacy">${escapeHTML(tx("historyLegacy"))}</div>` : ""}</td>
+        <td class="report-cell">${escapeHTML(e.dose)}${e.administrationQuantity !== null && e.administrationQuantity !== undefined ? ` · ${escapeHTML(e.administrationQuantity)} ${escapeHTML(e.administrationUnit || "")}` : ""}${e.ui !== null && e.ui !== undefined ? ` (${escapeHTML(e.ui)} UI)` : (e.administrationQuantity === null || e.administrationQuantity === undefined ? " (-- UI)" : "")}${e.syringeMaxUI !== null && e.syringeMaxUI !== undefined ? `<br><span class="report-syringe">${escapeHTML(tx("syringeShort", `Seringa: ${e.syringeMaxUI} UI`, { value: e.syringeMaxUI }))}</span>` : ""}</td>
+        <td class="report-cell">${escapeHTML(e.statusLabel || tx("statusUnknown"))}</td>
+        <td class="report-cell">
+          <span class="report-type-badge ${e.retroactive ? "is-retroactive" : "is-regular"}">${escapeHTML(e.type)}</span>
         </td>
-        <td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;font-size:12px;">${escapeHTML(e.site || "--")}<br>${escapeHTML(getReportVialLabel(e) || "Frasco não informado")}</td>
-        <td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;color:#64748B;font-size:12px;">${escapeHTML(e.note || "--")}${e.statusReason ? `<br>Motivo: ${escapeHTML(e.statusReason)}` : ""}</td>
+        <td class="report-cell report-cell-meta">${escapeHTML(e.site || tx("noValue"))}<br>${escapeHTML(getReportVialLabel(e) || tx("vialNotInformed"))}</td>
+        <td class="report-cell report-cell-notes">${escapeHTML(e.note || tx("noValue"))}${e.statusReason ? `<br>${escapeHTML(tx("reason"))}: ${escapeHTML(e.statusReason)}` : ""}</td>
       </tr>
     `;
   }).join("");
 
   const adherenceSection = adherenceSummary ? `
   <section class="personal-summary" aria-labelledby="personal-summary-title">
-    <h2 id="personal-summary-title">Resumo descritivo da rotina</h2>
+    <h2 id="personal-summary-title">${escapeHTML(tx("descriptiveSummary"))}</h2>
     <div class="personal-summary-grid">
-      <div><span>Aplicações previstas</span><b>${escapeHTML(adherenceSummary.due)}</b></div>
-      <div><span>Aplicações confirmadas</span><b>${escapeHTML(adherenceSummary.applied)}</b></div>
-      <div><span>Rotina resolvida</span><b>${escapeHTML(adherenceSummary.resolutionPercent)}%</b></div>
-      <div><span>Dias completos</span><b>${escapeHTML(adherenceSummary.completeDays)}</b></div>
-      <div><span>Pendentes</span><b>${escapeHTML(adherenceSummary.pending)}</b></div>
-      <div><span>Aplicações extras</span><b>${escapeHTML(adherenceSummary.extraApplied)}</b></div>
+      <div><span>${escapeHTML(tx("expectedApplications"))}</span><b>${escapeHTML(adherenceSummary.due)}</b></div>
+      <div><span>${escapeHTML(tx("confirmedApplications"))}</span><b>${escapeHTML(adherenceSummary.applied)}</b></div>
+      <div><span>${escapeHTML(tx("resolutionPercent"))}</span><b>${escapeHTML(adherenceSummary.resolutionPercent)}%</b></div>
+      <div><span>${escapeHTML(tx("completeDays"))}</span><b>${escapeHTML(adherenceSummary.completeDays)}</b></div>
+      <div><span>${escapeHTML(tx("pending"))}</span><b>${escapeHTML(adherenceSummary.pending)}</b></div>
+      <div><span>${escapeHTML(tx("extraApplications"))}</span><b>${escapeHTML(adherenceSummary.extraApplied)}</b></div>
     </div>
-    <p class="personal-summary-note">Este resumo descreve os registros no período e não avalia eficácia, segurança ou necessidade de ajuste.</p>
+    <p class="personal-summary-note">${escapeHTML(tx("descriptiveSummaryNote"))}</p>
   </section>` : "";
 
   const measurementRows = Array.isArray(measurements) ? measurements.map((measurement) => `
@@ -488,39 +516,39 @@ export function generateReportHTML(entries = [], {
         <td>${escapeHTML(formatReportDate(measurement.date))}</td>
         <td>${escapeHTML(measurement.time || "--:--")}</td>
         <td>${escapeHTML(measurement.weightKg ?? "--")}</td>
-        <td>${escapeHTML([["Abdômen", measurement.circumferencesCm?.abdomen], ["Cintura", measurement.circumferencesCm?.waist], ["Quadril", measurement.circumferencesCm?.hips]].filter(([, value]) => value !== null && value !== undefined).map(([label, value]) => `${label}: ${value}`).join(" · ") || "--")}</td>
-        <td>${escapeHTML(measurement.energyLevel ?? "--")}</td>
-        <td>${escapeHTML(measurement.moodLevel ?? "--")}</td>
-        <td>${escapeHTML(Array.isArray(measurement.symptomDetails) && measurement.symptomDetails.length > 0 ? measurement.symptomDetails.map((item) => `${item.name}${item.intensity ? ` (${item.intensity})` : ""}`).join(" · ") : "--")}</td>
-        <td>${escapeHTML(measurement.notes || "--")}</td>
-        <td>${escapeHTML(measurement.source || "Local")}</td>
+        <td>${escapeHTML([[tx("metricAbdomen", "Abdômen"), measurement.circumferencesCm?.abdomen], [tx("metricWaist", "Cintura"), measurement.circumferencesCm?.waist], [tx("metricHips", "Quadril"), measurement.circumferencesCm?.hips]].filter(([, value]) => value !== null && value !== undefined).map(([label, value]) => `${label}: ${value}`).join(" · ") || tx("noValue"))}</td>
+        <td>${escapeHTML(measurement.energyLevel ?? tx("noValue"))}</td>
+        <td>${escapeHTML(measurement.moodLevel ?? tx("noValue"))}</td>
+        <td>${escapeHTML(Array.isArray(measurement.symptomDetails) && measurement.symptomDetails.length > 0 ? measurement.symptomDetails.map((item) => `${item.name}${item.intensity ? ` (${item.intensity})` : ""}`).join(" · ") : tx("noValue"))}</td>
+        <td>${escapeHTML(measurement.notes || tx("noValue"))}</td>
+        <td>${escapeHTML(measurement.source || tx("localSource"))}</td>
       </tr>
     `).join("") : "";
   const measurementsSection = includeMeasurements ? `
   <section class="measurements-section" aria-labelledby="measurements-title">
-    <h2 id="measurements-title">Medições autorrelatadas</h2>
+    <h2 id="measurements-title">${escapeHTML(tx("measurementsTitle"))}</h2>
     ${measurementStats ? `<div class="stats">
-      <div class="stats-item">Registros incluídos: <b>${escapeHTML(measurementStats.totalEntries)}</b></div>
-      ${measurementStats.latestWeight !== null ? `<div class="stats-item">Último peso: <b>${escapeHTML(measurementStats.latestWeight)} kg</b></div>` : ""}
-      ${measurementStats.weightDelta !== null ? `<div class="stats-item">Variação no período: <b>${escapeHTML(measurementStats.weightDelta)} kg</b></div>` : ""}
-      ${Object.entries({ abdomen: "Abdômen", waist: "Cintura", hips: "Quadril" }).map(([key, label]) => measurementStats.bodyMetrics?.[key]?.count ? `<div class="stats-item">Último ${label.toLocaleLowerCase("pt-BR")}: <b>${escapeHTML(measurementStats.bodyMetrics[key].latest)} cm</b></div>` : "").join("")}
-      ${measurementStats.averageEnergy !== null ? `<div class="stats-item">Energia média: <b>${escapeHTML(measurementStats.averageEnergy)} / 5</b></div>` : ""}
-      ${measurementStats.averageMood !== null ? `<div class="stats-item">Humor médio: <b>${escapeHTML(measurementStats.averageMood)} / 5</b></div>` : ""}
+      <div class="stats-item">${escapeHTML(tx("includedRecords"))}: <b>${escapeHTML(measurementStats.totalEntries)}</b></div>
+      ${measurementStats.latestWeight !== null ? `<div class="stats-item">${escapeHTML(tx("latestWeight"))}: <b>${escapeHTML(measurementStats.latestWeight)} kg</b></div>` : ""}
+      ${measurementStats.weightDelta !== null ? `<div class="stats-item">${escapeHTML(tx("weightDelta"))}: <b>${escapeHTML(measurementStats.weightDelta)} kg</b></div>` : ""}
+      ${Object.entries({ abdomen: tx("metricAbdomen", "Abdômen"), waist: tx("metricWaist", "Cintura"), hips: tx("metricHips", "Quadril") }).map(([key, label]) => measurementStats.bodyMetrics?.[key]?.count ? `<div class="stats-item">${escapeHTML(tx("latestMetric", `Último ${lowerLocale(label, locale)}`, { metric: lowerLocale(label, locale) }))}: <b>${escapeHTML(measurementStats.bodyMetrics[key].latest)} cm</b></div>` : "").join("")}
+      ${measurementStats.averageEnergy !== null ? `<div class="stats-item">${escapeHTML(tx("averageEnergy"))}: <b>${escapeHTML(measurementStats.averageEnergy)} / 5</b></div>` : ""}
+      ${measurementStats.averageMood !== null ? `<div class="stats-item">${escapeHTML(tx("averageMood"))}: <b>${escapeHTML(measurementStats.averageMood)} / 5</b></div>` : ""}
     </div>` : ""}
     <table>
-      <thead><tr><th>Data</th><th>Hora</th><th>Peso (kg)</th><th>Circunferências (cm)</th><th>Energia</th><th>Humor</th><th>Sintomas</th><th>Observações</th><th>Origem</th></tr></thead>
-      <tbody>${measurementRows || '<tr><td colspan="9" style="padding:16px;text-align:center;color:#64748B;">Nenhuma medição encontrada para o período selecionado.</td></tr>'}</tbody>
+      <thead><tr><th>${escapeHTML(tx("date"))}</th><th>${escapeHTML(tx("time"))}</th><th>Peso (kg)</th><th>${escapeHTML(tx("circumferences"))}</th><th>${escapeHTML(tx("energy"))}</th><th>${escapeHTML(tx("mood"))}</th><th>Sintomas</th><th>${escapeHTML(tx("notes"))}</th><th>${escapeHTML(tx("origin"))}</th></tr></thead>
+      <tbody>${measurementRows || `<tr><td colspan="9" class="report-empty-cell">${escapeHTML(tx("noMeasurements"))}</td></tr>`}</tbody>
     </table>
-    <p class="personal-summary-note">As medições são autorrelatadas e apresentadas sem correlação clínica com as aplicações.</p>
+    <p class="personal-summary-note">${escapeHTML(tx("selfReportedWarning"))}</p>
   </section>` : "";
 
-  const revisionsSection = `<section class="protocol-section"><h2>Revisões de protocolo</h2><table><thead><tr><th>Vigência</th><th>Composto</th><th>Estado</th><th>Configuração registrada</th></tr></thead><tbody>${(revisions || []).map((revision) => `<tr><td>${escapeHTML(formatReportDate(revision.date))} ${escapeHTML(revision.time)}</td><td>${escapeHTML(revision.peptideName)}</td><td>${escapeHTML(revision.statusLabel)}</td><td>${escapeHTML([revision.config?.dose, revision.config?.ui !== undefined ? `${revision.config.ui} UI` : "", revision.config?.per].filter(Boolean).join(" · ") || "Sem dose informada")}</td></tr>`).join("") || '<tr><td colspan="4">Nenhuma revisão no período.</td></tr>'}</tbody></table></section>`;
+  const revisionsSection = `<section class="protocol-section"><h2>${escapeHTML(tx("protocolRevisions"))}</h2><table><thead><tr><th>${escapeHTML(tx("effectiveFrom"))}</th><th>${escapeHTML(tx("compound"))}</th><th>${escapeHTML(tx("status"))}</th><th>${escapeHTML(tx("registeredConfiguration"))}</th></tr></thead><tbody>${(revisions || []).map((revision) => `<tr><td>${escapeHTML(formatReportDate(revision.date))} ${escapeHTML(revision.time)}</td><td>${escapeHTML(revision.peptideName)}</td><td>${escapeHTML(revision.statusLabel)}</td><td>${escapeHTML([revision.config?.dose, revision.config?.ui !== undefined ? `${revision.config.ui} UI` : "", revision.config?.per].filter(Boolean).join(" · ") || tx("noDose"))}</td></tr>`).join("") || `<tr><td colspan="4">${escapeHTML(tx("noRevisions"))}</td></tr>`}</tbody></table></section>`;
 
   return `<!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="${escapeHTML(locale)}">
 <head>
   <meta charset="UTF-8">
-  <title>Protocolo PEP — Relatório de Aplicações</title>
+  <title>${escapeHTML(tx("applicationsReportTitle"))}</title>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 24px; color: #0F172A; background: #FFF; font-size: 13px; line-height: 1.5; }
     .header { border-bottom: 2px solid #0E8580; padding-bottom: 12px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: flex-end; }
@@ -538,6 +566,17 @@ export function generateReportHTML(entries = [], {
     table { width: 100%; border-collapse: collapse; text-align: left; margin-bottom: 20px; }
     thead { display: table-header-group; } tr { break-inside: avoid; page-break-inside: avoid; }
     th { background: #F1F5F9; padding: 8px 10px; border-bottom: 2px solid #CBD5E1; font-weight: 700; font-size: 12px; color: #475569; }
+    .report-cell { padding: 8px 10px; border-bottom: 1px solid #E2E8F0; }
+    .report-cell-date { font-weight: 600; }
+    .report-cell-name { font-weight: 700; }
+    .report-cell-meta, .report-cell-notes { font-size: 12px; }
+    .report-cell-notes { color: #64748B; }
+    .report-legacy { font-size: 10px; font-weight: 400; }
+    .report-syringe { font-size: 11px; color: #64748B; }
+    .report-type-badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 11px; }
+    .report-type-badge.is-retroactive { background: #FEF3C7; color: #92400E; }
+    .report-type-badge.is-regular { background: #E6FFFA; color: #047857; }
+    .report-empty-cell { padding: 16px; text-align: center; color: #64748B; }
     .disclaimer { font-size: 11px; color: #64748B; border-top: 1px solid #E2E8F0; padding-top: 10px; margin-top: 20px; line-height: 1.4; }
     @media print {
       body { margin: 10mm; }
@@ -549,17 +588,17 @@ export function generateReportHTML(entries = [], {
 <body>
   <div class="header">
     <div>
-      <h1 class="title">Protocolo PEP — Relatório de Aplicações</h1>
-      <div class="meta">Período: <b>${safePeriodText}</b> · Emitido em: <b>${dStr} às ${tStr}</b></div>
+      <h1 class="title">${escapeHTML(tx("applicationsReportTitle"))}</h1>
+      <div class="meta">${escapeHTML(tx("period"))}: <b>${safePeriodText}</b> · ${escapeHTML(tx("issuedAt"))}: <b>${dStr} ${locale === "pt-BR" ? "às" : "at"} ${tStr}</b></div>
     </div>
   </div>
 
   <div class="stats">
-    <div class="stats-item">Total de Aplicações: <b>${summary.applied}</b></div>
-    <div class="stats-item">Puladas: <b>${summary.skipped}</b></div>
-    <div class="stats-item">Esquecidas: <b>${summary.missed}</b></div>
-    <div class="stats-item">Total de Registros: <b>${summary.total}</b></div>
-    ${summary.unknown ? `<div class="stats-item">Estado não identificado: <b>${summary.unknown}</b></div>` : ""}
+    <div class="stats-item">${escapeHTML(tx("totalApplications"))}: <b>${summary.applied}</b></div>
+    <div class="stats-item">${escapeHTML(tx("skipped"))}: <b>${summary.skipped}</b></div>
+    <div class="stats-item">${escapeHTML(tx("missed"))}: <b>${summary.missed}</b></div>
+    <div class="stats-item">${escapeHTML(tx("totalRecords"))}: <b>${summary.total}</b></div>
+    ${summary.unknown ? `<div class="stats-item">${escapeHTML(tx("unknownState"))}: <b>${summary.unknown}</b></div>` : ""}
   </div>
 
   ${adherenceSection}
@@ -569,25 +608,25 @@ export function generateReportHTML(entries = [], {
   <table>
     <thead>
       <tr>
-        <th>Data</th>
-        <th>Hora</th>
-        <th>Peptídeo</th>
-        <th>Dose</th>
-        <th>Estado</th>
-        <th>Tipo</th>
-        <th>Local / Frasco</th>
-        <th>Observações</th>
+        <th>${escapeHTML(tx("date"))}</th>
+        <th>${escapeHTML(tx("time"))}</th>
+        <th>${escapeHTML(tx("compound"))}</th>
+        <th>${escapeHTML(tx("dose"))}</th>
+        <th>${escapeHTML(tx("status"))}</th>
+        <th>${escapeHTML(tx("type"))}</th>
+        <th>${escapeHTML(tx("site"))} / ${escapeHTML(tx("vial"))}</th>
+        <th>${escapeHTML(tx("notes"))}</th>
       </tr>
     </thead>
     <tbody>
-      ${rows || '<tr><td colspan="8" style="padding:16px;text-align:center;color:#64748B;">Nenhum registro de aplicação encontrado para o período selecionado.</td></tr>'}
+      ${rows || `<tr><td colspan="8" class="report-empty-cell">${escapeHTML(tx("noApplications"))}</td></tr>`}
     </tbody>
   </table>
 
   ${measurementsSection}
 
   <div class="disclaimer">
-    ⚠️ <b>Registro Pessoal Autorrelatado:</b> Este documento é um registro individual gerado localmente pelo usuário do aplicativo Protocolo PEP. Não substitui prontuário médico, receita nem avaliação clínica.
+    <b>${escapeHTML(tx("disclaimer"))}</b>
   </div>
 </body>
 </html>`;

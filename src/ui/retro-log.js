@@ -12,6 +12,7 @@ import { isValidDateKey, isValidTime } from "../domain/schedule.js";
 import { i18nService } from "../services/i18n.js";
 import { resolveProtocolAt } from "../domain/protocol-history.js";
 import { accessibilityService } from "../services/accessibility.js";
+import { resolveUiError } from "./error-messages.js";
 
 const esc = escapeHtml;
 const tr = (key, fallback, params) => {
@@ -333,7 +334,7 @@ export async function saveRetroLog({ doseService, storage: storageForRoute, date
     if (!res.success) {
       dialogService.alert({
         title: "Erro",
-        message: tr("dialogs.saveRecordErrorMsg", `Não foi possível salvar o registro: ${res.message || res.error || tr("dialogs.storageUnavailable", "armazenamento indisponível")}`, { error: res.message || res.error || tr("dialogs.storageUnavailable", "armazenamento indisponível") }),
+        message: resolveUiError(res, "dialogs.saveRecordErrorMsg"),
         isDanger: true
       });
       return;
@@ -352,7 +353,7 @@ export async function saveRetroLog({ doseService, storage: storageForRoute, date
       renderAll();
     }
   } catch (error) {
-    void dialogService.alert({ title: i18nService.t("common.error"), message: i18nService.t("dialogs.saveErrorMsg") + (error?.message || ""), isDanger: true });
+    void dialogService.alert({ title: i18nService.t("common.error"), message: resolveUiError({ error: "STORAGE_WRITE_FAILED", message: error?.message }, "dialogs.saveErrorMsg"), isDanger: true });
   } finally {
     saving = false;
     if (saveBtn) saveBtn.disabled = false;

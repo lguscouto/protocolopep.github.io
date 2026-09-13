@@ -86,6 +86,8 @@ export const es = {
     "pending": "Pendiente",
     "success": "Éxito",
     "error": "Error",
+    "test": "prueba",
+    "genericError": "No se pudo completar esta acción. Inténtelo de nuevo.",
     "warning": "Aviso",
     "enabled": "ACTIVADO",
     "disabled": "DESACTIVADO",
@@ -573,7 +575,20 @@ export const es = {
       "rescheduledSuccess": "¡Recordatorios actualizados con éxito! ({count} próximos horarios en el dispositivo)",
       "testTitle": "Protocolo PEP",
       "testBody": "Horario de aplicación programada",
-      "testCustomTitle": "Recordatorio: {name}"
+      "testCustomTitle": "Recordatorio: {name}",
+      "testCustomBody": "500 mcg · 10 UI",
+      "rescheduledTitle": "Recordatorios reprogramados",
+      "statusDenied": "Permiso denegado",
+      "statusDeniedMessage": "Las notificaciones están bloqueadas en la configuración de Android. Abra la Configuración del sistema para permitirlas.",
+      "statusDisabled": "Recordatorios desactivados",
+      "statusDisabledMessage": "Active los recordatorios para recibir alertas locales en los horarios de sus aplicaciones.",
+      "statusIdle": "Activo · Sin rutinas",
+      "statusIdleMessage": "Las notificaciones están activas, pero ninguna rutina con horario está habilitada para recordatorios.",
+      "statusActive": "Activo y programado",
+      "statusActiveMessage": "{pendingCount} recordatorios programados en el sistema para los próximos {horizonDays} días.{exactRestricted}",
+      "statusPrompt": "Permiso necesario",
+      "statusPromptMessage": "La aplicación necesita su autorización para programar recordatorios en este dispositivo.",
+      "exactAlarmRestricted": "Las alarmas exactas están restringidas; Android usará una ventana aproximada"
     },
     "retro": {
       "title": "Registrar Aplicación",
@@ -683,7 +698,15 @@ export const es = {
       "reportTitle": "Informe Protocolo PEP",
       "exportErrorTitle": "Error en la Exportación",
       "exportErrorMsg": "No se pudo guardar el informe: {error}",
-      "pdfErrorTitle": "Error al generar PDF"
+      "pdfErrorTitle": "Error al generar PDF",
+      "statusEnded": "Finalizado", "statusPaused": "Pausado", "statusActive": "Activo", "metricAbdomen": "Abdomen", "metricWaist": "Cintura", "metricHips": "Caderas", "protocolPrefix": "Protocolo", "measurementEventTitle": "Medición autorreportada", "symptomEventTitle": "Síntomas autorreportados", "from": "Desde", "until": "Hasta",
+      "statusApplied": "Aplicada", "statusSkipped": "Omitida", "statusMissed": "No realizada", "statusUnknown": "No identificado",
+      "typeRetroactive": "Retroactivo", "typeRegular": "Regular", "historyCaptured": "Datos preservados en el registro", "historyLegacy": "Legado: datos históricos incompletos",
+      "section": "Sección", "field": "Campo", "value": "Valor", "summary": "Resumen", "period": "Período", "allHistoryShort": "Todo el historial",
+      "scheduledDays": "Días programados", "expectedApplications": "Aplicaciones previstas", "confirmedApplications": "Aplicaciones confirmadas", "resolvedRecords": "Registros resueltos", "pending": "Pendientes", "skipped": "Omitidas", "missed": "No realizadas", "extraApplications": "Aplicaciones adicionales", "applicationPercent": "Aplicaciones registradas (%)", "resolutionPercent": "Rutina completada (%)", "completeDays": "Días completos", "partialDays": "Días parciales",
+      "includedRecords": "Registros incluidos", "latestWeight": "Último peso (kg)", "weightDelta": "Variación de peso (kg)", "averageEnergy": "Energía media (1–5)", "averageMood": "Ánimo medio (1–5)", "latestMetric": "Última medida de {metric} (cm)", "metricDelta": "Variación de {metric} (cm)",
+      "applications": "Aplicaciones", "measurements": "Mediciones", "reportedMeasurements": "Mediciones autorreportadas", "warning": "Aviso", "use": "Uso", "selfReportedWarning": "Registro personal autorreportado; no sustituye un historial médico, receta o evaluación clínica ni establece correlación entre aplicaciones y mediciones.",
+      "date": "Fecha", "time": "Hora", "compound": "Compuesto", "subtitle": "Subtítulo", "dose": "Dosis", "syringe": "Jeringa (UI)", "type": "Tipo", "notes": "Observaciones", "status": "Estado", "reason": "Motivo", "site": "Sitio", "vial": "Vial", "lot": "Lote", "vialConcentration": "Concentración del vial (mcg/mL)", "historyIntegrity": "Integridad histórica", "revision": "Revisión", "ownership": "Propiedad", "external": "Externa", "pep": "PEP", "notInformed": "no informada", "recordTitle": "Informe Protocolo PEP", "applicationsReportTitle": "Protocolo PEP — Informe de Aplicaciones", "issuedAt": "Emitido el", "totalApplications": "Total de aplicaciones", "totalRecords": "Total de registros", "unknownState": "Estado no identificado", "descriptiveSummary": "Resumen descriptivo de la rutina", "descriptiveSummaryNote": "Este resumen describe los registros del período y no evalúa eficacia, seguridad ni necesidad de ajustes.", "measurementsTitle": "Mediciones autorreportadas", "circumferences": "Circunferencias (cm)", "energy": "Energía", "mood": "Ánimo", "origin": "Origen", "noMeasurements": "No se encontraron mediciones en el período seleccionado.", "noApplications": "No se encontraron registros de aplicaciones en el período seleccionado.", "noRevisions": "No hay revisiones en el período.", "protocolRevisions": "Revisiones del protocolo", "effectiveFrom": "Vigencia", "registeredConfiguration": "Configuración registrada", "noDose": "Sin dosis informada", "localSource": "Local", "legacyShort": "Legado", "syringeShort": "Jeringa: {value} UI", "vialNotInformed": "Vial no informado", "noValue": "--", "disclaimer": "Registro personal autorreportado: este documento se genera localmente en la aplicación Protocolo PEP. No sustituye historial médico, receta ni evaluación clínica."
     },
     "diagnostics": {
       "title": "Diagnóstico del Sistema",
@@ -930,6 +953,11 @@ export const es = {
     "noConcentrationFallback": "El vial no tiene concentración definida.",
     "saveRecordErrorMsg": "No se pudo guardar el registro: {error}",
     "storageUnavailable": "almacenamiento no disponible",
+    "storageWriteFailed": "No se pudieron guardar los datos en este dispositivo.",
+    "atomicStorageUnavailable": "El almacenamiento local no está disponible para completar esta acción.",
+    "vialMissingConcentration": "El vial no tiene una concentración definida.",
+    "stockInsufficient": "El inventario disponible es insuficiente para registrar esta aplicación.",
+    "oralPackageNotFound": "No se encontró un paquete oral activo y compatible.",
     "storageFailTitle": "Fallo en el almacenamiento",
     "goalSaveErrorTitle": "Meta no guardada",
     "unmarkErrorTitle": "Error al desmarcar",
@@ -976,6 +1004,18 @@ export const es = {
   "a11y": {
     "doseUnmarkedAnnounce": "Aplicación de {name} desmarcada.",
     "doseConfirmedAnnounce": "Aplicación de {name} confirmada."
+  },
+  "injectionSite": {
+    "nextRotation": "Siguiente en su rotación",
+    "lastRecorded": "Último sitio registrado",
+    "mapLabel": "Sitios del abdomen y los flancos",
+    "selected": "Seleccionado: {site}",
+    "touchMap": "Toque un punto del abdomen o flanco",
+    "configured": "Sitios configurados",
+    "otherConfigured": "Otros sitios configurados",
+    "unknown": "No recuerdo el sitio",
+    "disclaimer": "El mapa solo registra su elección. No evalúa la piel ni indica dónde aplicar.",
+    "select": "Seleccionar {site}"
   },
   "onboarding": {
     "slide1Title": "Su tratamiento organizado",

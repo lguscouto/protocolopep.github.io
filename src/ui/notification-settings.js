@@ -6,13 +6,25 @@ import { notifications } from "../services/notifications.js";
 import { haptics } from "../services/haptics.js";
 import { accessibilityService } from "../services/accessibility.js";
 import { dialogService } from "../services/dialog.js";
+import { i18nService } from "../services/i18n.js";
 import { escapeHtml } from "./dom.js";
+
+const tr = (key, fallback, params) => {
+  const value = i18nService.t(key, params);
+  return value === key ? fallback : value;
+};
 
 const esc = escapeHtml;
 
 export async function updateNotificationUI(peptides = []) {
   const status = await notifications.getSystemStatus(peptides);
   const cfg = notifications.getConfig();
+  const statusParams = {
+    ...(status.messageParams || {}),
+    exactRestricted: status.messageParams?.exactRestricted
+      ? ` (${tr("modals.notifications.exactAlarmRestricted", "Alarmes exatos restritos; o Android usará uma janela aproximada")})`
+      : ""
+  };
 
   // 1. Atualizar Modal de Notificações
   const badgeEl = document.getElementById("nf-status-badge");
@@ -24,11 +36,11 @@ export async function updateNotificationUI(peptides = []) {
 
   if (badgeEl) {
     badgeEl.className = `badge ${status.badgeClass}`;
-    badgeEl.textContent = status.label;
+    badgeEl.textContent = tr(status.labelKey, status.label);
   }
 
   if (msgEl) {
-    msgEl.textContent = status.message;
+    msgEl.textContent = tr(status.messageKey, status.message, statusParams);
   }
 
   if (enableBtn) {
@@ -60,10 +72,10 @@ export async function updateNotificationUI(peptides = []) {
   const settingsMsg = document.getElementById("settings-notif-msg");
   if (settingsBadge) {
     settingsBadge.className = `badge ${status.badgeClass}`;
-    settingsBadge.textContent = status.label;
+    settingsBadge.textContent = tr(status.labelKey, status.label);
   }
   if (settingsMsg) {
-    settingsMsg.textContent = status.message;
+    settingsMsg.textContent = tr(status.messageKey, status.message, statusParams);
   }
 }
 
@@ -159,8 +171,8 @@ export function setupNotificationListeners(storage) {
             notifications.saveConfig({ enabled: false });
             await updateNotificationUI(storage.getPeptides());
             dialogService.alert({
-              title: "Permissão Necessária",
-              message: "Permissão de notificação não autorizada pelo sistema Android. Para ativar, permita as notificações nas Configurações do aparelho.",
+              title: tr("modals.notifications.notifPermissionTitle", "Permissão Necessária"),
+              message: tr("modals.notifications.notifPermissionMessage", "Permissão de notificação não autorizada pelo sistema Android. Para ativar, permita as notificações nas Configurações do aparelho."),
               isDanger: true
             });
             return;
@@ -171,10 +183,10 @@ export function setupNotificationListeners(storage) {
         const exactAlarmRes = await notifications.checkExactAlarmPermission();
         if (!exactAlarmRes.granted && exactAlarmRes.status === "denied") {
           const userWants = await dialogService.confirm({
-            title: "Alarmes e Lembretes Exatos",
-            message: "Para que os lembretes toquem no minuto exato no Android, o Protocolo PEP precisa de permissão para 'Alarmes e Lembretes'. Deseja abrir as configurações do sistema para autorizar?",
-            confirmText: "Abrir Configurações",
-            cancelText: "Agora Não",
+            title: tr("modals.notifications.exactAlarmPromptTitle", "Permissão para Alarmes Exatos"),
+            message: tr("modals.notifications.exactAlarmPromptMessage", "Para que os lembretes toquem no minuto exato no Android, o Protocolo PEP precisa de permissão para 'Alarmes e Lembretes'. Deseja abrir as configurações do sistema para autorizar?"),
+            confirmText: tr("modals.notifications.openSettings", "Abrir Configurações"),
+            cancelText: tr("modals.notifications.notNow", "Agora Não"),
             isDanger: false
           });
           if (userWants) {
@@ -197,9 +209,9 @@ export function setupNotificationListeners(storage) {
       haptics.light();
       const cfg = notifications.getConfig();
       if (cfg.discreteMode) {
-        await notifications.sendInstantNotification("Protocolo PEP", "Horário de aplicação programada");
+        await notifications.sendInstantNotification(tr("modals.notifications.testTitle", "Protocolo PEP"), tr("modals.notifications.testBody", "Horário de aplicação programada"));
       } else {
-        await notifications.sendInstantNotification("Lembrete: Peptídeo Teste", "500 mcg · 10 UI");
+        await notifications.sendInstantNotification(tr("modals.notifications.testCustomTitle", "Lembrete: {name}", { name: tr("common.test", "teste") }), tr("modals.notifications.testCustomBody", "500 mcg · 10 UI"));
       }
     });
   }
@@ -211,8 +223,8 @@ export function setupNotificationListeners(storage) {
       await updateNotificationUI(storage.getPeptides());
       haptics.success();
       dialogService.alert({
-        title: "Lembretes Reagendados",
-        message: `Lembretes atualizados com sucesso! (${res.scheduledCount} próximos horários no aparelho)`
+        title: tr("modals.notifications.rescheduledTitle", "Lembretes Reagendados"),
+        message: tr("modals.notifications.rescheduledSuccess", "Lembretes atualizados com sucesso! ({count} próximos horários no aparelho)", { count: res.scheduledCount })
       });
     });
   }

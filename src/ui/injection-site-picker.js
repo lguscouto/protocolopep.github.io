@@ -6,6 +6,12 @@
  */
 
 import torsoImageUrl from "../assets/injection-site-torso.png";
+import { i18nService } from "../services/i18n.js";
+
+const tr = (key, fallback, params) => {
+  const value = i18nService.t(key, params);
+  return value === key ? fallback : value;
+};
 
 const VISUAL_POSITIONS = Object.freeze({
   "abdomen (superior direito)": Object.freeze({ placement: "abdomen-upper-right", order: 0 }),
@@ -111,7 +117,7 @@ function createSiteButton(item, onSelect, { compact = false } = {}) {
   if (item.next) button.classList.add("is-next");
   if (item.last) button.classList.add("is-last");
   button.setAttribute("aria-pressed", item.selected ? "true" : "false");
-  button.setAttribute("aria-label", `Selecionar ${item.label}`);
+  button.setAttribute("aria-label", tr("injectionSite.select", `Selecionar ${item.label}`, { site: item.label }));
   button.dataset.site = item.label;
 
   if (compact) {
@@ -171,10 +177,10 @@ export function renderInjectionSitePicker({
   const status = document.createElement("div");
   status.className = "injection-site-status-list";
   if (nextSite) {
-    status.appendChild(createStatusLine("is-next", "Próximo na sua rotação", nextSite));
+    status.appendChild(createStatusLine("is-next", tr("injectionSite.nextRotation", "Próximo na sua rotação"), nextSite));
   }
   if (lastSite) {
-    status.appendChild(createStatusLine("is-last", "Último registrado", lastSite));
+    status.appendChild(createStatusLine("is-last", tr("injectionSite.lastRecorded", "Último local registrado"), lastSite));
   }
   if (status.childElementCount > 0) fragment.appendChild(status);
 
@@ -186,7 +192,7 @@ export function renderInjectionSitePicker({
     const map = document.createElement("div");
     map.className = "injection-site-map";
     map.setAttribute("role", "group");
-    map.setAttribute("aria-label", "Locais do abdômen e flancos");
+    map.setAttribute("aria-label", tr("injectionSite.mapLabel", "Locais do abdômen e flancos"));
     map.appendChild(createTorsoIllustration());
     visualItems.forEach((item) => map.appendChild(createSiteButton(item, selectSite)));
 
@@ -194,8 +200,8 @@ export function renderInjectionSitePicker({
     mapLabel.className = "injection-site-map-label";
     const selectedVisualItem = visualItems.find((item) => item.selected);
     mapLabel.textContent = selectedVisualItem
-      ? `Selecionado: ${selectedVisualItem.label}`
-      : "Toque em um ponto do abdômen ou flanco";
+      ? tr("injectionSite.selected", `Selecionado: ${selectedVisualItem.label}`, { site: selectedVisualItem.label })
+      : tr("injectionSite.touchMap", "Toque em um ponto do abdômen ou flanco");
     map.appendChild(mapLabel);
     fragment.appendChild(map);
   }
@@ -207,7 +213,9 @@ export function renderInjectionSitePicker({
 
     const alternativesLabel = document.createElement("div");
     alternativesLabel.className = "injection-site-alternatives-label";
-    alternativesLabel.textContent = visualItems.length > 0 ? "Outros locais configurados" : "Locais configurados";
+    alternativesLabel.textContent = visualItems.length > 0
+      ? tr("injectionSite.otherConfigured", "Outros locais configurados")
+      : tr("injectionSite.configured", "Locais configurados");
     alternatives.appendChild(alternativesLabel);
 
     const chips = document.createElement("div");
@@ -225,13 +233,13 @@ export function renderInjectionSitePicker({
   noSiteButton.dataset.site = "";
   if (!selectedSite) noSiteButton.classList.add("is-selected");
   noSiteButton.setAttribute("aria-pressed", selectedSite ? "false" : "true");
-  noSiteButton.textContent = "Não lembro o local";
+  noSiteButton.textContent = tr("injectionSite.unknown", "Não lembro o local");
   noSiteButton.addEventListener("click", () => selectSite(""));
   fragment.appendChild(noSiteButton);
 
   const disclaimer = document.createElement("p");
   disclaimer.className = "injection-site-disclaimer";
-  disclaimer.textContent = "O mapa apenas registra sua escolha. Ele não avalia a pele nem indica onde aplicar.";
+  disclaimer.textContent = tr("injectionSite.disclaimer", "O mapa apenas registra sua escolha. Ele não avalia a pele nem indica onde aplicar.");
   fragment.appendChild(disclaimer);
 
   container.replaceChildren(fragment);
