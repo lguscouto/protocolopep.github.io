@@ -102,8 +102,8 @@ export function setupReportModal(storage) {
     if (previewSummary) {
       const adherence = currentReport.adherence;
       const summaryItems = adherence ? [
-        `<span><b>${esc(String(adherence.applicationPercent))}%</b> ${esc(i18nService.t("modals.report.applicationPercent").replace(" (%)", ""))}</span>`,
-        `<span><b>${esc(String(adherence.resolutionPercent))}%</b> ${esc(i18nService.t("modals.report.resolutionPercent").replace(" (%)", ""))}</span>`,
+        `<span><b>${esc(String(adherence.applicationPercent))}%</b> ${esc(i18nService.t("modals.report.applicationPercent").replace(" (%)", "").toLocaleLowerCase(i18nService.getLocale()))}</span>`,
+        `<span><b>${esc(String(adherence.resolutionPercent))}%</b> ${esc(i18nService.t("modals.report.resolutionPercent").replace(" (%)", "").toLocaleLowerCase(i18nService.getLocale()))}</span>`,
         `<span><b>${esc(String(adherence.pending))}</b> ${esc(i18nService.t("modals.report.pending"))}</span>`,
         `<span><b>${esc(String(adherence.completeDays))}</b> ${esc(i18nService.t("modals.report.completeDays"))}</span>`
       ] : [];
