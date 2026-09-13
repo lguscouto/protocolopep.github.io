@@ -46,18 +46,20 @@ O commit que congelou o código usado para o APK é `b7b524b`. A documentação 
 - `npm run test:performance`: aprovado. Medianas no cenário vazio: DOM ready 300 ms, first content 184 ms, long tasks 158 e 799 nós; no cenário carregado: DOM ready 2.368,4 ms, first content 204 ms, long tasks 2.316 e 1.022 nós. Primeiro acesso carregado: Jornada 9,8 ms, Progresso 65,2 ms e Mais 15,9 ms; acesso aquecido: 9,6 ms, 86 ms e 17,7 ms. Os limites mantêm regressão máxima de 20% para tempos, 25% para long tasks, 5% para nós e o teto de 80 KiB.
 - `npm audit --omit=dev`: **0 vulnerabilidades**.
 - `npm audit` completo: três ocorrências moderadas transitivas restritas à toolchain de desenvolvimento (`@capacitor/cli`/`xcode`/`uuid`); nenhuma correção com `--force` foi usada.
-- Android: `npx cap sync android`, `testDebugUnitTest`, `lintDebug` e `assembleDebug` aprovados localmente; os jobs Android e Web/E2E da CI serão registrados no fechamento abaixo.
-- Snapshots: estados de Mais, Android small/standard/wide e Galaxy A55 retrato/paisagem foram revisados e atualizados em Windows/Linux, com `maxDiffPixelRatio` mantido em 0,03.
+- Android: `npx cap sync android`, `testDebugUnitTest`, `lintDebug` e `assembleDebug` aprovados localmente e no job Android da CI.
+- Snapshots: estados de Mais, Android small/standard/wide e Galaxy A55 retrato/paisagem foram revisados e atualizados em Windows/Linux no runner Linux, com `maxDiffPixelRatio` mantido em 0,03.
+
+CI final da branch: [34784475206](https://github.com/lguscouto/protocolopep.github.io/actions/runs/34784475206), com Web/E2E, Performance e Android verdes no commit `66728c4`.
 
 ## APK de avaliação da 3.9.13
 
 Nome: `Protocolo-PEP-v3.9.13.apk`
 
-Commit de origem: `b7b524b`
+Commit de origem: `66728c4`
 
 Bytes: **12.378.387**
 
-SHA-256 local: **`FB17DD35901358242BADA277C69BD57241328E84FED1AE8EED93146005B3A83A`**
+SHA-256 local: **`2D3D6543C8693CBA426F034654D1359BFF9E2F058A4D1D58EB76F0353889A333`**
 
 O APK é uma build debug para avaliação. O teste físico não foi executado e não é um gate desta versão. O digest do asset hospedado será conferido após a publicação e deverá ser idêntico ao arquivo local.
 
@@ -74,4 +76,4 @@ Instalar o APK debug, atualizar a partir da 3.9.12, abrir Hoje/Jornada/Progresso
 
 ## Fechamento da release
 
-Integração fast-forward em `main`, CI final de `main`, commit documental, commit da tag, URL da release pública e digest do asset hospedado serão preenchidos após a CI da branch e a publicação. O commit de origem do APK (`b7b524b`), o commit documental e o commit apontado pela tag serão mantidos separados para rastreabilidade.
+Integração fast-forward concluída em `main` no commit `66728c4`. A CI final de `main` é o run [34784923858](https://github.com/lguscouto/protocolopep.github.io/actions/runs/34784923858), com Web/E2E, Performance e Android verdes. O commit documental, o commit apontado pela tag, a URL da release pública e o digest do asset hospedado serão registrados após a publicação. O commit de origem do APK (`66728c4`), o commit documental e o commit da tag serão mantidos separados para rastreabilidade.
