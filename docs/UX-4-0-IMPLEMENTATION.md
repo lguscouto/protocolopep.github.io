@@ -77,8 +77,14 @@ Este roteiro fica documentado para uma rodada futura e não é gate da 3.9.11: i
 
 ## Registro da 3.9.11
 
-Commit validado: a preencher após a CI final e a integração fast-forward em `main`.
+Commit validado do código e origem do APK: `a06e694` (integrado em `main` por fast-forward).
 
 APK: `Protocolo-PEP-v3.9.11.apk` (build debug de avaliação).
 
-CI, bytes e SHA-256 do asset hospedado: a preencher após a geração e publicação; o digest local e remoto serão comparados antes da entrega.
+Bytes: **12.309.306**.
+
+SHA-256 local: `A55B4A6BE2128D637C6A81B8808D8657F5962A0980F0D3D39568D7CADD46F239`.
+
+CI da branch validada: [34735315202](https://github.com/lguscouto/protocolopep.github.io/actions/runs/34735315202). CI do commit integrado em `main`: [34735685318](https://github.com/lguscouto/protocolopep.github.io/actions/runs/34735685318).
+
+Release pública: [github.com/lguscouto/protocolopep.github.io/releases/tag/v3.9.11](https://github.com/lguscouto/protocolopep.github.io/releases/tag/v3.9.11). O digest do asset hospedado será conferido contra o SHA-256 local antes da entrega.
