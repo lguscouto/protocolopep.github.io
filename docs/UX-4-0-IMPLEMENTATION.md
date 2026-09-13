@@ -61,7 +61,7 @@ Bytes: **12.378.387**
 
 SHA-256 local: **`2D3D6543C8693CBA426F034654D1359BFF9E2F058A4D1D58EB76F0353889A333`**
 
-O APK é uma build debug para avaliação. O teste físico não foi executado e não é um gate desta versão. O digest do asset hospedado será conferido após a publicação e deverá ser idêntico ao arquivo local.
+O APK é uma build debug para avaliação. O teste físico não foi executado e não é um gate desta versão. O asset hospedado foi baixado novamente e mantém **12.378.387 bytes** e SHA-256 **`2D3D6543C8693CBA426F034654D1359BFF9E2F058A4D1D58EB76F0353889A333`**, idênticos ao arquivo local.
 
 ## Releases anteriores
 
@@ -76,4 +76,4 @@ Instalar o APK debug, atualizar a partir da 3.9.12, abrir Hoje/Jornada/Progresso
 
 ## Fechamento da release
 
-Integração fast-forward concluída em `main` no commit `66728c4`. A CI final de `main` é o run [34784923858](https://github.com/lguscouto/protocolopep.github.io/actions/runs/34784923858), com Web/E2E, Performance e Android verdes. O commit documental, o commit apontado pela tag, a URL da release pública e o digest do asset hospedado serão registrados após a publicação. O commit de origem do APK (`66728c4`), o commit documental e o commit da tag serão mantidos separados para rastreabilidade.
+Integração fast-forward concluída em `main` no commit `66728c4`. A CI final do commit integrado é o run [34784923858](https://github.com/lguscouto/protocolopep.github.io/actions/runs/34784923858), com Web/E2E, Performance e Android verdes; a CI do commit documental final será registrada junto a esta atualização. A tag anotada [`v3.9.13`](https://github.com/lguscouto/protocolopep.github.io/releases/tag/v3.9.13) aponta para `5997217`, e a [release pública](https://github.com/lguscouto/protocolopep.github.io/releases/tag/v3.9.13) está publicada como não draft e não prerelease. O commit de origem do APK (`66728c4`), o commit documental (`5997217` e esta atualização posterior), o commit da tag (`5997217`) e o digest hospedado são mantidos separados para rastreabilidade.
