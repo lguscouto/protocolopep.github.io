@@ -59,8 +59,15 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
   let selectedMood = null;
   let mode = "full";
   let saving = false;
-  let measurementsOffset = 0;
+  let measurementsVisibleCount = 30;
   let measurementsLoadMoreFocus = false;
+  let measurementsLoadMoreFocusIndex = null;
+
+  const resetMeasurementsPagination = () => {
+    measurementsVisibleCount = 30;
+    measurementsLoadMoreFocus = false;
+    measurementsLoadMoreFocusIndex = null;
+  };
 
   const closeMeasurementModal = () => {
     modal?.classList.remove("on");
@@ -292,7 +299,7 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
       return (b.time || "").localeCompare(a.time || "");
     });
 
-    const page = paginate(sorted, { offset: measurementsOffset, pageSize: 30 });
+    const page = paginate(sorted, { offset: 0, pageSize: measurementsVisibleCount });
     historyListEl.innerHTML = `
       <div class="measurements-history">
         <div class="measurements-history-heading">
@@ -304,7 +311,7 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
             const fmtDate = y && mon && d ? `${d}/${mon}/${y}` : m.date;
 
             return `
-              <div class="panel measurement-history-card">
+              <div class="panel measurement-history-card" tabindex="-1" data-measurement-index="${sorted.indexOf(m)}">
                 <div class="measurement-history-content">
                   <div class="measurement-history-meta">
                     <span class="measurement-history-date">${esc(fmtDate)} · ${esc(m.time || "")}</span>
@@ -335,14 +342,27 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
     const loadMore = document.getElementById("measurements-load-more");
     if (loadMore) {
       loadMore.addEventListener("click", () => {
-        measurementsLoadMoreFocus = true;
-        measurementsOffset += page.pageSize;
+        const previousCount = measurementsVisibleCount;
+        measurementsVisibleCount = Math.min(page.total, previousCount + 30);
+        measurementsLoadMoreFocus = measurementsVisibleCount < page.total;
+        measurementsLoadMoreFocusIndex = measurementsVisibleCount >= page.total ? previousCount : null;
         renderMeasurementsHistory();
       });
-      if (measurementsLoadMoreFocus) {
-        measurementsLoadMoreFocus = false;
-        requestAnimationFrame(() => document.getElementById("measurements-load-more")?.focus({ preventScroll: true }));
-      }
+    }
+    if (measurementsLoadMoreFocus || measurementsLoadMoreFocusIndex !== null) {
+      const focusIndex = measurementsLoadMoreFocusIndex;
+      measurementsLoadMoreFocus = false;
+      measurementsLoadMoreFocusIndex = null;
+      requestAnimationFrame(() => {
+        const nextButton = document.getElementById("measurements-load-more");
+        if (nextButton) {
+          nextButton.focus({ preventScroll: true });
+          return;
+        }
+        if (focusIndex !== null) {
+          document.querySelector(`[data-measurement-index="${focusIndex}"]`)?.focus({ preventScroll: true });
+        }
+      });
     }
   }
 
@@ -485,7 +505,7 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
       if (confirmed) {
         const res = storage.deleteMeasurement(editingEntryId);
         if (res.success) {
-          measurementsOffset = 0;
+          resetMeasurementsPagination();
           haptics.warning();
           closeMeasurementModal();
           renderTrendSummary();
@@ -553,7 +573,7 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
       }
 
       haptics.success();
-      measurementsOffset = 0;
+      resetMeasurementsPagination();
       closeMeasurementModal();
       renderTrendSummary();
       renderMeasurementsHistory();
@@ -570,6 +590,7 @@ export function setupMeasurementsUI({ storage, onMeasurementsChange = () => {} }
     openMeasurementModal,
     openMeasurementById,
     renderTrendSummary,
-    renderMeasurementsHistory
+    renderMeasurementsHistory,
+    resetPagination: resetMeasurementsPagination
   };
 }

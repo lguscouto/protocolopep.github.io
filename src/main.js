@@ -120,8 +120,9 @@ let researchUI = null;
 let quickRegisterUI = null;
 let journeyUI = null;
 let adherencePeriodDays = 7;
-const historyFilters = { period: "30", compoundId: "all", eventType: "all", query: "", startDate: null, endDate: null, offset: 0 };
+const historyFilters = { period: "30", compoundId: "all", eventType: "all", query: "", startDate: null, endDate: null, visibleCount: 30 };
 let historyLoadMoreFocus = false;
+let historyLoadMoreFocusIndex = null;
 const progressFilters = { period: "30", startDate: null, endDate: null };
 let historyBodyMetric = "weight";
 let historyRevisionCompoundId = "";
@@ -410,7 +411,14 @@ const viewCoordinator = createViewCoordinator({
 });
 
 function invalidateViews(...views) {
+  if (views.includes("history")) resetHistoryPagination();
   viewCoordinator.invalidate(...views);
+}
+
+function resetHistoryPagination() {
+  historyFilters.visibleCount = 30;
+  historyLoadMoreFocus = false;
+  historyLoadMoreFocusIndex = null;
 }
 
 function bindCalculatorInventoryButton() {
@@ -589,6 +597,8 @@ async function initApp() {
     i18nService,
     onLocaleChange: () => {
       applyTranslations(document, i18nService);
+      resetHistoryPagination();
+      measurementsUI?.resetPagination?.();
       invalidateViews("today", "week", "history", "progress");
       if (inventoryUI && typeof inventoryUI.renderInventoryList === "function") {
         inventoryUI.renderInventoryList();
@@ -1611,7 +1621,7 @@ function setupHistoryFilters() {
     const eventName = id === "history-search" ? "input" : "change";
     element.addEventListener(eventName, () => {
       historyFilters[key] = element.value || (key === "compoundId" || key === "eventType" ? "all" : null);
-      historyFilters.offset = 0;
+      resetHistoryPagination();
       const custom = document.getElementById("history-custom-dates");
       if (custom) custom.hidden = historyFilters.period !== "custom";
       const summary = document.getElementById("history-filter-summary");
@@ -1820,7 +1830,7 @@ function renderHistory() {
     query: historyFilters.query,
     includeNotes: true
   });
-  const page = paginate(model.events, { offset: historyFilters.offset, pageSize: 30 });
+  const page = paginate(model.events, { offset: 0, pageSize: historyFilters.visibleCount });
   const countEl = document.getElementById("history-count");
   if (countEl) countEl.textContent = i18nService.t("history.dosesCount", { count: page.total });
   const contextNote = document.getElementById("history-context-note");
@@ -1832,7 +1842,7 @@ function renderHistory() {
       : event.type === "measurement" || event.type === "symptom"
         ? `<span>${esc(i18nService.t("history.sourceLabel"))}: <b>${esc(event.data.source)}</b></span>${event.data.ownership === "external" ? `<span>${esc(i18nService.t("history.ownershipLabel"))}: <b>${esc(i18nService.t("history.healthConnectSource"))}</b></span>` : ""}`
         : `<span>${esc(i18nService.t("history.effectiveFromLabel"))}: <b>${esc(fmtBR(event.date))} ${esc(event.time)}</b></span><span>${esc(i18nService.t("history.stateLabel"))}: <b>${esc(event.data.statusLabel)}</b></span>`;
-    return `<article class="history-event history-event--${event.type} ${event.type === "application" ? `hist-day hist-item ${event.date === dateKey(new Date()) ? "is-today" : ""}` : ""}" role="listitem">
+    return `<article class="history-event history-event--${event.type} ${event.type === "application" ? `hist-day hist-item ${event.date === dateKey(new Date()) ? "is-today" : ""}` : ""}" role="listitem" tabindex="-1" data-history-index="${model.events.indexOf(event)}">
       <div class="history-event-head"><span class="history-event-type">${typeLabel[event.type]}</span><time datetime="${esc(event.date)}T${esc(event.time)}">${esc(fmtBR(event.date))} · ${esc(event.time || "—")}</time></div>
       <div class="history-event-body"><strong class="${event.type === "application" ? "hist-name" : ""}">${esc(event.title)}</strong><p class="${event.type === "application" ? "hist-status" : ""}">${esc(event.type === "application" ? i18nService.t(`phase1.${event.data.status}`) : event.subtitle)}</p>${event.type === "application" ? `<p class="hist-dose">${esc(event.data.dose)}${administrationLabel(event.data) ? ` · ${esc(administrationLabel(event.data))}` : ""}${event.data.site ? ` · ${esc(i18nService.t("history.siteLabel"))}: ${esc(event.data.site)}` : ""}</p>` : ""}${event.notes ? `<p class="hist-note">${esc(event.notes)}</p>` : ""}${event.retroactive ? `<span class="badge-retro">${esc(i18nService.t("history.retroactiveBadge"))}</span>` : ""}${event.contextGeneral ? `<span class="history-context-badge">${esc(i18nService.t("history.contextBadge"))}</span>` : ""}</div>
       <details class="history-event-details"><summary>${esc(i18nService.t("history.viewDetails"))}</summary><div>${details}</div></details>
@@ -1842,14 +1852,27 @@ function renderHistory() {
   const loadMore = document.getElementById("history-load-more");
   if (loadMore) {
     loadMore.addEventListener("click", () => {
-      historyLoadMoreFocus = true;
-      historyFilters.offset += page.pageSize;
+      const previousCount = historyFilters.visibleCount;
+      historyFilters.visibleCount = Math.min(page.total, previousCount + 30);
+      historyLoadMoreFocus = historyFilters.visibleCount < page.total;
+      historyLoadMoreFocusIndex = historyFilters.visibleCount >= page.total ? previousCount : null;
       viewCoordinator.render("history", { force: true });
     });
-    if (historyLoadMoreFocus) {
-      historyLoadMoreFocus = false;
-      requestAnimationFrame(() => document.getElementById("history-load-more")?.focus({ preventScroll: true }));
-    }
+  }
+  if (historyLoadMoreFocus || historyLoadMoreFocusIndex !== null) {
+    const focusIndex = historyLoadMoreFocusIndex;
+    historyLoadMoreFocus = false;
+    historyLoadMoreFocusIndex = null;
+    requestAnimationFrame(() => {
+      const button = document.getElementById("history-load-more");
+      if (button) {
+        button.focus({ preventScroll: true });
+        return;
+      }
+      if (focusIndex !== null) {
+        document.querySelector(`[data-history-index="${focusIndex}"]`)?.focus({ preventScroll: true });
+      }
+    });
   }
 }
 
