@@ -102,6 +102,43 @@ describe("Domínio de Internacionalização (i18n)", () => {
     });
   });
 
+  describe("Integridade das chaves usadas pelo JavaScript", () => {
+    async function listJavaScriptFiles(directory) {
+      const fs = await import("fs/promises");
+      const path = await import("path");
+      const entries = await fs.readdir(directory, { withFileTypes: true });
+      const files = [];
+      for (const entry of entries) {
+        const absolute = path.join(directory, entry.name);
+        if (entry.isDirectory()) files.push(...await listJavaScriptFiles(absolute));
+        else if (entry.isFile() && absolute.endsWith(".js")) files.push(absolute);
+      }
+      return files;
+    }
+
+    it("resolve todas as chamadas literais de i18nService.t e tr nos três idiomas", async () => {
+      const fs = await import("fs/promises");
+      const path = await import("path");
+      const files = await listJavaScriptFiles(path.resolve(process.cwd(), "src"));
+      const keyRegex = /(?:i18nService\.t|(?<![\w.])tr)\(\s*["']([^"']+)["']/g;
+      const keys = new Set();
+      for (const file of files) {
+        const source = await fs.readFile(file, "utf8");
+        for (const match of source.matchAll(keyRegex)) keys.add(match[1]);
+      }
+
+      expect(keys.size).toBeGreaterThan(100);
+      for (const key of keys) {
+        // Wrappers locais podem aplicar um prefixo (por exemplo, phase1)
+        // antes de chamar o serviço; chaves completas sempre possuem ponto.
+        if (!key.includes(".")) continue;
+        expect(resolveNestedKey(ptBR, key), `Chave ${key} não encontrada em pt-BR`).toBeTruthy();
+        expect(resolveNestedKey(en, key), `Chave ${key} não encontrada em en`).toBeTruthy();
+        expect(resolveNestedKey(es, key), `Chave ${key} não encontrada em es`).toBeTruthy();
+      }
+    });
+  });
+
   describe("resolveNestedKey", () => {
     it("resolve caminho válido de objeto aninhado", () => {
       const obj = { nav: { dashboard: "Painel" } };

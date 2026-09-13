@@ -4,6 +4,7 @@ import {
   haveMeasurementsChanged
 } from "../domain/health-connect.js";
 import { accessibilityService } from "../services/accessibility.js";
+import { i18nService } from "../services/i18n.js";
 
 /**
  * Configura os controles e listeners da interface do Health Connect.
@@ -39,7 +40,7 @@ export function setupHealthConnectUI({
     }
 
     if (!isEnabled) {
-      statusBadge.textContent = "DESATIVADO";
+      statusBadge.textContent = i18nService.t("common.disabled");
       statusBadge.className = "badge-status off";
       if (syncBtn) syncBtn.style.display = "none";
       if (settingsBtn) settingsBtn.style.display = "none";
@@ -64,7 +65,7 @@ export function setupHealthConnectUI({
       return;
     }
 
-    statusBadge.textContent = "CONECTADO";
+    statusBadge.textContent = i18nService.t("common.connected");
     statusBadge.className = "badge-status on";
     if (syncBtn) syncBtn.style.display = "inline-flex";
     if (settingsBtn) settingsBtn.style.display = "inline-flex";
@@ -78,7 +79,7 @@ export function setupHealthConnectUI({
     if (shouldEnable) {
       const avail = await healthConnectService.checkAvailability();
       if (!avail.available) {
-        showToast(avail.message || "Health Connect não disponível neste dispositivo.");
+        showToast(avail.message || i18nService.t("settings.healthConnectUnavailable"));
         haptics.warning();
         toggle.checked = false;
         toggle.setAttribute("aria-checked", "false");
@@ -89,7 +90,7 @@ export function setupHealthConnectUI({
 
       const perm = await healthConnectService.requestPermissions();
       if (!perm.granted) {
-        showToast("Permissões de saúde não concedidas.");
+        showToast(i18nService.t("settings.healthPermissionsDenied"));
         haptics.warning();
         toggle.checked = false;
         toggle.setAttribute("aria-checked", "false");
@@ -100,15 +101,15 @@ export function setupHealthConnectUI({
 
       healthConnectService.setEnabled(true);
       haptics.success();
-      showToast("Health Connect ativado com sucesso.");
-      accessibilityService.announce("Health Connect ativado e conectado.");
+      showToast(i18nService.t("settings.healthEnabled"));
+      accessibilityService.announce(i18nService.t("settings.healthEnabled"));
       await updateSettingsCard();
       await triggerAutoSync(true);
     } else {
       healthConnectService.setEnabled(false);
       haptics.selection();
-      showToast("Health Connect desativado.");
-      accessibilityService.announce("Health Connect desativado.");
+      showToast(i18nService.t("settings.healthDisabled"));
+      accessibilityService.announce(i18nService.t("settings.healthDisabled"));
       await updateSettingsCard();
     }
   }
@@ -143,7 +144,7 @@ export function setupHealthConnectUI({
   async function handleManualSync() {
     if (syncBtn) syncBtn.disabled = true;
     haptics.selection();
-    showToast("Sincronizando com Health Connect...");
+    showToast(i18nService.t("settings.healthSyncing"));
 
     const currentMeasurements = storage.getMeasurements();
     const result = await healthConnectService.syncMeasurements(currentMeasurements);
@@ -159,12 +160,12 @@ export function setupHealthConnectUI({
         }
       }
       haptics.success();
-      const msg = `Sincronizado: ${result.exportedCount} enviados, ${result.importedCount} importados.`;
+      const msg = i18nService.t("settings.healthSynced", { exported: result.exportedCount, imported: result.importedCount });
       showToast(msg);
       accessibilityService.announce(msg);
     } else {
       haptics.warning();
-      const err = result.reason || "Erro na sincronização.";
+      const err = result.reason || i18nService.t("settings.healthSyncError");
       showToast(err);
       accessibilityService.announce(err, "assertive");
     }

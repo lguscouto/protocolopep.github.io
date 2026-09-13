@@ -20,7 +20,7 @@ export function buildProgressSummary({ measurements = [], peptides = [], logs = 
       const records = Array.isArray(byPeptide?.[item.id]) ? byPeptide[item.id] : byPeptide?.[item.id] ? [byPeptide[item.id]] : [];
       matchingRecords += records.filter((record) => record?.status !== "skipped" && record?.status !== "missed" && String(record?.dose || "") === String(item.dose || "")).length;
     });
-    return { id: item.id, name: item.name || "Tratamento", dose: item.dose || "Não informada", matchingRecords };
+    return { id: item.id, name: item.name || null, dose: item.dose || null, matchingRecords };
   });
   return { firstWeight, latestWeight, absoluteChangeKg, percentChange, weightCount: weights.length, symptomFrequency, doseContexts };
 }

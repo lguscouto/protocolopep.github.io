@@ -156,7 +156,56 @@ export const ptBR = {
     "applicationSaved": "Aplicação registrada",
     "weightSaved": "Peso registrado",
     "symptomSaved": "Sintoma registrado",
-    "measurementsSaved": "Medidas registradas"
+    "measurementsSaved": "Medidas registradas",
+    "evolutionTitle": "Evolução descritiva",
+    "observationsCount": "{count} data(s) com observações",
+    "weightGoalTitle": "Meta pessoal de peso",
+    "weightGoalOptional": "Opcional e salva apenas neste dispositivo.",
+    "weightGoalLabel": "Meta de peso em quilogramas",
+    "weightGoalPlaceholder": "Meta em kg",
+    "saveGoal": "Salvar meta",
+    "clearGoal": "Apagar",
+    "latestWeight": "peso mais recente",
+    "absoluteChange": "variação absoluta",
+    "percentChange": "variação percentual",
+    "weeklyChange": "variação semanal observada",
+    "goalDifference": "diferença até a meta",
+    "defineGoal": "Defina uma meta para comparar",
+    "atGoal": "Na meta",
+    "aboveGoal": "acima",
+    "belowGoal": "abaixo",
+    "revisionCompound": "Revisões do tratamento",
+    "noCompound": "Sem tratamento",
+    "chartMetric": "Métrica do gráfico",
+    "fewWeightRecords": "Há poucos registros de peso. Os valores disponíveis são exibidos sem projeção de tendência.",
+    "measurementTable": "Tabela textual dos dados utilizados",
+    "date": "Data",
+    "time": "Hora",
+    "weightMetric": "Peso",
+    "abdomenMetric": "Abdômen",
+    "waistMetric": "Cintura",
+    "hipsMetric": "Quadril",
+    "energy": "Energia",
+    "mood": "Humor",
+    "symptoms": "Sintomas",
+    "origin": "Origem",
+    "noPeriodRecords": "Nenhum registro no período.",
+    "descriptiveDisclaimer": "Dados descritivos autorrelatados. A falta de registro não significa ausência de sintomas e não há interpretação causal ou clínica.",
+    "recordFirst": "Registre seu primeiro acompanhamento"
+    ,"chartEmpty": "Ainda não há pesos válidos neste período e também não há circunferências válidas. Os demais registros continuam disponíveis abaixo."
+    ,"chartSingle": "Uma medida de {metric} registrada em {date}: {value} {unit}."
+    ,"chartMultiple": "{count} medidas diárias de {metric} registradas entre {start} e {end}. As distâncias representam os intervalos reais entre as datas."
+    ,"chartRevision": "{count} revisão(ões) de tratamento indicada(s) por marcadores verticais."
+    ,"chartHeading": "Evolução de {metric}"
+    ,"chartLastDaily": "Última medida de cada dia"
+    ,"chartOpenRecord": "Abrir registro"
+    ,"chartShowRevision": "Mostrar revisão registrada"
+    ,"chartRevisionPrompt": "Selecione uma revisão para ver a configuração registrada."
+    ,"dosePrefix": "Dose"
+    ,"frequencyPrefix": "Frequência"
+    ,"applicationsPerDay": "{count} aplicação(ões) por dia"
+    ,"remindersEnabled": "ativados"
+    ,"remindersDisabled": "desativados"
   },
   "topbar": {
     "title": "Protocolo PEP",
@@ -234,6 +283,7 @@ export const ptBR = {
   },
   "history": {
     "moreActions": "Mais ações",
+    "typeProtocol": "Alteração de tratamento",
     "heading": "Histórico de Aplicações",
     "periodLabel": "Período",
     "compoundLabel": "Composto",
@@ -343,6 +393,13 @@ export const ptBR = {
     "healthConnectToggle": "Sincronizar com Health Connect",
     "healthConnectSyncBtn": "Sincronizar Agora",
     "healthConnectSettingsBtn": "Configurações",
+    "healthConnectUnavailable": "Health Connect não disponível neste dispositivo.",
+    "healthPermissionsDenied": "Permissões de saúde não concedidas.",
+    "healthEnabled": "Health Connect ativado com sucesso.",
+    "healthDisabled": "Health Connect desativado.",
+    "healthSyncing": "Sincronizando com Health Connect...",
+    "healthSynced": "Sincronizado: {exported} enviados, {imported} importados.",
+    "healthSyncError": "Erro na sincronização.",
     "remindersTitle": "Lembretes & Notificações",
     "remindersStatus": "ATIVO & AGENDADO",
     "remindersDesc": "{count} lembretes agendados no aparelho para os próximos 90 dias.",
@@ -357,7 +414,7 @@ export const ptBR = {
     "termsBtn": "Termos & Privacidade",
     "securitySubtitle": "Segurança e Notificações",
     "appearanceSubtitle": "Aparência e Acessibilidade",
-    "dataSubtitle": "Dados e Inventário",
+    "dataSubtitle": "Dados",
     "aboutSubtitle": "Ajuda",
     "appVersion": "Versão {version} · Local-First Edition",
     "siteRotationSub": "Sequência de locais para alternância",
@@ -366,6 +423,8 @@ export const ptBR = {
     "newVialBtn": "+ Novo Frasco",
     "remindersCardDesc": "Configure alarmes locais para os horários das suas aplicações diárias.",
     "feedbackBtn": "Enviar sugestão"
+    ,"lightTheme": "Claro"
+    ,"darkTheme": "Escuro"
   },
   "modals": {
     "addPeptideTitle": "Novo Peptídeo",
@@ -493,7 +552,8 @@ export const ptBR = {
       "includeNames": "Incluir nomes dos peptídeos",
       "disclaimerReassurance": "🔒 O texto é gerado exclusivamente neste dispositivo antes de ser enviado para qualquer outro app.",
       "copyTextBtn": "Copiar Texto",
-      "shareBtn": "Compartilhar..."
+      "shareBtn": "Compartilhar...",
+      "actionShare": "Compartilhar"
     },
     "backup": {
       "title": "Restaurar Backup Local",
@@ -554,7 +614,8 @@ export const ptBR = {
       "title": "Diagnósticos do Sistema",
       "deidentHeading": "Desidentificação Automática:",
       "copyJsonBtn": "Copiar JSON",
-      "exportFileBtn": "Exportar Arquivo"
+      "exportFileBtn": "Exportar Arquivo",
+      "generateError": "Não foi possível gerar os diagnósticos."
     },
     "vial": {
       "newTitle": "Novo Frasco de Peptídeo",
@@ -587,7 +648,9 @@ export const ptBR = {
       "saveError": "Erro ao salvar frasco: {error}",
       "storageErrorTitle": "Erro de Armazenamento",
       "movementDose": "Aplicação de Dose",
-      "movementUndo": "Estorno de Dose"
+      "movementUndo": "Estorno de Dose",
+      "typeReconstitution": "Reconstituição",
+      "typeAdjustment": "Ajuste"
     },
     "sites": {
       "title": "Rotação de Sítios",
@@ -604,7 +667,8 @@ export const ptBR = {
       "tapHint": "Toque em um ponto do abdômen ou flanco",
       "cantRemember": "Não lembro o local",
       "summaryActive": "Próximo na sua rotação: <b>{site}</b> ({count} locais ativos)",
-      "noneConfigured": "Nenhum local configurado na rotação."
+      "noneConfigured": "Nenhum local configurado na rotação.",
+      "noSitesInRotation": "Nenhum local configurado na sequência."
     },
     "measurements": {
       "title": "Registro Corporal / Sintomas",
@@ -754,6 +818,10 @@ export const ptBR = {
     "statusDescDefault": "Exigir biometria ou PIN do dispositivo para abrir o aplicativo."
   },
   "dialogs": {
+    "deleteRecordTitle": "Excluir registro",
+    "deleteRecordMsg": "Deseja excluir este registro?",
+    "featureLoadTitle": "Não foi possível abrir",
+    "featureLoadMsg": "Falha ao carregar {feature}. Tente novamente.",
     "emptyProtocolTitle": "Protocolo vazio",
     "chooseSiteTitle": "Escolha o local",
     "requiredFieldTitle": "Campo obrigatório",

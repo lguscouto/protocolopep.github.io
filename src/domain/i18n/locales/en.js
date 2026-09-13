@@ -156,7 +156,56 @@ export const en = {
     "applicationSaved": "Application recorded",
     "weightSaved": "Weight recorded",
     "symptomSaved": "Symptom recorded",
-    "measurementsSaved": "Measurements recorded"
+    "measurementsSaved": "Measurements recorded",
+    "evolutionTitle": "Descriptive progress",
+    "observationsCount": "{count} date(s) with notes",
+    "weightGoalTitle": "Personal weight goal",
+    "weightGoalOptional": "Optional and saved only on this device.",
+    "weightGoalLabel": "Weight goal in kilograms",
+    "weightGoalPlaceholder": "Goal in kg",
+    "saveGoal": "Save goal",
+    "clearGoal": "Clear",
+    "latestWeight": "most recent weight",
+    "absoluteChange": "absolute change",
+    "percentChange": "percentage change",
+    "weeklyChange": "observed weekly change",
+    "goalDifference": "difference to goal",
+    "defineGoal": "Set a goal to compare",
+    "atGoal": "At goal",
+    "aboveGoal": "above",
+    "belowGoal": "below",
+    "revisionCompound": "Treatment revisions",
+    "noCompound": "No treatment",
+    "chartMetric": "Chart metric",
+    "fewWeightRecords": "There are few weight records. Available values are shown without trend projection.",
+    "measurementTable": "Text table of the data used",
+    "date": "Date",
+    "time": "Time",
+    "weightMetric": "Weight",
+    "abdomenMetric": "Abdomen",
+    "waistMetric": "Waist",
+    "hipsMetric": "Hips",
+    "energy": "Energy",
+    "mood": "Mood",
+    "symptoms": "Symptoms",
+    "origin": "Source",
+    "noPeriodRecords": "No records in this period.",
+    "descriptiveDisclaimer": "Self-reported descriptive data. Missing records do not mean symptoms were absent, and no causal or clinical interpretation is provided.",
+    "recordFirst": "Record your first entry"
+    ,"chartEmpty": "There are no valid weights or circumferences in this period. Other records remain available below."
+    ,"chartSingle": "One {metric} measurement recorded on {date}: {value} {unit}."
+    ,"chartMultiple": "{count} daily {metric} measurements recorded between {start} and {end}. Distances represent the actual intervals between dates."
+    ,"chartRevision": "{count} treatment revision(s) indicated by vertical markers."
+    ,"chartHeading": "{metric} progress"
+    ,"chartLastDaily": "Latest measurement for each day"
+    ,"chartOpenRecord": "Open record"
+    ,"chartShowRevision": "Show recorded revision"
+    ,"chartRevisionPrompt": "Select a revision to view the recorded configuration."
+    ,"dosePrefix": "Dose"
+    ,"frequencyPrefix": "Frequency"
+    ,"applicationsPerDay": "{count} application(s) per day"
+    ,"remindersEnabled": "enabled"
+    ,"remindersDisabled": "disabled"
   },
   "topbar": {
     "title": "PEP Protocol",
@@ -234,6 +283,7 @@ export const en = {
   },
   "history": {
     "moreActions": "More actions",
+    "typeProtocol": "Treatment change",
     "heading": "Application History",
     "periodLabel": "Period",
     "compoundLabel": "Compound",
@@ -343,6 +393,13 @@ export const en = {
     "healthConnectToggle": "Sync with Health Connect",
     "healthConnectSyncBtn": "Sync Now",
     "healthConnectSettingsBtn": "Settings",
+    "healthConnectUnavailable": "Health Connect is not available on this device.",
+    "healthPermissionsDenied": "Health permissions were not granted.",
+    "healthEnabled": "Health Connect enabled successfully.",
+    "healthDisabled": "Health Connect disabled.",
+    "healthSyncing": "Syncing with Health Connect...",
+    "healthSynced": "Synced: {exported} sent, {imported} imported.",
+    "healthSyncError": "Sync error.",
     "remindersTitle": "Reminders & Notifications",
     "remindersStatus": "ACTIVE & SCHEDULED",
     "remindersDesc": "{count} reminders scheduled on system for the next 14 days.",
@@ -357,7 +414,7 @@ export const en = {
     "termsBtn": "Terms & Privacy",
     "securitySubtitle": "Security and Notifications",
     "appearanceSubtitle": "Appearance and Accessibility",
-    "dataSubtitle": "Data and Inventory",
+    "dataSubtitle": "Data",
     "aboutSubtitle": "Help",
     "appVersion": "Version {version} · Local-First Edition",
     "siteRotationSub": "Sequence of sites for alternating",
@@ -366,6 +423,8 @@ export const en = {
     "newVialBtn": "+ New Vial",
     "remindersCardDesc": "Set local alarms for your daily application times.",
     "feedbackBtn": "Send suggestion"
+    ,"lightTheme": "Light"
+    ,"darkTheme": "Dark"
   },
   "modals": {
     "addPeptideTitle": "New Peptide",
@@ -493,7 +552,8 @@ export const en = {
       "includeNames": "Include peptide names",
       "disclaimerReassurance": "🔒 Text is generated exclusively on this device before being sent to any other app.",
       "copyTextBtn": "Copy Text",
-      "shareBtn": "Share..."
+      "shareBtn": "Share...",
+      "actionShare": "Share"
     },
     "backup": {
       "title": "Restore Local Backup",
@@ -554,7 +614,8 @@ export const en = {
       "title": "System Diagnostics",
       "deidentHeading": "Automatic De-identification:",
       "copyJsonBtn": "Copy JSON",
-      "exportFileBtn": "Export File"
+      "exportFileBtn": "Export File",
+      "generateError": "Could not generate diagnostics."
     },
     "vial": {
       "newTitle": "New Peptide Vial",
@@ -587,7 +648,9 @@ export const en = {
       "saveError": "Error saving vial: {error}",
       "storageErrorTitle": "Storage Error",
       "movementDose": "Dose Application",
-      "movementUndo": "Dose Reversal"
+      "movementUndo": "Dose Reversal",
+      "typeReconstitution": "Reconstitution",
+      "typeAdjustment": "Adjustment"
     },
     "sites": {
       "title": "Injection Sites Rotation",
@@ -604,7 +667,8 @@ export const en = {
       "tapHint": "Tap a point on abdomen or flank",
       "cantRemember": "I don't remember the site",
       "summaryActive": "Next in your rotation: <b>{site}</b> ({count} active sites)",
-      "noneConfigured": "No site configured in rotation."
+      "noneConfigured": "No site configured in rotation.",
+      "noSitesInRotation": "No sites configured in the sequence."
     },
     "measurements": {
       "title": "Body Log / Symptoms",
@@ -754,6 +818,10 @@ export const en = {
     "statusDescDefault": "Require biometrics or device PIN to open the app."
   },
   "dialogs": {
+    "deleteRecordTitle": "Delete record",
+    "deleteRecordMsg": "Do you want to delete this record?",
+    "featureLoadTitle": "Could not open",
+    "featureLoadMsg": "Could not load {feature}. Try again.",
     "emptyProtocolTitle": "Empty protocol",
     "chooseSiteTitle": "Choose a site",
     "requiredFieldTitle": "Required field",

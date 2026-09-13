@@ -187,8 +187,8 @@ async function loadFeature(loader, label) {
     return await loader.load();
   } catch (error) {
     void dialogService.alert({
-      title: "Não foi possível abrir",
-      message: `Falha ao carregar ${label}. Tente novamente.`,
+      title: i18nService.t("dialogs.featureLoadTitle"),
+      message: i18nService.t("dialogs.featureLoadMsg", { feature: label }),
       isDanger: true
     });
     throw error;
@@ -444,9 +444,10 @@ function bindRestoredSettingsControls() {
     haptics.light();
     void switchTab("calc");
   });
-  bind("settings-theme-btn", () => {
+  bind("settings-theme-btn", async () => {
     haptics.medium();
-    void theme.toggle();
+    await theme.toggle();
+    settingsMenuUI?.refresh?.();
   });
   bind("reopen-onboarding-btn", () => {
     haptics.light();
@@ -582,6 +583,7 @@ async function initApp() {
       if (healthConnectUI && typeof healthConnectUI.updateSettingsCard === "function") {
         healthConnectUI.updateSettingsCard();
       }
+      settingsMenuUI?.refresh?.();
     }
   });
 
@@ -1584,20 +1586,21 @@ function setupHistoryFilters() {
 function renderHistoryEvolution(model, range = historyDateRange()) {
   const target = document.getElementById("measurements-trend-summary");
   if (!target) return;
+  const tr = (key, params) => i18nService.t(`experience.${key}`, params);
   const stats = model.measurementStats;
   const weightRecords = model.measurements.filter((entry) => entry.weightKg !== null);
   const weightIndicators = calculateWeightGoalIndicators(model.measurements, storage.getMeasurementGoals());
   const formatSigned = (value, suffix = "kg") => value === null ? "—" : `${value > 0 ? "+" : ""}${value} ${suffix}`;
   const goalDifference = weightIndicators.goalDifferenceKg === null
-    ? "Defina uma meta para comparar"
+    ? tr("defineGoal")
     : weightIndicators.goalStatus === "at_goal"
-      ? "Na meta"
-      : `${Math.abs(weightIndicators.goalDifferenceKg)} kg ${weightIndicators.goalStatus === "above" ? "acima" : "abaixo"} da meta`;
+      ? tr("atGoal")
+      : `${Math.abs(weightIndicators.goalDifferenceKg)} kg ${weightIndicators.goalStatus === "above" ? tr("aboveGoal") : tr("belowGoal")} da meta`;
   const metricDefinitions = [
-    { key: "weight", label: "Peso", unit: "kg", getValue: (entry) => entry.weightKg },
-    { key: "abdomen", label: "Abdômen", unit: "cm", getValue: (entry) => entry.circumferencesCm?.abdomen },
-    { key: "waist", label: "Cintura", unit: "cm", getValue: (entry) => entry.circumferencesCm?.waist },
-    { key: "hips", label: "Quadril", unit: "cm", getValue: (entry) => entry.circumferencesCm?.hips }
+    { key: "weight", label: tr("weightMetric"), unit: "kg", getValue: (entry) => entry.weightKg },
+    { key: "abdomen", label: tr("abdomenMetric"), unit: "cm", getValue: (entry) => entry.circumferencesCm?.abdomen },
+    { key: "waist", label: tr("waistMetric"), unit: "cm", getValue: (entry) => entry.circumferencesCm?.waist },
+    { key: "hips", label: tr("hipsMetric"), unit: "cm", getValue: (entry) => entry.circumferencesCm?.hips }
   ];
   const availableMetrics = metricDefinitions.filter((metric) => model.measurements.some((entry) => Number.isFinite(metric.getValue(entry)) && metric.getValue(entry) > 0));
   if (!availableMetrics.some((metric) => metric.key === historyBodyMetric)) {
@@ -1619,33 +1622,33 @@ function renderHistoryEvolution(model, range = historyDateRange()) {
     : [];
   const symptomRows = Object.entries(stats.symptomsFrequency).sort((a, b) => b[1] - a[1]);
   if (model.measurements.length === 0) {
-    target.innerHTML = `<section class="history-evolution"><form class="history-weight-goal" id="history-weight-goal-form"><div><strong>Meta pessoal de peso</strong><span>Opcional e salva apenas neste dispositivo.</span></div><label for="history-goal-weight-input" class="sr-only">Meta de peso em quilogramas</label><div class="history-weight-goal-controls"><input id="history-goal-weight-input" class="txt" type="text" inputmode="decimal" pattern="[0-9]+([,.][0-9]+)?" placeholder="Meta em kg" value="${weightIndicators.goalWeightKg ?? ""}"><button type="submit" class="btn-primary" id="history-goal-save-btn">Salvar meta</button><button type="button" class="btn-secondary" id="history-goal-clear-btn" ${weightIndicators.goalWeightKg === null ? "disabled" : ""}>Apagar</button></div></form><div class="empty-state-illustrated empty-state-illustrated--measurements"><img class="empty-state-illustration" src="/assets/illustrations/empty-measurements.png" alt="" aria-hidden="true"><div class="empty-state-title">Registre seu primeiro acompanhamento</div><div class="empty-state-description">Peso, medidas e sintomas ficam organizados no histórico local.</div><button type="button" class="btn-primary empty-state-action" id="empty-add-measurement-btn">+ Medidas / Sintomas</button></div></section>`;
+    target.innerHTML = `<section class="history-evolution"><form class="history-weight-goal" id="history-weight-goal-form"><div><strong>${esc(tr("weightGoalTitle"))}</strong><span>${esc(tr("weightGoalOptional"))}</span></div><label for="history-goal-weight-input" class="sr-only">${esc(tr("weightGoalLabel"))}</label><div class="history-weight-goal-controls"><input id="history-goal-weight-input" class="txt" type="text" inputmode="decimal" pattern="[0-9]+([,.][0-9]+)?" placeholder="${esc(tr("weightGoalPlaceholder"))}" value="${weightIndicators.goalWeightKg ?? ""}"><button type="submit" class="btn-primary" id="history-goal-save-btn">${esc(tr("saveGoal"))}</button><button type="button" class="btn-secondary" id="history-goal-clear-btn" ${weightIndicators.goalWeightKg === null ? "disabled" : ""}>${esc(tr("clearGoal"))}</button></div></form><div class="empty-state-illustrated empty-state-illustrated--measurements"><img class="empty-state-illustration" src="/assets/illustrations/empty-measurements.png" alt="" aria-hidden="true"><div class="empty-state-title">${esc(tr("recordFirst"))}</div><div class="empty-state-description">${esc(i18nService.t("measurements.emptyDesc"))}</div><button type="button" class="btn-primary empty-state-action" id="empty-add-measurement-btn">${esc(i18nService.t("measurements.addEntry"))}</button></div></section>`;
     return;
   }
   target.innerHTML = `<section class="history-evolution" aria-labelledby="history-evolution-title">
-    <div class="history-section-heading"><h3 id="history-evolution-title">Evolução descritiva</h3><span>${model.observations.count} data${model.observations.count === 1 ? "" : "s"} com observações</span></div>
+    <div class="history-section-heading"><h3 id="history-evolution-title">${esc(tr("evolutionTitle"))}</h3><span>${esc(tr("observationsCount", { count: model.observations.count }))}</span></div>
     <form class="history-weight-goal" id="history-weight-goal-form">
-      <div><strong>Meta pessoal de peso</strong><span>Opcional e salva apenas neste dispositivo.</span></div>
-      <label for="history-goal-weight-input" class="sr-only">Meta de peso em quilogramas</label>
-      <div class="history-weight-goal-controls"><input id="history-goal-weight-input" class="txt" type="text" inputmode="decimal" pattern="[0-9]+([,.][0-9]+)?" placeholder="Meta em kg" value="${weightIndicators.goalWeightKg ?? ""}"><button type="submit" class="btn-primary" id="history-goal-save-btn">Salvar meta</button><button type="button" class="btn-secondary" id="history-goal-clear-btn" ${weightIndicators.goalWeightKg === null ? "disabled" : ""}>Apagar</button></div>
+      <div><strong>${esc(tr("weightGoalTitle"))}</strong><span>${esc(tr("weightGoalOptional"))}</span></div>
+      <label for="history-goal-weight-input" class="sr-only">${esc(tr("weightGoalLabel"))}</label>
+      <div class="history-weight-goal-controls"><input id="history-goal-weight-input" class="txt" type="text" inputmode="decimal" pattern="[0-9]+([,.][0-9]+)?" placeholder="${esc(tr("weightGoalPlaceholder"))}" value="${weightIndicators.goalWeightKg ?? ""}"><button type="submit" class="btn-primary" id="history-goal-save-btn">${esc(tr("saveGoal"))}</button><button type="button" class="btn-secondary" id="history-goal-clear-btn" ${weightIndicators.goalWeightKg === null ? "disabled" : ""}>${esc(tr("clearGoal"))}</button></div>
     </form>
     <div class="report-preview-summary-grid">
-      <span class="measurement-chip--weight"><b>${weightIndicators.latestWeight ?? "—"}${weightIndicators.latestWeight !== null ? " kg" : ""}</b> peso mais recente</span>
-      <span><b>${formatSigned(weightIndicators.absoluteChangeKg)}</b> variação absoluta</span>
-      <span><b>${weightIndicators.percentChange === null ? "—" : `${weightIndicators.percentChange > 0 ? "+" : ""}${weightIndicators.percentChange}%`}</b> variação percentual</span>
-      <span><b>${formatSigned(weightIndicators.weeklyObservedChangeKg)}</b> variação semanal observada</span>
-      <span><b>${esc(goalDifference)}</b> diferença até a meta</span>
+      <span class="measurement-chip--weight"><b>${weightIndicators.latestWeight ?? "—"}${weightIndicators.latestWeight !== null ? " kg" : ""}</b> ${esc(tr("latestWeight"))}</span>
+      <span><b>${formatSigned(weightIndicators.absoluteChangeKg)}</b> ${esc(tr("absoluteChange"))}</span>
+      <span><b>${weightIndicators.percentChange === null ? "—" : `${weightIndicators.percentChange > 0 ? "+" : ""}${weightIndicators.percentChange}%`}</b> ${esc(tr("percentChange"))}</span>
+      <span><b>${formatSigned(weightIndicators.weeklyObservedChangeKg)}</b> ${esc(tr("weeklyChange"))}</span>
+      <span><b>${esc(goalDifference)}</b> ${esc(tr("goalDifference"))}</span>
     </div>
-    ${revisionCompounds.length ? `<label class="history-metric-selector" for="history-revision-compound"><span>Revisões do composto</span><select id="history-revision-compound" class="txt"><option value="">Sem composto</option>${revisionCompounds.map((protocol) => `<option value="${esc(protocol.id)}" ${protocol.id === historyRevisionCompoundId ? "selected" : ""}>${esc(protocol.name)}</option>`).join("")}</select></label>` : ""}
-    ${availableMetrics.length ? `<label class="history-metric-selector" for="history-body-metric"><span>Métrica do gráfico</span><select id="history-body-metric" class="txt">${availableMetrics.map((metric) => `<option value="${metric.key}" ${metric.key === selectedMetric.key ? "selected" : ""}>${metric.label}</option>`).join("")}</select></label>` : ""}
+    ${revisionCompounds.length ? `<label class="history-metric-selector" for="history-revision-compound"><span>${esc(tr("revisionCompound"))}</span><select id="history-revision-compound" class="txt"><option value="">${esc(tr("noCompound"))}</option>${revisionCompounds.map((protocol) => `<option value="${esc(protocol.id)}" ${protocol.id === historyRevisionCompoundId ? "selected" : ""}>${esc(protocol.name)}</option>`).join("")}</select></label>` : ""}
+    ${availableMetrics.length ? `<label class="history-metric-selector" for="history-body-metric"><span>${esc(tr("chartMetric"))}</span><select id="history-body-metric" class="txt">${availableMetrics.map((metric) => `<option value="${metric.key}" ${metric.key === selectedMetric.key ? "selected" : ""}>${esc(metric.label)}</option>`).join("")}</select></label>` : ""}
     ${renderBodyMetricChart(bodyMetricChart, revisionMarkers)}
-    ${weightRecords.length > 0 && weightRecords.length < 3 ? `<p class="history-context-note">Há poucos registros de peso. Os valores disponíveis são exibidos sem projeção de tendência.</p>` : ""}
+    ${weightRecords.length > 0 && weightRecords.length < 3 ? `<p class="history-context-note">${esc(tr("fewWeightRecords"))}</p>` : ""}
     ${symptomRows.length ? `<div class="history-symptom-frequency">${symptomRows.map(([name, count]) => `<span>${esc(name)} <b>${count}×</b></span>`).join("")}</div>` : ""}
-    <details class="history-data-table"><summary>Tabela textual dos dados utilizados</summary>
-      <div class="history-table-scroll"><table><thead><tr><th>Data</th><th>Hora</th><th>Peso</th><th>Abdômen</th><th>Cintura</th><th>Quadril</th><th>Energia</th><th>Humor</th><th>Sintomas</th><th>Origem</th></tr></thead><tbody>
-      ${model.measurements.map((entry) => `<tr><td>${esc(fmtBR(entry.date))}</td><td>${esc(entry.time || "—")}</td><td>${entry.weightKg !== null ? `${entry.weightKg} kg` : "—"}</td><td>${entry.circumferencesCm?.abdomen !== null && entry.circumferencesCm?.abdomen !== undefined ? `${entry.circumferencesCm.abdomen} cm` : "—"}</td><td>${entry.circumferencesCm?.waist !== null && entry.circumferencesCm?.waist !== undefined ? `${entry.circumferencesCm.waist} cm` : "—"}</td><td>${entry.circumferencesCm?.hips !== null && entry.circumferencesCm?.hips !== undefined ? `${entry.circumferencesCm.hips} cm` : "—"}</td><td>${entry.energyLevel ?? "—"}</td><td>${entry.moodLevel ?? "—"}</td><td>${esc(entry.symptomDetails.map((item) => `${item.name}${item.intensity ? ` (${item.intensity})` : ""}`).join(" · ") || "—")}</td><td>${esc(entry.source)}</td></tr>`).join("") || `<tr><td colspan="10">Nenhum registro no período.</td></tr>`}
+    <details class="history-data-table"><summary>${esc(tr("measurementTable"))}</summary>
+      <div class="history-table-scroll"><table><thead><tr><th>${esc(tr("date"))}</th><th>${esc(tr("time"))}</th><th>${esc(tr("weightMetric"))}</th><th>${esc(tr("abdomenMetric"))}</th><th>${esc(tr("waistMetric"))}</th><th>${esc(tr("hipsMetric"))}</th><th>${esc(tr("energy"))}</th><th>${esc(tr("mood"))}</th><th>${esc(tr("symptoms"))}</th><th>${esc(tr("origin"))}</th></tr></thead><tbody>
+      ${model.measurements.map((entry) => `<tr><td>${esc(fmtBR(entry.date))}</td><td>${esc(entry.time || "—")}</td><td>${entry.weightKg !== null ? `${entry.weightKg} kg` : "—"}</td><td>${entry.circumferencesCm?.abdomen !== null && entry.circumferencesCm?.abdomen !== undefined ? `${entry.circumferencesCm.abdomen} cm` : "—"}</td><td>${entry.circumferencesCm?.waist !== null && entry.circumferencesCm?.waist !== undefined ? `${entry.circumferencesCm.waist} cm` : "—"}</td><td>${entry.circumferencesCm?.hips !== null && entry.circumferencesCm?.hips !== undefined ? `${entry.circumferencesCm.hips} cm` : "—"}</td><td>${entry.energyLevel ?? "—"}</td><td>${entry.moodLevel ?? "—"}</td><td>${esc(entry.symptomDetails.map((item) => `${item.name}${item.intensity ? ` (${item.intensity})` : ""}`).join(" · ") || "—")}</td><td>${esc(entry.source)}</td></tr>`).join("") || `<tr><td colspan="10">${esc(tr("noPeriodRecords"))}</td></tr>`}
       </tbody></table></div></details>
-    <p class="history-context-note">Dados descritivos autorrelatados. A falta de registro não significa ausência de sintomas e não há interpretação causal ou clínica.</p>
+    <p class="history-context-note">${esc(tr("descriptiveDisclaimer"))}</p>
   </section>`;
 }
 
@@ -1778,7 +1781,7 @@ function renderHistory() {
   if (countEl) countEl.textContent = `${model.events.length} registro${model.events.length === 1 ? "" : "s"}`;
   const contextNote = document.getElementById("history-context-note");
   if (contextNote) contextNote.hidden = historyFilters.compoundId === "all";
-  const typeLabel = { application: i18nService.t("history.typeApplication"), measurement: i18nService.t("history.typeMeasurement"), symptom: i18nService.t("history.typeSymptom"), protocol: i18nService.t("history.typeProtocol") || "Protocolo" };
+  const typeLabel = { application: i18nService.t("history.typeApplication"), measurement: i18nService.t("history.typeMeasurement"), symptom: i18nService.t("history.typeSymptom"), protocol: i18nService.t("history.typeProtocol") };
   container.innerHTML = model.events.length ? `<div class="history-timeline history-timeline--integrated" role="list">${model.events.map((event) => {
     const details = event.type === "application"
       ? `<span>Previsto: <b>${esc(event.scheduledTime || "não informado")}</b></span><span>Efetivo: <b>${esc(event.effectiveTime || "não informado")}</b></span>${event.data.site ? `<span>Local: <b>${esc(event.data.site)}</b></span>` : ""}`
@@ -1856,12 +1859,18 @@ function setupSettingsMenu() {
   const sections = Array.from(document.querySelectorAll("[data-settings-panel]"));
   if (!menu || !back || !sections.length) return { reset() {} };
   const rows = Array.from(menu.querySelectorAll("[data-settings-target]"));
+  const refresh = () => {
+    const treatmentMeta = menu.querySelector('[data-settings-meta="treatment"]');
+    const dataMeta = menu.querySelector('[data-settings-meta="data"]');
+    const appMeta = menu.querySelector('[data-settings-meta="app"]');
+    if (treatmentMeta) treatmentMeta.textContent = `${storage.getPeptides().length} ${i18nService.t("experience.treatments").toLocaleLowerCase(i18nService.getLocale())}`;
+    if (dataMeta) dataMeta.textContent = `${i18nService.t("settings.healthConnectTitle")}: ${document.getElementById("hc-status-badge")?.textContent || i18nService.t("common.disabled")}`;
+    if (appMeta) appMeta.textContent = `${theme.getTheme() === "branco" ? i18nService.t("settings.lightTheme") : i18nService.t("settings.darkTheme")} · ${i18nService.getLocaleLabel()}`;
+  };
   const showMenu = (focusRow = null) => {
     menu.hidden = false;
     back.hidden = true;
-    // Os destinos legados continuam disponíveis na primeira abertura; as linhas
-    // compactas também permitem abrir cada grupo como painel de detalhe.
-    sections.forEach((section) => { section.hidden = false; section.classList.remove("is-active"); });
+    sections.forEach((section) => { section.hidden = true; section.classList.remove("is-active"); });
     focusRow?.focus({ preventScroll: true });
   };
   const openPanel = (target, row) => {
@@ -1878,7 +1887,7 @@ function setupSettingsMenu() {
   rows.forEach((row) => row.addEventListener("click", () => openPanel(row.dataset.settingsTarget, row)));
   back.addEventListener("click", () => showMenu(rows[0]));
   showMenu();
-  return { reset: () => showMenu() };
+  return { reset: () => showMenu(), refresh };
 }
 
 function deleteHistoryEntry(dKey, pId, idx) {
@@ -1976,6 +1985,7 @@ function setupModalsAndButtons() {
     themeBtn.addEventListener("click", async () => {
       haptics.medium();
       await theme.toggle();
+      settingsMenuUI?.refresh?.();
     });
   }
 

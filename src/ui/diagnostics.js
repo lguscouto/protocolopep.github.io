@@ -32,7 +32,7 @@ export function setupDiagnosticsModal({ storage, getNotificationsActive, appVers
       }
     } catch (err) {
       if (preEl) {
-        preEl.textContent = (i18nService.t("modals.diagnostics.generateError") || "Erro ao gerar diagnóstico: {error}").replace("{error}", err.message);
+        preEl.textContent = i18nService.t("modals.diagnostics.generateError");
       }
     }
   };
