@@ -324,6 +324,37 @@ async function showModal(page, modalId) {
 test.describe("Protocolo PEP — Galaxy A55 / geometria real", () => {
   test.describe.configure({ timeout: 120000 });
 
+  test("mantém o registro rápido acima da área de gestos", async ({ page }, testInfo) => {
+    test.skip(isLandscape(testInfo), "o inset inferior só existe no cenário retrato");
+    const runtime = trackPageRuntime(page);
+    await seedStorage(page, { skipOnboarding: true, peptides: [] });
+    await installDeviceSimulation(page);
+    const theme = THEMES[0];
+    const nav = NAV_MODES[0];
+    await page.goto(scenarioUrl({ theme, nav, fontScale: 1, landscape: false }));
+    await waitForStableLayout(page);
+
+    await page.locator("#quick-register-fab").click();
+    await expect(page.locator("#quick-register-modal")).toHaveClass(/on/);
+    const metrics = await page.locator("#quick-register-modal").evaluate((modal) => {
+      const root = getComputedStyle(document.documentElement);
+      const sheet = modal.querySelector(".sheet");
+      const lastOption = modal.querySelector("[data-register]:last-child");
+      return {
+        safeBottom: Number.parseFloat(root.getPropertyValue("--app-safe-bottom")) || 0,
+        viewportBottom: window.innerHeight,
+        sheetBottom: sheet?.getBoundingClientRect().bottom ?? 0,
+        lastOptionBottom: lastOption?.getBoundingClientRect().bottom ?? 0
+      };
+    });
+
+    const usableBottom = metrics.viewportBottom - metrics.safeBottom;
+    expect(metrics.safeBottom).toBeGreaterThan(0);
+    expect(metrics.sheetBottom).toBeLessThanOrEqual(usableBottom + 1);
+    expect(metrics.lastOptionBottom).toBeLessThanOrEqual(usableBottom + 1);
+    runtime.assertCleanRuntime();
+  });
+
   test("mantém invariantes em navegação, fonte e tema", async ({ page }, testInfo) => {
     const runtime = trackPageRuntime(page);
     await seedStorage(page, {

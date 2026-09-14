@@ -4255,6 +4255,10 @@ html.high-contrast .protocol-revision-line { stroke-width: 3; }
   gap: 8px;
   font: 700 14px var(--font);
 }
+.quick-register-modal {
+  box-sizing: border-box;
+  padding-bottom: var(--app-safe-bottom);
+}
 .quick-register-fab svg, .quick-register-option svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .quick-register-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; }
 .quick-register-option, .quick-register-treatment {
