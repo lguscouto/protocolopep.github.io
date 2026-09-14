@@ -1,3 +1,39 @@
+# Protocolo PEP 3.9.15 — correção de “Adicionar tratamento” em Hoje
+
+Entrega de avaliação da correção que restaura o acesso direto ao cadastro de tratamento na tela Hoje, preservando o editor existente, os dados locais e a navegação principal.
+
+## Escopo e compatibilidade
+
+O botão secundário `#add-pep-btn` aparece quando há pelo menos um tratamento cadastrado, inclusive em dias sem pendência ou com início futuro. No protocolo vazio, permanece apenas o CTA destacado do estado inicial. O acionamento usa a delegação existente e `openEditModal(null)`, sem alterar schemas, chaves de storage, cálculos, inventário, notificações ou funcionamento offline.
+
+## Validação da release 3.9.15
+
+- Commit que congelou o código e originou o APK: `0eb3493` (`chore(release): preparar versão 3.9.15`).
+- Data da validação: **14/09/2026**.
+- CI final da branch: [34801091873](https://github.com/lguscouto/protocolopep.github.io/actions/runs/34801091873), com Web/E2E, Performance e Android verdes.
+- `npm test`: **565/565 testes aprovados em 57 arquivos**.
+- `npm run build`: aprovado; entry JavaScript **69,61 kB gzip**, abaixo do teto de 80 kB.
+- `npm run test:e2e -- --workers=1`: **197 aprovados**, 8 cenários condicionais ignorados pela matriz.
+- `npm run test:performance`: aprovado anteriormente no mesmo código, com bundle inicial abaixo de 80 KiB e limites de startup atendidos.
+- Android: `npx cap sync android`, `testDebugUnitTest`, `lintDebug` e `assembleDebug` aprovados.
+- Emulador: APK instalado em `emulator-5554`; `versionName 3.9.15`, `versionCode 44` e nenhum `FATAL EXCEPTION` ou `Uncaught TypeError` no logcat após a abertura.
+
+## APK de avaliação da 3.9.15
+
+Nome: `Protocolo-PEP-v3.9.15.apk`
+
+Arquivo gerado: `android/app/build/outputs/apk/debug/app-debug.apk`
+
+Bytes: **12.296.468**
+
+SHA-256 local: **`19652B00FC2E05CA63CB8413EED673029CC5B4E2B830B22D000692A4AA3B1FD1`**
+
+O APK é uma build debug para avaliação. O teste em aparelho físico não foi executado por decisão de escopo.
+
+## Roteiro de smoke físico (execução posterior)
+
+Instalar o APK debug, atualizar a partir da 3.9.14, abrir Hoje, tocar em **Adicionar tratamento**, criar uma segunda rotina, confirmar retorno à tela Hoje, testar notificações, widget, biometria, Health Connect, exportação/importação e haptic, além de retomada, Voltar, rotação e teclado. **Teste em aparelho físico: não executado por decisão de escopo.**
+
 # Protocolo PEP 3.9.13 — polimento final de UI/UX
 
 Entrega de avaliação na branch `codex/pep-ux-3-9-13`, criada a partir da `main` no commit `f0ed322`. A versão implementa os itens P0–P3 da auditoria sem alterar schemas, chaves de storage, backups, fórmulas, `DoseService`, inventário, Health Connect ou o funcionamento Local-First/offline.
