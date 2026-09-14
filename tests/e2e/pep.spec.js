@@ -117,13 +117,15 @@ test.describe("Protocolo PEP — E2E Smoke & Runtime", () => {
     const emptyTitle = page.locator(".dash-empty-title");
     await expect(emptyTitle).toBeVisible();
     await expect(emptyTitle).toContainText("Comece adicionando seu tratamento");
+    await expect(page.locator("#add-pep-btn")).toBeHidden();
+    await expect(page.locator("#empty-add-pep-btn")).toBeVisible();
 
     // O anel de progresso hero deve estar oculto
     const hero = page.locator("#dash-hero");
     await expect(hero).toBeHidden();
 
     // Clicar em criar protocolo abre o modal
-    const createBtn = page.locator('[data-action="create-protocol"]');
+    const createBtn = page.locator("#empty-add-pep-btn");
     await createBtn.click();
 
     const editModal = page.locator("#edit-modal");

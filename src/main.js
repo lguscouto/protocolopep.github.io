@@ -848,7 +848,10 @@ function setupRenderedEventDelegation() {
     const target = event.target.closest("button");
     if (!target) return;
     const today = dateKey(new Date());
-    if (target.matches('[data-action="create-protocol"]')) return openEditModal();
+    if (target.matches('[data-action="create-protocol"]')) {
+      haptics.light();
+      return openEditModal(null);
+    }
     if (target.matches('[data-action="open-calc"]')) return void switchTab("calc");
     if (target.matches('[data-action="open-progress"]')) return void switchTab("progress");
     if (target.matches(".multi-dose-register")) return openRetroLogModal(today, target.dataset.id, { requireSiteSelection: true, initialStatus: "applied" });
@@ -1061,7 +1064,7 @@ function renderToday() {
   if (peptides.length === 0) {
     if (heroEl) heroEl.style.display = "none";
     if (listHeading) listHeading.style.display = "none";
-    if (addPepBtn) addPepBtn.style.display = "none";
+    if (addPepBtn) addPepBtn.hidden = true;
     if (actionsWrap) actionsWrap.style.display = "none";
 
     container.innerHTML = renderEmptyDashboardHTML();
@@ -1074,7 +1077,7 @@ function renderToday() {
 
   // Com protocolos cadastrados
   if (heroEl) heroEl.style.display = "";
-  if (addPepBtn) addPepBtn.style.display = "";
+  if (addPepBtn) addPepBtn.hidden = false;
   if (actionsWrap) actionsWrap.style.display = "";
 
   const scheduledToday = getScheduledPeptides(peptides, now);
@@ -2098,14 +2101,6 @@ function setupModalsAndButtons() {
       haptics.medium();
       await theme.toggle();
       settingsMenuUI?.refresh?.();
-    });
-  }
-
-  const addPepBtn = document.getElementById("add-pep-btn");
-  if (addPepBtn) {
-    addPepBtn.addEventListener("click", () => {
-      openEditModal(null);
-      haptics.light();
     });
   }
 

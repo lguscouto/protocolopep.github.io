@@ -26,7 +26,7 @@ test.describe("Fase 3 — lembretes por rotina", () => {
     const runtime = trackPageRuntime(page);
     await seedStorage(page);
     await page.goto("/");
-    await page.locator('[data-action="create-protocol"]').click();
+    await page.locator('[data-action="create-protocol"]:visible').click();
 
     const toggle = page.locator("#edit-reminders-enabled");
     await expect(toggle).toBeDisabled();
@@ -93,7 +93,7 @@ test.describe("Fase 3 — lembretes por rotina", () => {
   test("controle permanece dentro do modal sem rolagem horizontal", async ({ page }) => {
     await seedStorage(page);
     await page.goto("/");
-    await page.locator('[data-action="create-protocol"]').click();
+    await page.locator('[data-action="create-protocol"]:visible').click();
     const layout = await page.locator("#edit-reminder-control").evaluate((element) => {
       const box = element.getBoundingClientRect();
       const sheet = element.closest(".sheet").getBoundingClientRect();
@@ -124,7 +124,7 @@ test.describe("Fase 3 — lembretes por rotina", () => {
       await page.setViewportSize({ width, height: width >= 1280 ? 900 : 800 });
       for (const theme of themes) {
         await page.goto(`/?visualTheme=${theme.storage}&highContrast=${theme.highContrast}`);
-        await page.locator('[data-action="create-protocol"]').click();
+        await page.locator('[data-action="create-protocol"]:visible').click();
         await expect(page.locator("body")).toHaveClass(new RegExp(theme.body));
         if (theme.highContrast) await expect(page.locator("html")).toHaveClass(/high-contrast/);
         const bounds = await page.locator("#edit-reminder-control").evaluate((element) => {

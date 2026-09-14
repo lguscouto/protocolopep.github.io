@@ -59,7 +59,7 @@ async function recordStatus(page, status) {
 test.describe("Fase 1 — integridade da rotina", () => {
   test("cria unidades fracionárias e respeita início futuro sem aplicações antecipadas", async ({ page }) => {
     const runtime = await prepare(page, [], {}, []);
-    await page.locator('[data-action="create-protocol"]').click();
+    await page.locator('[data-action="create-protocol"]:visible').click();
     await page.locator("#edit-name").fill("Protocolo futuro");
     await page.locator("#edit-dose").fill("62.5 mcg");
     await page.locator("#edit-ui").fill("2,5");

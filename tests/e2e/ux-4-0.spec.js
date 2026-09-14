@@ -57,6 +57,66 @@ test.describe("Experiência 4.0", () => {
     runtime.assertCleanRuntime();
   });
 
+  test("permite adicionar um novo tratamento diretamente em Hoje", async ({ page }) => {
+    const runtime = trackPageRuntime(page);
+    await page.clock.setFixedTime(new Date("2026-09-12T10:35:00-03:00"));
+    await seedStorage(page, { skipOnboarding: true, peptides: [treatment("existing", "Tratamento existente")] });
+    await page.goto("/");
+
+    const addButton = page.locator("#add-pep-btn");
+    await expect(addButton).toBeVisible();
+    await expect(addButton).toHaveAttribute("aria-label", "Adicionar tratamento");
+    await expect(addButton.locator("svg")).toBeVisible();
+    const addBox = await addButton.boundingBox();
+    expect(addBox?.height).toBeGreaterThanOrEqual(44);
+
+    await addButton.focus();
+    await addButton.click();
+    await expect(page.locator("#edit-modal")).toHaveClass(/on/);
+    await expect(page.locator("#edit-modal")).toHaveAttribute("aria-hidden", "false");
+    await expect(page.locator("#edit-name")).toHaveValue("");
+    await page.locator("#edit-name").fill("Tratamento novo");
+    await page.locator("#edit-dose").fill("500 mcg");
+    await page.locator("#edit-ui").fill("10");
+    await page.locator("#edit-time").fill("20:00");
+    await page.locator("#edit-save").click();
+    await expect(page.locator("#edit-modal")).not.toHaveClass(/on/);
+    const stored = await page.evaluate(() => JSON.parse(localStorage.getItem("pep_protocol_v2") || "[]"));
+    expect(stored.map((item) => item.name)).toEqual(["Tratamento existente", "Tratamento novo"]);
+    await expect(addButton).toBeVisible();
+
+    await addButton.click();
+    await expect(page.locator("#edit-modal")).toHaveClass(/on/);
+    await page.locator("#edit-close").click();
+    await expect(page.locator("#edit-modal")).not.toHaveClass(/on/);
+    await expect(addButton).toBeFocused();
+
+    await addButton.click();
+    await expect(page.locator("#edit-modal")).toHaveClass(/on/);
+    await page.keyboard.press("Escape");
+    await expect(page.locator("#edit-modal")).not.toHaveClass(/on/);
+    await expect(addButton).toBeFocused();
+    await expect(page.locator(".modal.on")).toHaveCount(0);
+    runtime.assertCleanRuntime();
+  });
+
+  test("mantém o acesso de adicionar quando não há pendência hoje", async ({ page }) => {
+    const runtime = trackPageRuntime(page);
+    await page.clock.setFixedTime(new Date("2026-09-12T10:35:00-03:00"));
+    await seedStorage(page, {
+      skipOnboarding: true,
+      peptides: [{ ...treatment("future", "Tratamento futuro"), startDate: "2099-01-01" }]
+    });
+    await page.goto("/");
+
+    await expect(page.locator("#add-pep-btn")).toBeVisible();
+    await expect(page.locator("#today-cards article.card")).toHaveCount(0);
+    await page.locator("#add-pep-btn").click();
+    await expect(page.locator("#edit-modal")).toHaveClass(/on/);
+    await page.locator("#edit-close").click();
+    runtime.assertCleanRuntime();
+  });
+
   test("pede a escolha quando há várias pendências", async ({ page }) => {
     const runtime = trackPageRuntime(page);
     await page.clock.setFixedTime(new Date("2026-09-12T10:35:00-03:00"));
